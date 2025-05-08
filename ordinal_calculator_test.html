@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Ordinal Calculator Test</title>
+    <meta charset="utf-8">
+    <style>
+        body { font-family: monospace; white-space: pre; }
+        .test-case { margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 5px; }
+        .status-passed { color: green; }
+        .status-failed { color: red; font-weight: bold; }
+        .log-output { margin-left: 20px; }
+        .error-message { color: orange; }
+    </style>
+</head>
+<body>
+    <h1>Ordinal Calculator Output</h1>
+    <div id="results-container"></div>
+
+    <!-- Load Ordinal Scripts (ensure paths are correct) -->
+    <script src="ordinal_types.js"></script>
+    <script src="ordinal_comparison.js"></script>
+    <script src="ordinal_auxiliary_ops.js"></script>
+    <script src="ordinal_addition.js"></script>
+    <script src="ordinal_multiplication.js"></script>
+    <script src="ordinal_exponentiation.js"></script>
+    <script src="ordinal_parser.js"></script>
+    <script src="ordinal_calculator.js"></script>
+
+    <script>
+        const resultsContainer = document.getElementById('results-container');
+
+        function logToPage(message, className = '') {
+            const entry = document.createElement('div');
+            entry.textContent = message;
+            if (className) {
+                entry.classList.add(className);
+            }
+            resultsContainer.appendChild(entry);
+        }
+
+        function testOrdinalCalc(label, input, expected) {
+            const testCaseDiv = document.createElement('div');
+            testCaseDiv.classList.add('test-case');
+            resultsContainer.appendChild(testCaseDiv);
+
+            const appendToTestCase = (msg, className = '') => {
+                const line = document.createElement('div');
+                line.textContent = msg;
+                line.classList.add('log-output');
+                if (className) line.classList.add(className);
+                testCaseDiv.appendChild(line);
+            };
+
+            appendToTestCase(`Test: ${label}`);
+            appendToTestCase(`Input: "${input}"`);
+            
+            let output;
+            let statusClass = '';
+            let statusMessage = '';
+
+            try {
+                output = calculateOrdinalCNF(input, 1000000); // Default budget
+                appendToTestCase(`Output: "${output}"`);
+
+                if (output === expected) {
+                    statusMessage = "Status: PASSED";
+                    statusClass = "status-passed";
+                } else {
+                    statusMessage = `Status: FAILED. Expected: "${expected}"`;
+                    statusClass = "status-failed";
+                }
+            } catch (e) {
+                // This catch is mostly for unexpected errors during calculateOrdinalCNF itself,
+                // not for errors *returned as strings* by calculateOrdinalCNF.
+                output = `Critical Error: ${e.message}`;
+                appendToTestCase(`Output: "${output}"`, 'error-message');
+                statusMessage = `Status: FAILED (Critical Error). Expected: "${expected}"`;
+                statusClass = "status-failed";
+            }
+            
+            // Handle cases where calculateOrdinalCNF returns an error string
+            if (typeof output === 'string' && output.startsWith("Error:")) {
+                 if (output === expected) { // If the expected result was an error string
+                    statusMessage = "Status: PASSED (Error matched expectation)";
+                    statusClass = "status-passed";
+                } else if (!statusMessage) { // Only set if not already a critical failure
+                    statusMessage = `Status: FAILED (Got error). Expected: "${expected}"`;
+                    statusClass = "status-failed";
+                }
+                 // Ensure error output itself is styled if it's part of the test logic
+                const outputLines = testCaseDiv.querySelectorAll('.log-output');
+                outputLines.forEach(line => {
+                    if (line.textContent.startsWith('Output: "Error:')) {
+                        line.classList.add('error-message');
+                    }
+                });
+            }
+            
+            appendToTestCase(statusMessage, statusClass);
+        }
+
+        // --- Updated Test Cases ---
+        testOrdinalCalc("Zero", "0", "0");
+        testOrdinalCalc("Simple Finite", "1+2*3", "7");
+        testOrdinalCalc("Omega", "w", "w");
+        testOrdinalCalc("Omega Plus Finite", "w+5", "w+5");
+        testOrdinalCalc("Finite Plus Omega", "5+w", "w");
+        testOrdinalCalc("Omega Plus Omega", "w+w", "w*2");
+
+        testOrdinalCalc("Omega Times Finite", "w*3", "w*3");
+        testOrdinalCalc("Finite Times Omega", "3*w", "w");
+        testOrdinalCalc("Omega Times Omega", "w*w", "w^2");
+        testOrdinalCalc("(w+1)*2", "(w+1)*2", "w*2+1"); // Expectation corrected
+        testOrdinalCalc("(w+1)*(w+1)", "(w+1)*(w+1)", "w^2+w+1");
+        testOrdinalCalc("(w+1)*(w+2)", "(w+1)*(w+2)", "w^2+w*2+1"); // Expectation corrected
+
+        testOrdinalCalc("Finite to Omega", "2^w", "w");
+        testOrdinalCalc("Omega to Finite", "w^3", "w^3");
+        testOrdinalCalc("Omega to Omega", "w^w", "w^w"); // Expectation corrected (no parens for exp w)
+        testOrdinalCalc("(w+1)^2", "(w+1)^2", "w^2+w+1");
+        testOrdinalCalc("2^(w+1)", "2^(w+1)", "w*2");
+        testOrdinalCalc("w^(w+1)", "w^(w+1)", "w^(w+1)");
+        testOrdinalCalc("(w^2)^w", "(w^2)^w", "w^w");   // Math: w^(2w) = w^w. String expectation corrected.
+        testOrdinalCalc("(w^w)^2", "(w^w)^2", "w^(w*2)"); // Expectation corrected (math was w^(w*2))
+        testOrdinalCalc("(w^w)^w", "(w^w)^w", "w^(w^2)");
+
+        testOrdinalCalc("Complex 1", "(w^2+w*3+5)*w + (w+1)", "w^3+w+1");
+        testOrdinalCalc("Deep Exponent", "2^(w^2)", "w^w"); // Math: w^w. String expectation corrected.
+        testOrdinalCalc("Zero Power", " (w+5)^0 ", "1");
+        testOrdinalCalc("Power of Zero", " 0^(w+1) ", "0");
+        testOrdinalCalc("Power of One", " 1^w ", "1");
+        testOrdinalCalc("toString complex exp", "w^(w+1)+2", "w^(w+1)+2");
+        testOrdinalCalc("toString simple exp num", "w^2", "w^2");
+        testOrdinalCalc("toString simple exp w", "w^w", "w^w"); // Expectation corrected
+
+        testOrdinalCalc("(w*2+1)*(w*3+5)", "(w*2+1)*(w*3+5)", "w^2*3+w*10+1"); // Expectation corrected (math and w^2 format)
+                                                                                // My string output for w^2*3 might be w^(2)*3 if exp is Ordinal(2).
+                                                                                // If toStringCNF prints w^2 for exp=Ordinal(2), then this is fine.
+
+	testOrdinalCalc("test", "w + w * w ^ w + w", "w^w+w");
+	testOrdinalCalc("test", "( (w+1) * (w+2) + (w*3+4) ) ^ 2", "w^4+w^3*5+w^2*4+w*5+4");
+	testOrdinalCalc("test", "w ^ (w ^ (w+1) + 1)", "w^(w^(w+1)+1)");
+	testOrdinalCalc("test", "2 ^ (w^w)", "w^(w^w)");
+	testOrdinalCalc("test", "3 ^ (w^2*5 + w*4 + 3)", "w^(w*5+4)*27");
+	testOrdinalCalc("test", "2 ^ ( (w+1)^2 )", "w^(w+1)*2");
+	testOrdinalCalc("test", "(w^w + w + 1)^2", "w^(w*2)+w^(w+1)+w^w+w+1");
+	testOrdinalCalc("test", "(w*2+3)^3", "w^3*2+w^2*6+w*6+3");
+	testOrdinalCalc("test", "(w^2+1) ^ (w*2+1)", "w^(w*2+2)+w^(w*2)");
+	testOrdinalCalc("test", "(w^w) ^ (w^w)", "w^(w^w)");
+	testOrdinalCalc("test", "(w+1) ^ (w^2)", "w^(w^2)");
+	testOrdinalCalc("test", "(w^0+1)^(w*0+1)", "2");
+	testOrdinalCalc("test", "(w * ( (w^0 * 0) + 1) ) ^ ( ( (w+1)^0 ) * w )", "w^w");
+	testOrdinalCalc("test", "(w^2*2 + w*3 + 4) * (w^3*5 + w*6 + 7)", "w^5*5+w^3*6+w^2*14+w*3+4");
+	testOrdinalCalc("test", "w^w^w", "w^(w^w)");
+	testOrdinalCalc("test", "2^w^w^w", "w^(w^(w^w))");
+	testOrdinalCalc("test", "(w+1)^(w+1)^(w+1)", "w^(w^(w+1)+w^w)");
+	testOrdinalCalc("test", "(w+1)^(w+1)^(w+1)", "w^(w^(w+1)+w^w)");
+	testOrdinalCalc("test", "2^(w*2)", "w^2");
+	testOrdinalCalc("test", "4^(w^7+3)", "w^(w^6)*64");
+	testOrdinalCalc("test", "", "0");
+
+
+        // Example of testing for an expected error (if you had a budget test that reliably failed)
+        // testOrdinalCalc("Budget Test Example", "w^w^w^w", "Error: Computation too complex (budget of 1000000 operations exceeded at XXXXX).");
+        // You'd need to determine XXXXX or use a regex match for the expected error.
+    </script>
+</body>
+</html>

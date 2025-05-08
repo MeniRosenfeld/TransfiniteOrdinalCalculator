@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transfinite Ordinal Calculator</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- html2canvas library for "Copy as Image" -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" integrity="sha512-BNaRQnYJYiPSqHHDb58B0yaPfCu+Wgds8Gp/gU33kqBtgNS4tSPHuGibyoeqMV/TJlSKda6FXzoEyYGjTe+vXA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+</head>
+<body>
+    <header>
+        <h1>Transfinite Ordinal Calculator</h1>
+        <p>Convert ordinal expressions to their Cantor Normal Form (CNF)</p>
+    </header>
+
+    <main class="calculator-container">
+        <div class="input-section">
+            <label for="ordinalInput">Enter Ordinal Expression:</label>
+            <input type="text" id="ordinalInput" placeholder="e.g., (w+1)*(w^2+3)">
+            <button id="calculateButton">Calculate</button>
+        </div>
+
+        <div id="errorMessageArea" class="error-display"></div>
+
+        <div class="result-container">
+            <div class="result-section graphical-result-section">
+                <h3>Graphical Representation:</h3>
+                <div id="graphicalResultArea" class="graphical-display">
+                    <span class="placeholder-text">Result will appear here.</span>
+                </div>
+                <button id="copyImageBtn" class="utility-button">Copy as Image</button>
+            </div>
+
+            <div class="result-section linear-result-section">
+                <h3>Linear String Representation (CNF):</h3>
+                <div id="linearResultArea" class="linear-display">
+                    <span id="ordinalResultText" class="value placeholder-text">Result will appear here.</span>
+                </div>
+                <button id="copyTextBtn" class="utility-button">Copy Text</button>
+            </div>
+        </div>
+    </main>
+
+    <div class="instructions">
+        <h2>How to Use</h2>
+        <p>This tool parses expressions representing ordinal numbers and calculates their Cantor Normal Form.</p>
+        <ul>
+            <li>Use non-negative integers (e.g., <code>0</code>, <code>1</code>, <code>5</code>, <code>123</code>).</li>
+            <li>Use <code>w</code> to represent the smallest infinite ordinal, omega (ω).</li>
+            <li>Supported operations: <code>+</code> (addition), <code>*</code> (multiplication), <code>^</code> (exponentiation).</li>
+            <li>Use parentheses <code>()</code> for grouping.</li>
+            <li>Standard operator precedence is followed: <code>^</code> (highest, right-associative), then <code>*</code> (left-associative), then <code>+</code> (left-associative).</li>
+        </ul>
+        <p><strong>Examples:</strong></p>
+        <ul>
+            <li><code>1+w</code>  ➜  <code>w</code></li>
+            <li><code>w+1</code>  ➜  <code>w+1</code></li>
+            <li><code>(w+1)*2</code>  ➜  <code>w*2+1</code></li>
+            <li><code>w*w</code>  ➜  <code>w^2</code></li>
+            <li><code>2^w</code>  ➜  <code>w</code></li>
+            <li><code>w^(w+1)</code>  ➜  <code>w^(w+1)</code></li>
+            <li><code>(w^w)^w</code>  ➜  <code>w^(w^2)</code></li>
+        </ul>
+
+    </div>
+
+   <div class="about-section">
+        <h2>About This Calculator</h2>
+        <p>
+            This Ordinal Number Calculator is a tool designed to explore the fascinating world of transfinite arithmetic.
+            It takes ordinal expressions written with non-negative integers, the symbol <code>w</code> (omega),
+            standard arithmetic operators (<code>+</code>, <code>*</code>, <code>^</code>), and parentheses,
+            and computes their <a href="https://en.wikipedia.org/wiki/Cantor_normal_form" target="_blank" rel="noopener noreferrer">Cantor Normal Form (CNF)</a>.
+        </p>
+        <p>
+            The Cantor Normal Form provides a unique representation for ordinals less than epsilon-naught (ε₀).
+            This calculator implements the standard rules for ordinal addition, multiplication, and exponentiation
+            to ensure accurate CNF results.
+        </p>
+        <p>
+            <strong>Key Features:</strong>
+        </p>
+        <ul>
+            <li>Parses complex ordinal expressions.</li>
+            <li>Calculates accurate Cantor Normal Form based on established ordinal arithmetic rules.</li>
+            <li>Displays results in both a traditional linear string format and a graphical representation using mathematical symbols (ω and superscripts).</li>
+            <li>Allows copying of both the text and graphical (as image) representations.</li>
+            <li>Includes an operation budget to prevent excessively long computations for extremely complex inputs.</li>
+        </ul>
+        <p>
+            This project was developed to provide an accessible way to experiment with and visualize ordinal numbers
+            up to the first epsilon number.
+        </p>
+<p>
+Developed by Gemini 2.5 Pro, with the guidance of ordinal number enthusiast Meni Rosenfeld. You can read more about ordinal numbers here: <a href="https://fieryspinningsword.com/2021/08/20/the-unabashed-expanse-of-ordinal-numbers/" target="_blank" rel="noopener noreferrer">The Unabashed Expanse of Ordinal numbers</a>.
+</p>
+<p>
+Calculation results were compared against Claudio Kressibucher’s <a href="https://www.transfinite.ch/" target="_blank" rel="noopener noreferrer">Ordinal Calculator</a> to verify accuracy. There might still be mistakes - if you find any, please let me know!
+</p>
+        <!-- You can add more details, like your name/GitHub link if you wish -->
+        <!-- <p>Created by [Your Name/Handle]. Source code available on <a href="[Your GitHub Repo Link]" target="_blank" rel="noopener noreferrer">GitHub</a>.</p> -->
+    </div>
+
+    <footer>
+        <p>Ordinal Arithmetic Calculator</p>
+    </footer>
+
+    <!-- Ordinal Logic Scripts -->
+    <script src="ordinal_types.js"></script>
+    <script src="ordinal_comparison.js"></script>
+    <script src="ordinal_auxiliary_ops.js"></script>
+    <script src="ordinal_addition.js"></script>
+    <script src="ordinal_multiplication.js"></script>
+    <script src="ordinal_exponentiation.js"></script>
+    <script src="ordinal_parser.js"></script>
+    <script src="ordinal_calculator.js"></script> <!-- Contains calculateOrdinalCNF -->
+
+    <!-- New UI and Rendering Scripts -->
+    <script src="ordinal_graphical_renderer.js"></script>
+    <script src="script.js"></script> <!-- Main UI interaction logic -->
+</body>
+</html>
