@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>JS vs Haskell Ordinal Calculator Test</title>
+    <style>
+        body { font-family: monospace; white-space: pre; }
+        .test-case { margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 5px; }
+        .status-passed { color: green; }
+        .status-failed { color: red; font-weight: bold; }
+        .details { margin-left: 20px; font-size: 0.9em; color: #555; }
+    </style>
+</head>
+<body>
+    <h1>Ordinal Calculator Comparison: JavaScript vs Haskell (Wasm)</h1>
+    <div id="test-results"></div>
+
+    <!-- Load your existing JS Ordinal Scripts -->
+    <script src="ordinal_types.js"></script>
+    <script src="ordinal_comparison.js"></script>
+    <script src="ordinal_auxiliary_ops.js"></script>
+    <script src="ordinal_addition.js"></script>
+    <script src="ordinal_multiplication.js"></script>
+    <script src="ordinal_exponentiation.js"></script>
+    <script src="ordinal_parser.js"></script>
+    <script src="ordinal_calculator.js"></script>
+
+    <!-- Script to run the comparison tests -->
+    <script src="haskell_comparison_test.js"></script>
+</body>
+</html> 
