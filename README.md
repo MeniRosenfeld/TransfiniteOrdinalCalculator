@@ -2,7 +2,7 @@
 
 This web application provides a user-friendly interface to parse expressions representing ordinal numbers and calculates their Cantor Normal Form (CNF). It displays the result in both a traditional linear string format and a graphical representation using mathematical symbols (ω for omega and proper superscripts for exponentiation).
 
-**Live Demo:** [Link to your GitHub Pages site will go here, e.g., https://your-username.github.io/ordinal-calculator/]
+**Live Demo:** [On Github Pages](https://menirosenfeld.github.io/TransfiniteOrdinalCalculator/)
 
 ## Features
 
