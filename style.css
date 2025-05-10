@@ -42,49 +42,61 @@ header p {
 input[type="text"] {
     width: calc(100% - 24px); /* Account for padding and border */
     padding: 12px;
-    margin-bottom: 15px;
+    margin-bottom: 15px; /* This margin is fine, it's above the button-row */
     border: 1px solid #ced4da;
     border-radius: 4px;
     font-size: 1.05em;
     font-family: 'Courier New', Courier, monospace;
 }
 
-#calculateButton { /* Main calculate button */
-    display: block;
-    width: 100%;
+.button-row { /* New style for the button container */
+    display: flex;
+    gap: 10px; /* Creates space between the buttons */
+    margin-bottom: 15px; /* Space below the button row, before error message area */
+}
+
+#calculateButton {
+    flex-grow: 4; /* Will take up 4 parts of available space */
     padding: 12px;
-    background-color: #007bff; /* Bootstrap primary blue */
+    background-color: #007bff;
     color: white;
     border: none;
     border-radius: 4px;
     font-size: 1.1em;
     cursor: pointer;
     transition: background-color 0.2s ease;
-    margin-bottom: 10px; /* Space below calculate button */
+    text-align: center; /* Ensure text is centered if it wasn't already */
 }
 
 #calculateButton:hover {
     background-color: #0056b3;
 }
 
-#shareUrlButton {
-    display: block;
-    width: 100%;
-    padding: 10px 15px; /* Slightly smaller padding than main calc button */
-    background-color: #6c757d; /* Bootstrap secondary gray, like other utility buttons */
-    color: white;
-    border: none;
-    border-radius: 4px;
-    font-size: 1em; /* Slightly smaller font */
-    cursor: pointer;
-    transition: background-color 0.2s ease;
-    text-align: center; /* Ensure text is centered */
-    margin-bottom: 15px; /* Space below it before error message area */
-}
+/* 
+   The #shareUrlButton styling block that was previously removed (when it was below calculate)
+   can remain removed. We now define its flex properties and override utility-button margins.
+*/
 
-#shareUrlButton:hover {
-    background-color: #5a6268;
+#shareUrlButton {
+    flex-grow: 1; /* Will take up 1 part of available space (approx 20% if calc is 4 parts) */
+    padding: 12px; /* Match calculateButton padding for consistent height */
+    font-size: 1.0em; /* Can adjust if needed */
+    text-align: center;
+    white-space: nowrap; /* Try to prevent text wrapping on a smaller button */
+    
+    /* Overrides for .utility-button class if needed, or ensure .utility-button styles are complementary */
+    margin-top: 0; /* Override .utility-button margin-top */
+    margin-left: 0; /* Override .utility-button margin-left (gap in .button-row handles spacing) */
+    
+    /* Retain visual style from utility-button or define explicitly */
+    background-color: #6c757d; /* Explicitly define, matches .utility-button */
+    color: white; /* Explicitly define */
+    border: none; /* Explicitly define */
+    border-radius: 4px; /* Explicitly define */
+    cursor: pointer; /* Explicitly define */
+    transition: background-color 0.2s ease, color 0.2s ease; /* Explicitly define */
 }
+/* No hover for #shareUrlButton needed here if utility-button:hover is acceptable or defined above */
 
 .error-display {
     margin-top: 15px;
@@ -169,10 +181,19 @@ input[type="text"] {
     font-size: 0.9em;
     cursor: pointer;
     margin-top: 15px;
-    transition: background-color 0.2s ease;
+    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+    margin-left: 5px;
+}
+.utility-button:first-of-type {
+    margin-left: 0;
 }
 .utility-button:hover {
     background-color: #5a6268;
+}
+
+.utility-button.success {
+    background-color: #28a745;
+    color: white;
 }
 
 /* Graphical Ordinal Rendering Specific CSS */

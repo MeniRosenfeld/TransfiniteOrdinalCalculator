@@ -199,27 +199,36 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- New code for Share URL Button ---
     if (shareUrlButton) {
+        const originalShareButtonText = shareUrlButton.textContent; // Store original text
         shareUrlButton.addEventListener('click', function() {
             const currentExpression = ordinalInputElement.value;
             if (currentExpression.trim() === "") {
-                alert("Please enter an ordinal expression first to share.");
+                // Keep alert for this case, as it's user error, not copy success/fail
+                alert("Please enter an ordinal expression first to share."); 
                 return;
             }
 
             const encodedExpression = encodeURIComponent(currentExpression);
-            // Construct the base URL (protocol, host, pathname)
             const baseUrl = window.location.origin + window.location.pathname;
             const shareableUrl = `${baseUrl}?expr=${encodedExpression}`;
 
             if (navigator.clipboard && navigator.clipboard.writeText) {
                 navigator.clipboard.writeText(shareableUrl).then(() => {
-                    alert('Shareable link copied to clipboard!\n' + shareableUrl);
+                    shareUrlButton.textContent = 'Link Copied!'; // Change text
+                    shareUrlButton.classList.add('success'); // Add success class
+                    // console.log('Shareable link copied to clipboard: ' + shareableUrl); // Log instead of alert
+
+                    setTimeout(() => { // Revert button after a delay
+                        shareUrlButton.textContent = originalShareButtonText; // Revert text
+                        shareUrlButton.classList.remove('success'); // Remove success class
+                    }, 2000); // Revert after 2 seconds (2000 milliseconds)
                 }).catch(err => {
                     console.error('Failed to copy shareable link: ', err);
+                    // Keep prompt for critical fallback
                     prompt("Copy to clipboard failed. Please copy this link manually:", shareableUrl);
                 });
             } else {
-                // Fallback for older browsers (less common for this simple text copy)
+                // Keep prompt for critical fallback
                 prompt("Please copy this link manually (your browser does not support modern clipboard API):", shareableUrl);
             }
         });
