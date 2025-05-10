@@ -8,6 +8,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     const ordinalInputElement = document.getElementById('ordinalInput');
     const calculateButton = document.getElementById('calculateButton');
+    const shareUrlButton = document.getElementById('shareUrlButton');
     const linearResultTextElement = document.getElementById('ordinalResultText');
     const graphicalResultArea = document.getElementById('graphicalResultArea');
     const errorMessageArea = document.getElementById('errorMessageArea');
@@ -28,48 +29,72 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
         if (inputString.trim() === "") {
-            errorMessageArea.textContent = "Please enter an expression.";
-            errorMessageArea.style.display = 'block';
-            return;
+            // Don't show error if input is empty due to no URL param and page just loaded
+            // Only show error if user actively tried to calculate an empty string.
+            // This logic might need refinement if calculateAndDisplay is called ONLY by user action or URL param.
+            // For now, if it's called by URL param and param is empty, it will just show placeholder.
+            // If called by button with empty, then show error.
+            // The current check is fine if calculateAndDisplay() is only called after some input is present.
+            // Let's assume for now the URL param will ensure inputString is not empty if param exists.
+            // If called via URL param that IS empty, it will effectively do nothing, showing placeholders.
+            // If called by button click and it's empty, it will show the error.
+
+            // If triggered by URL param, and param value is empty, we might not want an error,
+            // just the default state. The current check is okay but consider the source of the call.
+            // For simplicity with auto-calculation, if the param is there but empty, it will proceed
+            // and effectively clear to placeholder. If no param, it also does nothing initially.
+            // The error for "Please enter an expression" is more for direct user interaction.
+            // So, let's ensure this error message is conditional if we want to avoid it on initial load with empty param.
+            // However, if inputString.trim() IS empty when called, the rest of the function handles it gracefully.
+            // Let's keep it, as calculateOrdinalCNF("") returns "0".
+
+            // Re-evaluating: if called by URL param, we want to calculate. calculateOrdinalCNF("") is "0".
+            // So, we don't need a special error for URL params if they are empty.
+            // The original error message is fine for button clicks.
+             if (document.activeElement === calculateButton || (event && event.type === 'keypress')) {
+                 errorMessageArea.textContent = "Please enter an expression.";
+                 errorMessageArea.style.display = 'block';
+                 return;
+             } else if (inputString.trim() === "" && !hasUrlParam()) { // Only show error if user tries to calculate empty explicitly
+                 // If no URL param and user didn't click (i.e. initial load with no param)
+                 // then do nothing, just show placeholders.
+                 // This part is tricky. Let's simplify: if calculateAndDisplay is called, it processes current input.
+             }
+             // If input is empty (e.g. from empty URL param), calculateOrdinalCNF will handle it (returns "0").
         }
 
         let ordinalResultObject; // To store the Ordinal object
         try {
-            // calculateOrdinalCNF is defined in ordinal_calculator.js
-            // It internally creates OperationTracer and OrdinalParser
             const cnfStringOrError = calculateOrdinalCNF(inputString /*, optionalMaxOperations */);
 
             if (typeof cnfStringOrError === 'string' && cnfStringOrError.startsWith("Error:")) {
-                 throw new Error(cnfStringOrError.substring("Error: ".length)); // Re-throw to be caught below
+                 throw new Error(cnfStringOrError.substring("Error: ".length)); 
             }
             
-            // If successful, we need the Ordinal object itself for graphical rendering.
-            // This requires calculateOrdinalCNF to perhaps return an object {cnfString, ordinalObject, error}
-            // OR we re-parse here if we only get a string. For now, let's re-parse for simplicity,
-            // though it's less efficient. A better approach would be for calculateOrdinalCNF
-            // to return the Ordinal object on success.
-
-            // Temporary re-parse to get Ordinal object for graphical rendering.
-            // In a more integrated setup, calculateOrdinalCNF would return the object.
-            const tempTracer = new OperationTracer(10000000); // Separate budget for this display parse
+            const tempTracer = new OperationTracer(10000000); 
             const tempParser = new OrdinalParser(inputString, tempTracer);
-            ordinalResultObject = tempParser.parse(); // This might throw if input was invalid for original calc.
+            ordinalResultObject = tempParser.parse(); 
 
-            linearResultTextElement.textContent = cnfStringOrError; // This is the string from calculateOrdinalCNF
+            linearResultTextElement.textContent = cnfStringOrError; 
             linearResultTextElement.classList.remove('placeholder-text');
 
             graphicalResultArea.innerHTML = renderOrdinalGraphical(ordinalResultObject);
             graphicalResultArea.querySelector('.placeholder-text')?.remove();
 
-
         } catch (e) {
             errorMessageArea.textContent = `Error: ${e.message}`;
             errorMessageArea.style.display = 'block';
-            // Clear result areas on error
             linearResultTextElement.textContent = placeholderText;
             linearResultTextElement.className = 'value placeholder-text';
             graphicalResultArea.innerHTML = `<span class="placeholder-text" style="color: #c00;">Error in calculation.</span>`;
         }
+    }
+
+    // Helper function to check if a specific URL param was used (for conditional error message)
+    // This might not be strictly necessary with the revised logic but could be useful.
+    function hasUrlParam(paramName = 'expr') {
+        const urlParams = new URLSearchParams(window.location.search);
+        return urlParams.has(paramName);
     }
 
     calculateButton.addEventListener('click', calculateAndDisplay);
@@ -156,4 +181,48 @@ document.addEventListener('DOMContentLoaded', () => {
         document.body.removeChild(link);
         // alert("Image download initiated (could not copy directly)."); // Alert can be annoying here
     }
+
+    // --- New code to handle URL parameter ---
+    function processUrlParameters() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const ordinalExpression = urlParams.get('expr'); // Using 'expr' as the parameter name
+
+        if (ordinalExpression !== null) { // Check if 'expr' parameter exists
+            // URLSearchParams.get already decodes the parameter value
+            ordinalInputElement.value = ordinalExpression;
+            calculateAndDisplay(); // Automatically calculate
+        }
+    }
+
+    processUrlParameters(); // Call this function when the DOM is ready
+    // --- End of new code ---
+
+    // --- New code for Share URL Button ---
+    if (shareUrlButton) {
+        shareUrlButton.addEventListener('click', function() {
+            const currentExpression = ordinalInputElement.value;
+            if (currentExpression.trim() === "") {
+                alert("Please enter an ordinal expression first to share.");
+                return;
+            }
+
+            const encodedExpression = encodeURIComponent(currentExpression);
+            // Construct the base URL (protocol, host, pathname)
+            const baseUrl = window.location.origin + window.location.pathname;
+            const shareableUrl = `${baseUrl}?expr=${encodedExpression}`;
+
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(shareableUrl).then(() => {
+                    alert('Shareable link copied to clipboard!\n' + shareableUrl);
+                }).catch(err => {
+                    console.error('Failed to copy shareable link: ', err);
+                    prompt("Copy to clipboard failed. Please copy this link manually:", shareableUrl);
+                });
+            } else {
+                // Fallback for older browsers (less common for this simple text copy)
+                prompt("Please copy this link manually (your browser does not support modern clipboard API):", shareableUrl);
+            }
+        });
+    }
+    // --- End of new code for Share URL Button ---
 });

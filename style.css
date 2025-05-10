@@ -60,10 +60,30 @@ input[type="text"] {
     font-size: 1.1em;
     cursor: pointer;
     transition: background-color 0.2s ease;
+    margin-bottom: 10px; /* Space below calculate button */
 }
 
 #calculateButton:hover {
     background-color: #0056b3;
+}
+
+#shareUrlButton {
+    display: block;
+    width: 100%;
+    padding: 10px 15px; /* Slightly smaller padding than main calc button */
+    background-color: #6c757d; /* Bootstrap secondary gray, like other utility buttons */
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 1em; /* Slightly smaller font */
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    text-align: center; /* Ensure text is centered */
+    margin-bottom: 15px; /* Space below it before error message area */
+}
+
+#shareUrlButton:hover {
+    background-color: #5a6268;
 }
 
 .error-display {
