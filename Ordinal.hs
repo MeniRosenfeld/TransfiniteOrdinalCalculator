@@ -4,6 +4,8 @@
 -- Written by David A. Madore around 2012-12-17 (commented and
 -- published on 2025-05-08).  Public Domain.
 
+{-# LANGUAGE ForeignFunctionInterface #-}
+
 module Ordinal (Ordinal, compareOrd, makeOrd, usualPlus, usualSum,
                 isZero, isSuccessor, successor, predecessor,
                 isFinite, finiteValue, finitePart, infinitePart,
@@ -17,14 +19,27 @@ module Ordinal (Ordinal, compareOrd, makeOrd, usualPlus, usualSum,
                 omegaSquared, omegaOmega,
                 epsilon0, epsilon1, epsilonOmega, epsilonEpsilon0,
                 zeta0, omegath0, fefermanSchuette, smallVeblen, largeVeblen,
-                bachmannHoward) where
+                bachmannHoward,
+
+                -- Wasm Exports for testing
+                allocate_memory_for_string,
+                free_memory_for_string,
+                hs_add_from_strings,
+                hs_multiply_from_strings,
+                hs_power_from_strings) where
+
 import qualified Data.List as L
+import Foreign.C.String (CString, CChar, newCString, peekCString)
+import Foreign.C.Types (CInt(..))
+import Foreign.Marshal.Alloc (mallocBytes, free)
+import Foreign.Ptr (Ptr)
+import System.IO.Unsafe (unsafePerformIO)
 
 type Ordinal = OrdImpl
 
 -- The ordinal notation system used here is essentially that of the
--- paper by W. Buchholz, “A New System of Proof-Theoretic Ordinal
--- Functions”, Ann. Pure. Appl. Logic 32 (1986) 195-207, except that
+-- paper by W. Buchholz, "A New System of Proof-Theoretic Ordinal
+-- Functions", Ann. Pure. Appl. Logic 32 (1986) 195-207, except that
 -- the collapsing functions ψ_i are only defined for i<ω.
 
 -- (To give a few examples, ψ_0(γ) equals ω^γ for γ<ε_0, but then it
@@ -462,3 +477,104 @@ examples = [zero, one, two, omega, omegaPlusOne, omegaTwo, omegaSquared, omegaOm
 -- Check that examples are in the correct order:
 checkExamples :: Bool
 checkExamples = and [compare (examples !! i) (examples !! j) == compare i j | i<-[0..length(examples)-1], j<-[0..length(examples)-1]]
+
+-- START: FFI EXPORTED FUNCTIONS AND HELPERS FOR WASM TESTING --
+
+-- Note: The following parser and stringifier are simplified stubs.
+-- For robust testing, they need to be implemented to fully handle
+-- arbitrary CNF strings and perfectly match the JS toStringCNF format.
+
+-- STUBBED CNF String to Haskell Ordinal Parser
+-- This is highly simplified and only recognizes a few specific strings.
+-- A real implementation would need a proper parser (e.g., using Parsec or similar).
+unsafeParseCNFStringToHaskellOrdinal :: String -> Ordinal
+unsafeParseCNFStringToHaskellOrdinal "0" = zero
+unsafeParseCNFStringToHaskellOrdinal "1" = one
+unsafeParseCNFStringToHaskellOrdinal "2" = two
+unsafeParseCNFStringToHaskellOrdinal "w" = omega
+unsafeParseCNFStringToHaskellOrdinal "w+1" = omegaPlusOne
+unsafeParseCNFStringToHaskellOrdinal "w*2" = omegaTwo
+unsafeParseCNFStringToHaskellOrdinal "w^2" = omegaSquared
+unsafeParseCNFStringToHaskellOrdinal "w^w" = omegaOmega
+-- Add more basic cases as needed for initial testing
+unsafeParseCNFStringToHaskellOrdinal s = error $ "Haskell STUB_PARSE: Unimplemented CNF string input: " ++ s
+
+-- STUBBED Haskell Ordinal to CNF String
+-- This is highly simplified and only recognizes a few specific ordinals.
+-- Must exactly match JS toStringCNF output format for comparison.
+haskellOrdinalToCNFString :: Ordinal -> String
+haskellOrdinalToCNFString ord
+    | ord == zero         = "0"
+    | ord == one          = "1"
+    | ord == two          = "2"
+    | ord == omega        = "w"
+    | ord == omegaPlusOne = "w+1"
+    | ord == omegaTwo     = "w*2"
+    | ord == omegaSquared = "w^2"
+    | ord == omegaOmega   = "w^w"
+    -- This default case uses the existing `cantorNormalForm` and a simple formatter.
+    -- It's a starting point but likely won't match JS `toStringCNF` for complex exponents
+    -- or specific parenthesis rules without further refinement.
+    | otherwise           = formatCNF (cantorNormalForm ord)
+    where
+        formatCNF :: [(Ordinal, Integer)] -> String
+        formatCNF [] = "0" -- Should be handled by `ord == zero`
+        formatCNF cnfList = L.intercalate " + " $ map formatTerm cnfList
+
+        formatTerm :: (Ordinal, Integer) -> String
+        formatTerm (expOrd, coeff)
+            | isZero expOrd = show coeff
+            | otherwise =
+                let expStr = haskellOrdinalToCNFString expOrd -- Recursive call
+                    baseStr = if expOrd == one then "w"
+                              else if isSimpleExponent expOrd then "w^" ++ expStr
+                                   else "w^(" ++ expStr ++ ")"
+                in if coeff == 1 then baseStr else baseStr ++ "*" ++ show coeff
+
+        isSimpleExponent :: Ordinal -> Bool
+        isSimpleExponent o = isFinite o || o == omega -- Simplified check
+
+-- Exported memory management functions for CStrings
+foreign export ccall allocate_memory_for_string :: CInt -> IO (Ptr CChar)
+allocate_memory_for_string size = mallocBytes (fromIntegral size)
+
+foreign export ccall free_memory_for_string :: Ptr CChar -> IO ()
+free_memory_for_string ptr = free ptr
+
+-- Helper to convert Haskell String to an IO CString (allocates new CString)
+toIOCString :: String -> IO CString
+toIOCString = newCString
+
+-- Helper to convert CString to an IO Haskell String
+fromIOCString :: CString -> IO String
+fromIOCString = peekCString
+
+-- Exported arithmetic functions that take and return CStrings
+foreign export ccall hs_add_from_strings :: CString -> CString -> IO CString
+hs_add_from_strings cs1 cs2 = do
+    s1 <- fromIOCString cs1
+    s2 <- fromIOCString cs2
+    let ord1 = unsafeParseCNFStringToHaskellOrdinal s1
+    let ord2 = unsafeParseCNFStringToHaskellOrdinal s2
+    let resultOrd = ord1 `usualPlus` ord2
+    toIOCString (haskellOrdinalToCNFString resultOrd)
+
+foreign export ccall hs_multiply_from_strings :: CString -> CString -> IO CString
+hs_multiply_from_strings cs1 cs2 = do
+    s1 <- fromIOCString cs1
+    s2 <- fromIOCString cs2
+    let ord1 = unsafeParseCNFStringToHaskellOrdinal s1
+    let ord2 = unsafeParseCNFStringToHaskellOrdinal s2
+    let resultOrd = ord1 `usualTimes` ord2
+    toIOCString (haskellOrdinalToCNFString resultOrd)
+
+foreign export ccall hs_power_from_strings :: CString -> CString -> IO CString
+hs_power_from_strings csBase csExp = do
+    sBase <- fromIOCString csBase
+    sExp <- fromIOCString csExp
+    let ordBase = unsafeParseCNFStringToHaskellOrdinal sBase
+    let ordExp  = unsafeParseCNFStringToHaskellOrdinal sExp
+    let resultOrd = ordBase `usualPower` ordExp
+    toIOCString (haskellOrdinalToCNFString resultOrd)
+
+-- END: FFI EXPORTED FUNCTIONS AND HELPERS --

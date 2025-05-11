@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Transfinite Ordinal Calculator</title>
+    <script src="ordinal_mapping.js"></script> <!-- Ensure this is loaded first -->
+    <style>
+        body { font-family: sans-serif; margin: 20px; }
+        .controls button { margin: 5px; padding: 10px; font-size: 16px; }
+        .display { margin-top: 20px; font-size: 18px; }
+        #history { margin-top: 20px; border-top: 1px solid #ccc; padding-top: 10px; }
+        #history div { margin-bottom: 5px; font-family: monospace; }
+    </style>
+</head>
+<body>
+    <h1>Transfinite Ordinal Calculator</h1>
+
+    <div class="display">
+        <p>Current Ordinal (α): <strong id="ordinalDisplay">0</strong></p>
+        <!-- New display element for the mapped value -->
+        <p>Mapped Value (f(α)): <strong id="mappedValueDisplay">N/A</strong></p>
+    </div>
+
+    <div class="controls">
+        <button onclick="inputDigit(0)">0</button>
+        <button onclick="inputDigit(1)">1</button>
+        <button onclick="inputDigit(2)">2</button>
+        <button onclick="inputDigit(3)">3</button>
+        <button onclick="inputDigit(4)">4</button>
+        <button onclick="inputDigit(5)">5</button>
+        <button onclick="inputDigit(6)">6</button>
+        <button onclick="inputDigit(7)">7</button>
+        <button onclick="inputDigit(8)">8</button>
+        <button onclick="inputDigit(9)">9</button>
+        <br>
+        <button onclick="inputOmega()">ω</button>
+        <button onclick="addOperation()">+</button>
+        <button onclick="multiplyOperation()">×</button>
+        <button onclick="exponentiateOperation()">^</button>
+        <br>
+        <button onclick="calculate()">=</button>
+        <button onclick="clearAll()">Clear (C)</button>
+        <button onclick="undo()" id="undoButton" disabled>Undo</button>
+    </div>
+
+    <div id="history">
+        <h2>History</h2>
+        <!-- History items will be added here -->
+    </div>
+
+    <script>
+        let currentInput = "0";
+        let currentOrdinal = 0; // Can be a number or an object {type, ...}
+        let pendingOperation = null; // { func: (a,b)=>result, operand1: ordinal }
+        let historyStack = [];
+
+        // Ensure ORDINAL_ZERO is accessible from ordinal_mapping.js
+        // If ordinal_mapping.js defines `const ORDINAL_ZERO = 0;` globally, it's fine.
+        // Otherwise, define it here if needed, ensuring it matches.
+        // const ORDINAL_ZERO = 0; (This should be available from ordinal_mapping.js)
+
+
+        function displayOrdinal(ordinal) {
+            // ... (existing displayOrdinal function)
+            if (typeof ordinal === 'number') {
+                return ordinal.toString();
+            }
+            if (ordinal.type === "sum") {
+                if (!ordinal.terms || ordinal.terms.length === 0) return "0";
+                return ordinal.terms.map(term => {
+                    let termStr = "";
+                    if (term.coefficient !== 1 || (typeof term.power === 'number' && term.power === 0)) {
+                        termStr += term.coefficient;
+                        if (!(typeof term.power === 'number' && term.power === 0)) { // no * if power is 0
+                            termStr += "×";
+                        }
+                    }
+                    if (typeof term.power === 'number' && term.power === 0) {
+                        // if coeff is 1 and power is 0, it's just 1, handled by coeff part.
+                        // if coeff > 1 and power is 0, coeff part is already there.
+                        if (term.coefficient === 1) return "1"; // should be caught by simplify
+                    } else {
+                       termStr += displayOrdinal(term.power); // ω or ω^something
+                    }
+                    return termStr;
+                }).join(" + ");
+            }
+            if (ordinal.type === "power") {
+                 // This case is mostly for displaying sub-parts like ω^α
+                if (ordinal.base === 'w') {
+                    if (typeof ordinal.exponent === 'number' && ordinal.exponent === 1) return "ω";
+                    return "ω^(" + displayOrdinal(ordinal.exponent) + ")";
+                }
+                return displayOrdinal(ordinal.base) + "^(" + displayOrdinal(ordinal.exponent) + ")";
+            }
+            return JSON.stringify(ordinal); // Fallback
+        }
+
+        function simplifyOrdinal(ordinal) {
+            // ... (existing simplifyOrdinal function)
+            if (typeof ordinal === 'number') return ordinal;
+
+            if (ordinal.type === "power") {
+                let base = simplifyOrdinal(ordinal.base);
+                let exponent = simplifyOrdinal(ordinal.exponent);
+                if (typeof exponent === 'number' && exponent === 0) return 1;
+                if (typeof exponent === 'number' && exponent === 1) return base;
+                if (typeof base === 'number' && base === 0) return 0;
+                if (typeof base === 'number' && base === 1) return 1;
+                 // Canonical form for powers is usually ω^something
+                if (base === 'w') return { type: "sum", terms: [{ power: exponent, coefficient: 1 }] };
+                return { type: "power", base: base, exponent: exponent }; // Or further simplify
+            }
+
+            if (ordinal.type === "sum") {
+                if (!ordinal.terms || ordinal.terms.length === 0) return 0;
+
+                let newTerms = ordinal.terms.map(term => ({
+                    power: simplifyOrdinal(term.power),
+                    coefficient: term.coefficient
+                })).filter(term => term.coefficient !== 0);
+
+                // Sort terms by power (descending) - requires a comparison function
+                // For now, assume they are entered in order or simplify handles it.
+                // A full CNF requires proper sorting and combining like terms.
+                // This simplification is basic for now.
+                
+                let combinedTerms = [];
+                // Basic combining: if powers are identical numbers, sum coefficients
+                // A more robust version would recursively compare complex powers.
+                newTerms.forEach(term => {
+                    if (combinedTerms.length > 0) {
+                        let lastTerm = combinedTerms[combinedTerms.length - 1];
+                        // Simplified comparison: only for number powers
+                        if (typeof lastTerm.power === 'number' && typeof term.power === 'number' && lastTerm.power === term.power) {
+                            lastTerm.coefficient += term.coefficient;
+                        } else if (JSON.stringify(lastTerm.power) === JSON.stringify(term.power)) { // Naive object comparison
+                             lastTerm.coefficient += term.coefficient;
+                        }
+                        else {
+                            combinedTerms.push(term);
+                        }
+                    } else {
+                        combinedTerms.push(term);
+                    }
+                });
+                newTerms = combinedTerms.filter(term => term.coefficient !== 0);
+
+
+                if (newTerms.length === 0) return 0;
+                if (newTerms.length === 1 && typeof newTerms[0].power === 'number' && newTerms[0].power === 0) {
+                    return newTerms[0].coefficient; // Just a number
+                }
+                return { type: "sum", terms: newTerms };
+            }
+            return ordinal; // Fallback
+        }
+
+        // New function to convert internal representation to f() function's expected format
+        function convertToFFormat(internalOrdinal) {
+            const simplified = simplifyOrdinal(internalOrdinal);
+
+            if (typeof simplified === 'number') {
+                return simplified; // Finite ordinal (0, 1, 2, ...)
+            }
+
+            // After simplification, 0 should be a number.
+            // If not, it's an empty sum or unhandled structure.
+            if (!simplified || !simplified.terms || simplified.terms.length === 0) {
+                return ORDINAL_ZERO; // from ordinal_mapping.js (which is 0)
+            }
+
+            // Case 1: The ordinal is of the form ω^k
+            // This means it's a sum with one term, coefficient 1.
+            // e.g., ω is simplified to { type: "sum", terms: [{ power: 1, coefficient: 1 }] }
+            // e.g., ω^ω is { type: "sum", terms: [{ power: {type:"sum", terms:[{power:1, coefficient:1}]}, coefficient: 1 }] }
+            if (simplified.terms.length === 1 && simplified.terms[0].coefficient === 1) {
+                const powerPart = simplified.terms[0].power;
+                // If powerPart is 0, then ω^0 = 1. simplifyOrdinal for 1 should yield number 1.
+                // If simplifyOrdinal correctly makes ω^0 into the number 1, this check is a safeguard.
+                if (typeof powerPart === 'number' && powerPart === 0) {
+                    return 1;
+                }
+                return { type: 'pow', k: convertToFFormat(powerPart) };
+            }
+
+            // Case 2: The ordinal is of the form ω^β * c + δ
+            // The first term is ω^β * c. The rest (if any) is δ.
+            const firstTerm = simplified.terms[0];
+            const betaRep = convertToFFormat(firstTerm.power);
+            const cInt = firstTerm.coefficient;
+            let deltaRep;
+
+            if (simplified.terms.length === 1) {
+                // This means it's ω^β * c (and delta is 0)
+                // e.g., ω*2 is { type: "sum", terms: [{ power: 1, coefficient: 2 }] }
+                deltaRep = ORDINAL_ZERO; // from ordinal_mapping.js (which is 0)
+            } else {
+                const remainingTerms = simplified.terms.slice(1);
+                // Construct a new sum object for the remainder, simplify it, then convert it.
+                const remainderOrdinalInternal = simplifyOrdinal({ type: "sum", terms: remainingTerms });
+                deltaRep = convertToFFormat(remainderOrdinalInternal);
+            }
+            
+            return { type: 'sum', beta: betaRep, c: cInt, delta: deltaRep };
+        }
+
+        function calculateAndDisplay() {
+            currentOrdinal = simplifyOrdinal(currentOrdinal);
+            const ordinalString = displayOrdinal(currentOrdinal);
+            document.getElementById('ordinalDisplay').textContent = ordinalString;
+
+            // Calculate and display the mapped value using f(α)
+            try {
+                const fFormattedOrdinal = convertToFFormat(currentOrdinal);
+                // The 'f' function and 'ORDINAL_ZERO' should be globally available
+                // from the included ordinal_mapping.js file.
+                const mappedValue = f(fFormattedOrdinal);
+                document.getElementById('mappedValueDisplay').textContent = mappedValue.toFixed(6); // Adjust precision as needed
+            } catch (e) {
+                console.error("Error calculating mapped value:", e);
+                console.error("Ordinal causing error:", JSON.stringify(currentOrdinal, null, 2));
+                console.error("Formatted for f:", JSON.stringify(convertToFFormat(currentOrdinal), null, 2));
+                document.getElementById('mappedValueDisplay').textContent = "Error";
+            }
+
+            updateButtons();
+        }
+        
+        // ... (inputDigit, inputOmega, addOperation, etc. functions remain the same)
+        // Make sure they call calculateAndDisplay() or equivalent to update everything.
+        // For example, the calculate() function should end with calls to update displays.
+
+        function add(ord1, ord2) {
+            // ... (existing add function)
+            ord1 = simplifyOrdinal(ord1);
+            ord2 = simplifyOrdinal(ord2);
+
+            if (typeof ord1 === 'number' && typeof ord2 === 'number') return ord1 + ord2;
+            if (typeof ord1 === 'number' && ord1 === 0) return ord2;
+            if (typeof ord2 === 'number' && ord2 === 0) return ord1;
+
+            // Basic sum: concatenate terms if both are sums, or create a sum
+            // This is a placeholder - a full addition algorithm is complex.
+            // For α + n (n finite), if α = ... + c_0, then it's ... + (c_0+n)
+            // If α = ...ω^β*c and β > 0, then α+n = α
+            // For now, simple concatenation, then simplify will try to handle it.
+            let terms1 = (typeof ord1 === 'object' && ord1.type === "sum") ? ord1.terms : [{power:0, coefficient: ord1}]; // treat number as finite part
+             if (typeof ord1 === 'number') terms1 = [{power:0, coefficient: ord1}];
+             else if (ord1.type === "sum") terms1 = ord1.terms;
+             else terms1 = [{power: ord1, coefficient: 1}];
+
+
+            let terms2 = (typeof ord2 === 'object' && ord2.type === "sum") ? ord2.terms : [{power:0, coefficient: ord2}];
+             if (typeof ord2 === 'number') terms2 = [{power:0, coefficient: ord2}];
+             else if (ord2.type === "sum") terms2 = ord2.terms;
+             else terms2 = [{power: ord2, coefficient: 1}];
+            
+            // This is a very naive addition, real ordinal addition is much more complex.
+            // Specifically, for ω + 1, terms2 (1) should be absorbed or handled correctly.
+            // If ord1 is ...ω^k*c (k>0) and ord2 is finite m, then ord1+ord2 = ord1.
+            // If ord1 is ...c0 (finite) and ord2 is finite m, then ord1+ord2 = ... (c0+m).
+            // The current simplifyOrdinal and displayOrdinal might not perfectly handle all cases from this naive sum.
+            // For now, we assume inputs that lead to simpler forms for demonstration.
+            
+            // A slightly better approach for a + n where n is finite:
+            if (typeof ord2 === 'number' && ord2 > 0) {
+                if (typeof ord1 === 'number') return ord1 + ord2;
+                if (ord1.type === "sum") {
+                    const lastTerm = ord1.terms[ord1.terms.length-1];
+                    if (typeof lastTerm.power === 'number' && lastTerm.power === 0){ // ord1 ends with finite part
+                        let newTerms = JSON.parse(JSON.stringify(ord1.terms)); // Deep copy
+                        newTerms[newTerms.length-1].coefficient += ord2;
+                        return simplifyOrdinal({type: "sum", terms: newTerms});
+                    } else { // ord1 ends with infinite part, so +n doesn't change it
+                        return ord1;
+                    }
+                }
+            }
+
+
+            return simplifyOrdinal({ type: "sum", terms: terms1.concat(terms2) });
+        }
+
+        function multiply(ord1, ord2) {
+            // Placeholder for ordinal multiplication - very complex.
+            // ω * 2 should yield ω*2.
+            // 2 * ω should yield ω.
+            // (ω+1)*2 = ω*2+1
+            ord1 = simplifyOrdinal(ord1);
+            ord2 = simplifyOrdinal(ord2);
+            if (ord1 === 0 || ord2 === 0) return 0;
+            if (ord1 === 1) return ord2;
+            if (ord2 === 1) return ord1;
+
+            // For ω * n (n finite)
+            if (JSON.stringify(ord1) === JSON.stringify(simplifyOrdinal({type:'power', base:'w', exponent:1})) && typeof ord2 === 'number') {
+                 return simplifyOrdinal({type: "sum", terms: [{power: 1, coefficient: ord2}]});
+            }
+            // For n * ω (n finite)
+            if (typeof ord1 === 'number' && JSON.stringify(ord2) === JSON.stringify(simplifyOrdinal({type:'power', base:'w', exponent:1}))) {
+                 return ord2; // n*ω = ω
+            }
+
+            console.warn("Ordinal multiplication is not fully implemented.");
+            return {type: "prod_todo", terms: [ord1, ord2]}; // Indicate not processed
+        }
+
+        function exponentiate(base, exp) {
+            // Placeholder for ordinal exponentiation - very complex.
+            // ω^2, ω^ω
+            base = simplifyOrdinal(base);
+            exp = simplifyOrdinal(exp);
+            if (exp === 0) return 1;
+            if (exp === 1) return base;
+            if (base === 0) return 0;
+            if (base === 1) return 1;
+
+            // For ω ^ n (n finite)
+             if (JSON.stringify(base) === JSON.stringify(simplifyOrdinal({type:'power', base:'w', exponent:1})) && typeof exp === 'number') {
+                 return simplifyOrdinal({type: "sum", terms: [{power: exp, coefficient: 1}]});
+            }
+             // For ω ^ ω
+             if (JSON.stringify(base) === JSON.stringify(simplifyOrdinal({type:'power', base:'w', exponent:1})) &&
+                 JSON.stringify(exp) === JSON.stringify(simplifyOrdinal({type:'power', base:'w', exponent:1}))) {
+                 return simplifyOrdinal({type: "sum", terms: [{power: exp, coefficient: 1}]}); // ω^ω
+            }
+
+            console.warn("Ordinal exponentiation is not fully implemented.");
+            return {type: "exp_todo", val: [base, exp]}; // Indicate not processed
+        }
+
+
+        function inputDigit(digit) {
+            if (currentInput === "0" || pendingOperation === "input_omega") currentInput = "";
+            currentInput += digit;
+            document.getElementById('ordinalDisplay').textContent = displayOrdinal(parseInput(currentInput));
+            pendingOperation = null; 
+        }
+
+        function inputOmega() {
+            currentInput = "ω"; // Represent ω internally for parsing
+            document.getElementById('ordinalDisplay').textContent = "ω";
+            pendingOperation = "input_omega";
+        }
+        
+        function parseInput(inputStr) {
+            if (inputStr === "ω") {
+                // ω is represented as ω^1
+                return { type: "sum", terms: [{ power: 1, coefficient: 1 }] };
+            }
+            const num = parseInt(inputStr);
+            return isNaN(num) ? 0 : num;
+        }
+
+        function applyOperation(opFunc, opName) {
+            if (pendingOperation && pendingOperation.func) { // Chain operations
+                currentOrdinal = pendingOperation.func(pendingOperation.operand1, parseInput(currentInput));
+            } else {
+                currentOrdinal = add(currentOrdinal, parseInput(currentInput)); // Default to add if no prior op or first num
+                 if(pendingOperation === "input_omega" && currentInput === "0") { // if currentInput was just reset by inputDigit after omega
+                     // This logic is getting complex. Need to handle first input properly.
+                 } else if (currentInput !== "0" || currentOrdinal !== 0) {
+                    // currentOrdinal = add(currentOrdinal, parseInput(currentInput));
+                 } else if (currentInput === "0" && currentOrdinal === 0 && historyStack.length === 0) {
+                     // First input is 0, currentOrdinal stays 0
+                 }
+            }
+             // If the first thing entered is a number, it becomes currentOrdinal.
+            if (historyStack.length === 0 && currentOrdinal === 0 && currentInput !== "0"){
+                currentOrdinal = parseInput(currentInput);
+            }
+
+
+            pendingOperation = { func: opFunc, operand1: currentOrdinal, name: opName };
+            addToHistory(displayOrdinal(currentOrdinal) + " " + opName);
+            currentInput = "0"; // Reset for next number
+            calculateAndDisplay();
+        }
+
+        function addOperation() { applyOperation(add, "+"); }
+        function multiplyOperation() { applyOperation(multiply, "×"); }
+        function exponentiateOperation() { applyOperation(exponentiate, "^"); }
+
+        function calculate() {
+            if (pendingOperation && pendingOperation.func) {
+                const operand2 = parseInput(currentInput);
+                currentOrdinal = pendingOperation.func(pendingOperation.operand1, operand2);
+                addToHistory(displayOrdinal(pendingOperation.operand1) + " " + pendingOperation.name + " " + displayOrdinal(operand2) + " = " + displayOrdinal(currentOrdinal));
+                pendingOperation = null;
+            } else {
+                 // If = is pressed without a pending operation, currentInput becomes the ordinal
+                currentOrdinal = parseInput(currentInput);
+                addToHistory("Set to " + displayOrdinal(currentOrdinal));
+            }
+            currentInput = "0"; // Or displayOrdinal(currentOrdinal).toString(); for further ops
+            calculateAndDisplay();
+        }
+
+        function clearAll() {
+            currentInput = "0";
+            currentOrdinal = 0;
+            pendingOperation = null;
+            historyStack = [];
+            document.getElementById('history').innerHTML = "<h2>History</h2>";
+            calculateAndDisplay();
+        }
+
+        function addToHistory(entry) {
+            // For simplicity, keep history limited
+            if (historyStack.length >= 10) {
+                historyStack.shift(); 
+            }
+            historyStack.push({entry, ordinal: JSON.parse(JSON.stringify(currentOrdinal)), input: currentInput, op: pendingOperation ? JSON.parse(JSON.stringify(pendingOperation)) : null});
+            
+            const historyDiv = document.getElementById('history');
+            const entryDiv = document.createElement('div');
+            entryDiv.textContent = entry;
+            // historyDiv.appendChild(entryDiv); // Naive append, better to rebuild or prepend
+            
+            // Rebuild history display
+            historyDiv.innerHTML = "<h2>History</h2>"; // Clear previous
+            historyStack.forEach(item => {
+                const itemDiv = document.createElement('div');
+                itemDiv.textContent = item.entry;
+                historyDiv.appendChild(itemDiv);
+            });
+            updateButtons();
+        }
+        
+        function undo() {
+            if (historyStack.length > 1) { // Keep at least the initial state or last action
+                historyStack.pop(); // Remove current state
+                const prevState = historyStack[historyStack.length-1];
+                currentOrdinal = JSON.parse(JSON.stringify(prevState.ordinal));
+                currentInput = prevState.input;
+                pendingOperation = prevState.op ? JSON.parse(JSON.stringify(prevState.op)) : null;
+
+                // Rebuild history display without the undone step
+                const historyDisplayDiv = document.getElementById('history');
+                historyDisplayDiv.innerHTML = "<h2>History</h2>"; // Clear previous
+                historyStack.forEach(item => {
+                    const itemDiv = document.createElement('div');
+                    itemDiv.textContent = item.entry;
+                    historyDisplayDiv.appendChild(itemDiv);
+                });
+
+
+            } else if (historyStack.length === 1) { // Undoing the very first action
+                historyStack.pop();
+                clearAll(); // Resets to initial state, which also calls calculateAndDisplay
+                return; // clearAll calls calculateAndDisplay
+            }
+            calculateAndDisplay();
+        }
+
+        function updateButtons(){
+            document.getElementById('undoButton').disabled = historyStack.length === 0;
+        }
+
+        // Initial display
+        window.onload = () => {
+            calculateAndDisplay();
+            addToHistory("Initial state: 0"); // Add initial state to history
+        };
+
+    </script>
+</body>
+</html>

@@ -42,6 +42,17 @@
                 </div>
                 <button id="copyTextBtn" class="utility-button">Copy Text</button>
             </div>
+
+            <!-- New Section for Mapped Value -->
+            <div class="result-section mapped-value-section">
+                <h3>
+                    Real Number Mapping f(α)
+                    <span class="tooltip-trigger" title="This value is from a strictly increasing function f(α) that maps ordinals α < ε₀ to real numbers. The function ensures that if α < β, then f(α) < f(β). The specific mapping used is based on a recursive definition using the Cantor Normal Form of α. Finite ordinals n map to n/(n+1). For ω^k, if k is finite, f(ω^k) = (3k-2)/k; if k ≥ ω, f(ω^k) = (25-f(k))/(9-f(k)). Sums and products are interpolated. This mapping aims to fit ε₀ into [0,5).">❓</span>
+                </h3>
+                <div id="mappedValueResultArea" class="linear-display">
+                    <span id="mappedValueText" class="value placeholder-text">Result will appear here.</span>
+                </div>
+            </div>
         </div>
     </main>
 
@@ -118,9 +129,12 @@ Calculation results were compared against Claudio Kressibucher's <a href="https:
     <script src="ordinal_exponentiation.js"></script>
     <script src="ordinal_parser.js"></script>
     <script src="ordinal_calculator.js"></script> <!-- Contains calculateOrdinalCNF -->
+    <script src="ordinal_mapping.js"></script>
 
     <!-- New UI and Rendering Scripts -->
     <script src="ordinal_graphical_renderer.js"></script>
     <script src="script.js"></script> <!-- Main UI interaction logic -->
+
+    <p title="This is a basic test tooltip.">Hover over this test paragraph.</p>
 </body>
 </html>

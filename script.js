@@ -4,6 +4,7 @@
 // renderOrdinalGraphical (from ordinal_graphical_renderer.js) are globally available.
 // Assumes Ordinal and OperationTracer (from ordinal_types.js) are available if needed directly here,
 // though mostly they are used internally by the calculator.
+// Assumes f and ORDINAL_ZERO (from ordinal_mapping.js) are globally available.
 
 document.addEventListener('DOMContentLoaded', () => {
     const ordinalInputElement = document.getElementById('ordinalInput');
@@ -15,7 +16,69 @@ document.addEventListener('DOMContentLoaded', () => {
     const copyTextBtn = document.getElementById('copyTextBtn');
     const copyImageBtn = document.getElementById('copyImageBtn');
 
+    // New element for f(alpha)
+    const mappedValueTextElement = document.getElementById('mappedValueText');
+
     const placeholderText = "Result will appear here.";
+
+    /**
+     * Converts an Ordinal class instance (from ordinal_types.js)
+     * to the format expected by the f() function in ordinal_mapping.js.
+     * @param {Ordinal} ordInstance - An instance of the Ordinal class.
+     * @returns {object|number} The representation for f().
+     */
+    function convertOrdinalInstanceToFFormat(ordInstance) {
+        if (!ordInstance || !(ordInstance instanceof Ordinal)) {
+            console.error("Invalid input to convertOrdinalInstanceToFFormat:", ordInstance);
+            // ORDINAL_ZERO should be globally available from ordinal_mapping.js
+            return typeof ORDINAL_ZERO !== 'undefined' ? ORDINAL_ZERO : 0;
+        }
+
+        if (ordInstance.isZero()) {
+            return typeof ORDINAL_ZERO !== 'undefined' ? ORDINAL_ZERO : 0;
+        }
+        if (ordInstance.isFinite()) {
+            return ordInstance.getFinitePart(); // Assumes this returns a number
+        }
+
+        // ordInstance is infinite and not zero.
+        const terms = ordInstance.terms;
+
+        // Case 1: Represents ω^k (single term, coefficient 1, exponent > 0)
+        // The Ordinal class stores ω^k as terms: [{ exponent: k_object, coefficient: 1 }]
+        // where k_object itself is an Ordinal.
+        if (terms.length === 1 && terms[0].coefficient === 1 && !terms[0].exponent.isZero()) {
+            const k_rep_for_f = convertOrdinalInstanceToFFormat(terms[0].exponent);
+            return { type: 'pow', k: k_rep_for_f };
+        }
+
+        // Case 2: Represents a sum ω^β * c + δ (or just ω^β * c if only one term with c > 1 or exp=0)
+        // The first term in CNF is ω^β * c.
+        const firstTerm = terms[0]; // This is { exponent: Ordinal, coefficient: number }
+        const beta_rep_for_f = convertOrdinalInstanceToFFormat(firstTerm.exponent);
+        const c_int_for_f = firstTerm.coefficient;
+        let delta_rep_for_f;
+
+        if (terms.length === 1) {
+            // This means it was ω^β * c (where c > 1 if β > 0, or β=0 and c is the finite value)
+            // If beta_rep_for_f is 0 (from exp being Ordinal.ZERO) and c_int_for_f is finite,
+            // then this should have been caught by ordInstance.isFinite().
+            // So, we assume beta_rep_for_f corresponds to an exponent > 0 if it's not finite.
+            delta_rep_for_f = typeof ORDINAL_ZERO !== 'undefined' ? ORDINAL_ZERO : 0;
+        } else {
+            // The rest of the terms form delta.
+            // Create a new Ordinal instance for the remainder.
+            const remainderTerms = terms.slice(1).map(t => ({
+                exponent: t.exponent.clone(ordInstance._tracer), // Clone with tracer
+                coefficient: t.coefficient
+            }));
+            // Pass the original tracer; if null, new Ordinal will handle it.
+            const remainderOrdinal = new Ordinal(remainderTerms, ordInstance._tracer); 
+            delta_rep_for_f = convertOrdinalInstanceToFFormat(remainderOrdinal);
+        }
+        
+        return { type: 'sum', beta: beta_rep_for_f, c: c_int_for_f, delta: delta_rep_for_f };
+    }
 
     function calculateAndDisplay() {
         const inputString = ordinalInputElement.value;
@@ -24,62 +87,47 @@ document.addEventListener('DOMContentLoaded', () => {
         linearResultTextElement.textContent = placeholderText;
         linearResultTextElement.className = 'value placeholder-text';
         graphicalResultArea.innerHTML = `<span class="placeholder-text">${placeholderText}</span>`;
-        errorMessageArea.textContent = ''; // Clear previous errors
+        if (mappedValueTextElement) { 
+            mappedValueTextElement.textContent = placeholderText;
+            mappedValueTextElement.className = 'value placeholder-text';
+        }
+        errorMessageArea.textContent = ''; 
         errorMessageArea.style.display = 'none';
 
-
         if (inputString.trim() === "") {
-            // Don't show error if input is empty due to no URL param and page just loaded
-            // Only show error if user actively tried to calculate an empty string.
-            // This logic might need refinement if calculateAndDisplay is called ONLY by user action or URL param.
-            // For now, if it's called by URL param and param is empty, it will just show placeholder.
-            // If called by button with empty, then show error.
-            // The current check is fine if calculateAndDisplay() is only called after some input is present.
-            // Let's assume for now the URL param will ensure inputString is not empty if param exists.
-            // If called via URL param that IS empty, it will effectively do nothing, showing placeholders.
-            // If called by button click and it's empty, it will show the error.
-
-            // If triggered by URL param, and param value is empty, we might not want an error,
-            // just the default state. The current check is okay but consider the source of the call.
-            // For simplicity with auto-calculation, if the param is there but empty, it will proceed
-            // and effectively clear to placeholder. If no param, it also does nothing initially.
-            // The error for "Please enter an expression" is more for direct user interaction.
-            // So, let's ensure this error message is conditional if we want to avoid it on initial load with empty param.
-            // However, if inputString.trim() IS empty when called, the rest of the function handles it gracefully.
-            // Let's keep it, as calculateOrdinalCNF("") returns "0".
-
-            // Re-evaluating: if called by URL param, we want to calculate. calculateOrdinalCNF("") is "0".
-            // So, we don't need a special error for URL params if they are empty.
-            // The original error message is fine for button clicks.
              if (document.activeElement === calculateButton || (event && event.type === 'keypress')) {
                  errorMessageArea.textContent = "Please enter an expression.";
                  errorMessageArea.style.display = 'block';
                  return;
-             } else if (inputString.trim() === "" && !hasUrlParam()) { // Only show error if user tries to calculate empty explicitly
-                 // If no URL param and user didn't click (i.e. initial load with no param)
-                 // then do nothing, just show placeholders.
-                 // This part is tricky. Let's simplify: if calculateAndDisplay is called, it processes current input.
              }
-             // If input is empty (e.g. from empty URL param), calculateOrdinalCNF will handle it (returns "0").
         }
 
-        let ordinalResultObject; // To store the Ordinal object
+        let ordinalResultObject; 
         try {
-            const cnfStringOrError = calculateOrdinalCNF(inputString /*, optionalMaxOperations */);
-
-            if (typeof cnfStringOrError === 'string' && cnfStringOrError.startsWith("Error:")) {
-                 throw new Error(cnfStringOrError.substring("Error: ".length)); 
-            }
-            
             const tempTracer = new OperationTracer(10000000); 
             const tempParser = new OrdinalParser(inputString, tempTracer);
             ordinalResultObject = tempParser.parse(); 
 
-            linearResultTextElement.textContent = cnfStringOrError; 
+            const cnfString = ordinalResultObject.toStringCNF();
+            linearResultTextElement.textContent = cnfString; 
             linearResultTextElement.classList.remove('placeholder-text');
 
             graphicalResultArea.innerHTML = renderOrdinalGraphical(ordinalResultObject);
             graphicalResultArea.querySelector('.placeholder-text')?.remove();
+
+            if (mappedValueTextElement && ordinalResultObject) {
+                try {
+                    const fFormattedOrdinal = convertOrdinalInstanceToFFormat(ordinalResultObject);
+                    const mappedValue = f(fFormattedOrdinal); 
+                    // Display with full precision (JavaScript's default string conversion for numbers)
+                    mappedValueTextElement.textContent = mappedValue.toString(); 
+                    mappedValueTextElement.classList.remove('placeholder-text');
+                } catch (mapErr) {
+                    console.error("Error calculating mapped value f(α):", mapErr);
+                    mappedValueTextElement.textContent = "Error";
+                    mappedValueTextElement.classList.add('placeholder-text'); 
+                }
+            }
 
         } catch (e) {
             errorMessageArea.textContent = `Error: ${e.message}`;
@@ -87,11 +135,14 @@ document.addEventListener('DOMContentLoaded', () => {
             linearResultTextElement.textContent = placeholderText;
             linearResultTextElement.className = 'value placeholder-text';
             graphicalResultArea.innerHTML = `<span class="placeholder-text" style="color: #c00;">Error in calculation.</span>`;
+            if (mappedValueTextElement) {
+                mappedValueTextElement.textContent = placeholderText;
+                mappedValueTextElement.className = 'value placeholder-text';
+            }
         }
     }
 
     // Helper function to check if a specific URL param was used (for conditional error message)
-    // This might not be strictly necessary with the revised logic but could be useful.
     function hasUrlParam(paramName = 'expr') {
         const urlParams = new URLSearchParams(window.location.search);
         return urlParams.has(paramName);
@@ -115,7 +166,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     prompt("Copy to clipboard failed. Please copy manually:", textToCopy);
                 });
             } else {
-                // Fallback for older browsers
                 const textArea = document.createElement("textarea");
                 textArea.value = textToCopy;
                 document.body.appendChild(textArea);
@@ -143,8 +193,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         html2canvas(graphicalArea, {
-            backgroundColor: '#FFFFFF', // White background for the image
-            scale: 2 // Increase scale for better resolution
+            backgroundColor: '#FFFFFF', 
+            scale: 2 
         }).then(canvas => {
             canvas.toBlob(function(blob) {
                 if (!blob) {
@@ -179,31 +229,25 @@ document.addEventListener('DOMContentLoaded', () => {
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        // alert("Image download initiated (could not copy directly)."); // Alert can be annoying here
     }
 
-    // --- New code to handle URL parameter ---
     function processUrlParameters() {
         const urlParams = new URLSearchParams(window.location.search);
-        const ordinalExpression = urlParams.get('expr'); // Using 'expr' as the parameter name
+        const ordinalExpression = urlParams.get('expr'); 
 
-        if (ordinalExpression !== null) { // Check if 'expr' parameter exists
-            // URLSearchParams.get already decodes the parameter value
+        if (ordinalExpression !== null) { 
             ordinalInputElement.value = ordinalExpression;
-            calculateAndDisplay(); // Automatically calculate
+            calculateAndDisplay(); 
         }
     }
 
-    processUrlParameters(); // Call this function when the DOM is ready
-    // --- End of new code ---
+    processUrlParameters(); 
 
-    // --- New code for Share URL Button ---
     if (shareUrlButton) {
-        const originalShareButtonText = shareUrlButton.textContent; // Store original text
+        const originalShareButtonText = shareUrlButton.textContent; 
         shareUrlButton.addEventListener('click', function() {
             const currentExpression = ordinalInputElement.value;
             if (currentExpression.trim() === "") {
-                // Keep alert for this case, as it's user error, not copy success/fail
                 alert("Please enter an ordinal expression first to share."); 
                 return;
             }
@@ -214,24 +258,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (navigator.clipboard && navigator.clipboard.writeText) {
                 navigator.clipboard.writeText(shareableUrl).then(() => {
-                    shareUrlButton.textContent = 'Link Copied!'; // Change text
-                    shareUrlButton.classList.add('success'); // Add success class
-                    // console.log('Shareable link copied to clipboard: ' + shareableUrl); // Log instead of alert
-
-                    setTimeout(() => { // Revert button after a delay
-                        shareUrlButton.textContent = originalShareButtonText; // Revert text
-                        shareUrlButton.classList.remove('success'); // Remove success class
-                    }, 2000); // Revert after 2 seconds (2000 milliseconds)
+                    shareUrlButton.textContent = 'Link Copied!'; 
+                    shareUrlButton.classList.add('success'); 
+                    setTimeout(() => { 
+                        shareUrlButton.textContent = originalShareButtonText; 
+                        shareUrlButton.classList.remove('success'); 
+                    }, 2000); 
                 }).catch(err => {
                     console.error('Failed to copy shareable link: ', err);
-                    // Keep prompt for critical fallback
                     prompt("Copy to clipboard failed. Please copy this link manually:", shareableUrl);
                 });
             } else {
-                // Keep prompt for critical fallback
                 prompt("Please copy this link manually (your browser does not support modern clipboard API):", shareableUrl);
             }
         });
     }
-    // --- End of new code for Share URL Button ---
 });
