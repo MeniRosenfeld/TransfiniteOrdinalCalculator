@@ -21,6 +21,111 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const placeholderText = "Result will appear here.";
 
+    // Tooltip logic
+    const tooltipTrigger = document.querySelector('.tooltip-trigger');
+    console.log('Tooltip Trigger Element:', tooltipTrigger); 
+    let customTooltipElement = null; 
+
+    if (tooltipTrigger) {
+        console.log('Tooltip trigger found. Attaching listeners.'); 
+        const tooltipText = tooltipTrigger.getAttribute('data-tooltip');
+        console.log('Tooltip text from data-attribute:', tooltipText); 
+
+        tooltipTrigger.addEventListener('mouseover', (event) => {
+            console.log('Mouseover event fired.'); 
+            if (!tooltipText) {
+                console.log('No tooltip text, exiting mouseover.'); 
+                return;
+            }
+
+            if (!customTooltipElement) {
+                customTooltipElement = document.createElement('div');
+                // Apply class FIRST, then set content, then append
+                customTooltipElement.className = 'custom-tooltip'; 
+                customTooltipElement.textContent = tooltipText; 
+                document.body.appendChild(customTooltipElement);
+                console.log('Custom tooltip element CREATED, class set, content set, and appended.');
+            } else {
+                customTooltipElement.textContent = tooltipText; // Update text if reused
+                customTooltipElement.className = 'custom-tooltip'; // Ensure class is still there
+                console.log('Custom tooltip element REUSED, content set, class ensured.');
+            }
+            
+            // Ensure it's part of the layout flow but invisible for measurement
+            customTooltipElement.style.visibility = 'hidden'; // Use hidden, not 'visible' with opacity 0 yet
+            customTooltipElement.style.opacity = '0';
+            customTooltipElement.style.position = 'absolute'; // Make sure position is absolute for offsetWidth to work correctly for non-static elements
+            customTooltipElement.style.left = '-9999px'; 
+            customTooltipElement.style.top = '-9999px';
+            // Explicitly set the width via JS to see if it helps the measurement
+            customTooltipElement.style.width = '250px'; 
+            console.log('Tooltip prepped for measurement: JS width set to 250px, class applied.');
+
+
+            requestAnimationFrame(() => {
+                const rect = tooltipTrigger.getBoundingClientRect();
+                // Read dimensions *after* being in DOM and styled (hopefully)
+                const tooltipWidth = customTooltipElement.offsetWidth;
+                const tooltipHeight = customTooltipElement.offsetHeight;
+                
+                console.log('--- Inside requestAnimationFrame ---');
+                console.log('Trigger rect:', JSON.stringify(rect));
+                console.log('Tooltip measured: width=', tooltipWidth, 'height=', tooltipHeight);
+                console.log('Tooltip computed style width:', getComputedStyle(customTooltipElement).width);
+
+
+                if (tooltipWidth === 0 || tooltipHeight === 0 || tooltipWidth > 800 /* sanity check for still being body width */) {
+                    console.error(`Tooltip dimensions problematic (w:${tooltipWidth}, h:${tooltipHeight}). Hiding. Check CSS.`);
+                    customTooltipElement.style.visibility = 'hidden'; // Ensure it's hidden if dimensions are bad
+                    return;
+                }
+
+                const Gutter = 5; // Space between trigger and tooltip
+                let newLeft = rect.left + window.scrollX;
+                let newTop = rect.top + window.scrollY - tooltipHeight - Gutter; // Position above trigger
+
+                // Adjust if tooltip goes off-screen to the top
+                if (newTop < window.scrollY) {
+                    newTop = rect.bottom + window.scrollY + Gutter; // Position below trigger
+                }
+
+                // Adjust if tooltip goes off-screen to the left
+                if (newLeft < window.scrollX) {
+                    newLeft = window.scrollX + Gutter;
+                }
+
+                // Adjust if tooltip goes off-screen to the right
+                const viewportWidth = document.documentElement.clientWidth;
+                if (newLeft + tooltipWidth > viewportWidth + window.scrollX) {
+                    newLeft = viewportWidth + window.scrollX - tooltipWidth - Gutter;
+                }
+
+                customTooltipElement.style.left = `${newLeft}px`;
+                customTooltipElement.style.top = `${newTop}px`;
+                customTooltipElement.style.visibility = 'visible';
+                customTooltipElement.style.opacity = '1';
+                customTooltipElement.classList.add('show'); // If you use the .show class for transitions
+                
+                console.log('Tooltip positioned: left=', customTooltipElement.style.left, 'top=', customTooltipElement.style.top);
+                console.log('Tooltip final state: visibility=', getComputedStyle(customTooltipElement).visibility, 'opacity=', getComputedStyle(customTooltipElement).opacity);
+                console.log('--- Exiting requestAnimationFrame ---');
+            });
+        });
+
+        tooltipTrigger.addEventListener('mouseout', () => {
+            console.log('Mouseout event fired.');
+            if (customTooltipElement) {
+                customTooltipElement.style.visibility = 'hidden';
+                customTooltipElement.style.opacity = '0';
+                // Optional: reset conceptual classes
+                // customTooltipElement.classList.remove('tooltip-above', 'tooltip-below');
+                console.log('Tooltip set to hidden.');
+            }
+        });
+    } else {
+        console.log('Tooltip trigger element NOT found.');
+    }
+
     /**
      * Converts an Ordinal class instance (from ordinal_types.js)
      * to the format expected by the f() function in ordinal_mapping.js.

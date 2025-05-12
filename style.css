@@ -349,3 +349,82 @@ footer {
     font-size: 0.9em;
     color: #6c757d;
 }
+
+/* This rule seems to be missing from style.css */
+.custom-tooltip {
+    position: absolute;
+    z-index: 1070; 
+    display: block;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.15s linear, visibility 0.15s linear;
+    padding: 0.5rem 0.75rem; 
+    color: #fff; 
+    background-color: #333; 
+    border: 1px solid #000; 
+    border-radius: 0.25rem; 
+    box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.1); 
+    max-width: 300px; /* Adjust as needed */
+    min-width: 150px; /* Adjust as needed */
+    /* The following might be set by JS, but good to have defaults if needed */
+    /* left: 0; */
+    /* top: 0; */
+}
+
+.custom-tooltip.show {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Styling for the new compact mapped value display */
+.mapped-value-inline-display {
+    display: flex;
+    align-items: center; /* Vertically align items */
+    gap: 8px; /* Space between the number and the question mark */
+    padding: 6px 0; /* Compact vertical padding */
+    margin-top: 12px; /* Space above this section */
+    margin-bottom: 12px; /* Space below this section, before errors/results */
+    /* Optional: add a light border or background if you want to subtly box it */
+    /* border: 1px solid #e0e0e0; */
+    /* border-radius: 4px; */
+    /* padding-left: 8px; */
+    /* padding-right: 8px; */
+}
+
+/*
+   The #mappedValueText span will have classes 'value' and 'placeholder-text'
+   applied by JavaScript.
+*/
+#mappedValueText {
+    font-size: 1.05em; /* Adjust size as needed */
+    /* color: #155724; */ /* This color is applied when it's a value (not placeholder) */
+    padding: 4px 8px; /* Compact padding */
+    background-color: #f0f0f0; /* Light background for the number itself */
+    border-radius: 3px;
+    min-width: 60px; /* Ensure it has some width even when placeholder */
+    text-align: left; /* Or 'right' if you prefer numbers aligned to the right */
+    line-height: 1.4;
+}
+
+/* Styles for when it's a placeholder (JS adds/removes 'placeholder-text' class) */
+#mappedValueText.placeholder-text {
+    /* color: #6c757d; */ /* Inherited from existing .placeholder-text */
+    /* font-style: italic; */ /* Inherited from existing .placeholder-text */
+    background-color: transparent; /* No background for placeholder text */
+    padding: 4px 0; /* Adjust padding for placeholder if needed */
+}
+
+/* Ensure the .value class (added by JS) provides the correct text color for the actual number */
+#mappedValueText.value {
+    color: #155724; /* Success text color for the calculated value */
+}
+
+
+.mapped-value-inline-display .tooltip-trigger {
+    font-size: 1.1em; /* Adjust question mark size if desired */
+    cursor: pointer;
+    line-height: 1; /* Helps with alignment if font size is different */
+    align-self: center; /* Ensure it's centered with the text box */
+}

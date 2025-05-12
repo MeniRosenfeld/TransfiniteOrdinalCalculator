@@ -19,12 +19,14 @@
  *    where β = ωξ+r (r finite part of β, B = ωξ).
  *    ξ = B.divideByOmega().
  *
- * 7. α infinite, β = m (finite, m>1):
- *    α^m = α * α * ... * α (m times) - Iterated multiplication.
+ * 7. α infinite, β = m (finite integer, m ≥ 2, as m=0,1 handled by Rules 1 & 4):
+ *    - If α = ω^a * c (single term where 'a' is the exponent of ω and 'c' is the coefficient),
+ *      then α^m = ω^(a*m) * c. (Optimized path)
+ *    - Otherwise (if α is a sum of terms), α^m is calculated by iterated multiplication: α * α * ... * α (m times).
  *
  * 8. α infinite, β infinite (B+m, B limit part != 0):
  *    α^β = α^(B+m) = α^B * α^m
- *    α^m is by Rule 7 (iterated multiplication).
+ *    α^m is by Rule 7 (iterated multiplication or optimized).
  *    α^B: Let α = ω^α₁*c₁ + R_α (α₁ leading exp of α).
  *         Then α^B = ω^(α₁·B) (c₁ and R_α are absorbed). α₁·B is ordinal multiplication.
  */
@@ -95,12 +97,22 @@ Ordinal.prototype.power = function(exponentOrdinal) {
             // This can happen if exponent was like "w^0*5" which is finite.
             // Fallback to Rule 5 logic if B_exp is zero.
              if (this._tracer) this._tracer.consume();
-            return new Ordinal(Math.pow(k, r_val), this._tracer);
+            // Ensure resultVal is safe
+            const resultVal_k_pow_r = Math.pow(k, r_val);
+            if (!Number.isSafeInteger(resultVal_k_pow_r) || resultVal_k_pow_r < 0) {
+                throw new Error(`Finite exponentiation result ${resultVal_k_pow_r} for k^r is too large or invalid.`);
+            }
+            return new Ordinal(resultVal_k_pow_r, this._tracer);
         }
         
         if (this._tracer) this._tracer.consume(2); // For divideByOmega and k^r
         const xi_exp = B_exp.divideByOmega(); // ξ = B/ω
-        const k_pow_r_ord = new Ordinal(Math.pow(k, r_val), this._tracer); // k^r
+        
+        const k_pow_r_finite_val = Math.pow(k, r_val);
+        if (!Number.isSafeInteger(k_pow_r_finite_val) || k_pow_r_finite_val < 0) {
+            throw new Error(`Finite exponentiation result ${k_pow_r_finite_val} for k^r in finite^infinite case is too large or invalid.`);
+        }
+        const k_pow_r_ord = new Ordinal(k_pow_r_finite_val, this._tracer); // k^r
 
         // Result is (ω^ξ) * k^r
         const omega_pow_xi = new Ordinal([{ exponent: xi_exp, coefficient: 1 }], this._tracer);
@@ -109,17 +121,43 @@ Ordinal.prototype.power = function(exponentOrdinal) {
         return omega_pow_xi.multiply(k_pow_r_ord);
     }
 
-    // Rule 7: α infinite, β = m (finite, m > 1). Iterated multiplication.
+    // Rule 7: α infinite, β = m (finite integer, m ≥ 2, as m=0,1 handled by Rules 1 & 4).
     if (!base.isFinite() && exponent.isFinite()) {
         const m = exponent.getFinitePart();
-        if (m === 0 || m === 1) { /* Already handled */ }
-        if (m < 0) throw new Error("Finite exponent cannot be negative."); // Should be caught by Ordinal constructor
+        // Note: m=0 (Rule 1) and m=1 (Rule 4) should have been handled by top-level checks.
+        // Thus, if execution reaches here, m should be >= 2 (or an error if m < 0).
 
+        if (m < 0) { // Should ideally be caught by Ordinal constructor or earlier validation
+            throw new Error("Finite exponent cannot be negative in ordinal exponentiation.");
+        }
+        // If m < 2 (i.e. m=0 or m=1), those cases are already handled by Rules 1 and 4.
+        // The iterated multiplication loop below would also correctly handle them if it were reached.
+
+        // OPTIMIZATION for α = (ω^a * c) where exponent m is a finite integer >= 2.
+        // Formula: (ω^a * c)^m = ω^(a*m) * c.
+        if (base.terms.length === 1) {
+            // Since base is infinite and has one term ω^a * c, 'a' (base.terms[0].exponent) must be > 0.
+            const baseLeadTerm = base.terms[0];
+            const a_ord = baseLeadTerm.exponent;    // Exponent of ω in the base (an Ordinal)
+            const c_val = baseLeadTerm.coefficient; // Coefficient (a number)
+
+            if (this._tracer) this._tracer.consume(1); // Cost for this optimized path setup
+
+            const m_as_ordinal = new Ordinal(m, this._tracer); // Convert m to an Ordinal for multiplication
+            
+            // Calculate the new exponent for ω: a_ord * m_as_ordinal
+            const new_omega_exponent = a_ord.multiply(m_as_ordinal); 
+            
+            return new Ordinal([{ exponent: new_omega_exponent, coefficient: c_val }], this._tracer);
+        }
+        // else, base is a sum (e.g., ω+1), fall through to iterated multiplication for finite m (m >= 2 here).
+
+        // Iterated multiplication for sum-bases with finite exponent m.
+        // (Given prior rules, m will be >= 2 if this part of Rule 7 is reached for a sum-base).
+        // The loop correctly handles m=0 (result=ONE), m=1 (result=base) if it were to be called with such m.
         let result = Ordinal.ONEStatic().clone(this._tracer);
-        // If m is very large, this loop can exceed budget quickly.
-        // Each multiplication consumes from the budget.
         for (let i = 0; i < m; i++) {
-            if (this._tracer) this._tracer.consume(); // Consume for the multiply operation itself
+            if (this._tracer) this._tracer.consume(); // Consume for the multiply operation setup/overhead
                                                      // The multiply method will consume more internally.
             result = result.multiply(base);
         }

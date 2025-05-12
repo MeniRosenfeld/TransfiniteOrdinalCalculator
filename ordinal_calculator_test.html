@@ -157,6 +157,7 @@
 	testOrdinalCalc("test", "(w+1)^(w+1)^(w+1)", "w^(w^(w+1)+w^w)");
 	testOrdinalCalc("test", "2^(w*2)", "w^2");
 	testOrdinalCalc("test", "4^(w^7+3)", "w^(w^6)*64");
+    testOrdinalCalc("test", "(w^(w^w+1)*2+3)^(w^(w^2+w*2)*3+2)", "w^(w^(w^2+w*2)*3+w^w*2+1)*2+w^(w^(w^2+w*2)*3+w^w+1)*6+w^(w^(w^2+w*2)*3)*3");
 	testOrdinalCalc("test", "", "0");
 
 

@@ -24,6 +24,13 @@
             </div>
         </div>
 
+        <!-- New Mapped Value Display Area -->
+        <div id="mappedValueDisplayArea" class="mapped-value-inline-display">
+            <span class="tooltip-trigger" 
+                  data-tooltip="This value is from a strictly increasing function f(α) that maps ordinals α < ε₀ to real numbers. The function ensures that if α < β, then f(α) < f(β). The specific mapping used is based on a recursive definition using the Cantor Normal Form of α. Finite ordinals n map to n/(n+1). For ω^k, if k is finite, f(ω^k) = (3k-2)/k; if k ≥ ω, f(ω^k) = (25-f(k))/(9-f(k)). Sums and products are interpolated. This mapping aims to fit ε₀ into [0,5).">❓</span>
+            <span id="mappedValueText" class="value placeholder-text">Real number representation of the ordinal.</span>
+        </div>
+
         <div id="errorMessageArea" class="error-display"></div>
 
         <div class="result-container">
@@ -41,17 +48,6 @@
                     <span id="ordinalResultText" class="value placeholder-text">Result will appear here.</span>
                 </div>
                 <button id="copyTextBtn" class="utility-button">Copy Text</button>
-            </div>
-
-            <!-- New Section for Mapped Value -->
-            <div class="result-section mapped-value-section">
-                <h3>
-                    Real Number Mapping f(α)
-                    <span class="tooltip-trigger" title="This value is from a strictly increasing function f(α) that maps ordinals α < ε₀ to real numbers. The function ensures that if α < β, then f(α) < f(β). The specific mapping used is based on a recursive definition using the Cantor Normal Form of α. Finite ordinals n map to n/(n+1). For ω^k, if k is finite, f(ω^k) = (3k-2)/k; if k ≥ ω, f(ω^k) = (25-f(k))/(9-f(k)). Sums and products are interpolated. This mapping aims to fit ε₀ into [0,5).">❓</span>
-                </h3>
-                <div id="mappedValueResultArea" class="linear-display">
-                    <span id="mappedValueText" class="value placeholder-text">Result will appear here.</span>
-                </div>
             </div>
         </div>
     </main>
@@ -135,6 +131,5 @@ Calculation results were compared against Claudio Kressibucher's <a href="https:
     <script src="ordinal_graphical_renderer.js"></script>
     <script src="script.js"></script> <!-- Main UI interaction logic -->
 
-    <p title="This is a basic test tooltip.">Hover over this test paragraph.</p>
 </body>
 </html>
