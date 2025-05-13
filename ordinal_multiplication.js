@@ -1,11 +1,50 @@
 // ordinal_multiplication.js
 
-// Assumes Ordinal class, its helpers (isZero, isFinite, getLeadingTerm, getRest, etc.),
-// Ordinal.prototype.add, Ordinal.prototype.compareTo are defined.
+// Assumes CNFOrdinal class, its helpers (isZero, isFinite, getLeadingTerm, getRest, etc.),
+// CNFOrdinal.prototype.add, CNFOrdinal.prototype.compareTo are defined.
+// Assumes EpsilonNaughtOrdinal class is defined.
+
+/**
+ * General ordinal multiplication function.
+ * Dispatches to the correct multiplication method based on the types of the operands.
+ * @param {Ordinal} alpha - The first ordinal.
+ * @param {Ordinal} beta - The second ordinal.
+ * @returns {Ordinal} The product of alpha and beta.
+ */
+function multiplyOrdinals(alpha, beta) {
+    if (alpha instanceof EpsilonNaughtOrdinal) {
+        if (beta instanceof EpsilonNaughtOrdinal) {
+            // e_0 * e_0 is unsupported
+            throw new Error("e_0 * e_0 is unsupported in this implementation.");
+        } else if (beta instanceof CNFOrdinal) {
+            // e_0 * x (where x is CNFOrdinal)
+            if (beta.isZero()) return CNFOrdinal.ZEROStatic().clone(alpha._tracer); // e_0 * 0 = 0
+            if (beta.equals(CNFOrdinal.ONEStatic())) return new EpsilonNaughtOrdinal(alpha._tracer); // e_0 * 1 = e_0
+            // e_0 * m (m finite > 1) or e_0 * a (a infinite) are unsupported
+            throw new Error("e_0 * CNFOrdinal (where CNFOrdinal is not 0 or 1) is unsupported in this implementation.");
+        } else {
+            throw new Error("Unsupported ordinal type for multiplication with EpsilonNaughtOrdinal.");
+        }
+    } else if (alpha instanceof CNFOrdinal) {
+        if (beta instanceof EpsilonNaughtOrdinal) {
+            // x * e_0 (where x is CNFOrdinal)
+            if (alpha.isZero()) return CNFOrdinal.ZEROStatic().clone(alpha._tracer); // 0 * e_0 = 0
+            // For any other CNFOrdinal x, x * e_0 = e_0
+            return new EpsilonNaughtOrdinal(alpha._tracer);
+        } else if (beta instanceof CNFOrdinal) {
+            // CNFOrdinal * CNFOrdinal
+            return alpha.multiplyCNF(beta); // Call the original CNF-specific multiplication
+        } else {
+            throw new Error("Unsupported ordinal type for multiplication with CNFOrdinal.");
+        }
+    } else {
+        throw new Error("Unsupported first ordinal type for multiplication.");
+    }
+}
 
 /**
  * Multiplies this ordinal by another ordinal. ( α · β )
- * Returns a new Ordinal instance representing the product.
+ * Returns a new CNFOrdinal instance representing the product.
  * Implements accurate multiplication using right-distributivity:
  * α·β = α · (Σ β_i) = Σ (α · β_i), where β_i are terms of β.
  *
@@ -28,100 +67,90 @@
  *          n·k' is BigInt multiplication.
  *          The sum (A·k') + (n·k') is ordinal addition.
  */
-Ordinal.prototype.multiply = function(otherOrdinal) {
-    if (!(otherOrdinal instanceof Ordinal)) {
-        throw new Error("Cannot multiply Ordinal with non-Ordinal type.");
+CNFOrdinal.prototype.multiplyCNF = function(otherOrdinal) {
+    if (!(otherOrdinal instanceof CNFOrdinal)) {
+        throw new Error("Cannot multiply CNFOrdinal with non-CNFOrdinal type.");
     }
-    if (this._tracer) this._tracer.consume(); // Base consumption for the multiply call
+    if (this._tracer) this._tracer.consume();
 
     // Case 1: α = 0 or β = 0
     if (this.isZero() || otherOrdinal.isZero()) {
-        return Ordinal.ZEROStatic().clone(this._tracer);
+        return CNFOrdinal.ZEROStatic().clone(this._tracer);
     }
 
     // Case 2: α = 1
-    if (this.equals(Ordinal.ONEStatic())) {
+    if (this.equals(CNFOrdinal.ONEStatic())) {
         return otherOrdinal.clone();
     }
 
     // Case 3: β = 1
-    if (otherOrdinal.equals(Ordinal.ONEStatic())) {
+    if (otherOrdinal.equals(CNFOrdinal.ONEStatic())) {
         return this.clone();
     }
 
-    // --- Implementation of α·β = Σ (α · β_i) ---
-    let totalSum = Ordinal.ZEROStatic().clone(this._tracer); // Accumulator for the sum
+    let totalSum = CNFOrdinal.ZEROStatic().clone(this._tracer);
 
-    // Iterate through each term of `otherOrdinal` (β_i)
     for (const betaTerm of otherOrdinal.terms) {
-        // betaTerm is { exponent: Ordinal, coefficient: BigInt }
-        let productTerm; // This will be α · β_i
+        let productTerm;
 
-        // Let α = this.
-        // Deconstruct α into A (limit part) and n (finite part BigInt value)
         const A_alpha = this.getLimitPart();
-        const n_alpha_val = this.getFinitePart(); // This is a BigInt
+        const n_alpha_val = this.getFinitePart();
 
         if (!betaTerm.exponent.isZero()) {
-            // --- Sub-rule 1: β_i = ω^e*k (infinite term) ---
-            // (A+n) · (ω^e*k) = A · (ω^e*k)
-            // If A = 0 (α is finite n_alpha_val), then n_alpha_val · (ω^e*k) = ω^e*k (for n_alpha_val > 0n)
-            // If A != 0, (A = ω^α₁*c₁ + R_A), then A · (ω^e*k) = ω^(α₁+e)*k
-            
-            if (A_alpha.isZero()) { // `this` (α) is finite (n_alpha_val)
-                if (n_alpha_val === 0n) { // Should have been caught by this.isZero()
-                    productTerm = Ordinal.ZEROStatic().clone(this._tracer);
-                } else { // n_alpha_val > 0n. n_alpha_val * (ω^e*k) = ω^e*k
-                    productTerm = new Ordinal([{ // Create the single term ordinal
+            if (A_alpha.isZero()) {
+                if (n_alpha_val === 0n) {
+                    productTerm = CNFOrdinal.ZEROStatic().clone(this._tracer);
+                } else {
+                    productTerm = new CNFOrdinal([{
                         exponent: betaTerm.exponent.clone(this._tracer),
-                        coefficient: betaTerm.coefficient // coefficient from betaTerm is already BigInt
+                        coefficient: betaTerm.coefficient
                     }], this._tracer);
                 }
-            } else { // `this` (α) is infinite (A_alpha + n_alpha_val)
-                const leadingTerm_A_alpha = A_alpha.getLeadingTerm(); // Coefficient here is BigInt
-                const alpha1 = leadingTerm_A_alpha.exponent; // This is an Ordinal object
+            } else {
+                const leadingTerm_A_alpha = A_alpha.getLeadingTerm();
+                const alpha1 = leadingTerm_A_alpha.exponent;
 
-                // New exponent for productTerm: α₁ + e (ordinal addition)
-                if (this._tracer) this._tracer.consume(); // For the exponent addition
+                if (this._tracer) this._tracer.consume();
                 const newExponent = alpha1.add(betaTerm.exponent);
 
-                productTerm = new Ordinal([{
+                productTerm = new CNFOrdinal([{
                     exponent: newExponent,
-                    coefficient: betaTerm.coefficient // Coefficient comes from β_i, already BigInt
+                    coefficient: betaTerm.coefficient
                 }], this._tracer);
             }
        } else {
-            // --- Sub-rule 2: β_i = k' (finite term, coefficient of β_i) ---
-            // (A+n) · k'  OR  (PurelyFinite) · k'
-            const k_prime = betaTerm.coefficient; // This is a BigInt
+            const k_prime = betaTerm.coefficient;
 
-            if (A_alpha.isZero()) { // `this` (α) is finite (n_alpha_val)
-                // n_alpha_val · k' (BigInt multiplication)
-                productTerm = new Ordinal(n_alpha_val * k_prime, this._tracer);
-            } else { // `this` (α) is infinite (A_alpha + n_alpha_val)
-                     // Rule: (ω^α₁*c₁ + R)·k' = ω^α₁*(c₁*k') + R
-                     // where R is the *entire* rest of the original 'this' ordinal.
-
-                const original_alpha_terms = this.terms.map(t => ({ // Clone all terms of 'this'
+            if (A_alpha.isZero()) {
+                productTerm = new CNFOrdinal(n_alpha_val * k_prime, this._tracer);
+            } else {
+                const original_alpha_terms = this.terms.map(t => ({
                     exponent: t.exponent.clone(this._tracer),
-                    coefficient: t.coefficient // coefficient is already BigInt
+                    coefficient: t.coefficient
                 }));
 
                 if (original_alpha_terms.length > 0) {
-                    // Multiply coefficient of the leading term
-                    original_alpha_terms[0].coefficient *= k_prime; // BigInt multiplication
+                    original_alpha_terms[0].coefficient *= k_prime;
                 }
-                // The rest of the terms, including the original finite part of 'this', remain unchanged.
-                productTerm = new Ordinal(original_alpha_terms, this._tracer);
+                productTerm = new CNFOrdinal(original_alpha_terms, this._tracer);
             }
         }
         
-        // Add this (α · β_i) to the totalSum
-        if (this._tracer) this._tracer.consume(); // For the main sum accumulation
+        if (this._tracer) this._tracer.consume();
         totalSum = totalSum.add(productTerm);
     }
 
     return totalSum;
+};
+
+// Add a general multiply method to CNFOrdinal prototype that calls the dispatcher
+CNFOrdinal.prototype.multiply = function(otherOrdinal) {
+    return multiplyOrdinals(this, otherOrdinal);
+};
+
+// Add a general multiply method to EpsilonNaughtOrdinal prototype that calls the dispatcher
+EpsilonNaughtOrdinal.prototype.multiply = function(otherOrdinal) {
+    return multiplyOrdinals(this, otherOrdinal);
 };
 
 // ordinal_multiplication.js

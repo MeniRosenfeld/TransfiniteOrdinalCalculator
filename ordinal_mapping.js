@@ -10,6 +10,7 @@ const memo = new Map();
 //   - c_int: JavaScript number for c (c >= 1). This 'c' is the coefficient from the CNF term.
 //   - delta_rep: ordinal representation for δ (use ORDINAL_ZERO if no remainder).
 //   - It is assumed that δ < ω^β.
+// - ε₀: The string "E0_TYPE"
 
 const ORDINAL_ZERO = 0n;
 const ORDINAL_ONE = 1n;
@@ -59,10 +60,25 @@ function bigIntReplacer(key, value) {
     if (typeof value === 'bigint') {
         return value.toString() + 'n'; // e.g., 123n becomes "123n"
     }
+    // Ensure E0_TYPE which is a string is preserved as is by JSON.stringify for memoKey
+    if (value === "E0_TYPE") {
+        return "E0_TYPE";
+    }
     return value;
 }
 
 function f(alphaRep) {
+    // Handle E0_TYPE first
+    if (alphaRep === "E0_TYPE") {
+        // No memoization for E0_TYPE as it's a simple constant return.
+        // Or, if memoization is desired:
+        // if (memo.has("E0_TYPE")) return memo.get("E0_TYPE");
+        // const e0_val = 5.0;
+        // memo.set("E0_TYPE", e0_val);
+        // return e0_val;
+        return 5.0; // f(ε₀) = 5.0
+    }
+
     if (typeof alphaRep !== 'bigint' && (typeof alphaRep !== 'object' || alphaRep === null || !alphaRep.type)) {
         throw new TypeError(`Invalid ordinal representation type: ${typeof alphaRep} for ${JSON.stringify(alphaRep, bigIntReplacer)}`);
     }
@@ -182,6 +198,8 @@ if (typeof require !== 'undefined' && require.main === module) { // Basic check 
     console.log(`f(0) = ${f(ORDINAL_ZERO)}`); // Expected: 0.0
     console.log(`f(1) = ${f(ORDINAL_ONE)}`); // Expected: 0.5
     console.log(`f(2) = ${f(2n)}`); // Expected: 2/3 = 0.666...
+
+    console.log(`f(ε₀) = ${f("E0_TYPE")}`); // Expected: 5.0
 
     console.log(`f(ω^0) = ${f({ type: 'pow', k: ORDINAL_ZERO })}`); // Expected: 0.5 (f(1))
 

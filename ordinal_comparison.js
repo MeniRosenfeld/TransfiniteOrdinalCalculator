@@ -1,16 +1,18 @@
 // ordinal_comparison.js
 
-// Assumes Ordinal class is defined (e.g., from ordinal_types.js)
-// This file adds the compareTo method to Ordinal.prototype.
+// Assumes CNFOrdinal and EpsilonNaughtOrdinal classes are defined.
 
 /**
- * Compares this ordinal to another ordinal.
- * @param {Ordinal} otherOrdinal The ordinal to compare against.
+ * Compares this CNFOrdinal to another ordinal.
+ * @param {CNFOrdinal | EpsilonNaughtOrdinal} otherOrdinal The ordinal to compare against.
  * @returns {number} -1 if this < otherOrdinal, 0 if this == otherOrdinal, 1 if this > otherOrdinal.
  */
-Ordinal.prototype.compareTo = function(otherOrdinal) {
-    if (!(otherOrdinal instanceof Ordinal)) {
-        throw new Error("Cannot compare Ordinal with non-Ordinal type.");
+CNFOrdinal.prototype.compareTo = function(otherOrdinal) {
+    if (otherOrdinal instanceof EpsilonNaughtOrdinal) {
+        return -1; // Any CNFOrdinal (less than e_0) is less than e_0.
+    }
+    if (!(otherOrdinal instanceof CNFOrdinal)) {
+        throw new Error("Cannot compare CNFOrdinal with unknown ordinal type.");
     }
 
     // Handle easy cases with zero
@@ -55,8 +57,24 @@ Ordinal.prototype.compareTo = function(otherOrdinal) {
     return 0; // They are equal
 };
 
+/**
+ * Compares this EpsilonNaughtOrdinal to another ordinal.
+ * @param {CNFOrdinal | EpsilonNaughtOrdinal} otherOrdinal The ordinal to compare against.
+ * @returns {number} -1 if this < otherOrdinal, 0 if this == otherOrdinal, 1 if this > otherOrdinal.
+ */
+EpsilonNaughtOrdinal.prototype.compareTo = function(otherOrdinal) {
+    if (this._tracer) this._tracer.consume();
+    if (otherOrdinal instanceof EpsilonNaughtOrdinal) {
+        return 0; // e_0 == e_0
+    }
+    if (otherOrdinal instanceof CNFOrdinal) {
+        return 1; // e_0 > any CNFOrdinal
+    }
+    throw new Error("Cannot compare EpsilonNaughtOrdinal with unknown ordinal type.");
+};
+
 // Now that compareTo is defined, we can ensure _normalize in ordinal_types.js works fully.
-// If Ordinal._ZEROStatic was created before compareTo was prototyped, its internal terms might not be
+// If CNFOrdinal._ZEROStatic was created before compareTo was prototyped, its internal terms might not be
 // perfectly "normalized" by a sort if it had complex exponents (though for ZERO it's empty).
 // It's generally safer to ensure all prototype methods are defined before creating complex static instances,
 // or to re-normalize them if necessary. Our static getters for ZERO, ONE, OMEGA return clones,

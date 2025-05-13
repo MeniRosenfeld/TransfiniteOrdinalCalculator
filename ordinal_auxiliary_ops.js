@@ -1,9 +1,9 @@
 // ordinal_auxiliary_ops.js
 
-// Assumes Ordinal class and its basic methods (isZero, isFinite, getFinitePart, clone, etc.)
+// Assumes CNFOrdinal class and its basic methods (isZero, isFinite, getFinitePart, clone, etc.)
 // from ordinal_types.js are defined.
-// Assumes Ordinal.prototype.compareTo from ordinal_comparison.js is defined.
-// Assumes Ordinal.prototype.add, Ordinal.prototype.subtract (if we were to implement it fully)
+// Assumes CNFOrdinal.prototype.compareTo from ordinal_comparison.js is defined.
+// Assumes CNFOrdinal.prototype.add, CNFOrdinal.prototype.subtract (if we were to implement it fully)
 // would be in their respective files. For now, predecessor might involve manual term manipulation.
 
 /**
@@ -13,47 +13,37 @@
  * - If γ is finite > 0, γ⊖1 = γ-1.
  * - If γ is limit, γ⊖1 = γ.
  * - If γ = 0, γ⊖1 = 0 (convention for non-negative exponent results).
- * @returns {Ordinal} A new Ordinal instance representing the predecessor.
+ * @returns {CNFOrdinal} A new CNFOrdinal instance representing the predecessor.
  */
-Ordinal.prototype.exponentPredecessor = function() {
+CNFOrdinal.prototype.exponentPredecessor = function() {
     if (this._tracer) this._tracer.consume(); // Count as an operation
 
     if (this.isZero()) {
-        return Ordinal.ZEROStatic().clone(this._tracer); // 0 ⊖ 1 = 0 (convention)
+        return CNFOrdinal.ZEROStatic().clone(this._tracer); // Use CNFOrdinal
     }
 
     if (this.isFinite()) {
-        // Finite and non-zero, so it's just n. n-1.
-        // this.terms[0].coefficient is a BigInt
         const n = this.terms[0].coefficient;
-        if (n === 1n) return Ordinal.ZEROStatic().clone(this._tracer); // 1n - 1n = 0n
-        // Create a new Ordinal with coefficient n - 1n
-        return new Ordinal([{ exponent: Ordinal.ZEROStatic(), coefficient: n - 1n }], this._tracer);
+        if (n === 1n) return CNFOrdinal.ZEROStatic().clone(this._tracer); // Use CNFOrdinal
+        return new CNFOrdinal([{ exponent: CNFOrdinal.ZEROStatic(), coefficient: n - 1n }], this._tracer); // Use CNFOrdinal
     }
 
-    // Infinite ordinal: Check if it's a successor or limit
-    // A successor ordinal in CNF has a finite part > 0 (i.e., a w^0 term).
-    // Or, more generally, its last term is w^0 * c.
     const lastTermIndex = this.terms.length - 1;
-    const lastTerm = this.terms[lastTermIndex]; // lastTerm.coefficient is BigInt
+    const lastTerm = this.terms[lastTermIndex]; 
 
-    if (lastTerm.exponent.isZero()) { // It's a successor form A + n where n > 0n
-        const newTerms = this.terms.map(t => ({ // Deep clone terms for modification
+    if (lastTerm.exponent.isZero()) { 
+        const newTerms = this.terms.map(t => ({ 
             exponent: t.exponent.clone(this._tracer),
-            coefficient: t.coefficient // coefficient is already BigInt
+            coefficient: t.coefficient 
         }));
 
-        if (lastTerm.coefficient > 1n) { // Compare with BigInt 1n
-            newTerms[lastTermIndex].coefficient -= 1n; // BigInt subtraction
+        if (lastTerm.coefficient > 1n) { 
+            newTerms[lastTermIndex].coefficient -= 1n; 
         } else {
-            // Coefficient was 1n, so this term (w^0 * 1n) is removed
             newTerms.pop();
         }
-        // If newTerms becomes empty, it means original was "1", handled by isFinite.
-        // Or if it was w+1 -> w. Or w^2+1 -> w^2.
-        return new Ordinal(newTerms, this._tracer); // Constructor will normalize
+        return new CNFOrdinal(newTerms, this._tracer); // Use CNFOrdinal
     } else {
-        // It's a limit ordinal (e.g., w, w^2, w*2, w^w). Predecessor is itself.
         return this.clone();
     }
 };
@@ -64,34 +54,26 @@ Ordinal.prototype.exponentPredecessor = function() {
  * ξ = ω^(β₁⊖1)*b₁ + ω^(β₂⊖1)*b₂ + ...
  * This operation is used in the rule k^β = ω^ξ * k^r where β = ωξ + r.
  * Assumes `this` is the ordinal B (should be composed of terms with exp > 0).
- * @returns {Ordinal} A new Ordinal instance representing ξ.
+ * @returns {CNFOrdinal} A new CNFOrdinal instance representing ξ.
  */
-Ordinal.prototype.divideByOmega = function() {
-    if (this._tracer) this._tracer.consume(); // Count as an operation
+CNFOrdinal.prototype.divideByOmega = function() {
+    if (this._tracer) this._tracer.consume(); 
 
     if (this.isZero() || this.isFinite()) {
-        // If B is 0 or finite, B/w = 0.
-        return Ordinal.ZEROStatic().clone(this._tracer);
+        return CNFOrdinal.ZEROStatic().clone(this._tracer); // Use CNFOrdinal
     }
 
     const newTerms = [];
-    for (const term of this.terms) { // term.coefficient is already BigInt
-        // Original term: ω^βᵢ * bᵢ
-        // New exponent: βᵢ ⊖ 1
+    for (const term of this.terms) { 
         const newExponent = term.exponent.exponentPredecessor();
 
-        // If the original exponent was ω (i.e., βᵢ = 1), then βᵢ⊖1 = 0.
-        // The new term becomes ω^0 * bᵢ, which is just the coefficient bᵢ.
-        // This new term's exponent is Ordinal.ZERO.
-        // Coefficients are BigInts, so term.coefficient > 0n check implicitly done by Ordinal constructor
         if (!newExponent.isZero() || term.coefficient > 0n) { 
-             // If newExponent became Ordinal.ZERO, this term contributes to the finite part of xi.
             newTerms.push({ exponent: newExponent, coefficient: term.coefficient });
         }
     }
 
-    const result = new Ordinal(newTerms, this._tracer);
-    result._normalize(); // Ensure the result is in proper CNF (e.g. w/w = 1)
+    const result = new CNFOrdinal(newTerms, this._tracer); // Use CNFOrdinal
+    result._normalize(); 
     return result;
 };
 

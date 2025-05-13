@@ -1,24 +1,25 @@
 // ordinal_calculator.js
 
-// This file assumes all other Ordinal class files are loaded/defined before it:
-// - ordinal_types.js (Ordinal class, OperationTracer)
-// - ordinal_comparison.js (Ordinal.prototype.compareTo)
-// - ordinal_auxiliary_ops.js (Ordinal.prototype.exponentPredecessor, Ordinal.prototype.divideByOmega)
-// - ordinal_addition.js (Ordinal.prototype.add)
-// - ordinal_multiplication.js (Ordinal.prototype.multiply)
-// - ordinal_exponentiation.js (Ordinal.prototype.power)
-// - ordinal_parser.js (OrdinalParser class)
+// This file assumes all other CNFOrdinal class files are loaded/defined before it:
+// - ordinal_types.js (CNFOrdinal class, OperationTracer)
+// - ordinal_comparison.js (CNFOrdinal.prototype.compareTo)
+// - ordinal_auxiliary_ops.js (CNFOrdinal.prototype.exponentPredecessor, CNFOrdinal.prototype.divideByOmega)
+// - ordinal_addition.js (CNFOrdinal.prototype.add)
+// - ordinal_multiplication.js (CNFOrdinal.prototype.multiply)
+// - ordinal_exponentiation.js (CNFOrdinal.prototype.power)
+// - ordinal_parser.js (OrdinalParser class that now returns CNFOrdinal)
 
 const DEFAULT_OPERATION_BUDGET = 1000000; // Default limit for operations
 
 /**
  * Parses an ordinal expression string, calculates its Cantor Normal Form,
- * and returns its string representation.
+ * and returns its string representation and the CNFOrdinal object.
  *
  * @param {string} expressionString The string to parse (e.g., "(w+1)*w^2").
  * @param {number} [maxOperations=DEFAULT_OPERATION_BUDGET] The maximum number of
  *        internal operations allowed before halting with an error.
- * @returns {string} The CNF string of the result, or an error message string.
+ * @returns {object} An object { cnfString, ordinalObject } or { error }.
+ *                   `ordinalObject` is an instance of CNFOrdinal.
  */
 function calculateOrdinalCNF(expressionString, maxOperations = DEFAULT_OPERATION_BUDGET) {
     if (typeof expressionString !== 'string') {
@@ -32,13 +33,12 @@ function calculateOrdinalCNF(expressionString, maxOperations = DEFAULT_OPERATION
 
     try {
         const parser = new OrdinalParser(expressionString, tracer);
-        const ordinalResult = parser.parse();
+        const ordinalResult = parser.parse(); // This now returns a CNFOrdinal instance
         return {
             cnfString: ordinalResult.toStringCNF(),
             ordinalObject: ordinalResult 
         };
     } catch (e) {
-        // Catch errors from parser, arithmetic operations, or budget exceeded
         if (e.message.startsWith("Operation budget exceeded")) {
             return { error: `Error: Computation too complex (budget of ${tracer.getBudget()} operations exceeded at ${tracer.getCount()}).` };
         }
@@ -51,7 +51,8 @@ function calculateOrdinalCNF(expressionString, maxOperations = DEFAULT_OPERATION
 function testOrdinalCalc(label, input, expected) {
     console.log(`Test: ${label}`);
     console.log(`Input: "${input}"`);
-    const output = calculateOrdinalCNF(input, 100000); // Using a smaller budget for tests
+    const outputObj = calculateOrdinalCNF(input, 100000); 
+    const output = outputObj.error ? outputObj.error : outputObj.cnfString;
     console.log(`Output: "${output}"`);
     if (output === expected) {
         console.log("Status: PASSED");
@@ -110,7 +111,7 @@ testOrdinalCalc("Power of One", " 1^w ", "1");
 
 // Export if in a module system
 // if (typeof module !== 'undefined' && module.exports) {
-//     module.exports = { calculateOrdinalCNF, Ordinal, OperationTracer, OrdinalParser }; // Export core classes too if needed
+//     module.exports = { calculateOrdinalCNF, CNFOrdinal, OperationTracer, OrdinalParser }; // Export CNFOrdinal
 // }
 
 // ordinal_calculator.js

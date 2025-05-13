@@ -2,64 +2,68 @@
 
 // Assumes calculateOrdinalCNF (from ordinal_calculator.js) and
 // renderOrdinalGraphical (from ordinal_graphical_renderer.js) are globally available.
-// Assumes Ordinal and OperationTracer (from ordinal_types.js) are available if needed directly here,
-// though mostly they are used internally by the calculator.
+// Assumes CNFOrdinal, EpsilonNaughtOrdinal, and OperationTracer (from ordinal_types.js) are available.
 // Assumes f and ORDINAL_ZERO (from ordinal_mapping.js) are globally available.
 
 /**
- * Converts an Ordinal class instance (from ordinal_types.js)
+ * Converts an Ordinal class instance (CNFOrdinal or EpsilonNaughtOrdinal from ordinal_types.js)
  * to the format expected by the f() function in ordinal_mapping.js.
- * @param {Ordinal} ordInstance - An instance of the Ordinal class.
- * @returns {object|BigInt} The representation for f().
+ * @param {CNFOrdinal | EpsilonNaughtOrdinal} ordInstance - An instance of an Ordinal class.
+ * @returns {object|BigInt|string} The representation for f(). String for E0_TYPE.
  */
 function convertOrdinalInstanceToFFormat(ordInstance) {
-    if (!ordInstance || !(ordInstance instanceof Ordinal)) {
-        console.error("Invalid input to convertOrdinalInstanceToFFormat:", ordInstance);
-        return typeof ORDINAL_ZERO !== 'undefined' ? ORDINAL_ZERO : 0n; 
-    }
-
-    if (ordInstance.isZero()) {
+    if (!ordInstance) {
+        console.error("Invalid input to convertOrdinalInstanceToFFormat: received null or undefined");
         return typeof ORDINAL_ZERO !== 'undefined' ? ORDINAL_ZERO : 0n;
     }
-    if (ordInstance.isFinite()) {
-        return ordInstance.getFinitePart(); // Returns a BigInt
+
+    if (ordInstance instanceof EpsilonNaughtOrdinal) {
+        return "E0_TYPE"; // Special marker for epsilon-naught
     }
 
-    const terms = ordInstance.terms; 
+    if (ordInstance instanceof CNFOrdinal) {
+        if (ordInstance.isZero()) {
+            return typeof ORDINAL_ZERO !== 'undefined' ? ORDINAL_ZERO : 0n;
+        }
+        if (ordInstance.isFinite()) {
+            return ordInstance.getFinitePart();
+        }
 
-    if (terms.length === 1 && terms[0].coefficient === 1n && !terms[0].exponent.isZero()) {
-        const k_rep_for_f = convertOrdinalInstanceToFFormat(terms[0].exponent);
-        return { type: 'pow', k: k_rep_for_f };
+        const terms = ordInstance.terms;
+
+        if (terms.length === 1 && terms[0].coefficient === 1n && !terms[0].exponent.isZero()) {
+            const k_rep_for_f = convertOrdinalInstanceToFFormat(terms[0].exponent);
+            return { type: 'pow', k: k_rep_for_f };
+        }
+
+        const firstTerm = terms[0];
+        const beta_rep_for_f = convertOrdinalInstanceToFFormat(firstTerm.exponent);
+
+        const c_from_ordinal = firstTerm.coefficient;
+        let c_int_for_f = Number(c_from_ordinal);
+
+        if ((c_from_ordinal > BigInt(Number.MAX_SAFE_INTEGER) || c_from_ordinal < BigInt(Number.MIN_SAFE_INTEGER)) && Number.isFinite(c_int_for_f)) {
+            console.warn(`Coefficient ${c_from_ordinal} was outside JS Number safe integer range. Converted to ${c_int_for_f} for f() mapping.`);
+        }
+
+        let delta_rep_for_f;
+        if (terms.length === 1) {
+            delta_rep_for_f = typeof ORDINAL_ZERO !== 'undefined' ? ORDINAL_ZERO : 0n;
+        } else {
+            const remainderTerms = terms.slice(1).map(t => ({
+                exponent: t.exponent.clone(ordInstance._tracer),
+                coefficient: t.coefficient
+            }));
+            const remainderOrdinal = new CNFOrdinal(remainderTerms, ordInstance._tracer);
+            delta_rep_for_f = convertOrdinalInstanceToFFormat(remainderOrdinal);
+        }
+
+        return { type: 'sum', beta: beta_rep_for_f, c: c_int_for_f, delta: delta_rep_for_f };
     }
 
-    const firstTerm = terms[0]; 
-    const beta_rep_for_f = convertOrdinalInstanceToFFormat(firstTerm.exponent);
-    
-    const c_from_ordinal = firstTerm.coefficient; // This is BigInt
-    let c_int_for_f = Number(c_from_ordinal); // Convert to Number
-
-    // Warning for potential precision loss if original BigInt was very large
-    if ((c_from_ordinal > BigInt(Number.MAX_SAFE_INTEGER) || c_from_ordinal < BigInt(Number.MIN_SAFE_INTEGER)) && Number.isFinite(c_int_for_f)) {
-        // Only warn if it's still finite after conversion but was outside safe range.
-        // If it became Infinity, ordinal_mapping.js handles that.
-        console.warn(`Coefficient ${c_from_ordinal} was outside JS Number safe integer range. Converted to ${c_int_for_f} for f() mapping.`);
-    }
-    // The f() function in ordinal_mapping.js will validate if c_int_for_f is positive.
-    // Ordinal terms should have positive coefficients by definition.
-
-    let delta_rep_for_f;
-    if (terms.length === 1) {
-        delta_rep_for_f = typeof ORDINAL_ZERO !== 'undefined' ? ORDINAL_ZERO : 0n;
-    } else {
-        const remainderTerms = terms.slice(1).map(t => ({
-            exponent: t.exponent.clone(ordInstance._tracer), 
-            coefficient: t.coefficient 
-        }));
-        const remainderOrdinal = new Ordinal(remainderTerms, ordInstance._tracer); 
-        delta_rep_for_f = convertOrdinalInstanceToFFormat(remainderOrdinal);
-    }
-    
-    return { type: 'sum', beta: beta_rep_for_f, c: c_int_for_f, delta: delta_rep_for_f };
+    // Fallback for unknown types
+    console.error("Invalid input to convertOrdinalInstanceToFFormat: unknown ordinal type", ordInstance);
+    return typeof ORDINAL_ZERO !== 'undefined' ? ORDINAL_ZERO : 0n;
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -71,10 +75,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const errorMessageArea = document.getElementById('errorMessageArea');
     const copyTextBtn = document.getElementById('copyTextBtn');
     const copyImageBtn = document.getElementById('copyImageBtn');
-
-    // New element for f(alpha)
     const mappedValueTextElement = document.getElementById('mappedValueText');
-
     const placeholderText = "Result will appear here.";
 
     // Tooltip logic
@@ -185,7 +186,6 @@ document.addEventListener('DOMContentLoaded', () => {
     function calculateAndDisplay() {
         const inputString = ordinalInputElement.value;
 
-        // Clear previous results and errors
         linearResultTextElement.textContent = placeholderText;
         linearResultTextElement.className = 'value placeholder-text';
         graphicalResultArea.innerHTML = `<span class="placeholder-text">${placeholderText}</span>`;
@@ -204,24 +204,31 @@ document.addEventListener('DOMContentLoaded', () => {
              }
         }
 
-        let ordinalResultObject; 
+        let resultFromCalc; 
         try {
-            const tempTracer = new OperationTracer(10000000); 
-            const tempParser = new OrdinalParser(inputString, tempTracer);
-            ordinalResultObject = tempParser.parse(); 
+            // const tempTracer = new OperationTracer(10000000); // REMOVE THIS LINE
+            
+            // Pass the budget number directly
+            resultFromCalc = calculateOrdinalCNF(inputString, 10000000); // PASS BUDGET NUMBER
 
-            const cnfString = ordinalResultObject.toStringCNF();
+            if (resultFromCalc.error) {
+                throw new Error(resultFromCalc.error); 
+            }
+            
+            const ordinalResultObject = resultFromCalc.ordinalObject; // This is a CNFOrdinal
+            const cnfString = resultFromCalc.cnfString;
+
             linearResultTextElement.textContent = cnfString; 
             linearResultTextElement.classList.remove('placeholder-text');
 
-            graphicalResultArea.innerHTML = renderOrdinalGraphical(ordinalResultObject);
+            graphicalResultArea.innerHTML = renderOrdinalGraphical(ordinalResultObject); // render expects CNFOrdinal
             graphicalResultArea.querySelector('.placeholder-text')?.remove();
 
             if (mappedValueTextElement && ordinalResultObject) {
                 try {
+                    // convertOrdinalInstanceToFFormat expects CNFOrdinal
                     const fFormattedOrdinal = convertOrdinalInstanceToFFormat(ordinalResultObject);
                     const mappedValue = f(fFormattedOrdinal); 
-                    // Display with full precision (JavaScript's default string conversion for numbers)
                     if (typeof mappedValue === 'number' && !isNaN(mappedValue)) {
                         mappedValueTextElement.textContent = mappedValue.toString();
                     } else {
@@ -236,7 +243,12 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
         } catch (e) {
-            errorMessageArea.textContent = `Error: ${e.message}`;
+            // If error came from calculateOrdinalCNF, e.message would be resultFromCalc.error
+            // If error is from parsing/calc logic itself, it's e.message.
+            // If error is manually thrown above from resultFromCalc.error, then e.message is that error string.
+            // To avoid "Error: Error: ...", check if e.message already starts with "Error: "
+            const displayErrorMessage = e.message.startsWith("Error: ") ? e.message : `Error: ${e.message}`;
+            errorMessageArea.textContent = displayErrorMessage;
             errorMessageArea.style.display = 'block';
             linearResultTextElement.textContent = placeholderText;
             linearResultTextElement.className = 'value placeholder-text';
@@ -272,6 +284,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     prompt("Copy to clipboard failed. Please copy manually:", textToCopy);
                 });
             } else {
+                // Fallback for older browsers
                 const textArea = document.createElement("textarea");
                 textArea.value = textToCopy;
                 document.body.appendChild(textArea);

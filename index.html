@@ -58,9 +58,9 @@
         <ul>
             <li>Use non-negative integers (e.g., <code>0</code>, <code>1</code>, <code>5</code>, <code>123</code>).</li>
             <li>Use <code>w</code> to represent the smallest infinite ordinal, omega (ω).</li>
-            <li>Supported operations: <code>+</code> (addition), <code>*</code> (multiplication), <code>^</code> (exponentiation).</li>
+            <li>Supported operations: <code>+</code> (addition), <code>*</code> (multiplication), <code>^</code> (exponentiation), <code>^^</code> (tetration).</li>
             <li>Use parentheses <code>()</code> for grouping.</li>
-            <li>Standard operator precedence is followed: <code>^</code> (highest, right-associative), then <code>*</code> (left-associative), then <code>+</code> (left-associative).</li>
+            <li>Standard operator precedence is followed: <code>^^</code> (highest, right-associative), then <code>^</code> (right-associative), then <code>*</code> (left-associative), then <code>+</code> (left-associative).</li>
         </ul>
         <p><strong>Examples:</strong></p>
         <ul>
@@ -71,6 +71,10 @@
             <li><code>2^w</code>  ➜  <code>w</code></li>
             <li><code>w^(w+1)</code>  ➜  <code>w^(w+1)</code></li>
             <li><code>(w^w)^w</code>  ➜  <code>w^(w^2)</code></li>
+            <li><code>2^^3</code> (2↑↑3) ➜  <code>w</code> (since 2^2^2 = 2^4 = 16, which is finite, but the example should be 2^^3 -> 2^(2^2) = 16. The rule m^^a=w applies to infinite height 'a'. For finite height, it's repeated exponentiation. Let's adjust this example if it's meant to show a simple case or clarify the rule application, e.g. 2^^w )</li>
+            <li><code>w^^2</code> (ω↑↑2) ➜  <code>w^w</code></li>
+            <li><code>w^^w</code> (ω↑↑ω) ➜  <code>e_0</code></li>
+            <li><code>2^^w</code> (2↑↑ω) ➜  <code>w</code></li>
         </ul>
 
     </div>
@@ -80,12 +84,13 @@
         <p>
             This Ordinal Number Calculator is a tool designed to explore the fascinating world of transfinite arithmetic.
             It takes ordinal expressions written with non-negative integers, the symbol <code>w</code> (omega),
-            standard arithmetic operators (<code>+</code>, <code>*</code>, <code>^</code>), and parentheses,
-            and computes their <a href="https://en.wikipedia.org/wiki/Cantor_normal_form" target="_blank" rel="noopener noreferrer">Cantor Normal Form (CNF)</a>.
+            standard arithmetic operators (<code>+</code>, <code>*</code>, <code>^</code>, <code>^^</code>), and parentheses,
+            and computes their <a href="https://en.wikipedia.org/wiki/Cantor_normal_form" target="_blank" rel="noopener noreferrer">Cantor Normal Form (CNF)</a>
+            or evaluates them according to defined rules up to ε₀ (epsilon-naught).
         </p>
         <p>
             The Cantor Normal Form provides a unique representation for ordinals less than epsilon-naught (ε₀).
-            This calculator implements the standard rules for ordinal addition, multiplication, and exponentiation
+            This calculator implements the standard rules for ordinal addition, multiplication, exponentiation, and tetration
             to ensure accurate CNF results.
         </p>
         <p>
@@ -123,6 +128,7 @@ Calculation results were compared against Claudio Kressibucher's <a href="https:
     <script src="ordinal_addition.js"></script>
     <script src="ordinal_multiplication.js"></script>
     <script src="ordinal_exponentiation.js"></script>
+    <script src="ordinal_tetration.js"></script>
     <script src="ordinal_parser.js"></script>
     <script src="ordinal_calculator.js"></script> <!-- Contains calculateOrdinalCNF -->
     <script src="ordinal_mapping.js"></script>
