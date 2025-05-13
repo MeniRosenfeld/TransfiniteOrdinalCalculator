@@ -22,10 +22,10 @@ const DEFAULT_OPERATION_BUDGET = 1000000; // Default limit for operations
  */
 function calculateOrdinalCNF(expressionString, maxOperations = DEFAULT_OPERATION_BUDGET) {
     if (typeof expressionString !== 'string') {
-        return "Error: Input expression must be a string.";
+        return { error: "Error: Input expression must be a string." };
     }
     if (typeof maxOperations !== 'number' || maxOperations <= 0) {
-        return `Error: maxOperations must be a positive number. Got ${maxOperations}`;
+        return { error: `Error: maxOperations must be a positive number. Got ${maxOperations}` };
     }
 
     const tracer = new OperationTracer(maxOperations);
@@ -33,13 +33,16 @@ function calculateOrdinalCNF(expressionString, maxOperations = DEFAULT_OPERATION
     try {
         const parser = new OrdinalParser(expressionString, tracer);
         const ordinalResult = parser.parse();
-        return ordinalResult.toStringCNF();
+        return {
+            cnfString: ordinalResult.toStringCNF(),
+            ordinalObject: ordinalResult 
+        };
     } catch (e) {
         // Catch errors from parser, arithmetic operations, or budget exceeded
         if (e.message.startsWith("Operation budget exceeded")) {
-            return `Error: Computation too complex (budget of ${tracer.getBudget()} operations exceeded at ${tracer.getCount()}).`;
+            return { error: `Error: Computation too complex (budget of ${tracer.getBudget()} operations exceeded at ${tracer.getCount()}).` };
         }
-        return `Error: ${e.message}`;
+        return { error: `Error: ${e.message}` };
     }
 }
 

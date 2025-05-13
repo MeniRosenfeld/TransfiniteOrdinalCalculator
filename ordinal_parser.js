@@ -26,7 +26,7 @@ class OrdinalParser {
         let match;
         while ((match = regex.exec(str)) !== null) {
             if (match[1]) { // Number
-                tokens.push({ type: 'NUMBER', value: parseInt(match[1], 10) });
+                tokens.push({ type: 'NUMBER', value: BigInt(match[1]) });
             } else if (match[2]) { // Omega 'w'
                 tokens.push({ type: 'OMEGA' });
             } else if (match[3]) { // Operator or Parenthesis

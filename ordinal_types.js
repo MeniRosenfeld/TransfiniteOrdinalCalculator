@@ -9,20 +9,21 @@
  * The finite part 'n' is represented as a term with exponent Ordinal.ZERO.
  */
 class Ordinal {
-    // terms: Array of { exponent: Ordinal, coefficient: number }
-    // Sorted by exponent descending. Coefficients are positive integers.
+    // terms: Array of { exponent: Ordinal, coefficient: BigInt }
+    // Sorted by exponent descending. Coefficients are positive BigInts.
     constructor(initVal, operationTracer = null) { // Added operationTracer
         this.terms = [];
         this._tracer = operationTracer; // For operation counting
 
         if (initVal === undefined || initVal === null) {
             // Default to 0
-        } else if (typeof initVal === 'number') {
-            if (!Number.isInteger(initVal) || initVal < 0) {
+        } else if (typeof initVal === 'number' || typeof initVal === 'bigint') {
+            const val = BigInt(initVal);
+            if (val < 0n) {
                 throw new Error(`Ordinal from number: Must be a non-negative integer, got ${initVal}`);
             }
-            if (initVal > 0) {
-                this.terms.push({ exponent: Ordinal.ZEROStatic(), coefficient: initVal });
+            if (val > 0n) {
+                this.terms.push({ exponent: Ordinal.ZEROStatic(), coefficient: val });
             }
         } else if (typeof initVal === 'string') {
             // Basic string parsing for "0", "w", or simple integers for internal use.
@@ -30,10 +31,10 @@ class Ordinal {
             if (initVal === "0") {
                 // Stays as empty terms
             } else if (initVal === "w") {
-                this.terms.push({ exponent: Ordinal.ONEStatic(), coefficient: 1 });
+                this.terms.push({ exponent: Ordinal.ONEStatic(), coefficient: 1n });
             } else if (/^\d+$/.test(initVal)) {
-                const n = parseInt(initVal, 10);
-                if (n > 0) {
+                const n = BigInt(initVal);
+                if (n > 0n) {
                     this.terms.push({ exponent: Ordinal.ZEROStatic(), coefficient: n });
                 }
             } else {
@@ -42,8 +43,8 @@ class Ordinal {
         } else if (Array.isArray(initVal)) {
             // Assumes initVal is an array of term objects, used internally by operations
             this.terms = initVal.map(t => {
-                if (!(t.exponent instanceof Ordinal) || typeof t.coefficient !== 'number' || !Number.isInteger(t.coefficient) || t.coefficient <= 0) {
-                    throw new Error('Invalid term structure in Ordinal constructor.');
+                if (!(t.exponent instanceof Ordinal) || typeof t.coefficient !== 'bigint' || t.coefficient <= 0n) {
+                    throw new Error('Invalid term structure in Ordinal constructor. Coefficient must be a positive BigInt.');
                 }
                 return { exponent: t.exponent.clone(this._tracer), coefficient: t.coefficient };
             });
@@ -51,7 +52,7 @@ class Ordinal {
         } else if (initVal instanceof Ordinal) { // Constructor from another Ordinal (clone)
             this.terms = initVal.terms.map(t => ({
                 exponent: t.exponent.clone(this._tracer), // Deep clone exponents
-                coefficient: t.coefficient
+                coefficient: t.coefficient // coefficient is already a BigInt
             }));
             this._tracer = initVal._tracer; // Share tracer on clone
         } else {
@@ -62,8 +63,8 @@ class Ordinal {
     _normalize() {
         if (this.terms.length === 0) return;
 
-        // Filter out terms with zero or negative coefficients (should not happen if inputs are valid)
-        this.terms = this.terms.filter(t => t.coefficient > 0);
+        // Filter out terms with zero or negative coefficients
+        this.terms = this.terms.filter(t => t.coefficient > 0n);
         if (this.terms.length === 0) return;
 
         // Sort terms by exponent (descending)
@@ -95,14 +96,14 @@ class Ordinal {
 
             for (let i = 1; i < this.terms.length; i++) {
                 if (this.terms[i].exponent.equals(currentTerm.exponent)) {
-                    currentTerm.coefficient += this.terms[i].coefficient;
+                    currentTerm.coefficient += this.terms[i].coefficient; // BigInt addition
                 } else {
-                    if (currentTerm.coefficient > 0) newTerms.push(currentTerm);
+                    if (currentTerm.coefficient > 0n) newTerms.push(currentTerm);
                     currentTerm = { ...this.terms[i] };
                     currentTerm.exponent = this.terms[i].exponent.clone(this._tracer);
                 }
             }
-            if (currentTerm.coefficient > 0) newTerms.push(currentTerm);
+            if (currentTerm.coefficient > 0n) newTerms.push(currentTerm);
             this.terms = newTerms;
         }
     }
@@ -120,8 +121,8 @@ class Ordinal {
     static _ONE_INSTANCE = null;
     static ONEStatic() {
         if (!Ordinal._ONE_INSTANCE) {
-            const one = new Ordinal(); // Temporary for exponent
-            one.terms.push({ exponent: Ordinal.ZEROStatic(), coefficient: 1 });
+            const one = new Ordinal(undefined, null); // Temporary for exponent, tracer not critical for constants
+            one.terms.push({ exponent: Ordinal.ZEROStatic(), coefficient: 1n });
             Ordinal._ONE_INSTANCE = one;
         }
         return Ordinal._ONE_INSTANCE;
@@ -130,8 +131,8 @@ class Ordinal {
     static _OMEGA_INSTANCE = null;
     static OMEGAStatic() {
         if (!Ordinal._OMEGA_INSTANCE) {
-            const omega = new Ordinal(); // Temporary for base
-            omega.terms.push({ exponent: Ordinal.ONEStatic(), coefficient: 1 });
+            const omega = new Ordinal(undefined, null); // Temporary for base
+            omega.terms.push({ exponent: Ordinal.ONEStatic(), coefficient: 1n });
             Ordinal._OMEGA_INSTANCE = omega;
         }
         return Ordinal._OMEGA_INSTANCE;
@@ -144,7 +145,7 @@ class Ordinal {
 
 
     static fromInt(n, tracer = null) {
-        return new Ordinal(n, tracer);
+        return new Ordinal(BigInt(n), tracer);
     }
 
     // No fromString here, that's for the full parser.
@@ -169,23 +170,23 @@ class Ordinal {
     
     isOmega() {
         return this.terms.length === 1 &&
-               this.terms[0].coefficient === 1 &&
+               this.terms[0].coefficient === 1n &&
                this.terms[0].exponent.equals(Ordinal.ONEStatic());
     }
 
     isOmegaPower() { // Is it of the form w^A (coefficient 1 for the w term)
         if (this.isZero() || this.isFinite()) return false;
-        return this.terms.length === 1 && this.terms[0].coefficient === 1 && !this.terms[0].exponent.isZero();
+        return this.terms.length === 1 && this.terms[0].coefficient === 1n && !this.terms[0].exponent.isZero();
     }
 
 
     getFinitePart() {
-        if (this.isZero()) return 0;
+        if (this.isZero()) return 0n; // Return BigInt zero
         const lastTerm = this.terms[this.terms.length - 1];
         if (lastTerm.exponent.isZero()) {
-            return lastTerm.coefficient;
+            return lastTerm.coefficient; // Already a BigInt
         }
-        return 0;
+        return 0n; // Return BigInt zero
     }
 
     getLimitPart() {
@@ -212,10 +213,10 @@ class Ordinal {
     toStringCNF() {
         if (this.isZero()) return "0";
         return this.terms.map(term => {
-            const coeff = term.coefficient;
+            const coeff = term.coefficient; // This is a BigInt
             const exp = term.exponent;
 
-            if (exp.isZero()) return `${coeff}`;
+            if (exp.isZero()) return coeff.toString(); // Convert BigInt to string
 
             let expStr;
             if (exp.equals(Ordinal.ONEStatic())) { // w^1
@@ -230,10 +231,10 @@ class Ordinal {
                 }
             }
 
-            if (coeff === 1) return expStr;
+            if (coeff === 1n) return expStr; // Compare with BigInt one
             // Decide if w should have () if coeff > 1, e.g. (w*2) vs w*2.
             // Standard CNF usually just puts coeff last: w*c or w^A*c
-            return `${expStr}*${coeff}`;
+            return `${expStr}*${coeff.toString()}`; // Convert BigInt coeff to string
         }).join("+");
     }
 

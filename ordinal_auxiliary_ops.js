@@ -24,27 +24,29 @@ Ordinal.prototype.exponentPredecessor = function() {
 
     if (this.isFinite()) {
         // Finite and non-zero, so it's just n. n-1.
+        // this.terms[0].coefficient is a BigInt
         const n = this.terms[0].coefficient;
-        if (n === 1) return Ordinal.ZEROStatic().clone(this._tracer); // 1-1 = 0
-        return new Ordinal([{ exponent: Ordinal.ZEROStatic(), coefficient: n - 1 }], this._tracer);
+        if (n === 1n) return Ordinal.ZEROStatic().clone(this._tracer); // 1n - 1n = 0n
+        // Create a new Ordinal with coefficient n - 1n
+        return new Ordinal([{ exponent: Ordinal.ZEROStatic(), coefficient: n - 1n }], this._tracer);
     }
 
     // Infinite ordinal: Check if it's a successor or limit
     // A successor ordinal in CNF has a finite part > 0 (i.e., a w^0 term).
     // Or, more generally, its last term is w^0 * c.
     const lastTermIndex = this.terms.length - 1;
-    const lastTerm = this.terms[lastTermIndex];
+    const lastTerm = this.terms[lastTermIndex]; // lastTerm.coefficient is BigInt
 
-    if (lastTerm.exponent.isZero()) { // It's a successor form A + n where n > 0
+    if (lastTerm.exponent.isZero()) { // It's a successor form A + n where n > 0n
         const newTerms = this.terms.map(t => ({ // Deep clone terms for modification
             exponent: t.exponent.clone(this._tracer),
-            coefficient: t.coefficient
+            coefficient: t.coefficient // coefficient is already BigInt
         }));
 
-        if (lastTerm.coefficient > 1) {
-            newTerms[lastTermIndex].coefficient--;
+        if (lastTerm.coefficient > 1n) { // Compare with BigInt 1n
+            newTerms[lastTermIndex].coefficient -= 1n; // BigInt subtraction
         } else {
-            // Coefficient was 1, so this term (w^0 * 1) is removed
+            // Coefficient was 1n, so this term (w^0 * 1n) is removed
             newTerms.pop();
         }
         // If newTerms becomes empty, it means original was "1", handled by isFinite.
@@ -73,7 +75,7 @@ Ordinal.prototype.divideByOmega = function() {
     }
 
     const newTerms = [];
-    for (const term of this.terms) {
+    for (const term of this.terms) { // term.coefficient is already BigInt
         // Original term: ω^βᵢ * bᵢ
         // New exponent: βᵢ ⊖ 1
         const newExponent = term.exponent.exponentPredecessor();
@@ -81,7 +83,8 @@ Ordinal.prototype.divideByOmega = function() {
         // If the original exponent was ω (i.e., βᵢ = 1), then βᵢ⊖1 = 0.
         // The new term becomes ω^0 * bᵢ, which is just the coefficient bᵢ.
         // This new term's exponent is Ordinal.ZERO.
-        if (!newExponent.isZero() || term.coefficient > 0) { // Ensure we don't add 0-coefficient terms if newExponent is complex
+        // Coefficients are BigInts, so term.coefficient > 0n check implicitly done by Ordinal constructor
+        if (!newExponent.isZero() || term.coefficient > 0n) { 
              // If newExponent became Ordinal.ZERO, this term contributes to the finite part of xi.
             newTerms.push({ exponent: newExponent, coefficient: term.coefficient });
         }

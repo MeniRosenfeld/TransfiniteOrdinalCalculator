@@ -12,14 +12,14 @@
  * 2. α = 0: 0^β = 0 (for β > 0).
  * 3. α = 1: 1^β = 1.
  * 4. β = 1: α^1 = α.
- * 5. α, β finite positive integers: n^m.
+ * 5. α, β finite positive integers: n^m. Uses BigInt exponentiation.
  *
- * 6. α = k (finite, k≥2), β infinite (B+m, B limit part != 0):
+ * 6. α = k (finite, k≥2n), β infinite (B+m, B limit part != 0):
  *    k^β = k^(ωξ+r) = (ω^ξ) * k^r
  *    where β = ωξ+r (r finite part of β, B = ωξ).
  *    ξ = B.divideByOmega().
  *
- * 7. α infinite, β = m (finite integer, m ≥ 2, as m=0,1 handled by Rules 1 & 4):
+ * 7. α infinite, β = m (finite BigInt, m ≥ 2n, as m=0n,1n handled by Rules 1 & 4):
  *    - If α = ω^a * c (single term where 'a' is the exponent of ω and 'c' is the coefficient),
  *      then α^m = ω^(a*m) * c. (Optimized path)
  *    - Otherwise (if α is a sum of terms), α^m is calculated by iterated multiplication: α * α * ... * α (m times).
@@ -63,102 +63,102 @@ Ordinal.prototype.power = function(exponentOrdinal) {
 
     // Rule 5: α, β finite positive integers.
     if (base.isFinite() && exponent.isFinite()) {
-        const baseVal = base.getFinitePart();
-        const expVal = exponent.getFinitePart();
+        const baseVal = base.getFinitePart(); // BigInt
+        const expVal = exponent.getFinitePart(); // BigInt
 
-        if (baseVal === 0 || baseVal === 1) { /* Already handled by rules 2,3 */ }
-        if (expVal === 0 || expVal === 1) { /* Already handled by rules 1,4 */ }
+        if (baseVal === 0n || baseVal === 1n) { /* Already handled by rules 2,3 */ }
+        if (expVal === 0n || expVal === 1n) { /* Already handled by rules 1,4 */ }
         
-        // Standard JS Math.pow for finite integers.
-        // Note: Result might exceed Number.MAX_SAFE_INTEGER for large inputs.
-        // Ordinal coefficients are standard numbers.
-        if (this._tracer) this._tracer.consume(); // For the Math.pow
-        const resultVal = Math.pow(baseVal, expVal);
-        if (!Number.isSafeInteger(resultVal) || resultVal < 0) {
-            // This might happen for very large finite exponentiation.
-            // For simplicity, we'll throw an error, though BigInt could be used.
-            throw new Error(`Finite exponentiation result ${resultVal} is too large or invalid for standard number.`);
+        // BigInt exponentiation
+        // Note: expVal must not be negative for BigInt power. Finite ordinals are non-negative.
+        if (this._tracer) this._tracer.consume(); 
+        
+        let resultVal;
+        // BigInt power (**) requires the exponent to be non-negative.
+        // Ordinal finite parts are non-negative.
+        // Handle 0^0 separately (covered by Rule 1). If baseVal is 0n and expVal > 0n, result is 0n.
+        if (baseVal === 0n && expVal > 0n) { // Technically covered by Rule 2 but good to be explicit
+            resultVal = 0n;
+        } else {
+            try {
+                resultVal = baseVal ** expVal;
+            } catch (e) {
+                // This might happen for very large finite exponentiation if baseVal is too large
+                // for the specific JS engine's BigInt limits (though they are very high)
+                // or if expVal was somehow negative (should not happen for ordinals).
+                throw new Error(`BigInt exponentiation error for ${baseVal}^${expVal}: ${e.message}`);
+            }
         }
         return new Ordinal(resultVal, this._tracer);
     }
 
-    // Rule 6: α = k (finite, k≥2), β infinite.
+    // Rule 6: α = k (finite, k≥2n), β infinite.
     if (base.isFinite() && !exponent.isFinite()) {
-        const k = base.getFinitePart();
-        if (k < 2) { /* Should have been caught by α=0 or α=1 rules */
-            throw new Error("Base < 2 in finite^infinite case, should be handled earlier.");
+        const k = base.getFinitePart(); // k is BigInt
+        if (k < 2n) { 
+            throw new Error("Base < 2n in finite^infinite case, should be handled earlier.");
         }
 
-        const r_val = exponent.getFinitePart(); // r (finite part of β)
+        const r_val = exponent.getFinitePart();  // r (finite part of β, BigInt)
         const B_exp = exponent.getLimitPart();  // B (limit part of β)
 
         if (B_exp.isZero()) {
             // This means exponent was actually finite, should have been caught by Rule 5.
-            // This can happen if exponent was like "w^0*5" which is finite.
-            // Fallback to Rule 5 logic if B_exp is zero.
              if (this._tracer) this._tracer.consume();
-            // Ensure resultVal is safe
-            const resultVal_k_pow_r = Math.pow(k, r_val);
-            if (!Number.isSafeInteger(resultVal_k_pow_r) || resultVal_k_pow_r < 0) {
-                throw new Error(`Finite exponentiation result ${resultVal_k_pow_r} for k^r is too large or invalid.`);
-            }
+            // Use BigInt exponentiation for k^r
+            const resultVal_k_pow_r = k ** r_val;
             return new Ordinal(resultVal_k_pow_r, this._tracer);
         }
         
         if (this._tracer) this._tracer.consume(2); // For divideByOmega and k^r
         const xi_exp = B_exp.divideByOmega(); // ξ = B/ω
         
-        const k_pow_r_finite_val = Math.pow(k, r_val);
-        if (!Number.isSafeInteger(k_pow_r_finite_val) || k_pow_r_finite_val < 0) {
-            throw new Error(`Finite exponentiation result ${k_pow_r_finite_val} for k^r in finite^infinite case is too large or invalid.`);
-        }
-        const k_pow_r_ord = new Ordinal(k_pow_r_finite_val, this._tracer); // k^r
+        const k_pow_r_val = k ** r_val; // BigInt power
+        const k_pow_r_ord = new Ordinal(k_pow_r_val, this._tracer); // k^r
 
         // Result is (ω^ξ) * k^r
-        const omega_pow_xi = new Ordinal([{ exponent: xi_exp, coefficient: 1 }], this._tracer);
+        // Create ω^ξ: exponent is xi_exp (Ordinal), coefficient is 1n
+        const omega_pow_xi = new Ordinal([{ exponent: xi_exp, coefficient: 1n }], this._tracer);
         
         if (this._tracer) this._tracer.consume(); // For the final multiplication
         return omega_pow_xi.multiply(k_pow_r_ord);
     }
 
-    // Rule 7: α infinite, β = m (finite integer, m ≥ 2, as m=0,1 handled by Rules 1 & 4).
+    // Rule 7: α infinite, β = m (finite BigInt, m ≥ 2n).
     if (!base.isFinite() && exponent.isFinite()) {
-        const m = exponent.getFinitePart();
-        // Note: m=0 (Rule 1) and m=1 (Rule 4) should have been handled by top-level checks.
-        // Thus, if execution reaches here, m should be >= 2 (or an error if m < 0).
+        const m = exponent.getFinitePart(); // m is BigInt
 
-        if (m < 0) { // Should ideally be caught by Ordinal constructor or earlier validation
+        if (m < 0n) { 
             throw new Error("Finite exponent cannot be negative in ordinal exponentiation.");
         }
-        // If m < 2 (i.e. m=0 or m=1), those cases are already handled by Rules 1 and 4.
-        // The iterated multiplication loop below would also correctly handle them if it were reached.
+        // If m < 2n (i.e., m=0n or m=1n), those are handled by Rules 1 and 4.
 
-        // OPTIMIZATION for α = (ω^a * c) where exponent m is a finite integer >= 2.
-        // Formula: (ω^a * c)^m = ω^(a*m) * c.
+        // OPTIMIZATION for α = (ω^a * c) where exponent m is a finite BigInt >= 0n.
+        // Formula: (ω^a * c)^m = ω^(a*m) * c (if m>0). If m=0, result is 1 (handled by Rule 1).
+        // The coefficient 'c' is not raised to power 'm' in this specific ordinal rule.
+        // It should be ω^(a*m) * c for m > 0 if base.terms.length === 1
         if (base.terms.length === 1) {
-            // Since base is infinite and has one term ω^a * c, 'a' (base.terms[0].exponent) must be > 0.
-            const baseLeadTerm = base.terms[0];
+            const baseLeadTerm = base.terms[0]; // coefficient here is BigInt
             const a_ord = baseLeadTerm.exponent;    // Exponent of ω in the base (an Ordinal)
-            const c_val = baseLeadTerm.coefficient; // Coefficient (a number)
+            const c_val = baseLeadTerm.coefficient; // Coefficient (a BigInt)
 
-            if (this._tracer) this._tracer.consume(1); // Cost for this optimized path setup
+            if (this._tracer) this._tracer.consume(1); 
 
-            const m_as_ordinal = new Ordinal(m, this._tracer); // Convert m to an Ordinal for multiplication
+            const m_as_ordinal = new Ordinal(m, this._tracer); // Convert m (BigInt) to an Ordinal
             
-            // Calculate the new exponent for ω: a_ord * m_as_ordinal
             const new_omega_exponent = a_ord.multiply(m_as_ordinal); 
             
+            // The coefficient 'c_val' of the base is retained, not raised to power 'm'.
+            // Exception: if base itself is finite like (w^0*c)^m = c^m. But this case (base infinite)
+            // is handled here.
             return new Ordinal([{ exponent: new_omega_exponent, coefficient: c_val }], this._tracer);
         }
-        // else, base is a sum (e.g., ω+1), fall through to iterated multiplication for finite m (m >= 2 here).
+        // else, base is a sum (e.g., ω+1), fall through to iterated multiplication.
 
-        // Iterated multiplication for sum-bases with finite exponent m.
-        // (Given prior rules, m will be >= 2 if this part of Rule 7 is reached for a sum-base).
-        // The loop correctly handles m=0 (result=ONE), m=1 (result=base) if it were to be called with such m.
         let result = Ordinal.ONEStatic().clone(this._tracer);
-        for (let i = 0; i < m; i++) {
-            if (this._tracer) this._tracer.consume(); // Consume for the multiply operation setup/overhead
-                                                     // The multiply method will consume more internally.
+        // Loop m times using BigInt for loop counter
+        for (let i = 0n; i < m; i++) {
+            if (this._tracer) this._tracer.consume(); 
             result = result.multiply(base);
         }
         return result;
@@ -166,44 +166,34 @@ Ordinal.prototype.power = function(exponentOrdinal) {
 
     // Rule 8: α infinite, β infinite. α^β = α^B * α^m
     if (!base.isFinite() && !exponent.isFinite()) {
-        const m_val = exponent.getFinitePart();       // m (finite part of β)
+        const m_val = exponent.getFinitePart();       // m (finite part of β, BigInt)
         const B_exp_part = exponent.getLimitPart(); // B (limit part of β)
 
-        // Calculate α^m (iterated multiplication, using Rule 7 logic via recursive call)
-        // This re-call will correctly use the tracer.
-        if (this._tracer) this._tracer.consume(); // For the α^m power call
+        if (this._tracer) this._tracer.consume(); 
         const alpha_pow_m = base.power(new Ordinal(m_val, this._tracer));
 
         if (B_exp_part.isZero()) {
-            // Exponent's limit part was zero, so it was effectively finite.
-            // α^m is the full result.
             return alpha_pow_m;
         }
 
-        // Calculate α^B = ω^(α₁·B)
-        // Let α = ω^α₁*c₁ + R_α
-        const leadingTerm_base = base.getLeadingTerm();
+        const leadingTerm_base = base.getLeadingTerm(); // coefficient is BigInt
         if (!leadingTerm_base || leadingTerm_base.exponent.isZero()) {
-            // Base is somehow finite here, should have been caught.
             throw new Error("Internal error: Infinite base expected for α^B calculation.");
         }
-        const alpha1 = leadingTerm_base.exponent; // This is an Ordinal
+        const alpha1 = leadingTerm_base.exponent; 
 
-        // Calculate exponent for ω: α₁ · B
-        if (this._tracer) this._tracer.consume(); // For the α₁·B multiplication
+        if (this._tracer) this._tracer.consume(); 
         const exp_for_omega_base = alpha1.multiply(B_exp_part);
         
         const alpha_pow_B = new Ordinal([{
             exponent: exp_for_omega_base,
-            coefficient: 1 // Coefficient is 1 for ω^(...)
+            coefficient: 1n // Coefficient is 1n for ω^(...)
         }], this._tracer);
 
-        // Result is α^B * α^m
-        if (this._tracer) this._tracer.consume(); // For the final multiplication
+        if (this._tracer) this._tracer.consume(); 
         return alpha_pow_B.multiply(alpha_pow_m);
     }
 
-    // Should not be reached if all cases are covered
     throw new Error("Unhandled case in Ordinal.power");
 };
 

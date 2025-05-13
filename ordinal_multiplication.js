@@ -22,10 +22,10 @@
  *
  * 2. If β_i = k' (finite term, i.e., the finite part of β):
  *    (A+n) · k' :
- *      If A = 0 (α is finite n): n · k' (integer multiplication).
+ *      If A = 0 (α is finite n): n · k' (BigInt multiplication).
  *      If A ≠ 0 (α is infinite A+n): (A+n)·k' = A·k' + n·k' (distribute k' over A and n).
  *          A·k' = (ω^α₁*c₁ + R_A)·k' = ω^α₁*(c₁*k') + R_A  (k' multiplies only leading coeff of A).
- *          n·k' is integer multiplication.
+ *          n·k' is BigInt multiplication.
  *          The sum (A·k') + (n·k') is ordinal addition.
  */
 Ordinal.prototype.multiply = function(otherOrdinal) {
@@ -54,31 +54,31 @@ Ordinal.prototype.multiply = function(otherOrdinal) {
 
     // Iterate through each term of `otherOrdinal` (β_i)
     for (const betaTerm of otherOrdinal.terms) {
-        // betaTerm is { exponent: Ordinal, coefficient: number }
+        // betaTerm is { exponent: Ordinal, coefficient: BigInt }
         let productTerm; // This will be α · β_i
 
         // Let α = this.
-        // Deconstruct α into A (limit part) and n (finite part integer value)
+        // Deconstruct α into A (limit part) and n (finite part BigInt value)
         const A_alpha = this.getLimitPart();
-        const n_alpha_val = this.getFinitePart();
+        const n_alpha_val = this.getFinitePart(); // This is a BigInt
 
         if (!betaTerm.exponent.isZero()) {
             // --- Sub-rule 1: β_i = ω^e*k (infinite term) ---
             // (A+n) · (ω^e*k) = A · (ω^e*k)
-            // If A = 0 (α is finite n_alpha_val), then n_alpha_val · (ω^e*k) = ω^e*k (for n_alpha_val > 0)
+            // If A = 0 (α is finite n_alpha_val), then n_alpha_val · (ω^e*k) = ω^e*k (for n_alpha_val > 0n)
             // If A != 0, (A = ω^α₁*c₁ + R_A), then A · (ω^e*k) = ω^(α₁+e)*k
             
             if (A_alpha.isZero()) { // `this` (α) is finite (n_alpha_val)
-                if (n_alpha_val === 0) { // Should have been caught by this.isZero()
+                if (n_alpha_val === 0n) { // Should have been caught by this.isZero()
                     productTerm = Ordinal.ZEROStatic().clone(this._tracer);
-                } else { // n_alpha_val > 0. n_alpha_val * (ω^e*k) = ω^e*k
+                } else { // n_alpha_val > 0n. n_alpha_val * (ω^e*k) = ω^e*k
                     productTerm = new Ordinal([{ // Create the single term ordinal
                         exponent: betaTerm.exponent.clone(this._tracer),
-                        coefficient: betaTerm.coefficient
+                        coefficient: betaTerm.coefficient // coefficient from betaTerm is already BigInt
                     }], this._tracer);
                 }
             } else { // `this` (α) is infinite (A_alpha + n_alpha_val)
-                const leadingTerm_A_alpha = A_alpha.getLeadingTerm();
+                const leadingTerm_A_alpha = A_alpha.getLeadingTerm(); // Coefficient here is BigInt
                 const alpha1 = leadingTerm_A_alpha.exponent; // This is an Ordinal object
 
                 // New exponent for productTerm: α₁ + e (ordinal addition)
@@ -87,16 +87,16 @@ Ordinal.prototype.multiply = function(otherOrdinal) {
 
                 productTerm = new Ordinal([{
                     exponent: newExponent,
-                    coefficient: betaTerm.coefficient // Coefficient comes from β_i
+                    coefficient: betaTerm.coefficient // Coefficient comes from β_i, already BigInt
                 }], this._tracer);
             }
        } else {
             // --- Sub-rule 2: β_i = k' (finite term, coefficient of β_i) ---
             // (A+n) · k'  OR  (PurelyFinite) · k'
-            const k_prime = betaTerm.coefficient;
+            const k_prime = betaTerm.coefficient; // This is a BigInt
 
             if (A_alpha.isZero()) { // `this` (α) is finite (n_alpha_val)
-                // n_alpha_val · k' (integer multiplication)
+                // n_alpha_val · k' (BigInt multiplication)
                 productTerm = new Ordinal(n_alpha_val * k_prime, this._tracer);
             } else { // `this` (α) is infinite (A_alpha + n_alpha_val)
                      // Rule: (ω^α₁*c₁ + R)·k' = ω^α₁*(c₁*k') + R
@@ -104,12 +104,12 @@ Ordinal.prototype.multiply = function(otherOrdinal) {
 
                 const original_alpha_terms = this.terms.map(t => ({ // Clone all terms of 'this'
                     exponent: t.exponent.clone(this._tracer),
-                    coefficient: t.coefficient
+                    coefficient: t.coefficient // coefficient is already BigInt
                 }));
 
                 if (original_alpha_terms.length > 0) {
                     // Multiply coefficient of the leading term
-                    original_alpha_terms[0].coefficient *= k_prime;
+                    original_alpha_terms[0].coefficient *= k_prime; // BigInt multiplication
                 }
                 // The rest of the terms, including the original finite part of 'this', remain unchanged.
                 productTerm = new Ordinal(original_alpha_terms, this._tracer);

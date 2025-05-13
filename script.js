@@ -6,6 +6,62 @@
 // though mostly they are used internally by the calculator.
 // Assumes f and ORDINAL_ZERO (from ordinal_mapping.js) are globally available.
 
+/**
+ * Converts an Ordinal class instance (from ordinal_types.js)
+ * to the format expected by the f() function in ordinal_mapping.js.
+ * @param {Ordinal} ordInstance - An instance of the Ordinal class.
+ * @returns {object|BigInt} The representation for f().
+ */
+function convertOrdinalInstanceToFFormat(ordInstance) {
+    if (!ordInstance || !(ordInstance instanceof Ordinal)) {
+        console.error("Invalid input to convertOrdinalInstanceToFFormat:", ordInstance);
+        return typeof ORDINAL_ZERO !== 'undefined' ? ORDINAL_ZERO : 0n; 
+    }
+
+    if (ordInstance.isZero()) {
+        return typeof ORDINAL_ZERO !== 'undefined' ? ORDINAL_ZERO : 0n;
+    }
+    if (ordInstance.isFinite()) {
+        return ordInstance.getFinitePart(); // Returns a BigInt
+    }
+
+    const terms = ordInstance.terms; 
+
+    if (terms.length === 1 && terms[0].coefficient === 1n && !terms[0].exponent.isZero()) {
+        const k_rep_for_f = convertOrdinalInstanceToFFormat(terms[0].exponent);
+        return { type: 'pow', k: k_rep_for_f };
+    }
+
+    const firstTerm = terms[0]; 
+    const beta_rep_for_f = convertOrdinalInstanceToFFormat(firstTerm.exponent);
+    
+    const c_from_ordinal = firstTerm.coefficient; // This is BigInt
+    let c_int_for_f = Number(c_from_ordinal); // Convert to Number
+
+    // Warning for potential precision loss if original BigInt was very large
+    if ((c_from_ordinal > BigInt(Number.MAX_SAFE_INTEGER) || c_from_ordinal < BigInt(Number.MIN_SAFE_INTEGER)) && Number.isFinite(c_int_for_f)) {
+        // Only warn if it's still finite after conversion but was outside safe range.
+        // If it became Infinity, ordinal_mapping.js handles that.
+        console.warn(`Coefficient ${c_from_ordinal} was outside JS Number safe integer range. Converted to ${c_int_for_f} for f() mapping.`);
+    }
+    // The f() function in ordinal_mapping.js will validate if c_int_for_f is positive.
+    // Ordinal terms should have positive coefficients by definition.
+
+    let delta_rep_for_f;
+    if (terms.length === 1) {
+        delta_rep_for_f = typeof ORDINAL_ZERO !== 'undefined' ? ORDINAL_ZERO : 0n;
+    } else {
+        const remainderTerms = terms.slice(1).map(t => ({
+            exponent: t.exponent.clone(ordInstance._tracer), 
+            coefficient: t.coefficient 
+        }));
+        const remainderOrdinal = new Ordinal(remainderTerms, ordInstance._tracer); 
+        delta_rep_for_f = convertOrdinalInstanceToFFormat(remainderOrdinal);
+    }
+    
+    return { type: 'sum', beta: beta_rep_for_f, c: c_int_for_f, delta: delta_rep_for_f };
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     const ordinalInputElement = document.getElementById('ordinalInput');
     const calculateButton = document.getElementById('calculateButton');
@@ -126,65 +182,6 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log('Tooltip trigger element NOT found.');
     }
 
-    /**
-     * Converts an Ordinal class instance (from ordinal_types.js)
-     * to the format expected by the f() function in ordinal_mapping.js.
-     * @param {Ordinal} ordInstance - An instance of the Ordinal class.
-     * @returns {object|number} The representation for f().
-     */
-    function convertOrdinalInstanceToFFormat(ordInstance) {
-        if (!ordInstance || !(ordInstance instanceof Ordinal)) {
-            console.error("Invalid input to convertOrdinalInstanceToFFormat:", ordInstance);
-            // ORDINAL_ZERO should be globally available from ordinal_mapping.js
-            return typeof ORDINAL_ZERO !== 'undefined' ? ORDINAL_ZERO : 0;
-        }
-
-        if (ordInstance.isZero()) {
-            return typeof ORDINAL_ZERO !== 'undefined' ? ORDINAL_ZERO : 0;
-        }
-        if (ordInstance.isFinite()) {
-            return ordInstance.getFinitePart(); // Assumes this returns a number
-        }
-
-        // ordInstance is infinite and not zero.
-        const terms = ordInstance.terms;
-
-        // Case 1: Represents ω^k (single term, coefficient 1, exponent > 0)
-        // The Ordinal class stores ω^k as terms: [{ exponent: k_object, coefficient: 1 }]
-        // where k_object itself is an Ordinal.
-        if (terms.length === 1 && terms[0].coefficient === 1 && !terms[0].exponent.isZero()) {
-            const k_rep_for_f = convertOrdinalInstanceToFFormat(terms[0].exponent);
-            return { type: 'pow', k: k_rep_for_f };
-        }
-
-        // Case 2: Represents a sum ω^β * c + δ (or just ω^β * c if only one term with c > 1 or exp=0)
-        // The first term in CNF is ω^β * c.
-        const firstTerm = terms[0]; // This is { exponent: Ordinal, coefficient: number }
-        const beta_rep_for_f = convertOrdinalInstanceToFFormat(firstTerm.exponent);
-        const c_int_for_f = firstTerm.coefficient;
-        let delta_rep_for_f;
-
-        if (terms.length === 1) {
-            // This means it was ω^β * c (where c > 1 if β > 0, or β=0 and c is the finite value)
-            // If beta_rep_for_f is 0 (from exp being Ordinal.ZERO) and c_int_for_f is finite,
-            // then this should have been caught by ordInstance.isFinite().
-            // So, we assume beta_rep_for_f corresponds to an exponent > 0 if it's not finite.
-            delta_rep_for_f = typeof ORDINAL_ZERO !== 'undefined' ? ORDINAL_ZERO : 0;
-        } else {
-            // The rest of the terms form delta.
-            // Create a new Ordinal instance for the remainder.
-            const remainderTerms = terms.slice(1).map(t => ({
-                exponent: t.exponent.clone(ordInstance._tracer), // Clone with tracer
-                coefficient: t.coefficient
-            }));
-            // Pass the original tracer; if null, new Ordinal will handle it.
-            const remainderOrdinal = new Ordinal(remainderTerms, ordInstance._tracer); 
-            delta_rep_for_f = convertOrdinalInstanceToFFormat(remainderOrdinal);
-        }
-        
-        return { type: 'sum', beta: beta_rep_for_f, c: c_int_for_f, delta: delta_rep_for_f };
-    }
-
     function calculateAndDisplay() {
         const inputString = ordinalInputElement.value;
 
@@ -225,7 +222,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     const fFormattedOrdinal = convertOrdinalInstanceToFFormat(ordinalResultObject);
                     const mappedValue = f(fFormattedOrdinal); 
                     // Display with full precision (JavaScript's default string conversion for numbers)
-                    mappedValueTextElement.textContent = mappedValue.toString(); 
+                    if (typeof mappedValue === 'number' && !isNaN(mappedValue)) {
+                        mappedValueTextElement.textContent = mappedValue.toString();
+                    } else {
+                        mappedValueTextElement.textContent = mappedValue.toString();
+                    }
                     mappedValueTextElement.classList.remove('placeholder-text');
                 } catch (mapErr) {
                     console.error("Error calculating mapped value f(α):", mapErr);

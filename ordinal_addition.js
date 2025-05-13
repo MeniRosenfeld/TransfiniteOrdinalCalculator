@@ -50,27 +50,29 @@ Ordinal.prototype.add = function(otherOrdinal) {
     if (!this.isFinite() && otherOrdinal.isFinite()) {
         const newTerms = this.terms.map(t => ({ // Deep clone terms
             exponent: t.exponent.clone(this._tracer),
-            coefficient: t.coefficient
+            coefficient: t.coefficient // coefficient is already BigInt
         }));
-        const thisFinitePart = this.getFinitePart();
-        const otherFinitePart = otherOrdinal.getFinitePart();
-        const combinedFinitePart = thisFinitePart + otherFinitePart;
+        const thisFinitePart = this.getFinitePart(); // Returns BigInt
+        const otherFinitePart = otherOrdinal.getFinitePart(); // Returns BigInt
+        const combinedFinitePart = thisFinitePart + otherFinitePart; // BigInt addition
 
-        if (thisFinitePart > 0) { // `this` had a finite part, modify it
+        if (thisFinitePart > 0n) { // `this` had a finite part, modify it
             newTerms[newTerms.length - 1].coefficient = combinedFinitePart;
-            if (combinedFinitePart === 0) { // e.g. (w+1)+(-1) is not ordinal arithmetic, but if it resulted in 0
-                newTerms.pop(); // Should not happen with non-negative ordinals.
+            if (combinedFinitePart === 0n) { 
+                newTerms.pop(); 
             }
-        } else if (combinedFinitePart > 0) { // `this` had no finite part, add the new one
+        } else if (combinedFinitePart > 0n) { // `this` had no finite part, add the new one
             newTerms.push({ exponent: Ordinal.ZEROStatic().clone(this._tracer), coefficient: combinedFinitePart });
         }
-        // If combinedFinitePart is 0 and this had no finite part, no change needed.
+        // If combinedFinitePart is 0n and this had no finite part, no change needed.
         return new Ordinal(newTerms, this._tracer); // Constructor normalizes (sorts if needed)
     }
 
     // Case 5: `this` is finite, `otherOrdinal` is finite (both non-zero)
     if (this.isFinite() && otherOrdinal.isFinite()) {
-        return new Ordinal(this.terms[0].coefficient + otherOrdinal.terms[0].coefficient, this._tracer);
+        // Both getFinitePart() return BigInts, their sum is a BigInt.
+        // The Ordinal constructor will handle creating a term with this BigInt.
+        return new Ordinal(this.getFinitePart() + otherOrdinal.getFinitePart(), this._tracer);
     }
 
     // Case 6: Both `this` and `otherOrdinal` are infinite. This is the core CNF addition logic.
@@ -86,7 +88,7 @@ Ordinal.prototype.add = function(otherOrdinal) {
     while (i < this.terms.length && this.terms[i].exponent.compareTo(firstExpOther) > 0) {
         newTerms.push({
             exponent: this.terms[i].exponent.clone(this._tracer),
-            coefficient: this.terms[i].coefficient
+            coefficient: this.terms[i].coefficient // coefficient is already BigInt
         });
         i++;
     }
@@ -100,13 +102,13 @@ Ordinal.prototype.add = function(otherOrdinal) {
             // Add this combined term
             newTerms.push({
                 exponent: currentThisTermExp.clone(this._tracer),
-                coefficient: this.terms[i].coefficient + firstTermOther.coefficient
+                coefficient: this.terms[i].coefficient + firstTermOther.coefficient // BigInt addition
             });
             // Append the rest of otherOrdinal's terms (after its first term)
             for (let j = 1; j < otherOrdinal.terms.length; j++) {
                 newTerms.push({
                     exponent: otherOrdinal.terms[j].exponent.clone(this._tracer),
-                    coefficient: otherOrdinal.terms[j].coefficient
+                    coefficient: otherOrdinal.terms[j].coefficient // coefficient is already BigInt
                 });
             }
         } else { // currentThisTermExp.compareTo(firstExpOther) < 0
@@ -118,7 +120,7 @@ Ordinal.prototype.add = function(otherOrdinal) {
             for (let j = 0; j < otherOrdinal.terms.length; j++) {
                  newTerms.push({
                     exponent: otherOrdinal.terms[j].exponent.clone(this._tracer),
-                    coefficient: otherOrdinal.terms[j].coefficient
+                    coefficient: otherOrdinal.terms[j].coefficient // coefficient is already BigInt
                 });
             }
         }
@@ -142,7 +144,7 @@ Ordinal.prototype.add = function(otherOrdinal) {
         for (let j = 0; j < otherOrdinal.terms.length; j++) {
             newTerms.push({
                 exponent: otherOrdinal.terms[j].exponent.clone(this._tracer),
-                coefficient: otherOrdinal.terms[j].coefficient
+                coefficient: otherOrdinal.terms[j].coefficient // coefficient is already BigInt
             });
         }
     }

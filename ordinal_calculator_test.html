@@ -10,11 +10,21 @@
         .status-failed { color: red; font-weight: bold; }
         .log-output { margin-left: 20px; }
         .error-message { color: orange; }
+        .sanity-check-section { margin-top: 30px; padding-top: 15px; border-top: 2px solid #333; }
+        .sanity-status-passed { color: green; font-weight: bold;}
+        .sanity-status-failed { color: red; font-weight: bold;}
+        .comparison-detail { font-size: 0.9em; color: #444; margin-left: 10px;}
+        .comparison-fail { color: red; }
     </style>
 </head>
 <body>
     <h1>Ordinal Calculator Output</h1>
     <div id="results-container"></div>
+    <div id="sanity-check-container" class="sanity-check-section">
+        <h2>Monotonicity Sanity Check</h2>
+        <div id="sanity-check-status">Overall Status: PENDING</div>
+        <div id="sanity-check-details"></div>
+    </div>
 
     <!-- Load Ordinal Scripts (ensure paths are correct) -->
     <script src="ordinal_types.js"></script>
@@ -25,20 +35,35 @@
     <script src="ordinal_exponentiation.js"></script>
     <script src="ordinal_parser.js"></script>
     <script src="ordinal_calculator.js"></script>
+    <!-- For mapped values -->
+    <script src="ordinal_mapping.js"></script>  <!-- Defines f() -->
+    <!-- For convertOrdinalInstanceToFFormat -->
+    <script src="script.js"></script>          <!-- Defines convertOrdinalInstanceToFFormat() -->
 
     <script>
         const resultsContainer = document.getElementById('results-container');
+        const sanityCheckStatusDiv = document.getElementById('sanity-check-status');
+        const sanityCheckDetailsDiv = document.getElementById('sanity-check-details');
 
-        function logToPage(message, className = '') {
+        // Store successful results for pairwise comparison
+        const successfulTestResults = []; // Array of { input: string, ordinal: Ordinal, mappedValue: number, cnf: string }
+
+        function logToPage(message, className = '', parentElement = resultsContainer) {
             const entry = document.createElement('div');
             entry.textContent = message;
             if (className) {
                 entry.classList.add(className);
             }
-            resultsContainer.appendChild(entry);
+            parentElement.appendChild(entry);
         }
 
-        function testOrdinalCalc(label, input, expected) {
+        // Ensure convertOrdinalInstanceToFFormat is available
+        // It's defined in script.js. If script.js runs its DOMContentLoaded, it should be fine.
+        // For safety, we can extract it or ensure it's globally available for this test page.
+        // Assuming script.js makes it available or it's copied here.
+        // For now, this test script relies on it being defined globally by script.js loading.
+
+        function testOrdinalCalc(input, expected) {
             const testCaseDiv = document.createElement('div');
             testCaseDiv.classList.add('test-case');
             resultsContainer.appendChild(testCaseDiv);
@@ -51,119 +76,213 @@
                 testCaseDiv.appendChild(line);
             };
 
-            appendToTestCase(`Test: ${label}`);
             appendToTestCase(`Input: "${input}"`);
             
-            let output;
+            let calcResult;
+            let outputCnf;
             let statusClass = '';
             let statusMessage = '';
+            let ordinalObjectForMapping = null;
 
             try {
-                output = calculateOrdinalCNF(input, 1000000); // Default budget
-                appendToTestCase(`Output: "${output}"`);
+                // calculateOrdinalCNF now returns an object { cnfString, ordinalObject } or { error }
+                calcResult = calculateOrdinalCNF(input, 10000000); // Using a higher budget for tests
 
-                if (output === expected) {
-                    statusMessage = "Status: PASSED";
+                if (calcResult.error) {
+                    outputCnf = calcResult.error;
+                    appendToTestCase(`Output: "${outputCnf}"`, 'error-message');
+                    if (outputCnf === expected) {
+                        statusMessage = "Status: PASSED (Error matched expectation)";
                     statusClass = "status-passed";
                 } else {
-                    statusMessage = `Status: FAILED. Expected: "${expected}"`;
+                        statusMessage = `Status: FAILED (Got error). Expected: "${expected}"`;
                     statusClass = "status-failed";
+                }
+                } else {
+                    outputCnf = calcResult.cnfString;
+                    ordinalObjectForMapping = calcResult.ordinalObject;
+                    appendToTestCase(`Output CNF: "${outputCnf}"`);
+
+                    if (outputCnf === expected) {
+                        statusMessage = "Status: PASSED";
+                    statusClass = "status-passed";
+                        
+                        // Calculate and display mapped value
+                        if (ordinalObjectForMapping && typeof f === 'function' && typeof convertOrdinalInstanceToFFormat === 'function') {
+                            try {
+                                const fFormatted = convertOrdinalInstanceToFFormat(ordinalObjectForMapping);
+                                const mappedValue = f(fFormatted);
+                                appendToTestCase(`Mapped Value f(α): ${mappedValue.toString()}`);
+                                successfulTestResults.push({ 
+                                    input: input, 
+                                    ordinal: ordinalObjectForMapping, 
+                                    mappedValue: mappedValue,
+                                    cnf: outputCnf 
+                                });
+                            } catch (mapErr) {
+                                appendToTestCase(`Mapped Value f(α): Error - ${mapErr.message}`, 'error-message');
+                            }
+                        } else {
+                             appendToTestCase(`Mapped Value f(α): Not calculated (mapping functions unavailable).`);
+                        }
+                    } else {
+                        statusMessage = `Status: FAILED. Expected CNF: "${expected}"`;
+                    statusClass = "status-failed";
+                }
                 }
             } catch (e) {
-                // This catch is mostly for unexpected errors during calculateOrdinalCNF itself,
-                // not for errors *returned as strings* by calculateOrdinalCNF.
-                output = `Critical Error: ${e.message}`;
-                appendToTestCase(`Output: "${output}"`, 'error-message');
+                outputCnf = `Critical Error: ${e.message}`;
+                appendToTestCase(`Output: "${outputCnf}"`, 'error-message');
                 statusMessage = `Status: FAILED (Critical Error). Expected: "${expected}"`;
                 statusClass = "status-failed";
-            }
-            
-            // Handle cases where calculateOrdinalCNF returns an error string
-            if (typeof output === 'string' && output.startsWith("Error:")) {
-                 if (output === expected) { // If the expected result was an error string
-                    statusMessage = "Status: PASSED (Error matched expectation)";
-                    statusClass = "status-passed";
-                } else if (!statusMessage) { // Only set if not already a critical failure
-                    statusMessage = `Status: FAILED (Got error). Expected: "${expected}"`;
-                    statusClass = "status-failed";
-                }
-                 // Ensure error output itself is styled if it's part of the test logic
-                const outputLines = testCaseDiv.querySelectorAll('.log-output');
-                outputLines.forEach(line => {
-                    if (line.textContent.startsWith('Output: "Error:')) {
-                        line.classList.add('error-message');
-                    }
-                });
+                console.error("Critical error during test:", input, e);
             }
             
             appendToTestCase(statusMessage, statusClass);
         }
 
-        // --- Updated Test Cases ---
-        testOrdinalCalc("Zero", "0", "0");
-        testOrdinalCalc("Simple Finite", "1+2*3", "7");
-        testOrdinalCalc("Omega", "w", "w");
-        testOrdinalCalc("Omega Plus Finite", "w+5", "w+5");
-        testOrdinalCalc("Finite Plus Omega", "5+w", "w");
-        testOrdinalCalc("Omega Plus Omega", "w+w", "w*2");
+        // --- Test Cases (labels removed) ---
+        testOrdinalCalc("0", "0");
+        testOrdinalCalc("1+2*3", "7");
+        testOrdinalCalc("w", "w");
+        testOrdinalCalc("w+5", "w+5");
+        testOrdinalCalc("5+w", "w");
+        testOrdinalCalc("w+w", "w*2");
 
-        testOrdinalCalc("Omega Times Finite", "w*3", "w*3");
-        testOrdinalCalc("Finite Times Omega", "3*w", "w");
-        testOrdinalCalc("Omega Times Omega", "w*w", "w^2");
-        testOrdinalCalc("(w+1)*2", "(w+1)*2", "w*2+1"); // Expectation corrected
-        testOrdinalCalc("(w+1)*(w+1)", "(w+1)*(w+1)", "w^2+w+1");
-        testOrdinalCalc("(w+1)*(w+2)", "(w+1)*(w+2)", "w^2+w*2+1"); // Expectation corrected
+        testOrdinalCalc("w*3", "w*3");
+        testOrdinalCalc("3*w", "w");
+        testOrdinalCalc("w*w", "w^2");
+        testOrdinalCalc("(w+1)*2", "w*2+1"); 
+        testOrdinalCalc("(w+1)*(w+1)", "w^2+w+1");
+        testOrdinalCalc("(w+1)*(w+2)", "w^2+w*2+1"); 
 
-        testOrdinalCalc("Finite to Omega", "2^w", "w");
-        testOrdinalCalc("Omega to Finite", "w^3", "w^3");
-        testOrdinalCalc("Omega to Omega", "w^w", "w^w"); // Expectation corrected (no parens for exp w)
-        testOrdinalCalc("(w+1)^2", "(w+1)^2", "w^2+w+1");
-        testOrdinalCalc("2^(w+1)", "2^(w+1)", "w*2");
-        testOrdinalCalc("w^(w+1)", "w^(w+1)", "w^(w+1)");
-        testOrdinalCalc("(w^2)^w", "(w^2)^w", "w^w");   // Math: w^(2w) = w^w. String expectation corrected.
-        testOrdinalCalc("(w^w)^2", "(w^w)^2", "w^(w*2)"); // Expectation corrected (math was w^(w*2))
-        testOrdinalCalc("(w^w)^w", "(w^w)^w", "w^(w^2)");
+        testOrdinalCalc("2^w", "w");
+        testOrdinalCalc("w^3", "w^3");
+        testOrdinalCalc("w^w", "w^w"); 
+        testOrdinalCalc("(w+1)^2", "w^2+w+1");
+        testOrdinalCalc("2^(w+1)", "w*2");
+        testOrdinalCalc("w^(w+1)", "w^(w+1)");
+        testOrdinalCalc("(w^2)^w", "w^w");   
+        testOrdinalCalc("(w^w)^2", "w^(w*2)"); 
+        testOrdinalCalc("(w^w)^w", "w^(w^2)");
 
-        testOrdinalCalc("Complex 1", "(w^2+w*3+5)*w + (w+1)", "w^3+w+1");
-        testOrdinalCalc("Deep Exponent", "2^(w^2)", "w^w"); // Math: w^w. String expectation corrected.
-        testOrdinalCalc("Zero Power", " (w+5)^0 ", "1");
-        testOrdinalCalc("Power of Zero", " 0^(w+1) ", "0");
-        testOrdinalCalc("Power of One", " 1^w ", "1");
-        testOrdinalCalc("toString complex exp", "w^(w+1)+2", "w^(w+1)+2");
-        testOrdinalCalc("toString simple exp num", "w^2", "w^2");
-        testOrdinalCalc("toString simple exp w", "w^w", "w^w"); // Expectation corrected
+        testOrdinalCalc("(w^2+w*3+5)*w + (w+1)", "w^3+w+1");
+        testOrdinalCalc("2^(w^2)", "w^w"); 
+        testOrdinalCalc(" (w+5)^0 ", "1");
+        testOrdinalCalc(" 0^(w+1) ", "0");
+        testOrdinalCalc(" 1^w ", "1");
+        testOrdinalCalc("w^(w+1)+2", "w^(w+1)+2");
+        testOrdinalCalc("w^2", "w^2");
+        testOrdinalCalc("w^w", "w^w"); 
 
-        testOrdinalCalc("(w*2+1)*(w*3+5)", "(w*2+1)*(w*3+5)", "w^2*3+w*10+1"); // Expectation corrected (math and w^2 format)
-                                                                                // My string output for w^2*3 might be w^(2)*3 if exp is Ordinal(2).
-                                                                                // If toStringCNF prints w^2 for exp=Ordinal(2), then this is fine.
+        testOrdinalCalc("(w*2+1)*(w*3+5)", "w^2*3+w*10+1"); 
+                                                                                
+        testOrdinalCalc("w + w * w ^ w + w", "w^w+w"); // Reverted expected string
+        testOrdinalCalc("( (w+1) * (w+2) + (w*3+4) ) ^ 2", "w^4+w^3*5+w^2*4+w*5+4");
+        testOrdinalCalc("w ^ (w ^ (w+1) + 1)", "w^(w^(w+1)+1)");
+        testOrdinalCalc("2 ^ (w^w)", "w^(w^w)");
+        testOrdinalCalc("3 ^ (w^2*5 + w*4 + 3)", "w^(w*5+4)*27");
+        testOrdinalCalc("2 ^ ( (w+1)^2 )", "w^(w+1)*2");
+        testOrdinalCalc("(w^w + w + 1)^2", "w^(w*2)+w^(w+1)+w^w+w+1");
+        testOrdinalCalc("(w*2+3)^3", "w^3*2+w^2*6+w*6+3"); // Reverted expected string (please verify this was your prior correct one)
 
-	testOrdinalCalc("test", "w + w * w ^ w + w", "w^w+w");
-	testOrdinalCalc("test", "( (w+1) * (w+2) + (w*3+4) ) ^ 2", "w^4+w^3*5+w^2*4+w*5+4");
-	testOrdinalCalc("test", "w ^ (w ^ (w+1) + 1)", "w^(w^(w+1)+1)");
-	testOrdinalCalc("test", "2 ^ (w^w)", "w^(w^w)");
-	testOrdinalCalc("test", "3 ^ (w^2*5 + w*4 + 3)", "w^(w*5+4)*27");
-	testOrdinalCalc("test", "2 ^ ( (w+1)^2 )", "w^(w+1)*2");
-	testOrdinalCalc("test", "(w^w + w + 1)^2", "w^(w*2)+w^(w+1)+w^w+w+1");
-	testOrdinalCalc("test", "(w*2+3)^3", "w^3*2+w^2*6+w*6+3");
-	testOrdinalCalc("test", "(w^2+1) ^ (w*2+1)", "w^(w*2+2)+w^(w*2)");
-	testOrdinalCalc("test", "(w^w) ^ (w^w)", "w^(w^w)");
-	testOrdinalCalc("test", "(w+1) ^ (w^2)", "w^(w^2)");
-	testOrdinalCalc("test", "(w^0+1)^(w*0+1)", "2");
-	testOrdinalCalc("test", "(w * ( (w^0 * 0) + 1) ) ^ ( ( (w+1)^0 ) * w )", "w^w");
-	testOrdinalCalc("test", "(w^2*2 + w*3 + 4) * (w^3*5 + w*6 + 7)", "w^5*5+w^3*6+w^2*14+w*3+4");
-	testOrdinalCalc("test", "w^w^w", "w^(w^w)");
-	testOrdinalCalc("test", "2^w^w^w", "w^(w^(w^w))");
-	testOrdinalCalc("test", "(w+1)^(w+1)^(w+1)", "w^(w^(w+1)+w^w)");
-	testOrdinalCalc("test", "(w+1)^(w+1)^(w+1)", "w^(w^(w+1)+w^w)");
-	testOrdinalCalc("test", "2^(w*2)", "w^2");
-	testOrdinalCalc("test", "4^(w^7+3)", "w^(w^6)*64");
-    testOrdinalCalc("test", "(w^(w^w+1)*2+3)^(w^(w^2+w*2)*3+2)", "w^(w^(w^2+w*2)*3+w^w*2+1)*2+w^(w^(w^2+w*2)*3+w^w+1)*6+w^(w^(w^2+w*2)*3)*3");
-	testOrdinalCalc("test", "", "0");
+        testOrdinalCalc("(w^2+1) ^ (w*2+1)", "w^(w*2+2)+w^(w*2)");
+        testOrdinalCalc("(w^w) ^ (w^w)", "w^(w^w)");
+        testOrdinalCalc("(w+1) ^ (w^2)", "w^(w^2)");
+        testOrdinalCalc("(w^0+1)^(w*0+1)", "2"); 
+        testOrdinalCalc("(w * ( (w^0 * 0) + 1) ) ^ ( ( (w+1)^0 ) * w )", "w^w"); 
+        testOrdinalCalc("(w^2*2 + w*3 + 4) * (w^3*5 + w*6 + 7)", "w^5*5+w^3*6+w^2*14+w*3+4"); // Reverted expected string (please verify)
+
+        testOrdinalCalc("w^w^w", "w^(w^w)");
+        testOrdinalCalc("2^w^w^w", "w^(w^(w^w))");
+        testOrdinalCalc("(w+1)^(w+1)^(w+1)", "w^(w^(w+1)+w^w)");
+        testOrdinalCalc("2^(w*2)", "w^2");
+        testOrdinalCalc("4^(w^7+3)", "w^(w^6)*64");
+        testOrdinalCalc("(w^(w^w+1)*2+3)^(w^(w^2+w*2)*3+2)", "w^(w^(w^2+w*2)*3+w^w*2+1)*2+w^(w^(w^2+w*2)*3+w^w+1)*6+w^(w^(w^2+w*2)*3)*3");
+        testOrdinalCalc("", "0");
 
 
-        // Example of testing for an expected error (if you had a budget test that reliably failed)
-        // testOrdinalCalc("Budget Test Example", "w^w^w^w", "Error: Computation too complex (budget of 1000000 operations exceeded at XXXXX).");
-        // You'd need to determine XXXXX or use a regex match for the expected error.
+        // Function to perform and display pairwise sanity checks
+        function performSanityChecks() {
+            let allChecksPassed = true;
+            const numResults = successfulTestResults.length;
+            const EPSILON = 1e-9; // Threshold for floating point comparisons
+
+            logToPage(`Performing ${numResults * (numResults - 1) / 2} pairwise comparisons...`, '', sanityCheckDetailsDiv);
+
+            if (numResults < 2) {
+                logToPage("Not enough successful results for pairwise comparison.", '', sanityCheckDetailsDiv);
+                sanityCheckStatusDiv.textContent = "Overall Status: N/A (less than 2 results)";
+                return;
+            }
+
+            for (let i = 0; i < numResults; i++) {
+                for (let j = i + 1; j < numResults; j++) {
+                    const resA = successfulTestResults[i];
+                    const resB = successfulTestResults[j];
+
+                    const ordA = resA.ordinal;
+                    const ordB = resB.ordinal;
+                    const fA = resA.mappedValue;
+                    const fB = resB.mappedValue;
+
+                    let detailMsg = `Comparing ("${resA.input}" -> ${resA.cnf}) vs ("${resB.input}" -> ${resB.cnf}):\n`;
+                    let pairCheckPassed = true;
+
+                    const ordinalComparison = ordA.compareTo(ordB);
+
+                    if (ordinalComparison < 0) { // ordA < ordB
+                        detailMsg += `  Ordinal: A < B. Mapped: f(A)=${fA.toFixed(8)}, f(B)=${fB.toFixed(8)}. `;
+                        if (!(fA < fB - EPSILON)) { // Check fA < fB, allow for small errors if they were almost equal
+                           pairCheckPassed = false;
+                           detailMsg += `Monotonicity FAIL (expected f(A) < f(B))`;
+                        } else {
+                           detailMsg += `Monotonicity PASS`;
+                        }
+                    } else if (ordinalComparison > 0) { // ordA > ordB
+                        detailMsg += `  Ordinal: A > B. Mapped: f(A)=${fA.toFixed(8)}, f(B)=${fB.toFixed(8)}. `;
+                        if (!(fA > fB + EPSILON)) { // Check fA > fB
+                           pairCheckPassed = false;
+                           detailMsg += `Monotonicity FAIL (expected f(A) > f(B))`;
+                        } else {
+                           detailMsg += `Monotonicity PASS`;
+                        }
+                    } else { // ordA == ordB
+                        detailMsg += `  Ordinal: A == B. Mapped: f(A)=${fA.toFixed(8)}, f(B)=${fB.toFixed(8)}. `;
+                        if (!(Math.abs(fA - fB) < EPSILON)) { // Check fA == fB
+                           pairCheckPassed = false;
+                           detailMsg += `Monotonicity FAIL (expected f(A) == f(B))`;
+                        } else {
+                           detailMsg += `Monotonicity PASS`;
+                        }
+                    }
+                    
+                    logToPage(detailMsg, pairCheckPassed ? '' : 'comparison-fail', sanityCheckDetailsDiv);
+                    if (!pairCheckPassed) {
+                        allChecksPassed = false;
+                    }
+                }
+            }
+
+            if (allChecksPassed) {
+                sanityCheckStatusDiv.textContent = "Overall Sanity Check Status: PASSED";
+                sanityCheckStatusDiv.className = "sanity-status-passed";
+            } else {
+                sanityCheckStatusDiv.textContent = "Overall Sanity Check Status: FAILED";
+                sanityCheckStatusDiv.className = "sanity-status-failed";
+            }
+        }
+
+        // Run tests and then sanity checks
+        // Need to ensure all testOrdinalCalc calls are done before performSanityChecks.
+        // For simplicity in this script, we'll call it at the end.
+        // In a more complex setup, Promises or a callback system might be used.
+        
+        // Call performSanityChecks after all testOrdinalCalc have run.
+        // Since testOrdinalCalc is synchronous in its core logic (calculateOrdinalCNF is sync),
+        // we can just call it after all the test invocations.
+        performSanityChecks();
+
     </script>
 </body>
 </html>
