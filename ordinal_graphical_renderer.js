@@ -2,12 +2,13 @@
 
 // Assumes CNFOrdinal class and its methods (isZero, terms, exponent, coefficient, equals, ONEStatic)
 // are available globally or via modules if this were refactored.
-// Assumes EpsilonNaughtOrdinal class is defined.
+// Assumes EpsilonNaughtOrdinal and WTowerOrdinal classes are defined.
 
 /**
- * Renders an Ordinal object (CNFOrdinal or EpsilonNaughtOrdinal) into an HTML string for graphical display.
- * Uses ω for omega, ε₀ for epsilon-naught, and actual superscripts for exponentiation.
- * @param {CNFOrdinal | EpsilonNaughtOrdinal} ordinal The Ordinal object to render.
+ * Renders an Ordinal object (CNFOrdinal, EpsilonNaughtOrdinal, or WTowerOrdinal) 
+ * into an HTML string for graphical display.
+ * Uses ω for omega, ε₀ for epsilon-naught, ω↑↑n for WTowerOrdinal, and actual superscripts for exponentiation.
+ * @param {CNFOrdinal | EpsilonNaughtOrdinal | WTowerOrdinal} ordinal The Ordinal object to render.
  * @returns {string} HTML string representation.
  */
 function renderOrdinalGraphical(ordinal) {
@@ -18,6 +19,12 @@ function renderOrdinalGraphical(ordinal) {
 
     if (ordinal instanceof EpsilonNaughtOrdinal) {
         return '<span class="epsilon-naught">ε<sub>0</sub></span>';
+    }
+
+    if (ordinal instanceof WTowerOrdinal) {
+        // Render as ω↑↑n or similar. Example: ω<span class="tetration-symbol">↑↑</span><span class="height">n</span>
+        // Using standard text for arrows for now, can be enhanced with CSS or MathML-like spans if needed.
+        return `<span class="omega">ω</span><span class="operator tetration-operator">↑↑</span><span class="coefficient tower-height">${ordinal.height}</span>`;
     }
 
     if (ordinal instanceof CNFOrdinal) {
@@ -57,6 +64,6 @@ function renderOrdinalGraphical(ordinal) {
     }
 
     // Fallback for unknown ordinal types
-    console.error("renderOrdinalGraphical expects a CNFOrdinal or EpsilonNaughtOrdinal object.", ordinal);
+    console.error("renderOrdinalGraphical expects a CNFOrdinal, EpsilonNaughtOrdinal, or WTowerOrdinal object.", ordinal);
     return '<span style="color:red;">Error: Unknown ordinal type</span>';
 }

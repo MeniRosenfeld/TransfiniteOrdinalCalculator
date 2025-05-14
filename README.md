@@ -1,26 +1,44 @@
-# Ordinal Number Calculator (Cantor Normal Form)
+# Transfinite Ordinal Calculator
 
-This web application provides a user-friendly interface to parse expressions representing ordinal numbers and calculates their Cantor Normal Form (CNF). It displays the result in both a traditional linear string format and a graphical representation using mathematical symbols (ω for omega and proper superscripts for exponentiation).
+This web application provides a user-friendly interface to parse expressions representing ordinal numbers and calculates their representation up to ε₀ (epsilon-naught), typically in Cantor Normal Form (CNF) for ordinals less than ε₀. It displays the result in both a traditional linear string format and a graphical representation using mathematical symbols.
 
 **Live Demo:** [On Github Pages](https://menirosenfeld.github.io/TransfiniteOrdinalCalculator/)
 
 ## Features
 
 *   **Parses Ordinal Expressions:** Accepts input strings with:
-    *   Non-negative integers (e.g., `0`, `1`, `42`).
+    *   Non-negative integers (e.g., `0`, `1`, `42`), parsed using `BigInt` for exact arithmetic.
     *   The symbol `w` for the smallest infinite ordinal, omega (ω).
+    *   The symbol `e_0` for epsilon-naught (ε₀), the first fixed point of ω^x=x.
     *   Standard arithmetic operations:
-        *   Addition: `+`
-        *   Multiplication: `*`
-        *   Exponentiation: `^`
+        *   Addition: `+` (left-associative)
+        *   Multiplication: `*` (left-associative)
+        *   Exponentiation: `^` (right-associative)
+        *   Tetration: `^^` (right-associative, highest precedence)
     *   Parentheses `()` for grouping and controlling order of operations.
-*   **Calculates Cantor Normal Form (CNF):** Implements the standard rules for ordinal addition, multiplication, and exponentiation to produce accurate CNF results for ordinals less than epsilon-naught (ε₀).
+*   **Multiple Ordinal Types:** Internally represents and operates on:
+    *   `CNFOrdinal`: For ordinals representable in Cantor Normal Form.
+    *   `EpsilonNaughtOrdinal`: For the ordinal ε₀.
+    *   `WTowerOrdinal`: For ordinals of the form ω↑↑n (ω tetrated to a finite height n), like ω, ω^ω, ω^(ω^ω), etc. These are converted to `CNFOrdinal` for most operations.
+*   **Calculates Ordinal Forms:**
+    *   Implements the standard rules for ordinal addition, multiplication, exponentiation, and tetration.
+    *   Produces accurate CNF for ordinals less than ε₀.
+    *   Handles operations involving ε₀ according to defined rules (e.g., `α + ε₀ = ε₀` for α < ε₀, `k^^ε₀ = ω` for finite k>1, `α^^ε₀ = ε₀` for infinite α).
 *   **Dual Display:**
-    *   **Graphical Representation:** Renders the CNF using the proper omega symbol (ω) and true superscripts for exponents, with nested superscripts sized appropriately for readability.
-    *   **Linear String Representation:** Provides the standard text-based CNF.
+    *   **Graphical Representation:** Renders the result using symbols like ω, ε₀, ω↑↑n, and true superscripts for exponents, with nested superscripts sized appropriately.
+    *   **Linear String Representation:** Provides the standard text-based CNF or "e_0" / "w^^n".
+*   **Result Simplification:**
+    *   Automatically simplifies very complex results based on a structural complexity budget (`g(α)`) to enhance readability.
+    *   If simplification occurs, an indicator (e.g., `(Displayed complexity: G_simp / G_orig)`) is shown alongside the graphical result.
+*   **Ordinal-to-Real Number Mapping `f(α)`:**
+    *   Displays a strictly increasing mapping `f(α)` which maps ordinals α < ε₀ to the real interval `[0, 5)`.
+    *   This mapping uses the *original, unsimplified* ordinal value.
+    *   A tooltip explains the basis of this mapping.
 *   **Copy Functionality:**
     *   Button to copy the graphical representation as an image to the clipboard.
     *   Button to copy the linear string representation to the clipboard.
+*   **Shareable Links:**
+    *   Button to generate a URL that pre-fills the calculator with the current expression.
 *   **Operation Budget:** Includes an internal operation counter to prevent excessively long computations for extremely complex inputs, halting with an error if a predefined budget is exceeded.
 *   **User-Friendly Interface:** Clean layout with input field, clear result displays, and instructions.
 *   **Static Website:** Built with HTML, CSS, and vanilla JavaScript, making it easy to host.
@@ -28,64 +46,82 @@ This web application provides a user-friendly interface to parse expressions rep
 ## How to Use the Online Calculator
 
 1.  **Enter Expression:** Type your ordinal expression into the input box. Examples:
-    *   `w+1`
-    *   `(w+1)*2`
-    *   `w*w` or `w^2`
-    *   `2^w`
-    *   `w^(w+1)`
-    *   `(w^w)^w`
-    *   `(w^2+w*3+5)*w + (w+1)`
-2.  **Calculate:** Click the "Calculate CNF" button or press Enter.
-3.  **View Results:** The Cantor Normal Form will be displayed in both graphical and linear string formats.
+    *   `w+1` ➜ `w+1`
+    *   `(w+1)*2` ➜ `w*2+1`
+    *   `w*w` or `w^2` ➜ `w^2`
+    *   `2^w` ➜ `w`
+    *   `w^(w+1)` ➜ `w^(w+1)`
+    *   `(w^w)^w` ➜ `w^(w^2)`
+    *   `2^^3` (2↑↑3) ➜ `16`
+    *   `w^^2` (ω↑↑2) ➜ `w^w`
+    *   `w^^w` (ω↑↑ω) ➜ `e_0`
+    *   `e_0+1` ➜ Unspported in the current implementation, largest ordinal is `e_0`.
+    *   `w+e_0` ➜ `e_0`
+2.  **Calculate:** Click the "Calculate" button or press Enter.
+3.  **View Results:** The result will be displayed in both graphical and linear string formats.
+    *   The mapped real value `f(α)` will also be shown.
+    *   If the displayed ordinal was simplified, complexity information will appear.
 4.  **Copy (Optional):**
     *   Click "Copy as Image" to copy the graphical rendering.
     *   Click "Copy Text" to copy the linear string.
+5.  **Share (Optional):**
+    *   Click "Share Link" to get a URL for the current expression.
 
 ## Technical Details
 
-The calculator implements ordinal arithmetic based on the following principles:
-
-*   **Cantor Normal Form:** `ω^α₁·c₁ + ω^α₂·c₂ + ... + ω^αₖ·cₖ + n`
-    *   `α₁ > α₂ > ... > αₖ > 0` are ordinals (also in CNF).
-    *   `cᵢ` are positive integers (coefficients).
-    *   `n` is a non-negative integer (finite part).
-*   **Recursive Descent Parser:** To interpret the input string.
-*   **Object-Oriented Representation:** Ordinals are represented internally as objects/classes, allowing for recursive definitions of exponents.
-*   **Arithmetic Rules:** Implements the standard, accurate set-theoretic rules for:
-    *   Ordinal Addition (handling absorption and coefficient summing).
-    *   Ordinal Multiplication (using right-distributivity `α·(β+γ) = α·β + α·γ` and specific term-by-term rules).
-    *   Ordinal Exponentiation (covering finite/infinite bases and exponents, including rules like `k^β = ω^ξ·k^r` and `α^β = α^B·α^m`).
-*   **Auxiliary Operations:** Includes internal functions for ordinal comparison, predecessor of an exponent (`⊖1`), and "division by omega" (`B/ω`).
-*   **Graphical Rendering:** Dynamically generates HTML with `<sup>` tags for superscripts and uses CSS for styling.
-*   **Image Copying:** Utilizes the `html2canvas` library to render the HTML graphical display to an image.
+*   **Ordinal Types & Arithmetic:**
+    *   `CNFOrdinal`: Represents ordinals as `ω^α₁·c₁ + ω^α₂·c₂ + ... + ω^αₖ·cₖ + n` where `α₁ > α₂ > ... > αₖ > 0` are ordinals and `cᵢ` are positive `BigInt` coefficients, `n` is a `BigInt`.
+    *   `EpsilonNaughtOrdinal`: Represents ε₀.
+    *   `WTowerOrdinal`: Represents ω↑↑m for finite integer m.
+    *   Dispatcher functions route arithmetic operations (`+`, `*`, `^`, `^^`) to type-specific methods.
+    *   Uses `BigInt` for coefficients and finite parts, ensuring exact integer arithmetic.
+    *   Multiplication `α * m` (finite `m`) is optimized.
+*   **Parser:** Recursive descent parser that handles numbers, `w`, `e_0`, operators `+`, `*`, `^`, `^^` (with correct precedence and associativity), and parentheses.
+*   **Complexity Function `g(α)`:**
+    *   `g(n)` = number of digits of `n`
+    *   `g(w)` = 1
+    *   `g(w*m) = g(m)+2`
+    *   `g(w^a) = g(a)+4`
+    *   `g(w^a*m) = g(a)+g(m)+5`
+    *   `g(a+b) = g(a)+g(b)+1`
+    *   `g(e_0) = 3`
+    *   `g(w^^m) = g(m)+3` (where `w^^m` is a `WTowerOrdinal` or its CNF equivalent)
+*   **Simplification Function `simplify(α, budget)`:**
+    *   Returns an ordinal `α'` such that `α' ≤ α` and `g(α') ≤ budget`.
+    *   Aims to find the largest such `α'`.
+    *   Uses heuristics like checking the Main Power Tower (MPT) of exponents and potentially replacing complex terms with `WTowerOrdinal` approximations (e.g., `w^^k`) if they fit the budget.
+*   **Graphical Rendering:** Dynamically generates HTML with `<sup>` tags and specific classes for ω, ε₀, ω↑↑n, operators, and coefficients, styled with CSS.
+*   **Image Copying:** Utilizes the `html2canvas` library.
 
 ## Local Development & Setup
 
-To run this project locally:
-
 1.  **Clone the repository (or download the files):**
     ```bash
-    git clone https://github.com/your-username/your-repository-name.git
-    cd your-repository-name
+    git clone https://github.com/MeniRosenfeld/TransfiniteOrdinalCalculator.git
+    cd TransfiniteOrdinalCalculator
     ```
-2.  **Ensure all `.js` files are present:**
-    *   `index.html`
+2.  **Ensure all `.js` files are present in the `TransfiniteOrdinalCalculator` directory:**
+    *   `index.html` (Main page)
     *   `style.css`
-    *   `script.js`
-    *   `ordinal_types.js`
-    *   `ordinal_comparison.js`
-    *   `ordinal_auxiliary_ops.js`
+    *   `script.js` (UI logic)
+    *   `ordinal_types.js` (Core classes: `CNFOrdinal`, `EpsilonNaughtOrdinal`, `WTowerOrdinal`, `OperationTracer`)
+    *   `ordinal_comparison.js` (Comparison methods)
+    *   `ordinal_auxiliary_ops.js` (Auxiliary functions like `exponentPredecessor`)
     *   `ordinal_addition.js`
     *   `ordinal_multiplication.js`
     *   `ordinal_exponentiation.js`
+    *   `ordinal_tetration.js`
     *   `ordinal_parser.js`
-    *   `ordinal_calculator.js`
+    *   `ordinal_calculator.js` (Main `calculateOrdinalCNF` function)
     *   `ordinal_graphical_renderer.js`
+    *   `ordinal_mapping.js` (The `f(α)` mapping function)
+    *   Test files like `ordinal_calculator_test.html` and `haskell_comparison_test.html` are also included.
 3.  **Open `index.html` in a web browser.**
-    *   No build step or local server is strictly required for basic functionality as it's a static site. However, some browser security features (especially around the Clipboard API for images if not served over HTTP/S) might behave more consistently if you use a simple local HTTP server.
+    *   No build step or local server is strictly required. However, for full Clipboard API support and to avoid potential issues with `file://` URLs, using a simple local HTTP server is recommended.
 
     *Optional: Using a simple HTTP server (e.g., with Python):*
     ```bash
+    # Navigate to the TransfiniteOrdinalCalculator directory first
     # If you have Python 3
     python -m http.server
     # If you have Python 2
@@ -96,35 +132,43 @@ To run this project locally:
 ## File Structure
 
 *   `index.html`: The main page structure.
-*   `style.css`: All CSS styling for the page and graphical rendering.
-*   `script.js`: Handles UI interactions, event listeners, and calls to the calculator logic.
-*   `ordinal_types.js`: Defines the core `Ordinal` class and `OperationTracer`.
-*   `ordinal_comparison.js`: Implements `Ordinal.prototype.compareTo`.
-*   `ordinal_auxiliary_ops.js`: Implements `exponentPredecessor` and `divideByOmega`.
-*   `ordinal_addition.js`: Implements `Ordinal.prototype.add`.
-*   `ordinal_multiplication.js`: Implements `Ordinal.prototype.multiply`.
-*   `ordinal_exponentiation.js`: Implements `Ordinal.prototype.power`.
+*   `style.css`: All CSS styling.
+*   `script.js`: UI interactions, event listeners, simplification logic, and `f(α)` display.
+*   `ordinal_types.js`: Defines `CNFOrdinal`, `EpsilonNaughtOrdinal`, `WTowerOrdinal`, `OperationTracer`, complexity `g(α)` methods, and simplification `simplify()` methods.
+*   `ordinal_comparison.js`: Implements `compareTo` methods for all ordinal types.
+*   `ordinal_auxiliary_ops.js`: Implements `exponentPredecessor`, `divideByOmega`, etc.
+*   `ordinal_addition.js`, `ordinal_multiplication.js`, `ordinal_exponentiation.js`, `ordinal_tetration.js`: Implement the respective arithmetic operations and dispatchers.
 *   `ordinal_parser.js`: Defines the `OrdinalParser` class.
-*   `ordinal_calculator.js`: Contains the main `calculateOrdinalCNF` function as the public API.
+*   `ordinal_calculator.js`: Contains the `calculateOrdinalCNF` function.
 *   `ordinal_graphical_renderer.js`: Contains the `renderOrdinalGraphical` function.
+*   `ordinal_mapping.js`: Defines the `f(α)` ordinal-to-real mapping function.
+*   `ordinal_calculator_test.html`: Comprehensive test suite for JavaScript features.
+*   `haskell_comparison_test.html` & `haskell_comparison_test.js`: (If Haskell Wasm comparison is set up) For comparing JS results against a Haskell implementation.
+*   `ordinal_haskell.wasm`: (If built) The Haskell Wasm module.
+*   `Ordinal.hs`: (If using Haskell) The Haskell source for ordinal arithmetic.
 
 ## Technologies Used
 
 *   HTML5
 *   CSS3
-*   Vanilla JavaScript (ECMAScript 6+)
+*   Vanilla JavaScript (ECMAScript 2020+ for `BigInt`)
 *   [html2canvas](https://html2canvas.hertzen.com/) (for "Copy as Image" functionality)
+
+## Development
+Developed by Gemini 2.5 Pro, with extensive guidance, testing, and feature specification by ordinal number enthusiast [Meni Rosenfeld](https://github.com/MeniRosenfeld).
+
+Calculation results have been primarily validated through a comprehensive internal test suite (`ordinal_calculator_test.html`) and, where applicable, by comparison with Claudio Kressibucher's [Ordinal Calculator](https://www.transfinite.ch/).
+
+You can read more about ordinal numbers here: [The Unabashed Expanse of Ordinal numbers](https://fieryspinningsword.com/2021/08/20/the-unabashed-expanse-of-ordinal-numbers/) by Meni Rosenfeld.
 
 ## Future Considerations (Potential Enhancements)
 
-*   Support for epsilon numbers (ε₀ and beyond).
+*   Support for larger epsilon numbers (ε₁, etc.) and other Veblen functions.
 *   More advanced error reporting with highlighting of syntax errors in the input.
 *   More sophisticated visual rendering for very deeply nested exponents.
-*   Unit testing framework integration.
 *   Option to display intermediate calculation steps.
-*   Conversion between real/rational numbers and ordinal numbers
-*   Random ordinal generation
+*   Random ordinal generation and testing.
 
 ## License
 
-MIT License.
+[MIT License](LICENSE).

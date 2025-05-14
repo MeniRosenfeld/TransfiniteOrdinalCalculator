@@ -1,13 +1,19 @@
 // ordinal_comparison.js
 
-// Assumes CNFOrdinal and EpsilonNaughtOrdinal classes are defined.
+// Assumes CNFOrdinal, EpsilonNaughtOrdinal, and WTowerOrdinal classes are defined.
 
 /**
  * Compares this CNFOrdinal to another ordinal.
- * @param {CNFOrdinal | EpsilonNaughtOrdinal} otherOrdinal The ordinal to compare against.
+ * @param {CNFOrdinal | EpsilonNaughtOrdinal | WTowerOrdinal} otherOrdinal The ordinal to compare against.
  * @returns {number} -1 if this < otherOrdinal, 0 if this == otherOrdinal, 1 if this > otherOrdinal.
  */
 CNFOrdinal.prototype.compareTo = function(otherOrdinal) {
+    if (this._tracer) this._tracer.consume();
+
+    if (otherOrdinal instanceof WTowerOrdinal) {
+        otherOrdinal = otherOrdinal.toCNFOrdinal(); // Convert WTower to CNF for comparison
+    }
+
     if (otherOrdinal instanceof EpsilonNaughtOrdinal) {
         return -1; // Any CNFOrdinal (less than e_0) is less than e_0.
     }
@@ -29,41 +35,30 @@ CNFOrdinal.prototype.compareTo = function(otherOrdinal) {
         const thisTerm = this.terms[i];
         const otherTerm = otherOrdinal.terms[i];
 
-        // 1. Compare exponents
         const expComparison = thisTerm.exponent.compareTo(otherTerm.exponent);
         if (expComparison !== 0) {
-            return expComparison; // Exponents differ, that determines order
+            return expComparison;
         }
-
-        // 2. Exponents are equal, compare coefficients
-        if (thisTerm.coefficient < otherTerm.coefficient) {
-            return -1;
-        }
-        if (thisTerm.coefficient > otherTerm.coefficient) {
-            return 1;
-        }
-        // If exponents and coefficients are equal, continue to the next term
+        if (thisTerm.coefficient < otherTerm.coefficient) return -1;
+        if (thisTerm.coefficient > otherTerm.coefficient) return 1;
     }
-
-    // All common terms were identical. The one with more terms is larger (if those extra terms are > 0).
-    // Since terms are sorted and non-zero, this check is straightforward.
-    if (lenThis < lenOther) {
-        return -1; // this is a prefix of other, so this < other
-    }
-    if (lenThis > lenOther) {
-        return 1;  // other is a prefix of this, so this > other
-    }
-
-    return 0; // They are equal
+    if (lenThis < lenOther) return -1;
+    if (lenThis > lenOther) return 1;
+    return 0; // Equal
 };
 
 /**
  * Compares this EpsilonNaughtOrdinal to another ordinal.
- * @param {CNFOrdinal | EpsilonNaughtOrdinal} otherOrdinal The ordinal to compare against.
+ * @param {CNFOrdinal | EpsilonNaughtOrdinal | WTowerOrdinal} otherOrdinal The ordinal to compare against.
  * @returns {number} -1 if this < otherOrdinal, 0 if this == otherOrdinal, 1 if this > otherOrdinal.
  */
 EpsilonNaughtOrdinal.prototype.compareTo = function(otherOrdinal) {
     if (this._tracer) this._tracer.consume();
+
+    if (otherOrdinal instanceof WTowerOrdinal) {
+        otherOrdinal = otherOrdinal.toCNFOrdinal(); // Convert WTower to CNF for comparison
+    }
+
     if (otherOrdinal instanceof EpsilonNaughtOrdinal) {
         return 0; // e_0 == e_0
     }
@@ -72,6 +67,20 @@ EpsilonNaughtOrdinal.prototype.compareTo = function(otherOrdinal) {
     }
     throw new Error("Cannot compare EpsilonNaughtOrdinal with unknown ordinal type.");
 };
+
+/**
+ * Compares this WTowerOrdinal to another ordinal.
+ * @param {CNFOrdinal | EpsilonNaughtOrdinal | WTowerOrdinal} otherOrdinal The ordinal to compare against.
+ * @returns {number} -1 if this < otherOrdinal, 0 if this == otherOrdinal, 1 if this > otherOrdinal.
+ */
+if (typeof WTowerOrdinal !== 'undefined') {
+    WTowerOrdinal.prototype.compareTo = function(otherOrdinal) {
+        if (this._tracer) this._tracer.consume();
+        const thisCNF = this.toCNFOrdinal();
+        // No need to convert otherOrdinal to CNF here, as thisCNF.compareTo will handle it.
+        return thisCNF.compareTo(otherOrdinal);
+    };
+}
 
 // Now that compareTo is defined, we can ensure _normalize in ordinal_types.js works fully.
 // If CNFOrdinal._ZEROStatic was created before compareTo was prototyped, its internal terms might not be

@@ -428,3 +428,10 @@ footer {
     line-height: 1; /* Helps with alignment if font size is different */
     align-self: center; /* Ensure it's centered with the text box */
 }
+
+.simplification-header-info {
+    font-size: 0.85em; /* Adjust as needed */
+    font-weight: normal !important; /* Added !important for testing */
+    color: #555;       /* Adjust as needed */
+    margin-left: 8px; /* Adjust as needed */
+}

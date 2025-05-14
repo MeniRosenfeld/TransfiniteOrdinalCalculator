@@ -1,133 +1,108 @@
 // ordinal_addition.js
 
-// Assumes CNFOrdinal class, CNFOrdinal.prototype.compareTo, and helper methods
-// (isZero, clone, etc.) are defined.
+// Assumes CNFOrdinal, EpsilonNaughtOrdinal, WTowerOrdinal classes are defined.
+// Assumes tetrateOrdinals (used by WTowerOrdinal.toCNFOrdinal) is defined.
 
 /**
- * Adds another ordinal to this ordinal. ( α + β )
- * Returns a new CNFOrdinal instance representing the sum.
- * Based on the rules for adding ordinals in Cantor Normal Form.
- *
- * Let α = ω^α₁a₁ + ... + ω^αₖaₖ + n
- * Let β = ω^β₁b₁ + ... + ω^βₗbₗ + m
- *
- * 1. If β = 0, α + β = α.
- * 2. If α = 0, α + β = β.
- * 3. If α is finite (n), β is infinite (B+m), then n + β = β.
- * 4. If α is infinite (A+n), β is finite (m), then (A+n) + m = A + (n+m).
- * 5. If α, β infinite:
- *    Find smallest αⱼ in α such that αⱼ ≥ β₁.
- *    - If no such αⱼ (all exp in α < β₁): α + β = β.
- *    - If αⱼ > β₁: α + β = (terms of α up to and including ω^αⱼaⱼ) + β.
- *                  More accurately: (terms of α with exp > first_exp(β)) + β.
- *                  The tail of α from αⱼ onwards gets absorbed if its exponent is smaller.
- *                  If α = X + ω^αⱼaⱼ + Y and β = ω^β₁b₁ + Z, where exp(Y) < αⱼ.
- *                  If αⱼ > β₁, then α+β = X + ω^αⱼaⱼ + β.
- *    - If αⱼ = β₁: α + β = (terms of α before ω^αⱼaⱼ) + ω^β₁(aⱼ+b₁) + (rest of β after its first term).
+ * Adds a CNFOrdinal to this CNFOrdinal. ( α + β )
+ * This is the specific implementation for CNF + CNF.
  */
-CNFOrdinal.prototype.add = function(otherOrdinal) {
+CNFOrdinal.prototype.addCNF = function(otherCNF) {
     if (this._tracer) this._tracer.consume();
 
-    if (otherOrdinal instanceof EpsilonNaughtOrdinal) {
-        // Rule: x + e_0 = e_0 (for any CNFOrdinal x)
-        return otherOrdinal.clone(this._tracer);
+    if (!(otherCNF instanceof CNFOrdinal)) {
+        throw new Error("CNFOrdinal.addCNF: Argument must be a CNFOrdinal.");
     }
 
-    if (!(otherOrdinal instanceof CNFOrdinal)) {
-        throw new Error("CNFOrdinal.add: Cannot add with unknown ordinal type.");
-    }
-
-    // Case 1: otherOrdinal is 0
-    if (otherOrdinal.isZero()) {
+    // Case 1: otherCNF is 0
+    if (otherCNF.isZero()) {
         return this.clone();
     }
 
     // Case 2: this ordinal is 0
     if (this.isZero()) {
-        return otherOrdinal.clone();
+        return otherCNF.clone();
     }
 
-    // Case 3: `this` is finite, `otherOrdinal` is infinite
-    if (this.isFinite() && !otherOrdinal.isFinite()) {
-        return otherOrdinal.clone();
+    // Case 3: `this` is finite, `otherCNF` is infinite
+    if (this.isFinite() && !otherCNF.isFinite()) {
+        return otherCNF.clone();
     }
 
-    // Case 4: `this` is infinite, `otherOrdinal` is finite
-    if (!this.isFinite() && otherOrdinal.isFinite()) {
-        const newTerms = this.terms.map(t => ({ 
+    // Case 4: `this` is infinite, `otherCNF` is finite
+    if (!this.isFinite() && otherCNF.isFinite()) {
+        const newTerms = this.terms.map(t => ({
             exponent: t.exponent.clone(this._tracer),
-            coefficient: t.coefficient 
+            coefficient: t.coefficient
         }));
-        const thisFinitePart = this.getFinitePart(); 
-        const otherFinitePart = otherOrdinal.getFinitePart(); 
-        const combinedFinitePart = thisFinitePart + otherFinitePart; 
+        const thisFinitePart = this.getFinitePart();
+        const otherFinitePart = otherCNF.getFinitePart();
+        const combinedFinitePart = thisFinitePart + otherFinitePart;
 
-        if (thisFinitePart > 0n) { 
+        if (thisFinitePart > 0n) {
             newTerms[newTerms.length - 1].coefficient = combinedFinitePart;
-            if (combinedFinitePart === 0n) { 
-                newTerms.pop(); 
+            if (combinedFinitePart === 0n && newTerms[newTerms.length - 1].exponent.isZero()) { // only pop if it was the finite term
+                newTerms.pop();
             }
-        } else if (combinedFinitePart > 0n) { 
+        } else if (combinedFinitePart > 0n) {
             newTerms.push({ exponent: CNFOrdinal.ZEROStatic().clone(this._tracer), coefficient: combinedFinitePart });
         }
         return new CNFOrdinal(newTerms, this._tracer);
     }
 
-    // Case 5: `this` is finite, `otherOrdinal` is finite (both non-zero)
-    if (this.isFinite() && otherOrdinal.isFinite()) {
-        return new CNFOrdinal(this.getFinitePart() + otherOrdinal.getFinitePart(), this._tracer);
+    // Case 5: `this` is finite, `otherCNF` is finite (both non-zero)
+    if (this.isFinite() && otherCNF.isFinite()) {
+        return new CNFOrdinal(this.getFinitePart() + otherCNF.getFinitePart(), this._tracer);
     }
 
-    // Case 6: Both `this` and `otherOrdinal` are infinite. This is the core CNF addition logic.
-    const firstTermOther = otherOrdinal.terms[0];
+    // Case 6: Both `this` and `otherCNF` are infinite. This is the core CNF addition logic.
+    const firstTermOther = otherCNF.terms[0];
     const firstExpOther = firstTermOther.exponent;
 
-    const newTerms = [];
-    let i = 0; 
+    const newTermsResult = [];
+    let i = 0;
 
+    // Copy terms from `this` whose exponents are greater than the leading exponent of `otherCNF`
     while (i < this.terms.length && this.terms[i].exponent.compareTo(firstExpOther) > 0) {
-        newTerms.push({
+        newTermsResult.push({
             exponent: this.terms[i].exponent.clone(this._tracer),
-            coefficient: this.terms[i].coefficient 
+            coefficient: this.terms[i].coefficient
         });
         i++;
     }
 
-    if (i < this.terms.length) {
-        const currentThisTermExp = this.terms[i].exponent;
-
-        if (currentThisTermExp.equals(firstExpOther)) {
-            newTerms.push({
-                exponent: currentThisTermExp.clone(this._tracer),
-                coefficient: this.terms[i].coefficient + firstTermOther.coefficient 
+    if (i < this.terms.length && this.terms[i].exponent.equals(firstExpOther)) {
+        // Exponents are equal: add coefficients and take the rest of `otherCNF`
+        newTermsResult.push({
+            exponent: this.terms[i].exponent.clone(this._tracer),
+            coefficient: this.terms[i].coefficient + firstTermOther.coefficient
+        });
+        // Add remaining terms from otherCNF
+        for (let j = 1; j < otherCNF.terms.length; j++) {
+            newTermsResult.push({
+                exponent: otherCNF.terms[j].exponent.clone(this._tracer),
+                coefficient: otherCNF.terms[j].coefficient
             });
-            for (let j = 1; j < otherOrdinal.terms.length; j++) {
-                newTerms.push({
-                    exponent: otherOrdinal.terms[j].exponent.clone(this._tracer),
-                    coefficient: otherOrdinal.terms[j].coefficient 
-                });
-            }
-        } else { 
-            for (let j = 0; j < otherOrdinal.terms.length; j++) {
-                 newTerms.push({
-                    exponent: otherOrdinal.terms[j].exponent.clone(this._tracer),
-                    coefficient: otherOrdinal.terms[j].coefficient 
-                });
-            }
         }
     } else {
-        for (let j = 0; j < otherOrdinal.terms.length; j++) {
-            newTerms.push({
-                exponent: otherOrdinal.terms[j].exponent.clone(this._tracer),
-                coefficient: otherOrdinal.terms[j].coefficient 
+        // All remaining exponents in `this` are smaller than `firstExpOther`,
+        // or `this` has no more terms.
+        // So, all terms of `otherCNF` are appended.
+        for (let j = 0; j < otherCNF.terms.length; j++) {
+            newTermsResult.push({
+                exponent: otherCNF.terms[j].exponent.clone(this._tracer),
+                coefficient: otherCNF.terms[j].coefficient
             });
         }
     }
-    
-    return new CNFOrdinal(newTerms, this._tracer);
+    return new CNFOrdinal(newTermsResult, this._tracer);
 };
 
-EpsilonNaughtOrdinal.prototype.add = function(otherOrdinal) {
+/**
+ * Adds an ordinal to this EpsilonNaughtOrdinal.
+ * This is the specific implementation for e_0 + other.
+ */
+EpsilonNaughtOrdinal.prototype.addE0 = function(otherOrdinal) {
     if (this._tracer) this._tracer.consume();
 
     if (otherOrdinal instanceof CNFOrdinal) {
@@ -135,7 +110,7 @@ EpsilonNaughtOrdinal.prototype.add = function(otherOrdinal) {
             // Rule: e_0 + 0 = e_0
             return this.clone(this._tracer);
         } else {
-            // Rules: e_0 + 1, e_0 + m, e_0 + a are unsupported
+            // Rules: e_0 + non-zero CNFOrdinal is unsupported
             throw new Error(`Operation e_0 + non-zero CNFOrdinal (${otherOrdinal.toStringCNF()}) is unsupported.`);
         }
     }
@@ -143,7 +118,54 @@ EpsilonNaughtOrdinal.prototype.add = function(otherOrdinal) {
         // Rule: e_0 + e_0 is unsupported
         throw new Error("Operation e_0 + e_0 is unsupported.");
     }
-    throw new Error("EpsilonNaughtOrdinal.add: Cannot add with unknown ordinal type.");
+    // WTowerOrdinal should have been converted by the dispatcher
+    throw new Error("EpsilonNaughtOrdinal.addE0: Cannot add with unknown or unconverted ordinal type.");
 };
+
+/**
+ * General ordinal addition dispatcher.
+ * @param {Ordinal} alpha - The first ordinal.
+ * @param {Ordinal} beta - The second ordinal.
+ * @returns {Ordinal} The sum of alpha and beta.
+ */
+function addOrdinals(alpha, beta) {
+    // Convert WTowerOrdinal to CNFOrdinal before proceeding
+    if (alpha instanceof WTowerOrdinal) {
+        alpha = alpha.toCNFOrdinal();
+    }
+    if (beta instanceof WTowerOrdinal) {
+        beta = beta.toCNFOrdinal();
+    }
+
+    if (alpha instanceof CNFOrdinal) {
+        if (beta instanceof CNFOrdinal) {
+            return alpha.addCNF(beta);
+        } else if (beta instanceof EpsilonNaughtOrdinal) {
+            // x + e_0 = e_0
+            return beta.clone(alpha._tracer); // effectively beta.addE0(alpha) but e_0 is absorbing
+        }
+    } else if (alpha instanceof EpsilonNaughtOrdinal) {
+        // e_0 + x
+        return alpha.addE0(beta); // beta can be CNFOrdinal or EpsilonNaughtOrdinal
+    }
+    throw new Error(`addOrdinals: Unsupported ordinal types for addition: ${alpha?.constructor?.name} and ${beta?.constructor?.name}`);
+}
+
+// Public API for addition on prototypes, calling the dispatcher
+CNFOrdinal.prototype.add = function(otherOrdinal) {
+    return addOrdinals(this, otherOrdinal);
+};
+
+EpsilonNaughtOrdinal.prototype.add = function(otherOrdinal) {
+    return addOrdinals(this, otherOrdinal);
+};
+
+// WTowerOrdinal.prototype.add will also call addOrdinals
+// This will be added in ordinal_types.js or here. For consistency, let's add it here.
+if (typeof WTowerOrdinal !== 'undefined') { // Check if WTowerOrdinal is loaded
+    WTowerOrdinal.prototype.add = function(otherOrdinal) {
+        return addOrdinals(this, otherOrdinal);
+    };
+}
 
 // ordinal_addition.js

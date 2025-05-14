@@ -2,19 +2,24 @@
 
 // Assumes calculateOrdinalCNF (from ordinal_calculator.js) and
 // renderOrdinalGraphical (from ordinal_graphical_renderer.js) are globally available.
-// Assumes CNFOrdinal, EpsilonNaughtOrdinal, and OperationTracer (from ordinal_types.js) are available.
+// Assumes CNFOrdinal, EpsilonNaughtOrdinal, WTowerOrdinal, and OperationTracer (from ordinal_types.js) are available.
 // Assumes f and ORDINAL_ZERO (from ordinal_mapping.js) are globally available.
 
 /**
- * Converts an Ordinal class instance (CNFOrdinal or EpsilonNaughtOrdinal from ordinal_types.js)
+ * Converts an Ordinal class instance (CNFOrdinal, EpsilonNaughtOrdinal, or WTowerOrdinal)
  * to the format expected by the f() function in ordinal_mapping.js.
- * @param {CNFOrdinal | EpsilonNaughtOrdinal} ordInstance - An instance of an Ordinal class.
+ * @param {CNFOrdinal | EpsilonNaughtOrdinal | WTowerOrdinal} ordInstance - An instance of an Ordinal class.
  * @returns {object|BigInt|string} The representation for f(). String for E0_TYPE.
  */
 function convertOrdinalInstanceToFFormat(ordInstance) {
     if (!ordInstance) {
         console.error("Invalid input to convertOrdinalInstanceToFFormat: received null or undefined");
-        return typeof ORDINAL_ZERO !== 'undefined' ? ORDINAL_ZERO : 0n;
+        return typeof ORDINAL_ZERO !== 'undefined' ? ORDINAL_ZERO : 0n; // Default to 0n if ORDINAL_ZERO is not yet defined
+    }
+
+    if (ordInstance instanceof WTowerOrdinal) {
+        // Convert WTowerOrdinal to CNFOrdinal first, then process that CNFOrdinal.
+        ordInstance = ordInstance.toCNFOrdinal(); 
     }
 
     if (ordInstance instanceof EpsilonNaughtOrdinal) {
@@ -31,27 +36,32 @@ function convertOrdinalInstanceToFFormat(ordInstance) {
 
         const terms = ordInstance.terms;
 
+        // Check for ω^k form (single term, coefficient 1, non-zero exponent)
         if (terms.length === 1 && terms[0].coefficient === 1n && !terms[0].exponent.isZero()) {
             const k_rep_for_f = convertOrdinalInstanceToFFormat(terms[0].exponent);
             return { type: 'pow', k: k_rep_for_f };
         }
 
+        // General sum form: ω^β * c + δ
         const firstTerm = terms[0];
         const beta_rep_for_f = convertOrdinalInstanceToFFormat(firstTerm.exponent);
 
         const c_from_ordinal = firstTerm.coefficient;
         let c_int_for_f = Number(c_from_ordinal);
 
+        // Warn if precision is lost converting BigInt coefficient to Number for f() mapping
         if ((c_from_ordinal > BigInt(Number.MAX_SAFE_INTEGER) || c_from_ordinal < BigInt(Number.MIN_SAFE_INTEGER)) && Number.isFinite(c_int_for_f)) {
-            console.warn(`Coefficient ${c_from_ordinal} was outside JS Number safe integer range. Converted to ${c_int_for_f} for f() mapping.`);
+            console.warn(`Coefficient ${c_from_ordinal.toString()} was outside JS Number safe integer range. Converted to ${c_int_for_f} for f() mapping.`);
         }
 
         let delta_rep_for_f;
         if (terms.length === 1) {
+            // If only one term, delta is 0
             delta_rep_for_f = typeof ORDINAL_ZERO !== 'undefined' ? ORDINAL_ZERO : 0n;
         } else {
+            // Construct a new CNFOrdinal for the remainder (δ)
             const remainderTerms = terms.slice(1).map(t => ({
-                exponent: t.exponent.clone(ordInstance._tracer),
+                exponent: t.exponent.clone(ordInstance._tracer), // Ensure deep clone with tracer
                 coefficient: t.coefficient
             }));
             const remainderOrdinal = new CNFOrdinal(remainderTerms, ordInstance._tracer);
@@ -77,6 +87,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const copyImageBtn = document.getElementById('copyImageBtn');
     const mappedValueTextElement = document.getElementById('mappedValueText');
     const placeholderText = "Result will appear here.";
+    const simplificationInfoArea = document.getElementById('simplificationInfoArea');
 
     // Tooltip logic
     const tooltipTrigger = document.querySelector('.tooltip-trigger');
@@ -215,19 +226,62 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error(resultFromCalc.error); 
             }
             
-            const ordinalResultObject = resultFromCalc.ordinalObject; // This is a CNFOrdinal
-            const cnfString = resultFromCalc.cnfString;
+            const originalOrdinalResultObject = resultFromCalc.ordinalObject;
+            // const cnfString = resultFromCalc.cnfString; // Original CNF string, not used directly for display anymore
 
-            linearResultTextElement.textContent = cnfString; 
+            // --- Simplification Step ---
+            const complexityBudget = 1000; // Hardcoded budget
+            let simplifiedOrdinalObject = originalOrdinalResultObject; // Default to original
+            let remainingBudget = -1; // Not directly used in new message format
+            let simplificationMessage = ""; // Initialize as empty
+            let originalComplexity = -1;
+            let simplifiedComplexity = -1;
+
+            if (originalOrdinalResultObject && typeof originalOrdinalResultObject.simplify === 'function') {
+                try {
+                    originalComplexity = originalOrdinalResultObject.complexity();
+                    const simplifyResult = originalOrdinalResultObject.simplify(complexityBudget, false); 
+                    simplifiedOrdinalObject = simplifyResult.simplifiedOrdinal;
+                    // remainingBudget = simplifyResult.remainingBudget; // Store if needed elsewhere
+                    simplifiedComplexity = simplifiedOrdinalObject.complexity();
+
+                    if (!originalOrdinalResultObject.equals(simplifiedOrdinalObject)) {
+                        // Format: "Displayed complexity: G_simp / G_orig"
+                        simplificationMessage = `(Displayed complexity: ${simplifiedComplexity} / ${originalComplexity})`; 
+                    } else {
+                        // No simplification message if they are equal.
+                        simplificationMessage = ""; 
+                    }
+                } catch (simplifyError) {
+                    console.error("Error during simplification:", simplifyError);
+                    simplificationMessage = "Error during simplification: " + simplifyError.message;
+                    // Keep simplifiedOrdinalObject as originalOrdinalResultObject in case of simplification error
+                }
+            }
+            // --- End Simplification Step ---
+
+            const displayOrdinalObject = simplifiedOrdinalObject; // Use simplified for display
+            const displayCnfString = displayOrdinalObject.toStringCNF();
+
+            // Update linear and graphical results with the (potentially) simplified ordinal
+            linearResultTextElement.textContent = displayCnfString; 
             linearResultTextElement.classList.remove('placeholder-text');
 
-            graphicalResultArea.innerHTML = renderOrdinalGraphical(ordinalResultObject); // render expects CNFOrdinal
+            graphicalResultArea.innerHTML = renderOrdinalGraphical(displayOrdinalObject);
             graphicalResultArea.querySelector('.placeholder-text')?.remove();
 
-            if (mappedValueTextElement && ordinalResultObject) {
+            // Update simplification message display (target element will change in HTML)
+            // const simplificationInfoArea = document.getElementById('simplificationInfoArea'); // This will be removed/relocated
+            const graphicalHeaderSimpInfo = document.getElementById('graphicalHeaderSimpInfo'); // New target
+            if (graphicalHeaderSimpInfo) {
+                graphicalHeaderSimpInfo.textContent = simplificationMessage;
+                graphicalHeaderSimpInfo.style.display = simplificationMessage ? 'inline' : 'none'; // Show if message exists
+            }
+
+            // Use ORIGINAL ordinal for f() mapping
+            if (mappedValueTextElement && originalOrdinalResultObject) { 
                 try {
-                    // convertOrdinalInstanceToFFormat expects CNFOrdinal
-                    const fFormattedOrdinal = convertOrdinalInstanceToFFormat(ordinalResultObject);
+                    const fFormattedOrdinal = convertOrdinalInstanceToFFormat(originalOrdinalResultObject); // USE ORIGINAL
                     const mappedValue = f(fFormattedOrdinal); 
                     if (typeof mappedValue === 'number' && !isNaN(mappedValue)) {
                         mappedValueTextElement.textContent = mappedValue.toString();
@@ -256,6 +310,15 @@ document.addEventListener('DOMContentLoaded', () => {
             if (mappedValueTextElement) {
                 mappedValueTextElement.textContent = placeholderText;
                 mappedValueTextElement.className = 'value placeholder-text';
+            }
+            if (simplificationInfoArea) { // Clear old simplification message area if it still exists
+                simplificationInfoArea.textContent = '';
+                simplificationInfoArea.style.display = 'none';
+            }
+            const graphicalHeaderSimpInfoOnError = document.getElementById('graphicalHeaderSimpInfo');
+            if (graphicalHeaderSimpInfoOnError) {
+                graphicalHeaderSimpInfoOnError.textContent = '';
+                graphicalHeaderSimpInfoOnError.style.display = 'none';
             }
         }
     }

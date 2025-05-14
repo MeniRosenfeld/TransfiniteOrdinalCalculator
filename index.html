@@ -27,7 +27,7 @@
         <!-- New Mapped Value Display Area -->
         <div id="mappedValueDisplayArea" class="mapped-value-inline-display">
             <span class="tooltip-trigger" 
-                  data-tooltip="This value is from a strictly increasing function f(α) that maps ordinals α < ε₀ to real numbers. The function ensures that if α < β, then f(α) < f(β). The specific mapping used is based on a recursive definition using the Cantor Normal Form of α. Finite ordinals n map to n/(n+1). For ω^k, if k is finite, f(ω^k) = (3k-2)/k; if k ≥ ω, f(ω^k) = (25-f(k))/(9-f(k)). Sums and products are interpolated. This mapping aims to fit ε₀ into [0,5).">❓</span>
+                  data-tooltip="This value is from a strictly increasing function f(α) that maps ordinals α < ε₀ to real numbers. The function ensures that if α < β, then f(α) < f(β). The specific mapping used is based on a recursive definition using the Cantor Normal Form of α. Finite ordinals n map to n/(n+1). For ω^k, if k is finite, f(ω^k) = (3k-2)/k; if k ≥ ω, f(ω^k) = (25-f(k))/(9-f(k)). Sums and products are interpolated. This mapping aims to fit ε₀ into [0,5). The mapping uses the original, unsimplified ordinal value.">❓</span>
             <span id="mappedValueText" class="value placeholder-text">Real number representation of the ordinal.</span>
         </div>
 
@@ -35,7 +35,7 @@
 
         <div class="result-container">
             <div class="result-section graphical-result-section">
-                <h3>Graphical Representation:</h3>
+                <h3>Graphical Representation: <span id="graphicalHeaderSimpInfo" class="simplification-header-info"></span></h3>
                 <div id="graphicalResultArea" class="graphical-display">
                     <span class="placeholder-text">Result will appear here.</span>
                 </div>
@@ -58,6 +58,7 @@
         <ul>
             <li>Use non-negative integers (e.g., <code>0</code>, <code>1</code>, <code>5</code>, <code>123</code>).</li>
             <li>Use <code>w</code> to represent the smallest infinite ordinal, omega (ω).</li>
+            <li>Use <code>e_0</code> to represent epsilon-naught (ε₀), the first fixed point of ω^x=x.</li>
             <li>Supported operations: <code>+</code> (addition), <code>*</code> (multiplication), <code>^</code> (exponentiation), <code>^^</code> (tetration).</li>
             <li>Use parentheses <code>()</code> for grouping.</li>
             <li>Standard operator precedence is followed: <code>^^</code> (highest, right-associative), then <code>^</code> (right-associative), then <code>*</code> (left-associative), then <code>+</code> (left-associative).</li>
@@ -71,10 +72,12 @@
             <li><code>2^w</code>  ➜  <code>w</code></li>
             <li><code>w^(w+1)</code>  ➜  <code>w^(w+1)</code></li>
             <li><code>(w^w)^w</code>  ➜  <code>w^(w^2)</code></li>
-            <li><code>2^^3</code> (2↑↑3) ➜  <code>w</code> (since 2^2^2 = 2^4 = 16, which is finite, but the example should be 2^^3 -> 2^(2^2) = 16. The rule m^^a=w applies to infinite height 'a'. For finite height, it's repeated exponentiation. Let's adjust this example if it's meant to show a simple case or clarify the rule application, e.g. 2^^w )</li>
+            <li><code>2^^3</code> (2↑↑3) ➜  <code>16</code> (finite repeated exponentiation: 2^(2^2) = 2^4 = 16)</li>
             <li><code>w^^2</code> (ω↑↑2) ➜  <code>w^w</code></li>
             <li><code>w^^w</code> (ω↑↑ω) ➜  <code>e_0</code></li>
             <li><code>2^^w</code> (2↑↑ω) ➜  <code>w</code></li>
+            <li><code>e_0+1</code> ➜ <code>Error</code>(Currently unsupported)</li>
+            <li><code>w+e_0</code> ➜ <code>e_0</code></li>
         </ul>
 
     </div>
@@ -97,9 +100,11 @@
             <strong>Key Features:</strong>
         </p>
         <ul>
-            <li>Parses complex ordinal expressions.</li>
+            <li>Parses complex ordinal expressions, including those with tetration (<code>^^</code>) and epsilon-naught (<code>e_0</code>).</li>
             <li>Calculates accurate Cantor Normal Form based on established ordinal arithmetic rules.</li>
-            <li>Displays results in both a traditional linear string format and a graphical representation using mathematical symbols (ω and superscripts).</li>
+            <li>Displays results in both a traditional linear string format and a graphical representation (e.g., using ω, ε₀, and ω↑↑n for ω tetrated to n).</li>
+            <li>Automatically simplifies very complex results based on a structural complexity budget to enhance readability. If simplification occurs, an indicator (e.g., <code>(Displayed complexity: G_simp / G_orig)</code>) is shown.</li>
+            <li>Provides an ordinal-to-real number mapping `f(α)` for the original, unsimplified ordinal.</li>
             <li>Allows copying of both the text and graphical (as image) representations.</li>
             <li>Includes an operation budget to prevent excessively long computations for extremely complex inputs.</li>
         </ul>
