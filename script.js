@@ -88,6 +88,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const mappedValueTextElement = document.getElementById('mappedValueText');
     const placeholderText = "Result will appear here.";
     const simplificationInfoArea = document.getElementById('simplificationInfoArea');
+    const graphicalHeaderSimpInfo = document.getElementById('graphicalHeaderSimpInfo');
 
     // Tooltip logic
     const tooltipTrigger = document.querySelector('.tooltip-trigger');
@@ -195,6 +196,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function calculateAndDisplay() {
+        // Ensure elements exist before proceeding, especially ordinalInputElement
+        if (!ordinalInputElement || !linearResultTextElement || !graphicalResultArea || !errorMessageArea) {
+            console.warn("Calculator UI elements missing. calculateAndDisplay() will not run. This is expected on test pages.");
+            return;
+        }
+
         const inputString = ordinalInputElement.value;
 
         linearResultTextElement.textContent = placeholderText;
@@ -272,7 +279,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Update simplification message display (target element will change in HTML)
             // const simplificationInfoArea = document.getElementById('simplificationInfoArea'); // This will be removed/relocated
-            const graphicalHeaderSimpInfo = document.getElementById('graphicalHeaderSimpInfo'); // New target
             if (graphicalHeaderSimpInfo) {
                 graphicalHeaderSimpInfo.textContent = simplificationMessage;
                 graphicalHeaderSimpInfo.style.display = simplificationMessage ? 'inline' : 'none'; // Show if message exists
@@ -315,10 +321,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 simplificationInfoArea.textContent = '';
                 simplificationInfoArea.style.display = 'none';
             }
-            const graphicalHeaderSimpInfoOnError = document.getElementById('graphicalHeaderSimpInfo');
-            if (graphicalHeaderSimpInfoOnError) {
-                graphicalHeaderSimpInfoOnError.textContent = '';
-                graphicalHeaderSimpInfoOnError.style.display = 'none';
+            if (graphicalHeaderSimpInfo) {
+                graphicalHeaderSimpInfo.textContent = '';
+                graphicalHeaderSimpInfo.style.display = 'none';
             }
         }
     }
@@ -329,79 +334,91 @@ document.addEventListener('DOMContentLoaded', () => {
         return urlParams.has(paramName);
     }
 
-    calculateButton.addEventListener('click', calculateAndDisplay);
-    ordinalInputElement.addEventListener('keypress', function (e) {
-        if (e.key === 'Enter') {
-            calculateAndDisplay();
-        }
-    });
+    // Only add event listeners if the elements exist (they won't on the test page)
+    if (calculateButton) {
+        calculateButton.addEventListener('click', calculateAndDisplay);
+    }
 
-    copyTextBtn.addEventListener('click', function() {
-        const textToCopy = linearResultTextElement.textContent;
-        if (textToCopy && textToCopy !== placeholderText) {
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-                navigator.clipboard.writeText(textToCopy).then(() => {
-                    alert('CNF text copied to clipboard!');
-                }).catch(err => {
-                    console.error('Failed to copy text: ', err);
-                    prompt("Copy to clipboard failed. Please copy manually:", textToCopy);
-                });
-            } else {
-                // Fallback for older browsers
-                const textArea = document.createElement("textarea");
-                textArea.value = textToCopy;
-                document.body.appendChild(textArea);
-                textArea.focus(); textArea.select();
-                try { document.execCommand('copy'); alert('CNF text copied (fallback)!'); }
-                catch (err) { prompt("Copy to clipboard failed. Please copy manually:", textToCopy); }
-                document.body.removeChild(textArea);
+    if (ordinalInputElement) {
+        ordinalInputElement.addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                calculateAndDisplay();
             }
-        } else {
-            alert("Nothing to copy.");
-        }
-    });
+        });
 
-    copyImageBtn.addEventListener('click', function() {
-        const graphicalArea = document.getElementById('graphicalResultArea');
-        if (graphicalArea.childElementCount === 0 || 
-            (graphicalArea.firstElementChild && graphicalArea.firstElementChild.classList.contains('placeholder-text'))) {
-            alert("Nothing to copy as image yet.");
-            return;
-        }
+        // Process URL parameters only if input element exists
+        processUrlParameters(); 
+    }
 
-        if (typeof html2canvas === 'undefined') {
-            alert("Error: html2canvas library is not loaded. Cannot copy as image.");
-            return;
-        }
-
-        html2canvas(graphicalArea, {
-            backgroundColor: '#FFFFFF', 
-            scale: 2 
-        }).then(canvas => {
-            canvas.toBlob(function(blob) {
-                if (!blob) {
-                    alert("Error creating image blob.");
-                    return;
-                }
-                if (navigator.clipboard && navigator.clipboard.write) {
-                    navigator.clipboard.write([
-                        new ClipboardItem({ 'image/png': blob })
-                    ]).then(() => {
-                        alert('Graphical ordinal copied as image!');
+    if (copyTextBtn && linearResultTextElement) {
+        copyTextBtn.addEventListener('click', function() {
+            const textToCopy = linearResultTextElement.textContent;
+            if (textToCopy && textToCopy !== placeholderText && linearResultTextElement.classList.contains('placeholder-text') === false) { // Check it's not placeholder
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(textToCopy).then(() => {
+                        alert('CNF text copied to clipboard!');
                     }).catch(err => {
-                        console.error('Failed to copy image directly: ', err);
-                        fallbackImageDownload(canvas);
+                        console.error('Failed to copy text: ', err);
+                        prompt("Copy to clipboard failed. Please copy manually:", textToCopy);
                     });
                 } else {
-                    console.warn('Clipboard API for images not fully supported. Falling back to download.');
-                    fallbackImageDownload(canvas);
+                    // Fallback for older browsers
+                    const textArea = document.createElement("textarea");
+                    textArea.value = textToCopy;
+                    document.body.appendChild(textArea);
+                    textArea.focus(); textArea.select();
+                    try { document.execCommand('copy'); alert('CNF text copied (fallback)!'); }
+                    catch (err) { prompt("Copy to clipboard failed. Please copy manually:", textToCopy); }
+                    document.body.removeChild(textArea);
                 }
-            }, 'image/png');
-        }).catch(err => {
-            console.error("html2canvas failed:", err);
-            alert("Error generating image for copying.");
+            } else {
+                alert("Nothing to copy.");
+            }
         });
-    });
+    }
+
+    if (copyImageBtn && graphicalResultArea) {
+        copyImageBtn.addEventListener('click', function() {
+            if (graphicalResultArea.childElementCount === 0 || 
+                (graphicalResultArea.firstElementChild && graphicalResultArea.firstElementChild.classList.contains('placeholder-text'))) {
+                alert("Nothing to copy as image yet.");
+                return;
+            }
+    
+            if (typeof html2canvas === 'undefined') {
+                alert("Error: html2canvas library is not loaded. Cannot copy as image.");
+                return;
+            }
+    
+            html2canvas(graphicalResultArea, {
+                backgroundColor: '#FFFFFF', 
+                scale: 2 
+            }).then(canvas => {
+                canvas.toBlob(function(blob) {
+                    if (!blob) {
+                        alert("Error creating image blob.");
+                        return;
+                    }
+                    if (navigator.clipboard && navigator.clipboard.write) {
+                        navigator.clipboard.write([
+                            new ClipboardItem({ 'image/png': blob })
+                        ]).then(() => {
+                            alert('Graphical ordinal copied as image!');
+                        }).catch(err => {
+                            console.error('Failed to copy image directly: ', err);
+                            fallbackImageDownload(canvas);
+                        });
+                    } else {
+                        console.warn('Clipboard API for images not fully supported. Falling back to download.');
+                        fallbackImageDownload(canvas);
+                    }
+                }, 'image/png');
+            }).catch(err => {
+                console.error("html2canvas failed:", err);
+                alert("Error generating image for copying.");
+            });
+        });
+    }
 
     function fallbackImageDownload(canvas) {
         const imageURL = canvas.toDataURL('image/png');
@@ -414,6 +431,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function processUrlParameters() {
+        // Ensure ordinalInputElement exists before trying to use it
+        if (!ordinalInputElement) return;
+
         const urlParams = new URLSearchParams(window.location.search);
         const ordinalExpression = urlParams.get('expr'); 
 
@@ -423,9 +443,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    processUrlParameters(); 
-
-    if (shareUrlButton) {
+    if (shareUrlButton && ordinalInputElement) {
         const originalShareButtonText = shareUrlButton.textContent; 
         shareUrlButton.addEventListener('click', function() {
             const currentExpression = ordinalInputElement.value;

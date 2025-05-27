@@ -5,10 +5,10 @@
     <meta charset="utf-8">
     <style>
         body { font-family: monospace; white-space: pre; }
-        .test-case { margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 5px; }
+        .test-case { margin-bottom: 10px; padding: 10px; border-radius: 4px; background-color: white; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
         .status-passed { color: green; }
         .status-failed { color: red; font-weight: bold; }
-        .log-output { margin-left: 20px; }
+        .log-output { margin: 1px 0; padding: 2px 8px; line-height: 1.3; }
         .error-message { color: orange; }
         .sanity-check-section { margin-top: 30px; padding-top: 15px; border-top: 2px solid #333; }
         .sanity-status-passed { color: green; font-weight: bold;}
@@ -24,47 +24,288 @@
             border-radius: 5px;
             background-color: #f9f9f9;
         }
-        #overall-status {
-            font-size: 1.2em;
-            font-weight: bold;
-            padding: 10px;
+        #overall-summary-container {
+            background: white;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+            border: 1px solid #e0e0e0;
+        }
+        #overall-summary-container h2 {
+            font-size: 1.6em;
+            color: #333;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e0e0e0;
             text-align: center;
-            border-radius: 4px;
-            margin-top: 10px;
+        }
+        .summary-line {
+            background: #f8f9fa;
+            padding: 12px 20px;
+            margin: 8px 0;
+            border-radius: 6px;
+            border: 1px solid #e0e0e0;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
         }
         .status-overall-pass {
-            background-color: #d4edda; /* Light green */
-            color: #155724; /* Dark green */
+            background-color: #d4edda;
+            color: #155724;
             border: 1px solid #c3e6cb;
+            text-align: center;
+            font-size: 1.6em;
+            font-weight: bold;
+            padding: 20px;
+            margin: 20px auto;
+            max-width: 80%;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
         .status-overall-fail {
-            background-color: #f8d7da; /* Light red */
-            color: #721c24; /* Dark red */
+            background-color: #f8d7da;
+            color: #721c24;
             border: 1px solid #f5c6cb;
+            text-align: center;
+            font-size: 1.6em;
+            font-weight: bold;
+            padding: 20px;
+            margin: 20px auto;
+            max-width: 80%;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
         .status-overall-pending {
-            background-color: #fff3cd; /* Light yellow */
-            color: #856404; /* Dark yellow */
+            background-color: #fff3cd;
+            color: #856404;
             border: 1px solid #ffeeba;
+            text-align: center;
+            font-size: 1.6em;
+            font-weight: bold;
+            padding: 20px;
+            margin: 20px auto;
+            max-width: 80%;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
-        .summary-line { margin-bottom: 5px; }
         .limited-output-message { font-style: italic; color: #555; margin-top: 5px;}
+        .test-kind-section {
+            margin: 30px 0;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-kind-section h2 {
+            font-size: 1.4em;
+            color: #333;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+        .kind-summary {
+            font-weight: bold;
+            margin-bottom: 15px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            border: 1px solid #e0e0e0;
+        }
+        .test-results-output { /* Parent of failed-tests-preview and passed-tests-container */
+            margin-top: 15px;
+            overflow: visible !important; /* Ensure content isn't clipped */
+        }
+        .test-case { /* Styling for individual test case divs */
+            margin: 10px 0;
+            padding: 12px;
+            border-radius: 4px;
+            background-color: white; 
+            border: 1px solid #e0e0e0;
+            display: block !important; /* Ensure it shows */
+        }
+        .test-case:not(:last-child) {
+            margin-bottom: 8px;
+        }
+        .log-output { /* Styling for p tags within test-case */
+            margin: 2px 0;
+            padding: 4px 8px;
+            line-height: 1.3;
+            white-space: pre-wrap;
+            display: block !important; /* Ensure it shows */
+        }
+        .test-input {
+            color: #1a237e;
+            font-weight: bold;
+        }
+        .test-output {
+            color: #0d47a1;
+        }
+        .test-status {
+            margin-top: 4px;
+            padding: 4px 8px;
+            border-radius: 3px;
+        }
+
+        /* Styles for collapsible sections */
+        details > summary {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            list-style: none; /* Hide default marker */
+        }
+
+        details > summary::-webkit-details-marker { /* Hide default marker for Webkit */
+            display: none;
+        }
+
+        details > summary::before { /* Custom marker */
+            content: '▶'; /* Right-pointing triangle for closed state */
+            font-size: 1.5em; /* Make the marker larger */
+            margin-right: 8px; /* Space between marker and text */
+            display: inline-block;
+            transition: transform 0.2s ease-in-out;
+        }
+
+        details[open] > summary::before {
+            content: '▼'; /* Down-pointing triangle for open state */
+            transform: rotate(0deg); 
+        }
+
+        details > summary > h2 {
+            margin: 0 10px 0 0; 
+            padding-bottom: 0; 
+            border-bottom: none; 
+            font-size: 1.2em; 
+        }
+
+        details > summary > .kind-summary {
+            margin-bottom: 0; 
+            flex-grow: 1; 
+            padding: 5px 10px; 
+            font-size: 0.9em;
+        }
+
+        /* Visibility for failed tests preview */
+        .failed-tests-preview {
+            padding: 10px;
+            background-color: #fff3f3; 
+            border: 1px solid #ffcdd2; 
+            border-radius: 4px;
+            overflow: visible !important; /* Ensure content isn't clipped */
+            border: 2px solid blue !important; /* DEBUG BORDER */
+        }
+        details:not([open]) .failed-tests-preview { /* This rule is likely not effective due to sibling relationship */
+            display: block !important; 
+            margin-top: 10px; 
+            min-height: 20px; /* Ensure it has some height */
+            /* border: 2px dashed red; */ /* Original debug border, replaced by above */
+        }
+        /* Ensure test cases inside a visible (but collapsed) preview are also visible */
+        details:not([open]) .failed-tests-preview .test-case { /* This rule is also likely not effective */
+            display: block !important;
+            /* border: 1px dotted blue; */ /* Original debug border */
+        }
+
+        details[open] .failed-tests-preview {
+            /* display: block; */ /* Controlled by JS now */
+            /* margin-bottom: 15px; */
+        }
+
+        /* Visibility for passed tests container */
+        .passed-tests-container {
+            padding: 10px;
+            border-radius: 4px;
+            overflow: visible !important; /* Ensure content isn't clipped */
+            border: 2px solid darkgreen !important; /* DEBUG BORDER */
+        }
+        details:not([open]) .passed-tests-container {
+            display: none !important; 
+        }
+        details[open] .passed-tests-container {
+            display: block; 
+        }
     </style>
 </head>
 <body>
     <h1>Ordinal Calculator Output</h1>
 
-    <div id="test-summary">
-        <div id="summary-general" class="summary-line">General Tests: Running...</div>
-        <div id="summary-monotonicity" class="summary-line">Monotonicity Checks: Pending...</div>
-        <div id="overall-status" class="status-overall-pending">Overall Status: Running tests...</div>
+    <div id="overall-summary-container">
+        <h2>Overall Test Summary</h2>
+        <div id="overall-status-indicator" class="status-overall-pending">Overall Status: Running tests...</div>
+        <!-- Detailed summary lines per test kind will be added here by JS -->
     </div>
 
-    <div id="results-container"></div>
-    <div id="sanity-check-container" class="sanity-check-section">
-        <h2>Monotonicity Sanity Check</h2>
-        <div id="sanity-check-status">Overall Status: PENDING</div>
-        <div id="sanity-check-details"></div>
+    <div id="test-details-container">
+        <!-- CNF Tests -->
+        <details id="details-CNF" class="test-kind-section">
+            <summary>
+                <h2>CNF Calculation Tests</h2>
+                <div id="cnf-summary" class="kind-summary">Running...</div>
+            </summary>
+            <div id="cnf-results-output" class="test-results-output">
+                <div class="passed-tests-container"></div>
+            </div>
+        </details>
+        <div id="cnf-failed-preview" class="failed-tests-preview" style="display: none;"></div>
+
+        <!-- WTower Tests -->
+        <details id="details-WTOWER" class="test-kind-section">
+            <summary>
+                <h2>WTower Conversion Tests</h2>
+                <div id="wtower-summary" class="kind-summary">Running...</div>
+            </summary>
+            <div id="wtower-results-output" class="test-results-output">
+                <div class="passed-tests-container"></div>
+            </div>
+        </details>
+        <div id="wtower-failed-preview" class="failed-tests-preview" style="display: none;"></div>
+
+        <!-- Simplify Tests -->
+        <details id="details-SIMPLIFY" class="test-kind-section">
+            <summary>
+                <h2>Ordinal Simplify Tests</h2>
+                <div id="simplify-summary" class="kind-summary">Running...</div>
+            </summary>
+            <div id="simplify-results-output" class="test-results-output">
+                <div class="passed-tests-container"></div>
+            </div>
+        </details>
+        <div id="simplify-failed-preview" class="failed-tests-preview" style="display: none;"></div>
+
+        <!-- Complexity Tests -->
+        <details id="details-COMPLEXITY" class="test-kind-section">
+            <summary>
+                <h2>Ordinal Complexity Tests</h2>
+                <div id="complexity-summary" class="kind-summary">Running...</div>
+            </summary>
+            <div id="complexity-results-output" class="test-results-output">
+                <div class="passed-tests-container"></div>
+            </div>
+        </details>
+        <div id="complexity-failed-preview" class="failed-tests-preview" style="display: none;"></div>
+
+        <!-- Inverse Mapping Tests -->
+        <details id="details-INVERSE_MAPPING" class="test-kind-section">
+            <summary>
+                <h2>Ordinal Inverse Mapping Tests</h2>
+                <div id="inverse-mapping-summary" class="kind-summary">Running...</div>
+            </summary>
+            <div id="inverse-mapping-results-output" class="test-results-output">
+                <div class="passed-tests-container"></div>
+            </div>
+        </details>
+        <div id="inverse-mapping-failed-preview" class="failed-tests-preview" style="display: none;"></div>
+        
+        <!-- Monotonicity Sanity Check -->
+        <details id="details-MONOTONICITY" class="test-kind-section sanity-check-section">
+            <summary>
+                <h2>Monotonicity Sanity Check</h2>
+                <div id="monotonicity-summary" class="kind-summary">Running...</div>
+            </summary>
+            <div id="monotonicity-results-output" class="test-results-output">
+                <div class="passed-tests-container"></div>
+            </div>
+        </details>
+        <div id="monotonicity-failed-preview" class="failed-tests-preview" style="display: none;"></div>
     </div>
 
     <!-- Load Ordinal Scripts (ensure paths are correct) -->
@@ -79,950 +320,1051 @@
     <script src="ordinal_calculator.js"></script>
     <!-- For mapped values -->
     <script src="ordinal_mapping.js"></script>  <!-- Defines f() -->
+    <script src="ordinal_mapping_inverse.js"></script> <!-- Defines fInverse() -->
     <!-- For convertOrdinalInstanceToFFormat -->
     <script src="script.js"></script>          <!-- Defines convertOrdinalInstanceToFFormat() -->
 
     <script>
-        const resultsContainer = document.getElementById('results-container');
-        const sanityCheckStatusDiv = document.getElementById('sanity-check-status');
-        const sanityCheckDetailsDiv = document.getElementById('sanity-check-details');
+        // Stats for each test kind
+        const testStats = {
+            CNF: { total: 0, passed: 0, failed: 0, containerId: 'cnf-results-output', previewId: 'cnf-failed-preview', summaryId: 'cnf-summary', results: [] },
+            WTOWER: { total: 0, passed: 0, failed: 0, containerId: 'wtower-results-output', previewId: 'wtower-failed-preview', summaryId: 'wtower-summary', results: [] },
+            SIMPLIFY: { total: 0, passed: 0, failed: 0, containerId: 'simplify-results-output', previewId: 'simplify-failed-preview', summaryId: 'simplify-summary', results: [] },
+            COMPLEXITY: { total: 0, passed: 0, failed: 0, containerId: 'complexity-results-output', previewId: 'complexity-failed-preview', summaryId: 'complexity-summary', results: [] },
+            INVERSE_MAPPING: { total: 0, passed: 0, failed: 0, containerId: 'inverse-mapping-results-output', previewId: 'inverse-mapping-failed-preview', summaryId: 'inverse-mapping-summary', results: [] },
+            MONOTONICITY: { total_pairs: 0, passed_pairs: 0, failed_pairs: 0, containerId: 'monotonicity-results-output', previewId: 'monotonicity-failed-preview', summaryId: 'monotonicity-summary', results: [] }
+        };
 
-        // New summary elements
-        const summaryGeneralDiv = document.getElementById('summary-general');
-        const summaryMonotonicityDiv = document.getElementById('summary-monotonicity');
-        const overallStatusDiv = document.getElementById('overall-status');
+        const successfulCNFTestResultsForMapping = []; 
 
-        // Counters
-        let totalTestsRun = 0;
-        let testsPassed = 0;
-        let displayedFailures = 0;
-        const MAX_DISPLAYED_FAILURES = 10;
+        const overallSummaryContainer = document.getElementById('overall-summary-container');
+        const overallStatusIndicatorDiv = document.getElementById('overall-status-indicator');
+        // Create a specific div for the lines in the overall summary if it doesn't exist
+        let overallSummaryDetailsDiv = document.getElementById('overall-summary-details');
+        if (!overallSummaryDetailsDiv) {
+            overallSummaryDetailsDiv = document.createElement('div');
+            overallSummaryDetailsDiv.id = 'overall-summary-details';
+            // Insert it after overallStatusIndicatorDiv
+            overallStatusIndicatorDiv.parentNode.insertBefore(overallSummaryDetailsDiv, overallStatusIndicatorDiv.nextSibling);
+        }
 
-        let totalMonotonicityPairs = 0;
-        let monotonicityPairsPassed = 0;
-        let displayedMonotonicityFailures = 0;
-        const MAX_DISPLAYED_MONOTONICITY_FAILURES = 10;
-
-        // Store successful results for pairwise comparison
-        const successfulTestResults = []; // Array of { input: string, ordinal: Ordinal, mappedValue: number, cnf: string }
-
-        function logToPage(message, className = '', parentElement = resultsContainer) {
+        // Generic logToPage, parentElement must be provided
+        function logToPage(message, className = '', parentElement) {
+            if (!parentElement) {
+                console.warn('logToPage called without parentElement for message:', message);
+                return;
+            }
             const entry = document.createElement('div');
             entry.textContent = message;
-            if (className) {
-                entry.classList.add(className);
-            }
+            if (className) entry.classList.add(className); // logToPage seems to expect single class, or needs same fix
             parentElement.appendChild(entry);
         }
 
-        function testOrdinalCalc(input, expected) {
-            totalTestsRun++;
-            let testCaseDiv = null; // Will be created only if there's a failure to display
-            
-            const createTestCaseDivIfNeeded = () => {
-                if (!testCaseDiv) {
-                    testCaseDiv = document.createElement('div');
-                    testCaseDiv.classList.add('test-case');
-                    resultsContainer.appendChild(testCaseDiv);
+        // Refactored addDetailElement for testOrdinalCalc
+        function addDetailElement(text, classNameString = '') { // Renamed for clarity
+            const p = document.createElement('p');
+            p.textContent = text;
+            p.classList.add('log-output'); // Base class for all test details
+
+            if (classNameString) {
+                const classes = classNameString.trim().split(/\s+/); // Split by any whitespace
+                classes.forEach(cls => {
+                    if (cls) { // Make sure token is not empty after split
+                        p.classList.add(cls);
+                    }
+                });
+            }
+            outputElements.push(p);
+        }
+
+        // Refactored testOrdinalCalc
+        function testOrdinalCalc(input, expectedCNF) {
+            testStats.CNF.total++;
+            const outputElements = []; 
+
+            const addDetailElement = (text, classNameString = '') => {
+                const p = document.createElement('p');
+                p.textContent = text;
+                p.classList.add('log-output'); 
+                if (classNameString) {
+                    const classes = classNameString.trim().split(/\s+/);
+                    classes.forEach(cls => {
+                        if (cls) { p.classList.add(cls); }
+                    });
                 }
+                outputElements.push(p);
             };
 
-            const appendToTestCase = (msg, className = '') => {
-                createTestCaseDivIfNeeded();
-                const line = document.createElement('div');
-                line.textContent = msg;
-                line.classList.add('log-output');
-                if (className) line.classList.add(className);
-                testCaseDiv.appendChild(line);
-            };
-
+            let overallTestPassed = false;
+            let mainStatusMessage = '';
+            let mainStatusClass = '';
             let calcResult;
-            let outputCnf;
-            let statusClass = '';
-            let statusMessage = '';
-            let ordinalObjectForMapping = null;
-            let currentTestPassed = false;
+
+            const fInverseThreshold = 1e-14;
+
+            addDetailElement(`Input: "${input}"`);
 
             try {
                 calcResult = calculateOrdinalCNF(input, 10000000); 
 
                 if (calcResult.error) {
-                    outputCnf = calcResult.error;
-                    if (outputCnf === expected) {
-                        currentTestPassed = true;
+                    const actualOutput = calcResult.error;
+                    addDetailElement(`Output (Error): "${actualOutput}"`, 'error-message');
+                    overallTestPassed = (actualOutput === expectedCNF);
+                    if (overallTestPassed) {
+                        mainStatusMessage = `Status: PASSED (Expected Error Matched: "${expectedCNF}")`;
+                        mainStatusClass = 'status-passed';
                     } else {
-                        statusMessage = `Status: FAILED (Got error). Expected: "${expected}"`;
-                        statusClass = "status-failed";
+                        mainStatusMessage = `Status: FAILED. Expected: "${expectedCNF}", Got Error: "${actualOutput}"`;
+                        mainStatusClass = 'status-failed';
                     }
                 } else {
-                    outputCnf = calcResult.cnfString;
-                    ordinalObjectForMapping = calcResult.ordinalObject;
-                    if (outputCnf === expected) {
-                        currentTestPassed = true;
-                        if (ordinalObjectForMapping && typeof f === 'function' && typeof convertOrdinalInstanceToFFormat === 'function') {
-                            try {
-                                const fFormatted = convertOrdinalInstanceToFFormat(ordinalObjectForMapping);
-                                const mappedValue = f(fFormatted);
-                                successfulTestResults.push({ 
-                                    input: input, 
-                                    ordinal: ordinalObjectForMapping, 
-                                    mappedValue: mappedValue,
-                                    cnf: outputCnf 
-                                });
-                            } catch (mapErr) {
-                                // This error isn't a test failure per se, but an issue with mapping a supposedly correct result
-                                // Log it if it's among the first few displayed items, but don't mark the main test as failed for this.
-                                if (displayedFailures < MAX_DISPLAYED_FAILURES) {
-                                    appendToTestCase(`Input: "${input}"`); // Add context if creating div
-                                    appendToTestCase(`Mapped Value f(α): Error - ${mapErr.message}`, 'error-message');
-                                }
-                            }
-                        }
+                    const originalOrdinalObject = calcResult.ordinalObject;
+                    const actualCNF = calcResult.cnfString;
+                    addDetailElement(`Output CNF: "${actualCNF}"`);
+
+                    const cnfCheckPassed = (actualCNF === expectedCNF);
+                    let fRoundTripCheckPassed = false; 
+                    const fTripDetailsLogs = [];
+
+                    if (!originalOrdinalObject) {
+                        fTripDetailsLogs.push("f()/fInverse()/f() Check: SKIPPED (originalOrdinalObject is null/undefined).");
+                        overallTestPassed = cnfCheckPassed;
                     } else {
-                        statusMessage = `Status: FAILED. Expected CNF: "${expected}"`;
-                        statusClass = "status-failed";
-                    }
-                }
-            } catch (e) {
-                outputCnf = `Critical Error: ${e.message}`;
-                statusMessage = `Status: FAILED (Critical Error). Expected: "${expected}"`;
-                statusClass = "status-failed";
-                console.error("Critical error during test:", input, e);
-            }
-            
-            if (currentTestPassed) {
-                testsPassed++;
-            } else {
-                if (displayedFailures < MAX_DISPLAYED_FAILURES) {
-                    appendToTestCase(`Input: "${input}"`);
-                    if (calcResult.error && outputCnf !== expected) { // Error was output, but not the expected one
-                        appendToTestCase(`Output: "${outputCnf}"`, 'error-message');
-                    } else if (!calcResult.error) { // No error from calc, but CNF mismatch
-                         appendToTestCase(`Output CNF: "${outputCnf}"`);
-                    } // else: Critical error already logged outputCnf
-                    appendToTestCase(statusMessage, statusClass);
-                    displayedFailures++;
-                } else if (displayedFailures === MAX_DISPLAYED_FAILURES) {
-                    logToPage("...and more general test failures not shown.", 'limited-output-message', resultsContainer);
-                    displayedFailures++; // Increment to prevent this message from repeating
-                }
-            }
-        }
-
-        // New test function for WTowerOrdinal
-        function testWTowerOrdinal(description, height, expectedCNFString, operationTracerBudget = 10000000) {
-            totalTestsRun++;
-            let testCaseDiv = null;
-            const tracer = new OperationTracer(operationTracerBudget);
-
-            const createTestCaseDivIfNeeded = () => {
-                if (!testCaseDiv) {
-                    testCaseDiv = document.createElement('div');
-                    testCaseDiv.classList.add('test-case');
-                    resultsContainer.appendChild(testCaseDiv);
-                    // Log description only when a div is created for failure/details
-                    const descLine = document.createElement('div');
-                    descLine.textContent = `Test (WTower): ${description}`;
-                    descLine.classList.add('log-output'); // Keep style consistent
-                    testCaseDiv.appendChild(descLine);
-                }
-            };
-
-            const appendToTestCase = (msg, className = '') => {
-                createTestCaseDivIfNeeded();
-                const line = document.createElement('div');
-                line.textContent = msg;
-                line.classList.add('log-output');
-                if (className) line.classList.add(className);
-                testCaseDiv.appendChild(line);
-            };
-
-            let wTowerInstance;
-            let cnfOrdinalFromTower;
-            let actualCNFString = '';
-            let statusMessage = '';
-            let statusClass = '';
-            let currentTestPassed = false;
-
-            try {
-                wTowerInstance = new WTowerOrdinal(height, tracer);
-                appendToTestCase(`Input WTower: w^^${height}`);
-
-                cnfOrdinalFromTower = wTowerInstance.toCNFOrdinal();
-                actualCNFString = cnfOrdinalFromTower.toStringCNF();
-
-                if (actualCNFString === expectedCNFString) {
-                    currentTestPassed = true;
-                    // Add to successfulTestResults if we want to include these in monotonicity checks
-                    // Might need to decide on a canonical "input string" for WTower for that purpose
-                    if (typeof f === 'function' && typeof convertOrdinalInstanceToFFormat === 'function') {
                         try {
-                            const fFormatted = convertOrdinalInstanceToFFormat(cnfOrdinalFromTower); // Already CNF
-                            const mappedValue = f(fFormatted);
-                            successfulTestResults.push({ 
-                                input: `w^^${height} (toCNF)`, // Representational input string
-                                ordinal: cnfOrdinalFromTower, 
-                                mappedValue: mappedValue,
-                                cnf: actualCNFString
-                            });
-                        } catch (mapErr) {
-                            if (displayedFailures < MAX_DISPLAYED_FAILURES) {
-                                appendToTestCase(`Mapped Value f(α): Error - ${mapErr.message}`, 'error-message');
+                            if (typeof convertOrdinalInstanceToFFormat !== 'function') throw new Error("convertOrdinalInstanceToFFormat is not defined");
+                            if (typeof f !== 'function') throw new Error("f function is not defined");
+                            if (typeof fInverse !== 'function') throw new Error("fInverse function is not defined");
+                            if (typeof convertFFormatToOrdinalInstance !== 'function') throw new Error("convertFFormatToOrdinalInstance is not defined");
+
+                            const fFormattedOriginal = convertOrdinalInstanceToFFormat(originalOrdinalObject);
+                            const mappedValueOriginal = f(fFormattedOriginal);
+                            fTripDetailsLogs.push(`f(original: "${actualCNF}") = ${mappedValueOriginal.toPrecision(15)}`);
+
+                            const inverseMappedFFormat = fInverse(mappedValueOriginal, fInverseThreshold);
+                            const inverseOrdinalObject = convertFFormatToOrdinalInstance(inverseMappedFFormat);
+                            const inverseCNFForLog = inverseOrdinalObject.toStringCNF ? inverseOrdinalObject.toStringCNF() : String(inverseOrdinalObject);
+                            fTripDetailsLogs.push(`fInverse(${mappedValueOriginal.toPrecision(15)}) -> "${inverseCNFForLog}"`);
+
+                            const fFormattedInverse = convertOrdinalInstanceToFFormat(inverseOrdinalObject);
+                            const mappedValueOfInverse = f(fFormattedInverse);
+                            fTripDetailsLogs.push(`f(inverse: "${inverseCNFForLog}") = ${mappedValueOfInverse.toPrecision(15)}`);
+                            
+                            const difference = Math.abs(mappedValueOriginal - mappedValueOfInverse);
+                            fRoundTripCheckPassed = (difference < fInverseThreshold);
+
+                            if (fRoundTripCheckPassed) {
+                                fTripDetailsLogs.push(`f() Round Trip Check: PASSED. |f(orig) - f(fInv(f(orig)))| = ${difference.toExponential(5)} (threshold: ${fInverseThreshold})`);
+                            } else {
+                                fTripDetailsLogs.push(`f() Round Trip Check: FAILED. |f(orig) - f(fInv(f(orig)))| = ${difference.toExponential(5)} (threshold: ${fInverseThreshold})`);
+                                fTripDetailsLogs.push(`  Original Ordinal: ${originalOrdinalObject.toString()}`);
+                                fTripDetailsLogs.push(`  Inverse Ordinal:  ${inverseOrdinalObject.toString()}`);
                             }
+                        } catch (err) {
+                            fRoundTripCheckPassed = false;
+                            const errMsg = `f()/fInverse()/f() Check: CRITICAL ERROR - ${err.message}`;
+                            fTripDetailsLogs.push(errMsg);
+                            console.error(`Critical error during f()/fInverse()/f() for input "${input}":`, err);
+                        }
+                        overallTestPassed = cnfCheckPassed && fRoundTripCheckPassed;
+                    }
+                    
+                    fTripDetailsLogs.forEach(detailMsg => {
+                        let detailClass = 'log-output-detail';
+                        if (detailMsg.includes("FAILED") || detailMsg.includes("ERROR")) detailClass += ' error-message status-failed-detail';
+                        else if (detailMsg.includes("PASSED")) detailClass += ' status-passed-detail';
+                        addDetailElement(detailMsg, detailClass);
+                    });
+
+                    if (overallTestPassed) {
+                        mainStatusMessage = 'Status: PASSED (CNF & f-round-trip OK)';
+                        mainStatusClass = 'status-passed';
+                    } else {
+                        mainStatusClass = 'status-failed';
+                        if (!cnfCheckPassed && (!fRoundTripCheckPassed && originalOrdinalObject)) {
+                            mainStatusMessage = `Status: FAILED. Expected CNF: "${expectedCNF}". f-round-trip check also failed.`;
+                        } else if (!cnfCheckPassed) {
+                            mainStatusMessage = `Status: FAILED. Expected CNF: "${expectedCNF}", Got: "${actualCNF}".`;
+                            if (originalOrdinalObject) mainStatusMessage += " (f-round-trip check status was based on this incorrect CNF result).";
+                        } else { 
+                            mainStatusMessage = `Status: FAILED. CNF OK ("${actualCNF}"), but f-round-trip check failed.`;
+                        }
+                    }
+                }
+            } catch (criticalError) { 
+                addDetailElement(`CRITICAL TEST ERROR: ${criticalError.message}`, 'error-message status-failed');
+                console.error(`Critical error running testOrdinalCalc for input "${input}":`, criticalError);
+                overallTestPassed = false; 
+                mainStatusMessage = 'Status: FAILED (Critical test execution error)';
+                mainStatusClass = 'status-failed';
+            }
+
+            addDetailElement(mainStatusMessage, mainStatusClass);
+
+            if (overallTestPassed) {
+                testStats.CNF.passed++;
+            } else {
+                testStats.CNF.failed++;
+            }
+            testStats.CNF.results.push({ passed: overallTestPassed, detailsElements: outputElements });
+        }
+
+        // --- MINIMALLY MODIFIED OTHER TEST FUNCTIONS ---
+        function testWTowerOrdinal(description, height, expectedCNFString, operationTracerBudget = 10000000) {
+            testStats.WTOWER.total++;
+            const outputElements = [];
+            const addDetailElement = (text, className = '') => {
+                const p = document.createElement('p');
+                p.textContent = text;
+                p.classList.add('log-output');
+                if (className) p.classList.add(className);
+                outputElements.push(p);
+            };
+
+            const tracer = new OperationTracer(operationTracerBudget);
+            addDetailElement(`Test (WTower): ${description}`);
+            
+            let actualCNF = '', statusMsg = '', sClass = '', currentTestPassed = false, cnfOrdForMapping;
+
+            try {
+                let inst = new WTowerOrdinal(height, tracer);
+                addDetailElement(`Input WTower: w^^${height}`);
+                let cnfOrd = inst.toCNFOrdinal();
+                cnfOrdForMapping = cnfOrd; // Store for mapping
+                actualCNF = cnfOrd.toStringCNF();
+
+                if (actualCNF === expectedCNFString) {
+                    currentTestPassed = true;
+                    statusMsg = 'Status: PASSED';
+                    sClass = 'status-passed'; 
+                    if (typeof f === 'function' && typeof convertOrdinalInstanceToFFormat === 'function' && cnfOrdForMapping) {
+                        try {
+                            const fFormatted = convertOrdinalInstanceToFFormat(cnfOrdForMapping);
+                            successfulCNFTestResultsForMapping.push({ input: `w^^${height}`, ordinal: cnfOrdForMapping, mappedValue: f(fFormatted), cnf: actualCNF });
+                        } catch (mapErr) {
+                            addDetailElement(`Mapped Value f(α): Error - ${mapErr.message}`, 'error-message');
                         }
                     }
                 } else {
-                    statusMessage = `Status: FAILED. Expected CNF: "${expectedCNFString}"`;
-                    statusClass = "status-failed";
+                    statusMsg = `Status: FAILED. Exp: "${expectedCNFString}"`;
+                    sClass = "status-failed";
                 }
             } catch (e) {
-                actualCNFString = `Critical Error: ${e.message}`;
-                statusMessage = `Status: FAILED (Critical Error). Expected CNF: "${expectedCNFString}"`;
-                statusClass = "status-failed";
-                console.error(`Critical error during WTower test "${description}":`, e);
+                actualCNF = `Crit Error: ${e.message}`;
+                statusMsg = `Status: FAILED (Crit Error). Exp: "${expectedCNFString}"`;
+                sClass = "status-failed";
+                console.error(`Crit WTower test "${description}":`, e);
             }
 
             if (currentTestPassed) {
-                testsPassed++;
+                testStats.WTOWER.passed++;
             } else {
-                if (displayedFailures < MAX_DISPLAYED_FAILURES) {
-                    appendToTestCase(`Actual CNF: "${actualCNFString}"`);
-                    appendToTestCase(statusMessage, statusClass);
-                    displayedFailures++;
-                } else if (displayedFailures === MAX_DISPLAYED_FAILURES) {
-                    logToPage("...and more general test failures not shown.", 'limited-output-message', resultsContainer);
-                    displayedFailures++;
-                }
+                testStats.WTOWER.failed++;
             }
+            addDetailElement(`Actual CNF: "${actualCNF}"`);
+            addDetailElement(statusMsg, sClass);
+            testStats.WTOWER.results.push({ passed: currentTestPassed, detailsElements: outputElements });
         }
 
-        // --- Test Cases (labels removed) ---
-        testOrdinalCalc("0", "0");
-        testOrdinalCalc("1+2*3", "7");
-        testOrdinalCalc("w", "w");
-        testOrdinalCalc("w+5", "w+5");
-        testOrdinalCalc("5+w", "w");
-        testOrdinalCalc("w+w", "w*2");
-
-        testOrdinalCalc("w*3", "w*3");
-        testOrdinalCalc("3*w", "w");
-        testOrdinalCalc("w*w", "w^2");
-        testOrdinalCalc("(w+1)*2", "w*2+1"); 
-        testOrdinalCalc("(w+1)*(w+1)", "w^2+w+1");
-        testOrdinalCalc("(w+1)*(w+2)", "w^2+w*2+1"); 
-
-        testOrdinalCalc("2^w", "w");
-        testOrdinalCalc("w^3", "w^3");
-        testOrdinalCalc("w^w", "w^w"); 
-        testOrdinalCalc("(w+1)^2", "w^2+w+1");
-        testOrdinalCalc("2^(w+1)", "w*2");
-        testOrdinalCalc("w^(w+1)", "w^(w+1)");
-        testOrdinalCalc("(w^2)^w", "w^w");   
-        testOrdinalCalc("(w^w)^2", "w^(w*2)"); 
-        testOrdinalCalc("(w^w)^w", "w^(w^2)");
-
-        testOrdinalCalc("(w^2+w*3+5)*w + (w+1)", "w^3+w+1");
-        testOrdinalCalc("2^(w^2)", "w^w"); 
-        testOrdinalCalc(" (w+5)^0 ", "1");
-        testOrdinalCalc(" 0^(w+1) ", "0");
-        testOrdinalCalc(" 1^w ", "1");
-        testOrdinalCalc("w^(w+1)+2", "w^(w+1)+2");
-        testOrdinalCalc("w^2", "w^2");
-        testOrdinalCalc("w^w", "w^w"); 
-
-        testOrdinalCalc("(w*2+1)*(w*3+5)", "w^2*3+w*10+1"); 
-                                                                                
-        testOrdinalCalc("w + w * w ^ w + w", "w^w+w"); // Reverted expected string
-        testOrdinalCalc("( (w+1) * (w+2) + (w*3+4) ) ^ 2", "w^4+w^3*5+w^2*4+w*5+4");
-        testOrdinalCalc("w ^ (w ^ (w+1) + 1)", "w^(w^(w+1)+1)");
-        testOrdinalCalc("2 ^ (w^w)", "w^(w^w)");
-        testOrdinalCalc("3 ^ (w^2*5 + w*4 + 3)", "w^(w*5+4)*27");
-        testOrdinalCalc("2 ^ ( (w+1)^2 )", "w^(w+1)*2");
-        testOrdinalCalc("(w^w + w + 1)^2", "w^(w*2)+w^(w+1)+w^w+w+1");
-        testOrdinalCalc("(w*2+3)^3", "w^3*2+w^2*6+w*6+3"); // Reverted expected string (please verify this was your prior correct one)
-
-        testOrdinalCalc("(w^2+1) ^ (w*2+1)", "w^(w*2+2)+w^(w*2)");
-        testOrdinalCalc("(w^w) ^ (w^w)", "w^(w^w)");
-        testOrdinalCalc("(w+1) ^ (w^2)", "w^(w^2)");
-        testOrdinalCalc("(w^0+1)^(w*0+1)", "2"); 
-        testOrdinalCalc("(w * ( (w^0 * 0) + 1) ) ^ ( ( (w+1)^0 ) * w )", "w^w"); 
-        testOrdinalCalc("(w^2*2 + w*3 + 4) * (w^3*5 + w*6 + 7)", "w^5*5+w^3*6+w^2*14+w*3+4"); // Reverted expected string (please verify)
-
-        testOrdinalCalc("w^w^w", "w^(w^w)");
-        testOrdinalCalc("2^w^w^w", "w^(w^(w^w))");
-        testOrdinalCalc("(w+1)^(w+1)^(w+1)", "w^(w^(w+1)+w^w)");
-        testOrdinalCalc("2^(w*2)", "w^2");
-        testOrdinalCalc("4^(w^7+3)", "w^(w^6)*64");
-        testOrdinalCalc("(w^(w^w+1)*2+3)^(w^(w^2+w*2)*3+2)", "w^(w^(w^2+w*2)*3+w^w*2+1)*2+w^(w^(w^2+w*2)*3+w^w+1)*6+w^(w^(w^2+w*2)*3)*3");
-        testOrdinalCalc("e_0 + w", "Error: Operation e_0 + non-zero CNFOrdinal (w) is unsupported.");
-        testOrdinalCalc("w + e_0", "e_0");
-        testOrdinalCalc("e_0 + e_0", "Error: Operation e_0 + e_0 is unsupported.");
-        testOrdinalCalc("e_0 + w^w", "Error: Operation e_0 + non-zero CNFOrdinal (w^w) is unsupported.");
-        testOrdinalCalc("w^w + e_0", "e_0");
-        testOrdinalCalc("e_0 * w^w^w", "Error: e_0 * CNFOrdinal (where CNFOrdinal is not 0 or 1) is unsupported in this implementation.");
-        testOrdinalCalc("w^w^w + e_0", "e_0");
-        testOrdinalCalc("e_0^w^w^w^w", "Error: e_0 ^ CNFOrdinal (where CNFOrdinal is not 0 or 1) is unsupported in this implementation.");
-        testOrdinalCalc("w^w^w^w + e_0", "e_0");
-        testOrdinalCalc("(w+1)^e_0", "e_0");
-        testOrdinalCalc("2^e_0", "e_0");
-        testOrdinalCalc("e_0^2", "Error: e_0 ^ CNFOrdinal (where CNFOrdinal is not 0 or 1) is unsupported in this implementation.");
-
-        // --- Tetration Tests ---
-        // e_0 related tetration
-        testOrdinalCalc("e_0^^0", "1");
-        testOrdinalCalc("e_0^^1", "e_0");
-        testOrdinalCalc("e_0^^2", "Error: Operation e_0 ^^ CNFOrdinal (2) is unsupported when CNFOrdinal is not 0 or 1.");
-        testOrdinalCalc("e_0^^w", "Error: Operation e_0 ^^ CNFOrdinal (w) is unsupported when CNFOrdinal is not 0 or 1.");
-        testOrdinalCalc("e_0^^e_0", "Error: Operation e_0 ^^ e_0 is unsupported.");
-
-        // CNFOrdinal related tetration (height first)
-        testOrdinalCalc("0^^0", "1");
-        testOrdinalCalc("1^^0", "1");
-        testOrdinalCalc("2^^0", "1");
-        testOrdinalCalc("w^^0", "1");
-        
-        testOrdinalCalc("0^^1", "0");
-        testOrdinalCalc("1^^1", "1");
-        testOrdinalCalc("2^^1", "2");
-        testOrdinalCalc("w^^1", "w");
-
-        // x^^m = x^(x^^(m-1))
-        testOrdinalCalc("2^^2", "4"); // 2^(2^^1) = 2^2 = 4
-        testOrdinalCalc("2^^3", "16"); // 2^(2^^2) = 2^4 = 16
-        testOrdinalCalc("2^^4", "65536"); // 2^(2^^3) = 2^16 = 65536
-        testOrdinalCalc("3^^2", "27"); // 3^(3^^1) = 3^3 = 27
-        testOrdinalCalc("w^^2", "w^w"); // w^(w^^1) = w^w
-        // testOrdinalCalc("w^^3", "w^(w^w)"); // w^(w^^2) = w^(w^w) - This one can be slow due to large intermediate ordinals
-        
-        // 0^^a is undefined (a CNF infinite)
-        testOrdinalCalc("0^^w", "Error: Operation 0 ^^ CNFOrdinal (w) is undefined when CNFOrdinal is infinite.");
-        testOrdinalCalc("0^^(w*2)", "Error: Operation 0 ^^ CNFOrdinal (w*2) is undefined when CNFOrdinal is infinite.");
-
-        // 1^^a=1 (a CNF infinite)
-        testOrdinalCalc("1^^w", "1");
-        testOrdinalCalc("1^^(w^w)", "1");
-
-        // m^^a=w (m finite CNF > 1, a CNF infinite)
-        testOrdinalCalc("2^^w", "w");
-        testOrdinalCalc("3^^(w+1)", "w");
-        testOrdinalCalc("10^^(w^2)", "w");
-
-        // b^^a=e_0 (b CNF infinite, a CNF infinite)
-        testOrdinalCalc("w^^w", "e_0");
-        testOrdinalCalc("(w+1)^^w", "e_0");
-        testOrdinalCalc("(w^2)^^(w*2)", "e_0");
-        testOrdinalCalc("(w^w)^^w", "e_0");
-
-        // CNFOrdinal ^^ e_0
-        testOrdinalCalc("0^^e_0", "Error: Operation 0 ^^ e_0 is undefined.");
-        testOrdinalCalc("1^^e_0", "1");
-        testOrdinalCalc("2^^e_0", "w");
-        testOrdinalCalc("100^^e_0", "w");
-        testOrdinalCalc("w^^e_0", "e_0");
-        testOrdinalCalc("(w+5)^^e_0", "e_0");
-        testOrdinalCalc("(w^w)^^e_0", "e_0");
-        
-        // Mixed operations involving tetration (ensure precedence)
-        testOrdinalCalc("2^^3+1", "17"); // (2^^3)+1 = 16+1 = 17
-        testOrdinalCalc("1+2^^3", "17"); // 1+(2^^3) = 1+16 = 17
-        testOrdinalCalc("2*3^^2", "54"); // 2*(3^^2) = 2*27 = 54
-        testOrdinalCalc("2^^2*3", "12"); // (2^^2)*3 = 4*3 = 12
-        testOrdinalCalc("2^3^^2", "134217728");  // 2^(3^^2) = 2^(3^3) = 2^27 = 134217728. This is a large finite number.
-        testOrdinalCalc("2^^3^2", "256"); // (2^^3)^2 = 16^2 = 256.
-        testOrdinalCalc("2^^w+1", "w+1"); // (2^^w)+1 = w+1
-        testOrdinalCalc("w^^(w+1)", "e_0"); // b^^a where a is w+1 (infinite)
-        testOrdinalCalc("(w+1)^^(w+1)", "e_0");
-
-        testOrdinalCalc("", "0"); // Keep the empty string test
-
-        // --- WTowerOrdinal Tests (Manual Instantiation) ---
-        testWTowerOrdinal("w^^0 toCNF", 0, "1");
-        testWTowerOrdinal("w^^1 toCNF", 1, "w");
-        testWTowerOrdinal("w^^2 toCNF", 2, "w^w");
-        // testWTowerOrdinal("w^^3 toCNF", 3, "w^(w^w)"); // This can be very slow due to large intermediate ordinals for w^w^w
-
-        // Test operations involving WTowerOrdinal converted to CNF
-        // For these, we manually create the WTowerOrdinal, convert it, then use it in a standard expression for calculateOrdinalCNF
-        // This section is more about ensuring the WTowerOrdinal integrates rather than complex parsing for now.
-        try {
-            const tracerTest = new OperationTracer(1000000);
-            let wt0_cnf_str = new WTowerOrdinal(0, tracerTest).toCNFOrdinal().toStringCNF(); // "1"
-            let wt1_cnf_str = new WTowerOrdinal(1, tracerTest).toCNFOrdinal().toStringCNF(); // "w"
-            let wt2_cnf_str = new WTowerOrdinal(2, tracerTest).toCNFOrdinal().toStringCNF(); // "w^w"
-
-            testOrdinalCalc(`(${wt1_cnf_str}) + 1`, "w+1");         // (w^^1)+1 -> w+1
-            testOrdinalCalc(`(${wt0_cnf_str}) * w`, "w");           // (w^^0)*w -> 1*w -> w
-            testOrdinalCalc(`2 + (${wt1_cnf_str})`, "w");             // 2 + (w^^1) -> 2+w -> w
-            testOrdinalCalc(`(${wt1_cnf_str}) * (${wt1_cnf_str})`, "w^2"); // (w^^1)*(w^^1) -> w*w -> w^2
-            testOrdinalCalc(`(${wt2_cnf_str}) + 0`, "w^w");         // (w^^2)+0 -> w^w+0 -> w^w
-            testOrdinalCalc(`(${wt1_cnf_str})^2`, "w^2");           // (w^^1)^2 -> w^2
-
-        } catch (e) {
-            console.error("Error setting up WTowerOrdinal operation tests:", e);
-            // Log a general failure if setup itself fails
-            totalTestsRun++; // Account for this block as an attempted test set
-            if (displayedFailures < MAX_DISPLAYED_FAILURES) {
-                const testCaseDiv = document.createElement('div');
-                testCaseDiv.classList.add('test-case');
-                resultsContainer.appendChild(testCaseDiv);
-                const line = document.createElement('div');
-                line.textContent = "Test (WTower Ops): Error during setup - " + e.message;
-                line.classList.add('log-output', 'status-failed');
-                testCaseDiv.appendChild(line);
-                displayedFailures++;
-            }
-        }
-
-        // New test function for ordinal simplification
-        function testOrdinalSimplify(description, inputOrdinalString, complexityBudget, expectedSimplifiedCNFString, expectedRemainingBudget, operationTracerBudget = 100000) {
-            totalTestsRun++;
-            let testCaseDiv = null;
-            const tracer = new OperationTracer(operationTracerBudget);
-
-            const createTestCaseDivIfNeeded = () => {
-                if (!testCaseDiv) {
-                    testCaseDiv = document.createElement('div');
-                    testCaseDiv.classList.add('test-case');
-                    resultsContainer.appendChild(testCaseDiv);
-                    const descLine = document.createElement('div');
-                    descLine.textContent = `Test (Simplify): ${description} [Budget: ${complexityBudget}]`;
-                    descLine.classList.add('log-output');
-                    testCaseDiv.appendChild(descLine);
-                }
+        function testOrdinalSimplify(description, inputStr, budget, expectedCNF, expectedRem, opBudget = 100000) {
+            testStats.SIMPLIFY.total++;
+            const outputElements = [];
+            const addDetailElement = (text, className = '') => {
+                const p = document.createElement('p');
+                p.textContent = text;
+                p.classList.add('log-output');
+                if (className) p.classList.add(className);
+                outputElements.push(p);
             };
 
-            const appendToTestCase = (msg, className = '') => {
-                createTestCaseDivIfNeeded();
-                const line = document.createElement('div');
-                line.textContent = msg;
-                line.classList.add('log-output');
-                if (className) line.classList.add(className);
-                testCaseDiv.appendChild(line);
-            };
-
-            let originalOrdinal;
-            let simplifiedOrdinal;
-            let actualSimplifiedCNFString = '';
-            let actualRemainingBudget = -1;
-            let statusMessage = '';
-            let statusClass = '';
-            let currentTestPassed = true; // Assume pass until a check fails
-            let notes = [];
+            const tr = new OperationTracer(opBudget);
+            addDetailElement(`Test (Simplify): ${description} [Budget: ${budget}]`);
+            
+            let actCNF='', actRem=-1, sMsg='', sCls='', currentTestPassed=true, notes=[], simpG='N/A', originalOrdinalStr = 'N/A';
 
             try {
-                const parser = new OrdinalParser(inputOrdinalString, tracer); // Use the parser
-                originalOrdinal = parser.parse();
-                appendToTestCase(`Input Ordinal: "${inputOrdinalString}" (g=${originalOrdinal.complexity()})`);
+                const p=new OrdinalParser(inputStr,tr);
+                let origOrd=p.parse();
+                originalOrdinalStr = origOrd.toStringCNF(); // Get string form for comparison
+                addDetailElement(`Input Ordinal: "${inputStr}" (g=${origOrd.complexity()})`);
+                const simpRes=origOrd.simplify(budget,false);
+                let simpOrd=simpRes.simplifiedOrdinal;
+                actRem=simpRes.remainingBudget;
+                actCNF=simpOrd.toStringCNF();
+                simpG=simpOrd.complexity();
 
-                const simplifyResult = originalOrdinal.simplify(complexityBudget, false); // skipMyOwnMPTFCheck = false for top-level call
-                simplifiedOrdinal = simplifyResult.simplifiedOrdinal;
-                actualRemainingBudget = simplifyResult.remainingBudget;
-                actualSimplifiedCNFString = simplifiedOrdinal.toStringCNF();
-
-                // Check 1: Simplified CNF matches expected
-                if (actualSimplifiedCNFString !== expectedSimplifiedCNFString) {
-                    currentTestPassed = false;
-                    notes.push(`CNF Mismatch: Got "${actualSimplifiedCNFString}", Expected "${expectedSimplifiedCNFString}"`);
-                }
-
-                // Check 2: Remaining budget matches expected
-                if (actualRemainingBudget !== expectedRemainingBudget) {
-                    currentTestPassed = false;
-                    notes.push(`Budget Mismatch: Got ${actualRemainingBudget}, Expected ${expectedRemainingBudget}`);
-                }
-
-                // Sanity Check 3: Complexity of simplified ordinal <= budget
-                const simplifiedComplexity = simplifiedOrdinal.complexity();
-                if (simplifiedComplexity > complexityBudget) {
-                    currentTestPassed = false;
-                    notes.push(`Sanity Fail: Simplified complexity ${simplifiedComplexity} > budget ${complexityBudget}`);
+                if(actCNF!==expectedCNF){currentTestPassed=false;notes.push(`CNF Mismatch: Got "${actCNF}", Exp "${expectedCNF}"`);}
+                if(actRem!==expectedRem){currentTestPassed=false;notes.push(`Budget Mismatch: Got ${actRem}, Exp ${expectedRem}`);}
+                if(simpG>budget){currentTestPassed=false;notes.push(`Sanity Fail: Simp g ${simpG} > budget ${budget}`);}
+                
+                // Perform comparison using string representations if simplify didn't error
+                if (origOrd.compareTo(simpOrd) < 0) {
+                    currentTestPassed=false;
+                    notes.push(`Sanity Fail: Simp "${actCNF}" > orig "${originalOrdinalStr}"`);
                 }
                 
-                // Sanity Check 4: Simplified ordinal <= original ordinal
-                if (originalOrdinal.compareTo(simplifiedOrdinal) < 0) { // original < simplified implies error
-                    currentTestPassed = false;
-                    notes.push(`Sanity Fail: Simplified ordinal "${actualSimplifiedCNFString}" > original "${originalOrdinal.toStringCNF()}"`);
-                }
+                if(currentTestPassed){sMsg='Status: PASSED';sCls='status-passed';} else {sMsg='Status: FAILED';sCls='status-failed';}
+            }catch(e){
+                currentTestPassed=false;
+                actCNF=`Crit Error: ${e.message}`;
+                sMsg='Status: FAILED (Crit Error)';sCls='status-failed';
+                console.error(`Crit simplify test "${description}":`,e);
+            }
 
-                if (currentTestPassed) {
-                    statusMessage = 'Status: PASSED';
-                    statusClass = 'status-passed';
+            if(currentTestPassed) testStats.SIMPLIFY.passed++; else testStats.SIMPLIFY.failed++;
+            
+            addDetailElement(`Simplified CNF: "${actCNF}" (g=${simpG})`);
+            addDetailElement(`Remaining Budget: ${actRem}`);
+            if(notes.length>0) notes.forEach(n=>addDetailElement(n,'error-message'));
+            addDetailElement(sMsg,sCls);
+            testStats.SIMPLIFY.results.push({ passed: currentTestPassed, detailsElements: outputElements });
+        }
+
+        function testOrdinalComplexity(inputStr, expectedComp, opBudget = 100000) {
+            testStats.COMPLEXITY.total++;
+            const outputElements = [];
+            const addDetailElement = (text, className = '') => {
+                const p = document.createElement('p');
+                p.textContent = text;
+                p.classList.add('log-output');
+                if (className) p.classList.add(className);
+                outputElements.push(p);
+            };
+            addDetailElement(`Test (Complexity): "${inputStr}"`);
+
+            let actComp = -1, sMsg='', sCls='', currentTestPassed=false;
+            try{
+                const tr=new OperationTracer(opBudget);
+                const p=new OrdinalParser(inputStr,tr);
+                let ord=p.parse();
+                actComp=ord.complexity();
+                if(actComp===expectedComp) {
+                    currentTestPassed=true;
+                    sMsg = 'Status: PASSED';
+                    sCls = 'status-passed';
                 } else {
-                    statusMessage = 'Status: FAILED';
-                    statusClass = 'status-failed';
+                    sMsg=`Status: FAILED. Expected Comp: ${expectedComp}, Got: ${actComp}`;
+                    sCls="status-failed";
                 }
+            }catch(e){
+                actComp=-1; // Indicate error in actual complexity
+                sMsg=`Status: FAILED (Crit Error: ${e.message}). Expected Comp: ${expectedComp}`;
+                sCls="status-failed";
+                console.error(`Crit complexity test "${inputStr}":`,e);
+            }
 
+            if(currentTestPassed) testStats.COMPLEXITY.passed++; else testStats.COMPLEXITY.failed++;
+            
+            if (actComp !== -1) addDetailElement(`Actual Comp: ${actComp}`);
+            addDetailElement(sMsg, sCls);
+            testStats.COMPLEXITY.results.push({ passed: currentTestPassed, detailsElements: outputElements });
+        }
+        function testManualComplexity(desc, ordInst, exp) {
+            testStats.COMPLEXITY.total++;
+            const outputElements = [];
+            const addDetailElement = (text, className = '') => { /* as above */ const p=document.createElement('p'); p.textContent=text; p.classList.add('log-output'); if(className)p.classList.add(className); outputElements.push(p); };
+            addDetailElement(`Test (Manual Complexity): ${desc}`);
+            let actualComplexity, currentTestPassed = false, statusMsg, statusClass;
+            try {
+                actualComplexity = ordInst.complexity();
+                if (actualComplexity === exp) {
+                    currentTestPassed = true;
+                    statusMsg = 'Status: PASSED'; statusClass = 'status-passed';
+                } else {
+                    statusMsg = `Status: FAILED. Expected: ${exp}, Got: ${actualComplexity}`; statusClass = 'status-failed';
+                }
+            } catch (e) {
+                 statusMsg = `Status: FAILED (Error: ${e.message})`; statusClass = 'status-failed';
+            }
+            if(currentTestPassed) testStats.COMPLEXITY.passed++; else testStats.COMPLEXITY.failed++;
+            if(actualComplexity !== undefined) addDetailElement(`Actual Complexity: ${actualComplexity}`);
+            addDetailElement(statusMsg, statusClass);
+            testStats.COMPLEXITY.results.push({ passed: currentTestPassed, detailsElements: outputElements });
+        }
+        function testManualSimplify(desc, ordInst, bud, expCNF, expRem) {
+            testStats.SIMPLIFY.total++;
+            const outputElements = [];
+            const addDetailElement = (text, className = '') => { /* as above */ const p=document.createElement('p'); p.textContent=text; p.classList.add('log-output'); if(className)p.classList.add(className); outputElements.push(p); };
+            addDetailElement(`Test (Manual Simplify): ${desc} [Budget: ${bud}]`);
+            addDetailElement(`Input Ordinal (direct): ${ordInst.toStringCNF()} (g=${ordInst.complexity()})`);
+            let actualCNF, actualRem, currentTestPassed = true, notes = [], statusMsg, statusClass, simpG = 'N/A';
+            try {
+                const simpRes = ordInst.simplify(bud, false);
+                let simpOrd = simpRes.simplifiedOrdinal;
+                actualRem = simpRes.remainingBudget;
+                actualCNF = simpOrd.toStringCNF();
+                simpG = simpOrd.complexity();
+                if(actualCNF!==expCNF){currentTestPassed=false;notes.push(`CNF Mismatch: Got "${actualCNF}", Exp "${expCNF}"`);}
+                if(actualRem!==expRem){currentTestPassed=false;notes.push(`Budget Mismatch: Got ${actualRem}, Exp ${expRem}`);}
+                if(simpG>bud){currentTestPassed=false;notes.push(`Sanity Fail: Simp g ${simpG} > budget ${bud}`);}
+                if(ordInst.compareTo(simpOrd)<0){currentTestPassed=false;notes.push(`Sanity Fail: Simp "${actualCNF}" > orig "${ordInst.toStringCNF()}"`);}
+                if(currentTestPassed){statusMsg='Status: PASSED';statusClass='status-passed';}else{statusMsg='Status: FAILED';statusClass='status-failed';}
             } catch (e) {
                 currentTestPassed = false;
-                actualSimplifiedCNFString = `Critical Error: ${e.message}`;
-                statusMessage = `Status: FAILED (Critical Error).`;
-                statusClass = 'status-failed';
-                console.error(`Critical error during simplify test "${description}":`, e);
+                statusMsg = `Status: FAILED (Error: ${e.message})`; statusClass = 'status-failed';
             }
-
-            if (currentTestPassed) {
-                testsPassed++;
-                // Optionally, still display successful simplify tests if desired (e.g., for observing behavior)
-                // For now, only display failures or if notes exist (even on pass)
-                if (notes.length > 0) {
-                    appendToTestCase(`Simplified CNF: "${actualSimplifiedCNFString}" (g=${simplifiedOrdinal ? simplifiedOrdinal.complexity() : 'N/A'})`);
-                    appendToTestCase(`Remaining Budget: ${actualRemainingBudget}`);
-                    notes.forEach(note => appendToTestCase(note, 'error-message')); // Show notes even if overall passed but had sanity issues picked up
-                    appendToTestCase(statusMessage, statusClass); // Should be PASSED if notes were minor observations not failures
-                }
-            } else {
-                if (displayedFailures < MAX_DISPLAYED_FAILURES) {
-                    appendToTestCase(`Simplified CNF: "${actualSimplifiedCNFString}" (g=${simplifiedOrdinal ? simplifiedOrdinal.complexity() : 'N/A'})`);
-                    appendToTestCase(`Remaining Budget: ${actualRemainingBudget}`);
-                    notes.forEach(note => appendToTestCase(note, 'error-message'));
-                    appendToTestCase(statusMessage, statusClass);
-                    displayedFailures++;
-                } else if (displayedFailures === MAX_DISPLAYED_FAILURES) {
-                    logToPage("...and more simplify test failures not shown.", 'limited-output-message', resultsContainer);
-                    displayedFailures++;
-                }
-            }
+            if(currentTestPassed) testStats.SIMPLIFY.passed++; else testStats.SIMPLIFY.failed++;
+            if(actualCNF !== undefined) addDetailElement(`Simplified CNF: "${actualCNF}" (g=${simpG})`);
+            if(actualRem !== undefined) addDetailElement(`Remaining Budget: ${actualRem}`);
+            if(notes.length>0)notes.forEach(n=>addDetailElement(n,'error-message'));
+            addDetailElement(statusMsg, statusClass);
+            testStats.SIMPLIFY.results.push({ passed: currentTestPassed, detailsElements: outputElements });
         }
 
-        // New test function for ordinal complexity
-        function testOrdinalComplexity(inputString, expectedComplexity, operationTracerBudget = 100000) {
-            totalTestsRun++;
-            let testCaseDiv = null;
-            const tracer = new OperationTracer(operationTracerBudget);
-
-            const createTestCaseDivIfNeeded = () => {
-                if (!testCaseDiv) {
-                    testCaseDiv = document.createElement('div');
-                    testCaseDiv.classList.add('test-case');
-                    resultsContainer.appendChild(testCaseDiv);
-                    // Log description only when a div is created for failure/details
-                    const descLine = document.createElement('div');
-                    descLine.textContent = `Test (Complexity): "${inputString}"`;
-                    descLine.classList.add('log-output');
-                    testCaseDiv.appendChild(descLine);
+        // Helper function for fInverse test output formatting
+        function formatFInverseOutput(result) {
+            if (typeof result === 'bigint') {
+                return new CNFOrdinal(result).toStringCNF();
+            }
+            if (result === "E0_TYPE") {
+                return "e_0";
+            }
+            if (typeof result === 'object' && result !== null && result.type) {
+                // This is the f-format. We need to convert it to an Ordinal instance then to string.
+                // Assuming a function convertFFormatToOrdinalInstance exists (it was in ordinal_mapping_inverse.js)
+                // If not, this part needs to be implemented or adjusted.
+                try {
+                    const ordinalInstance = convertFFormatToOrdinalInstance(result); // This function needs to be available
+                    return ordinalInstance.toStringCNF();
+                } catch (e) {
+                    console.error("Error converting f-format to ordinal for display:", result, e);
+                    return "ErrorInConversion: " + JSON.stringify(result);
                 }
+            }
+            if (typeof result === 'string') { // Might be an error message already
+                return result;
+            }
+            return String(result); // Fallback
+        }
+
+        // Test function for fInverse
+        function testFInverse(description, inputValue, expectedOutput, expectError = false) {
+            const kindKey = 'INVERSE_MAPPING';
+            testStats[kindKey].total++;
+            const outputElements = [];
+
+            const addDetailElement = (text, className = '') => {
+                const p = document.createElement('p');
+                p.textContent = text;
+                p.classList.add('log-output');
+                if (className) p.classList.add(className);
+                outputElements.push(p);
             };
 
-            const appendToTestCase = (msg, className = '') => {
-                createTestCaseDivIfNeeded();
-                const line = document.createElement('div');
-                line.textContent = msg;
-                line.classList.add('log-output');
-                if (className) line.classList.add(className);
-                testCaseDiv.appendChild(line);
-            };
+            let actualOutput, statusClass = '', statusMessage = '', currentTestPassed = false;
 
-            let ordinalInstance;
-            let actualComplexity = -1;
-            let statusMessage = '';
-            let statusClass = '';
-            let currentTestPassed = false;
+            addDetailElement(`Test (fInverse): ${description}`);
+            addDetailElement(`Input Value: ${inputValue}`);
 
             try {
-                const parser = new OrdinalParser(inputString, tracer);
-                ordinalInstance = parser.parse();
-                actualComplexity = ordinalInstance.complexity(); // Call the complexity method
+                const rawResult = fInverse(inputValue);
+                actualOutput = formatFInverseOutput(rawResult);
 
-                if (actualComplexity === expectedComplexity) {
-                    currentTestPassed = true;
-                } else {
-                    statusMessage = `Status: FAILED. Expected Complexity: ${expectedComplexity}`;
+                if (expectError) {
+                    // This case should not be reached if fInverse throws as expected.
+                    // If fInverse did NOT throw, but we expected an error, it's a fail.
+                    // However, fInverse throws directly, so this path means error was not thrown.
+                    // The actual 'error string' comparison will happen in the catch block.
+                    currentTestPassed = false; // Should have been caught by catch block
+                    statusMessage = `Status: FAILED. Expected error "${expectedOutput}", but got regular output "${actualOutput}"`;
                     statusClass = "status-failed";
+                } else {
+                    if (actualOutput === expectedOutput) {
+                        currentTestPassed = true;
+                        statusMessage = 'Status: PASSED';
+                        statusClass = 'status-passed';
+                    } else {
+                        currentTestPassed = false;
+                        statusMessage = `Status: FAILED. Expected: "${expectedOutput}"`;
+                        statusClass = "status-failed";
+                    }
                 }
             } catch (e) {
-                actualComplexity = `Critical Error: ${e.message}`;
-                statusMessage = `Status: FAILED (Critical Error). Expected Complexity: ${expectedComplexity}`;
-                statusClass = "status-failed";
-                console.error(`Critical error during complexity test for "${inputString}":`, e);
+                actualOutput = `Error: ${e.message}`;
+                if (expectError) {
+                    // Compare error message string. For simplicity, we can check if e.message contains expectedOutput.
+                    // For more precise matching, ensure expectedOutput is the exact error message or a well-defined part of it.
+                    if (e.message.includes(expectedOutput)) {
+                        currentTestPassed = true;
+                        statusMessage = `Status: PASSED (Correctly caught error: "${e.message}")`;
+                        statusClass = 'status-passed';
+                    } else {
+                        currentTestPassed = false;
+                        statusMessage = `Status: FAILED. Expected error containing "${expectedOutput}", but got "${e.message}"`;
+                        statusClass = 'status-failed';
+                    }
+                } else {
+                    currentTestPassed = false;
+                    statusMessage = `Status: FAILED (Unexpected Error). Expected: "${expectedOutput}"`;
+                    statusClass = 'status-failed';
+                }
+                console.error(`Error during fInverse test "${description}":`, e);
             }
 
             if (currentTestPassed) {
-                testsPassed++;
+                testStats[kindKey].passed++;
             } else {
-                if (displayedFailures < MAX_DISPLAYED_FAILURES) {
-                    appendToTestCase(`Actual Complexity: ${actualComplexity}`);
-                    appendToTestCase(statusMessage, statusClass);
-                    displayedFailures++;
-                } else if (displayedFailures === MAX_DISPLAYED_FAILURES) {
-                    logToPage("...and more complexity test failures not shown.", 'limited-output-message', resultsContainer);
-                    displayedFailures++;
-                }
+                testStats[kindKey].failed++;
             }
+
+            addDetailElement(`Actual Output: "${actualOutput}"`);
+            addDetailElement(statusMessage, statusClass);
+            testStats[kindKey].results.push({ passed: currentTestPassed, detailsElements: outputElements });
         }
 
-        // --- Complexity Tests ---
-        testOrdinalComplexity("0", 0); // g(0) - Now defined as 0
-        testOrdinalComplexity("5", 1); // g(5) = 1 digit
-        testOrdinalComplexity("123", 3); // g(123) = 3 digits
-
-        testOrdinalComplexity("w", 1); // g(w) = 1
-        testOrdinalComplexity("w*7", 1+2); // g(7)=1. g(w*7)=1+2=3
-        testOrdinalComplexity("w*789", 3+2); // g(789)=3. g(w*789)=3+2=5
-
-        // g(w^a) = g(a)+4. 
-        // Test w^2: a=2. g(2)=1. g(w^2)=1+4=5.
-        testOrdinalComplexity("w^2", 1+4); 
-        // Test w^10: a=10. g(10)=2. g(w^10)=2+4=6.
-        testOrdinalComplexity("w^10", 2+4); 
-        // Test w^w: a=w. g(w)=1. g(w^w)=1+4=5.
-        testOrdinalComplexity("w^w", 1+4);
-
-        // g(w^a*m) = g(a)+g(m)+5
-        // Test w^2*3: a=2, m=3. g(2)=1, g(3)=1. g(w^2*3)=1+1+5=7.
-        testOrdinalComplexity("w^2*3", 1+1+5); 
-        // Test w^w*12: a=w, m=12. g(w)=1, g(12)=2. g(w^w*12)=1+2+5=8.
-        testOrdinalComplexity("w^w*12", 1+2+5); 
-
-        // g(x+y) = g(x)+g(y)+1
-        // Test w+1: x=w, y=1. g(w)=1, g(1)=1. g(w+1)=1+1+1=3.
-        testOrdinalComplexity("w+1", 1+1+1);
-        // Test w^2+w*3+5: (w^2 + (w*3+5)) + 1
-        // g(w^2) = 5 (from above)
-        // g(w*3+5): x=w*3, y=5. g(w*3)=g(3)+2 = 1+2=3. g(5)=1. g(w*3+5)=3+1+1=5.
-        // g(w^2 + (w*3+5)) = g(w^2) + g(w*3+5) + 1 = 5+5+1=11
-        testOrdinalComplexity("w^2+w*3+5", 5+5+1);
-
-        testOrdinalComplexity("e_0", 3); // g(e_0)=3
-
-        // Test WTowerOrdinal complexity directly (g(w^^m) = g(m)+3)
-        // Need to instantiate WTowerOrdinal and call .complexity() on it directly
-        // as parser doesn't produce this type.
-        try {
-            const tracerTest = new OperationTracer(100000);
-            let wtHeight0 = new WTowerOrdinal(0, tracerTest);
-            let wtHeight7 = new WTowerOrdinal(7, tracerTest);
-            let wtHeight123 = new WTowerOrdinal(123, tracerTest);
-
-            // Manually run tests for these, similar to testOrdinalComplexity structure
-            const testManualComplexity = (description, ordinalInstance, expected) => {
-                totalTestsRun++;
-                let actual = ordinalInstance.complexity();
-                if (actual === expected) {
-                    testsPassed++;
-                } else {
-                    if (displayedFailures < MAX_DISPLAYED_FAILURES) {
-                        const testCaseDiv = document.createElement('div');
-                        testCaseDiv.classList.add('test-case');
-                        resultsContainer.appendChild(testCaseDiv);
-                        const line1 = document.createElement('div');
-                        line1.textContent = `Test (Manual Complexity): ${description}`;
-                        line1.classList.add('log-output');
-                        testCaseDiv.appendChild(line1);
-                        const line2 = document.createElement('div');
-                        line2.textContent = `Actual Complexity: ${actual}, Expected: ${expected}`;
-                        line2.classList.add('log-output', 'status-failed');
-                        testCaseDiv.appendChild(line2);
-                        displayedFailures++;
-                    } else if (displayedFailures === MAX_DISPLAYED_FAILURES) {
-                        logToPage("...and more manual complexity test failures not shown.", 'limited-output-message', resultsContainer);
-                        displayedFailures++;
-                    }
-                }
-            };
-            testManualComplexity("w^^0", wtHeight0, 1+3); // g(0)=1. g(w^^0)=1+3=4
-            testManualComplexity("w^^7", wtHeight7, 1+3); // g(7)=1. g(w^^7)=1+3=4
-            testManualComplexity("w^^123", wtHeight123, 3+3); // g(123)=3. g(w^^123)=3+3=6
-
-        } catch (e) {
-            console.error("Error setting up/running manual WTowerOrdinal complexity tests:", e);
-            // Log a general failure for this block if setup fails
-            totalTestsRun++; // Account for this block
-            if (displayedFailures < MAX_DISPLAYED_FAILURES) {
-                const testCaseDiv = document.createElement('div');
-                testCaseDiv.classList.add('test-case');
-                resultsContainer.appendChild(testCaseDiv);
-                const line = document.createElement('div');
-                line.textContent = "Test (Manual WTower Complexity): Error during setup/run - " + e.message;
-                line.classList.add('log-output', 'status-failed');
-                testCaseDiv.appendChild(line);
-                displayedFailures++;
+        // Main test orchestrator
+        function runAllTestsAndRender() {
+            console.log("runAllTestsAndRender: Started");
+            // Initialize/Clear all stats and containers
+            for (const kindKey in testStats) {
+                const kind = testStats[kindKey];
+                kind.results = []; kind.total = 0; kind.passed = 0; kind.failed = 0;
+                if (kindKey === 'MONOTONICITY') { kind.total_pairs = 0; kind.passed_pairs = 0; kind.failed_pairs = 0; }
+                const summaryDiv = document.getElementById(kind.summaryId);
+                if(summaryDiv) summaryDiv.textContent = 'Pending...';
+                // const containerDiv = document.getElementById(kind.containerId);
+                // if(containerDiv) containerDiv.innerHTML = ''; // DO NOT CLEAR THE MAIN CONTAINER HERE
             }
-        }
+            successfulCNFTestResultsForMapping.length = 0; 
+            overallStatusIndicatorDiv.textContent = "Overall Status: Running tests...";
+            overallStatusIndicatorDiv.className = 'status-overall-pending';
+            if(overallSummaryDetailsDiv) overallSummaryDetailsDiv.innerHTML = '';
 
-        // --- Simplify Tests ---
-        // testOrdinalSimplify(description, inputString, budget, expectedCNF, expectedRemBudget)
+            // --- ORIGINAL TEST CASES START ---
+            console.log("runAllTestsAndRender: Starting CNF tests...");
+            testOrdinalCalc("0", "0");
+            testOrdinalCalc("1+2*3", "7");
+            testOrdinalCalc("w", "w");
+            testOrdinalCalc("w+5", "w+5");
+            testOrdinalCalc("5+w", "w");
+            testOrdinalCalc("w+w", "w*2");
 
-        // Finite Ordinals
-        testOrdinalSimplify("Finite fits", "123", 10, "123", 7); // g(123)=3. 10-3=7
-        testOrdinalSimplify("Finite does not fit, fallback to 0", "12345", 3, "0", 3); // g(12345)=5. New g(0)=0. Rem 3-0=3
-        testOrdinalSimplify("Finite cannot fit 0", "123", 0, "0", 0); // Budget 0, g(0)=0. Rem 0-0=0.
+            testOrdinalCalc("w*3", "w*3");
+            testOrdinalCalc("3*w", "w");
+            testOrdinalCalc("w*w", "w^2");
+            testOrdinalCalc("(w+1)*2", "w*2+1"); 
+            testOrdinalCalc("(w+1)*(w+1)", "w^2+w+1");
+            testOrdinalCalc("(w+1)*(w+2)", "w^2+w*2+1"); 
 
-        // EpsilonNaughtOrdinal
-        testOrdinalSimplify("e_0 fits", "e_0", 5, "e_0", 2); // g(e_0)=3. 5-3=2
-        testOrdinalSimplify("e_0 does not fit, fallback to 0", "e_0", 2, "0", 2); // g(e_0)=3. New g(0)=0. Rem 2-0=2
-        testOrdinalSimplify("e_0 cannot fit 0", "e_0", 0, "0", 0);
+            testOrdinalCalc("2^w", "w");
+            testOrdinalCalc("w^3", "w^3");
+            testOrdinalCalc("w^w", "w^w"); 
+            testOrdinalCalc("(w+1)^2", "w^2+w+1");
+            testOrdinalCalc("2^(w+1)", "w*2");
+            testOrdinalCalc("w^(w+1)", "w^(w+1)");
+            testOrdinalCalc("(w^2)^w", "w^w");   
+            testOrdinalCalc("(w^w)^2", "w^(w*2)"); 
+            testOrdinalCalc("(w^w)^w", "w^(w^2)");
 
-        // WTowerOrdinal (tested via manual creation and simplify call)
-        try {
-            const tracer = new OperationTracer(100000);
-            let wt0 = new WTowerOrdinal(0, tracer); // w^^0, g=g(0)+3=1+3=4
-            let wt1 = new WTowerOrdinal(1, tracer); // w^^1, g=g(1)+3=1+3=4
-            let wt2 = new WTowerOrdinal(2, tracer); // w^^2, g=g(2)+3=1+3=4
+            testOrdinalCalc("(w^2+w*3+5)*w + (w+1)", "w^3+w+1");
+            testOrdinalCalc("2^(w^2)", "w^w"); 
+            testOrdinalCalc(" (w+5)^0 ", "1");
+            testOrdinalCalc(" 0^(w+1) ", "0");
+            testOrdinalCalc(" 1^w ", "1");
+            testOrdinalCalc("w^(w+1)+2", "w^(w+1)+2");
+            testOrdinalCalc("w^2", "w^2");
+            testOrdinalCalc("w^w", "w^w"); 
 
-            const testManualSimplify = (desc, ordInstance, budget, expectedCnf, expectedRem) => {
-                totalTestsRun++;
-                let testCaseDiv = null;
-                const createIfNeeded = () => {
-                    if (!testCaseDiv) {
-                        testCaseDiv = document.createElement('div');
-                        testCaseDiv.classList.add('test-case');
-                        resultsContainer.appendChild(testCaseDiv);
-                        const dLine = document.createElement('div');
-                        dLine.textContent = `Test (Manual Simplify): ${desc} [Budget: ${budget}] (Orig: ${ordInstance.toStringCNF()}, g=${ordInstance.complexity()})`;
-                        dLine.classList.add('log-output');
-                        testCaseDiv.appendChild(dLine);
-                    }
-                };
-                const append = (msg, cls) => { createIfNeeded(); const l = document.createElement('div'); l.textContent = msg; l.classList.add('log-output'); if(cls)l.classList.add(cls); testCaseDiv.appendChild(l); }; 
-                
-                let pass = true;
-                let notes = [];
-                let actualCnf = '';
-                let actualRem = -1;
-                let simplifiedG = -1;
+            testOrdinalCalc("(w*2+1)*(w*3+5)", "w^2*3+w*10+1"); 
+                                                                                    
+            testOrdinalCalc("w + w * w ^ w + w", "w^w+w"); 
+            testOrdinalCalc("( (w+1) * (w+2) + (w*3+4) ) ^ 2", "w^4+w^3*5+w^2*4+w*5+4");
+            testOrdinalCalc("w ^ (w ^ (w+1) + 1)", "w^(w^(w+1)+1)");
+            testOrdinalCalc("2 ^ (w^w)", "w^(w^w)");
+            testOrdinalCalc("3 ^ (w^2*5 + w*4 + 3)", "w^(w*5+4)*27");
+            testOrdinalCalc("2 ^ ( (w+1)^2 )", "w^(w+1)*2");
+            testOrdinalCalc("(w^w + w + 1)^2", "w^(w*2)+w^(w+1)+w^w+w+1");
+            testOrdinalCalc("(w*2+3)^3", "w^3*2+w^2*6+w*6+3"); 
 
-                try {
-                    const res = ordInstance.simplify(budget);
-                    actualCnf = res.simplifiedOrdinal.toStringCNF();
-                    actualRem = res.remainingBudget;
-                    simplifiedG = res.simplifiedOrdinal.complexity();
+            testOrdinalCalc("(w^2+1) ^ (w*2+1)", "w^(w*2+2)+w^(w*2)");
+            testOrdinalCalc("(w^w) ^ (w^w)", "w^(w^w)");
+            testOrdinalCalc("(w+1) ^ (w^2)", "w^(w^2)");
+            testOrdinalCalc("(w^0+1)^(w*0+1)", "2"); 
+            testOrdinalCalc("(w * ( (w^0 * 0) + 1) ) ^ ( ( (w+1)^0 ) * w )", "w^w"); 
+            testOrdinalCalc("(w^2*2 + w*3 + 4) * (w^3*5 + w*6 + 7)", "w^5*5+w^3*6+w^2*14+w*3+4"); 
 
-                    if(actualCnf !== expectedCnf) { pass = false; notes.push(`CNF: Got ${actualCnf}, Exp ${expectedCnf}`);}
-                    if(actualRem !== expectedRem) { pass = false; notes.push(`RemBudget: Got ${actualRem}, Exp ${expectedRem}`);}
-                    if(simplifiedG > budget) {pass = false; notes.push(`Sanity: g(${simplifiedG}) > budget(${budget})`);}
-                    if(ordInstance.compareTo(res.simplifiedOrdinal) < 0) {pass = false; notes.push(`Sanity: simplified > original`);}
+            testOrdinalCalc("w^w^w", "w^(w^w)");
+            testOrdinalCalc("2^w^w^w", "w^(w^(w^w))");
+            testOrdinalCalc("(w+1)^(w+1)^(w+1)", "w^(w^(w+1)+w^w)");
+            testOrdinalCalc("2^(w*2)", "w^2");
+            testOrdinalCalc("4^(w^7+3)", "w^(w^6)*64");
+            testOrdinalCalc("(w^(w^w+1)*2+3)^(w^(w^2+w*2)*3+2)", "w^(w^(w^2+w*2)*3+w^w*2+1)*2+w^(w^(w^2+w*2)*3+w^w+1)*6+w^(w^(w^2+w*2)*3)*3");
+            testOrdinalCalc("e_0 + w", "Error: Operation e_0 + non-zero CNFOrdinal (w) is unsupported.");
+            testOrdinalCalc("w + e_0", "e_0");
+            testOrdinalCalc("e_0 + e_0", "Error: Operation e_0 + e_0 is unsupported.");
+            testOrdinalCalc("e_0 + w^w", "Error: Operation e_0 + non-zero CNFOrdinal (w^w) is unsupported.");
+            testOrdinalCalc("w^w + e_0", "e_0");
+            testOrdinalCalc("e_0 * w^w^w", "Error: e_0 * CNFOrdinal (where CNFOrdinal is not 0 or 1) is unsupported in this implementation.");
+            testOrdinalCalc("w^w^w + e_0", "e_0");
+            testOrdinalCalc("e_0^w^w^w^w", "Error: e_0 ^ CNFOrdinal (where CNFOrdinal is not 0 or 1) is unsupported in this implementation.");
+            testOrdinalCalc("w^w^w^w + e_0", "e_0");
+            testOrdinalCalc("(w+1)^e_0", "e_0");
+            testOrdinalCalc("2^e_0", "e_0");
+            testOrdinalCalc("e_0^2", "Error: e_0 ^ CNFOrdinal (where CNFOrdinal is not 0 or 1) is unsupported in this implementation.");
 
-                } catch (e) {
-                    pass = false;
-                    actualCnf = 'ERROR: ' + e.message;
-                    notes.push('Exception during simplify');
-                }
+            // --- Tetration Tests --- (from original)
+            testOrdinalCalc("e_0^^0", "1");
+            testOrdinalCalc("e_0^^1", "e_0");
+            testOrdinalCalc("e_0^^2", "Error: Operation e_0 ^^ CNFOrdinal (2) is unsupported when CNFOrdinal is not 0 or 1.");
+            testOrdinalCalc("e_0^^w", "Error: Operation e_0 ^^ CNFOrdinal (w) is unsupported when CNFOrdinal is not 0 or 1.");
+            testOrdinalCalc("e_0^^e_0", "Error: Operation e_0 ^^ e_0 is unsupported.");
 
-                if (pass) { testsPassed++; } 
-                else {
-                    if (displayedFailures < MAX_DISPLAYED_FAILURES) {
-                        append(`Simplified: \"${actualCnf}\" (g=${simplifiedG})`, 'log-output');
-                        append(`Rem Budget: ${actualRem}`, 'log-output');
-                        notes.forEach(n => append(n, 'error-message'));
-                        append('Status: FAILED', 'status-failed');
-                        displayedFailures++;
-                    } else if (displayedFailures === MAX_DISPLAYED_FAILURES) { logToPage("...and more manual simplify test failures not shown.", 'limited-output-message'); displayedFailures++;}
-                }
-            };
-            testManualSimplify("w^^0 fits", wt0, 10, "w^^0", 6); // g(w^^0)=4. 10-4=6
-            testManualSimplify("w^^2 fits", wt2, 5, "w^^2", 1);   // g(w^^2)=4. 5-4=1
-            testManualSimplify("w^^1 does not fit, fallback to 0", wt1, 3, "0", 3); // g(w^^1)=4. New g(0)=0. Rem 3-0=3
-            testManualSimplify("w^^2 cannot fit 0", wt2, 0, "0", 0);
-
-        } catch(e) { console.error("Error in manual WTower simplify tests setup: ", e); }
-
-        // CNFOrdinal - Sums (initial g(this) <= budget check is important)
-        testOrdinalSimplify("Sum: w+1 fits", "w+1", 10, "w+1", 7); // g(w+1)=3. 10-3=7
-        // g(w+1)=3. Budget 2. Should return 0. g(0)=1. RemBudget = 2-1=1.
-        // Let's trace: (w+1).simplify(2). isFinite=false. g(w+1)=3 > 2. So sum logic runs.
-        // Term w: _simplifyCNFSingleTermRule(1,1,2,F). MPTF w^1 (cost 1) ok. Att1(w^h1*1) no. Att2(w^h1) no. Att3(w) cost 1. OK. ret {w, rem=1}.
-        // acc = w. currentBudget=1.
-        // Term 1: _simplifyCNFSingleTermRule(0,1,1,F). MPTF 1 (cost 1) ok. Att1(1) cost 1. OK. ret {1, rem=0}.
-        // acc = w+1. currentBudget=0.
-        // Returns {w+1, rem=0}. BUT g(w+1)=3 > original budget 2. This is where the overall check should kick in.
-        // **REVISED EXPECTATION**: If whole thing doesn't fit, should simplify to something that does.
-        // If g(w+1)=3 > budget=2, what should it be? Try g(w)=1. Fits. Budget 2-1=1.
-        // Or it might become 0 if the sum logic can't build anything. Let's assume it should produce largest possible under budget.
-        // The current logic in CNFOrdinal.simplify *doesn't* have an initial g(this) check for sums. It directly goes to per-term.
-        // Let's see what the current code does first, then adjust expectations or code.
-        // For now, my trace gave w+1, rem 0. Sanity check g(w+1) > budget will fail.
-        // If it correctly simplified to just "w" (cost 1), rem budget would be 2-1 = 1.
-        // If it simplified to "0" (cost 1), rem budget would be 2-1 = 1.
-        testOrdinalSimplify("Sum: w+1 too small budget", "w+1", 2, "w", 1); // Expected: w (g=1), budget left 2-1=1
-
-        // g(w*2+w+5) = g(w*3+5) = 5.
-        testOrdinalSimplify("Sum: w*2+w+5, budget 7", "w*2+w+5", 7, "w*3+5", 2); // Corrected expected remBudget
-        // Budget 5. Expected: w*3+5 (g=5). Rem 0.
-        testOrdinalSimplify("Sum: w*2+w+5, budget 5 (truncates last term)", "w*2+w+5", 5, "w*3+5", 0); // Corrected expectedCNF and remBudget
-        // Budget 4. Expected: w*3 (g=3). Rem 1.
-        testOrdinalSimplify("Sum: w*2+w+5, budget 4 (truncates more)", "w*2+w+5", 4, "w*3", 1); // Corrected expectedCNF
-        // Budget 2. Expected: w (g=1). Rem 1.
-        testOrdinalSimplify("Sum: w*2+w+5, budget 2 (truncates to first possible)", "w*2+w+5", 2, "w", 1);
-        testOrdinalSimplify("Sum: w*2+w+5, budget 0", "w*2+w+5", 0, "0", 0);
-
-        // CNFOrdinal - MPT Fallback to WTower
-        // g(w^(w^w)) = g(w^w)+4 = (g(w)+4)+4 = (1+4)+4 = 9.
-        testOrdinalSimplify("MPT: w^(w^w) fits", "w^(w^w)", 10, "w^(w^w)", 1);
-        // Budget 8. g(w^(w^w))=9 > 8. MPTF check for w^(mpt_of_w^w) i.e. w^(w^w) (cost 9) fails budget 8.
-        // WTowerApprox = w^^2. g(w^^2)=4. Fits budget 8.
-        // Expected: w^^2, rem_budget = 8-4=4.
-        testOrdinalSimplify("MPT: w^(w^w) too costly, fallback WTower", "w^(w^w)", 8, "w^^3", 4);
-        // Budget 3. g(w^(w^w))=9 > 3. MPTF fails. w^^2 (cost 4) > 3. Fallback to 0.
-        testOrdinalSimplify("MPT: w^(w^w) WTower fallback too costly, fallback 0", "w^(w^w)", 3, "0", 3); // My trace aligns with this.
-
-        // CNFOrdinal - w^b*m rule (and MPT check for term if applicable)
-        // Input: w^w*2. g = g(w^w)+g(2)+5 = 5+1+5=11.
-        // Budget 10. MPT for exp part w^(w^w) (g=9) <= 10. MPT passes.
-        // Att0 (w^w*2, g=11) > 10. Fails.
-        // Att1: w^(h_expB)*coeffM. h_expB for (w^w) with budget (10-(4+1+1)=4) is w^0=1 (cost for h_expB=4). Total cost 4+1+1+4=10.
-        // Result w^1*2 = w*2. Rem budget 10-10=0.
-        testOrdinalSimplify("w^b*m: w^w*2, budget 10", "w^w*2", 10, "w^w*2", 3); // Corrected based on trace
-
-        // Input w^w*2 (g=11). Budget 8.
-        // MPT for exp part w^(w^w) (g=9) > budget 8. MPT Fails.
-        // WTower fallback: numOmegas(w^w)=2. w^^2 (g=4). Fits budget 8.
-        // Result w^^2. Rem budget 8-4=4.
-        testOrdinalSimplify("w^b*m: w^w*2, budget 8 (MPT fail for term)", "w^w*2", 8, "w^w*2", 1); // Corrected based on trace
-        
-        // Input w^2*10. g=g(w^2)+g(10)+5 = 5+2+5=12.
-        // Budget 10. MPT for exp part w^(w^2) (g=g(w^w)=5) <= 10. MPT Passes.
-        // Att0 (w^2*10, g=12) > 10. Fails.
-        // Att1: w^(h_expB)*coeffM. h_expB for (w^2) with budget (10-(4+1+2)=3) is w (cost_h_expB=1, from (w^2).simplify(3)->w).
-        // Total cost 4+1+2+1 = 8.
-        // Result w^w*10. Rem budget 10-8=2.
-        testOrdinalSimplify("w^b*m: w^2*10, budget 10", "w^2*10", 10, "w^2*10", 2); // Corrected based on trace (was w^w*10 before)
-        
-        // Input w^2*10 (g=12). Budget 7.
-        // MPT for exp part w^(w^2) (g=5) <= 7. MPT Passes.
-        // Att0 (w^2*10, g=12) > 7. Fails.
-        // Att1: w^(h_expB)*coeffM. h_expB for (w^2) with budget (7-(4+1+2)=0) is 0 (cost_h_expB=0).
-        // Total cost 4+1+2+0=7.
-        // Result w^0*10 = 10. Rem budget 7-7=0.
-        testOrdinalSimplify("w^b*m: w^2*10, budget 7 (MPT fail for term)", "w^2*10", 7, "w^2", 2); // Corrected based on trace (was w^^2)
-        
-        // Input w^(w^2+w). g=11. Budget 10.
-        // MPT for exp part w^(w^2) (g=5) <=10. MPT Passes.
-        // Att0 (w^(w^2+w), g=11) > 10. Fails.
-        // Att1: w^(h_expB)*coeffM. h_expB for (w^2+w) with budget (10-(4+1+0)=5) is w^2 (cost_h_expB=5, from (w^2+w).simplify(5)->w^2).
-        // Total cost 4+1+0+5=10.
-        // Result w^(w^2) (same as w^w). Rem budget 10-10=0.
-        testOrdinalSimplify("Skip MPTF interaction", "w^(w^2+w)", 10, "w^(w^2)", 1); // Corrected based on trace
-
-        testOrdinalSimplify("", "w^w^w^w^w^w^2", 15, "w^^6", 11); // Corrected based on trace (was w^^2)
-        testOrdinalSimplify("", "w^^5", 15, "w^^5", 11); // Corrected based on trace (was w^^2)
-        testOrdinalSimplify("", "w^(w^2*20+w*2+5)", 15, "w^(w^2*20+w)", 1); // Corrected based on trace (was w^^2)
-        testOrdinalSimplify("", "w^(w^(w+100000)*20+w*2+5)", 15, "w^(w^w)", 6);
-        testOrdinalSimplify("", "(w^(w^3*2+4)+w^2+100)*2", 15, "w^(w^3*2+4)*2", 0);
-        testOrdinalSimplify("", "w^(w^3+10)+w*2+100000", 15, "w^(w^3+10)+w", 1);
-        testOrdinalSimplify("", "w^(w^3)+w^22*2+10", 15, "w^(w^3)", 6);
-        // --- End of Simplify Tests ---
-
-        // Function to perform and display pairwise sanity checks
-        function performSanityChecks() {
-            let allChecksPassed = true; // This local variable tracks if *all current* sanity checks passed
-            const numResults = successfulTestResults.length;
-            const EPSILON = 1e-9; // Threshold for floating point comparisons
-
-            // Clear previous sanity check details and reset status for this run
-            sanityCheckDetailsDiv.innerHTML = ''; 
-            sanityCheckStatusDiv.textContent = "Overall Status: PENDING";
-            sanityCheckStatusDiv.className = ""; // Clear old pass/fail class for the section header
+            testOrdinalCalc("0^^0", "1");
+            testOrdinalCalc("1^^0", "1");
+            testOrdinalCalc("2^^0", "1");
+            testOrdinalCalc("w^^0", "1");
             
-            totalMonotonicityPairs = 0; // Reset for this run
-            monotonicityPairsPassed = 0; // Reset for this run
-            displayedMonotonicityFailures = 0; // Reset for this run
+            testOrdinalCalc("0^^1", "0");
+            testOrdinalCalc("1^^1", "1");
+            testOrdinalCalc("2^^1", "2");
+            testOrdinalCalc("w^^1", "w");
+
+            testOrdinalCalc("2^^2", "4"); 
+            testOrdinalCalc("2^^3", "16"); 
+            testOrdinalCalc("2^^4", "65536"); 
+            testOrdinalCalc("3^^2", "27"); 
+            testOrdinalCalc("w^^2", "w^w"); 
+            
+            testOrdinalCalc("0^^w", "Error: Operation 0 ^^ CNFOrdinal (w) is undefined when CNFOrdinal is infinite.");
+            testOrdinalCalc("0^^(w*2)", "Error: Operation 0 ^^ CNFOrdinal (w*2) is undefined when CNFOrdinal is infinite.");
+
+            testOrdinalCalc("1^^w", "1");
+            testOrdinalCalc("1^^(w^w)", "1");
+
+            testOrdinalCalc("2^^w", "w");
+            testOrdinalCalc("3^^(w+1)", "w");
+            testOrdinalCalc("10^^(w^2)", "w");
+
+            testOrdinalCalc("w^^w", "e_0");
+            testOrdinalCalc("(w+1)^^w", "e_0");
+            testOrdinalCalc("(w^2)^^(w*2)", "e_0");
+            testOrdinalCalc("(w^w)^^w", "e_0");
+
+            testOrdinalCalc("0^^e_0", "Error: Operation 0 ^^ e_0 is undefined.");
+            testOrdinalCalc("1^^e_0", "1");
+            testOrdinalCalc("2^^e_0", "w");
+            testOrdinalCalc("100^^e_0", "w");
+            testOrdinalCalc("w^^e_0", "e_0");
+            testOrdinalCalc("(w+5)^^e_0", "e_0");
+            testOrdinalCalc("(w^w)^^e_0", "e_0");
+            
+            testOrdinalCalc("2^^3+1", "17"); 
+            testOrdinalCalc("1+2^^3", "17"); 
+            testOrdinalCalc("2*3^^2", "54"); 
+            testOrdinalCalc("2^^2*3", "12"); 
+            testOrdinalCalc("2^3^^2", "134217728");  
+            testOrdinalCalc("2^^3^2", "256"); 
+            testOrdinalCalc("2^^w+1", "w+1"); 
+            testOrdinalCalc("w^^(w+1)", "e_0"); 
+            testOrdinalCalc("(w+1)^^(w+1)", "e_0");
+
+            testOrdinalCalc("", "0");
+
+            // --- WTowerOrdinal Tests (Manual Instantiation from original) ---
+            console.log("runAllTestsAndRender: Starting WTower tests...");
+            testWTowerOrdinal("w^^0 toCNF", 0, "1");
+            testWTowerOrdinal("w^^1 toCNF", 1, "w");
+            testWTowerOrdinal("w^^2 toCNF", 2, "w^w");
+            // testWTowerOrdinal("w^^3 toCNF", 3, "w^(w^w)"); // This can be very slow
+
+            try { /* WTower ops that use testOrdinalCalc */
+                const tracerTest = new OperationTracer(1000000);
+                let wt0_cnf_str = new WTowerOrdinal(0, tracerTest).toCNFOrdinal().toStringCNF(); 
+                let wt1_cnf_str = new WTowerOrdinal(1, tracerTest).toCNFOrdinal().toStringCNF(); 
+                let wt2_cnf_str = new WTowerOrdinal(2, tracerTest).toCNFOrdinal().toStringCNF(); 
+                testOrdinalCalc('(' + wt1_cnf_str + ') + 1', "w+1"); 
+                testOrdinalCalc('(' + wt0_cnf_str + ') * w', "w");   
+                testOrdinalCalc('2 + (' + wt1_cnf_str + ')', "w");    
+                testOrdinalCalc('(' + wt1_cnf_str + ') * (' + wt1_cnf_str + ')', "w^2"); 
+                testOrdinalCalc('(' + wt2_cnf_str + ') + 0', "w^w"); 
+                testOrdinalCalc('(' + wt1_cnf_str + ')^2', "w^2"); 
+            } catch (e) { 
+                testStats.CNF.failed++; testStats.CNF.total++; 
+                const cnfContainer = document.getElementById(testStats.CNF.containerId);
+                if (cnfContainer) {
+                     logToPage("Error setting up WTowerOrdinal operation tests (counted as CNF failure): " + e.message, 'error-message', cnfContainer);
+                }
+            }
+
+            // --- Simplify Tests (from original) ---
+            console.log("runAllTestsAndRender: Starting Simplify tests...");
+            // Finite Ordinals
+            testOrdinalSimplify("Finite fits", "123", 10, "123", 7); 
+            testOrdinalSimplify("Finite does not fit, fallback to 0", "12345", 3, "0", 3); 
+            testOrdinalSimplify("Finite cannot fit 0", "123", 0, "0", 0); 
+
+            // EpsilonNaughtOrdinal
+            testOrdinalSimplify("e_0 fits", "e_0", 5, "e_0", 2); 
+            testOrdinalSimplify("e_0 does not fit, fallback to 0", "e_0", 2, "0", 2); 
+            testOrdinalSimplify("e_0 cannot fit 0", "e_0", 0, "0", 0);
+
+            // WTowerOrdinal (manual simplify tests from original)
+            try {
+                const tracer = new OperationTracer(100000);
+                let wt0 = new WTowerOrdinal(0, tracer); 
+                let wt1 = new WTowerOrdinal(1, tracer); 
+                let wt2 = new WTowerOrdinal(2, tracer); 
+                testManualSimplify("w^^0 fits", wt0, 10, "w^^0", 6); 
+                testManualSimplify("w^^2 fits", wt2, 5, "w^^2", 1);   
+                testManualSimplify("w^^1 does not fit, fallback to 0", wt1, 3, "0", 3); 
+                testManualSimplify("w^^2 cannot fit 0", wt2, 0, "0", 0);
+            } catch(e) { 
+                testStats.SIMPLIFY.failed++; testStats.SIMPLIFY.total++;
+                const simplifyContainer = document.getElementById(testStats.SIMPLIFY.containerId);
+                if (simplifyContainer) {
+                    logToPage("Error in manual WTower simplify tests setup (counted as SIMPLIFY failure): "+e.message, 'error-message', simplifyContainer);
+                }
+            }
+
+            // CNFOrdinal - Sums (from original)
+            testOrdinalSimplify("Sum: w+1 fits", "w+1", 10, "w+1", 7); 
+            testOrdinalSimplify("Sum: w+1 too small budget", "w+1", 2, "w", 1); 
+            testOrdinalSimplify("Sum: w*2+w+5, budget 7", "w*2+w+5", 7, "w*3+5", 2); 
+            testOrdinalSimplify("Sum: w*2+w+5, budget 5 (truncates last term)", "w*2+w+5", 5, "w*3+5", 0); 
+            testOrdinalSimplify("Sum: w*2+w+5, budget 4 (truncates more)", "w*2+w+5", 4, "w*3", 1); 
+            testOrdinalSimplify("Sum: w*2+w+5, budget 2 (truncates to first possible)", "w*2+w+5", 2, "w", 1);
+            testOrdinalSimplify("Sum: w*2+w+5, budget 0", "w*2+w+5", 0, "0", 0);
+
+            // CNFOrdinal - MPT Fallback to WTower (from original)
+            testOrdinalSimplify("MPT: w^(w^w) fits", "w^(w^w)", 10, "w^(w^w)", 1);
+            testOrdinalSimplify("MPT: w^(w^w) too costly, fallback WTower", "w^(w^w)", 8, "w^^3", 4);
+            testOrdinalSimplify("MPT: w^(w^w) WTower fallback too costly, fallback 0", "w^(w^w)", 3, "0", 3); 
+
+            // CNFOrdinal - w^b*m rule (from original)
+            testOrdinalSimplify("w^b*m: w^w*2, budget 10", "w^w*2", 10, "w^w*2", 3); 
+            testOrdinalSimplify("w^b*m: w^w*2, budget 8 (MPT fail for term)", "w^w*2", 8, "w^w*2", 1); 
+            testOrdinalSimplify("w^b*m: w^2*10, budget 10", "w^2*10", 10, "w^2*10", 2); 
+            testOrdinalSimplify("w^b*m: w^2*10, budget 7 (MPT fail for term)", "w^2*10", 7, "w^2", 2); 
+            
+            testOrdinalSimplify("Skip MPTF interaction", "w^(w^2+w)", 10, "w^(w^2)", 1); 
+
+            testOrdinalSimplify("", "w^w^w^w^w^w^2", 15, "w^^6", 11); 
+            testOrdinalSimplify("", "w^^5", 15, "w^^5", 11); 
+            testOrdinalSimplify("", "w^(w^2*20+w*2+5)", 15, "w^(w^2*20+w)", 1); 
+            testOrdinalSimplify("", "w^(w^(w+100000)*20+w*2+5)", 15, "w^(w^w)", 6);
+            testOrdinalSimplify("", "(w^(w^3*2+4)+w^2+100)*2", 15, "w^(w^3*2+4)*2", 0);
+            testOrdinalSimplify("", "w^(w^3+10)+w*2+100000", 15, "w^(w^3+10)+w", 1);
+            testOrdinalSimplify("", "w^(w^3)+w^22*2+10", 15, "w^(w^3)", 6);
+            // --- End of Simplify Tests (as per original) ---
+
+            // --- Complexity Tests (from original) ---
+            console.log("runAllTestsAndRender: Starting Complexity tests...");
+            testOrdinalComplexity("0", 0); 
+            testOrdinalComplexity("5", 1); 
+            testOrdinalComplexity("123", 3); 
+
+            testOrdinalComplexity("w", 1); 
+            testOrdinalComplexity("w*7", 1+2); 
+            testOrdinalComplexity("w*789", 3+2); 
+
+            testOrdinalComplexity("w^2", 1+4); 
+            testOrdinalComplexity("w^10", 2+4); 
+            testOrdinalComplexity("w^w", 1+4); 
+
+            testOrdinalComplexity("w^2*3", 1+1+5); 
+            testOrdinalComplexity("w^w*12", 1+2+5); 
+
+            testOrdinalComplexity("w+1", 1+1+1); 
+            testOrdinalComplexity("w^2+w*3+5", 11); // Pre-calculated: (1+4)+(1+2)+1+(1)+1 = 11
+
+            testOrdinalComplexity("e_0", 3); 
+
+            try { /* Manual complexity tests for WTowerOrdinal from original */
+                const tracerTest = new OperationTracer(100000);
+                let wtHeight0 = new WTowerOrdinal(0, tracerTest);
+                let wtHeight7 = new WTowerOrdinal(7, tracerTest);
+                let wtHeight123 = new WTowerOrdinal(123, tracerTest);
+                
+                testManualComplexity("w^^0", wtHeight0, 1+3); 
+                testManualComplexity("w^^7", wtHeight7, 1+3); 
+                testManualComplexity("w^^123", wtHeight123, 3+3); 
+            } catch (e) { 
+                testStats.COMPLEXITY.failed++; testStats.COMPLEXITY.total++;
+                const complexityContainer = document.getElementById(testStats.COMPLEXITY.containerId);
+                if (complexityContainer) {
+                    logToPage("Error setting up/running manual WTowerOrdinal complexity tests (counted as COMPLEXITY failure): "+e.message, 'error-message', complexityContainer);
+                }
+            }
+            // --- End of Complexity Tests (as per original) ---
+            // --- ORIGINAL TEST CASES END ---
+            
+            // --- Inverse Mapping Tests ---
+            console.log("runAllTestsAndRender: Starting Inverse Mapping tests...");
+            testFInverse('Finite ordinal 0', 0, '0');
+            testFInverse('Finite ordinal 0.5', 0.5, '1');
+            testFInverse('Finite ordinal 0.9', 0.9, '9');
+            testFInverse('ω', 1, 'w');
+            testFInverse('ω + 1', 1.25, 'w+1'); // Assuming convertFFormatToOrdinalInstance and sum handling works
+            testFInverse('ω * 2', 1.5, 'w*2');
+            testFInverse('ω^2', 2, 'w^2');
+            testFInverse('ω^2 + ω', 2.0833333333333335, 'w^2+w');
+            testFInverse('ω^ω', 3.6666666666666665, 'w^(w^w)');
+            testFInverse('ω^ω^3', 3.4, 'w^(w^3)');
+            testFInverse('ω^3', 2.3333333333333335, 'w^3');            
+            testFInverse('ω^4', 2.5, 'w^4');
+            testFInverse('ω^4*4', 2.575, 'w^4*4');
+            testFInverse('ω^4*4', 2.575, 'w^4*4');
+            testFInverse('ω^4*5+3', 2.581, 'w^4*5+3');
+            testFInverse('ω^ω + 1', 3.0053763440860215, 'w^w+1');
+            testFInverse('ω^(ω+1)', 3.064516129032258, 'w^(w+1)');
+            testFInverse('10/3', 3.333333333333333, 'w^(w^2+w*3+1)+w^13*26');
+            testFInverse('Arbitrary', 4.9216738286475129, 'w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w+1))*15+w^10*7+2))))))))))))))))))))))))))))))))))))))))))))))))');
+            testFInverse('ε₀', 5, 'e_0');
+            testFInverse('Threshold test (just below 1)', 0.99999999999999, 'w'); // f(9) = 0.9. This test might need adjustment based on fInverse precision for values very close to 1.
+            testFInverse('Threshold test (just above 1)', 1.00000000000001, 'w');
+            // Error cases: Expected error message should be based on what fInverse actually throws.
+            // Let's assume it throws "Input value X is outside the valid range [0,5]"
+            testFInverse('Error case: negative input', -1, "Input value -1 is outside the valid range [0,5]", true);
+            testFInverse('Error case: input > 5', 5.1, "Input value 5.1 is outside the valid range [0,5]", true);
+
+            // --- Monotonicity Checks ---
+            performSanityChecks(); 
+
+            // --- Render all results ---
+            renderAllKindResults(); 
+            updateOverallPageSummary(); 
+
+            // Add event listeners for collapsibles
+            document.querySelectorAll('details.test-kind-section').forEach(detailsElement => {
+                detailsElement.addEventListener('toggle', () => {
+                    const kindKey = detailsElement.id.replace('details-', '');
+                    renderSingleKindOutput(kindKey); 
+                    // No need to call updateKindSummary here, it's done initially 
+                    // and doesn't change based on collapse/expand, only on test re-runs.
+                });
+            });
+            console.log("runAllTestsAndRender: Finished, event listeners attached.");
+        }
+
+        function renderSingleKindOutput(kindKey) {
+            const detailsElementForLog = document.getElementById('details-' + kindKey);
+            console.log(`[${kindKey}] renderSingleKindOutput: START. Details open: ${detailsElementForLog ? detailsElementForLog.open : 'details_element_not_found'}`);
+            const kindData = testStats[kindKey];
+            const detailsElement = document.getElementById('details-' + kindKey);
+            
+            // Correctly select the preview container using its ID
+            const previewContainer = document.getElementById(kindData.previewId);
+            // The main container for when 'details' is open (this is the div with class 'test-results-output')
+            const mainResultsOutputContainer = document.getElementById(kindData.containerId); 
+            // Inside mainResultsOutputContainer, there's a div with class 'passed-tests-container'
+            // This will be used to hold ALL tests when the details section is expanded.
+            const allTestsContainerWhenOpen = mainResultsOutputContainer ? mainResultsOutputContainer.querySelector('.passed-tests-container') : null;
+
+            if (!kindData) { console.error(`[${kindKey}] renderSingleKindOutput: kindData is missing.`); return; }
+            if (!detailsElement) { console.warn(`[${kindKey}] renderSingleKindOutput: Details element #details-${kindKey} NOT FOUND.`); return; } // Critical
+            if (!previewContainer) { console.error(`[${kindKey}] renderSingleKindOutput: previewContainer (#${kindData.previewId}) NOT FOUND.`); return; } // Critical
+            if (!mainResultsOutputContainer) { console.error(`[${kindKey}] renderSingleKindOutput: Main results output container #${kindData.containerId} NOT FOUND.`); return; } // Critical
+            if (!allTestsContainerWhenOpen) { console.error(`[${kindKey}] renderSingleKindOutput: allTestsContainerWhenOpen (.passed-tests-container) NOT FOUND within #${kindData.containerId}.`); return; } // Critical
+            
+            console.log(`[${kindKey}] renderSingleKindOutput: Clearing containers. Preview: ${previewContainer.id}, AllWhenOpen: ${allTestsContainerWhenOpen.id || 'N/A'}`);
+            previewContainer.innerHTML = '';
+            allTestsContainerWhenOpen.innerHTML = '';
+
+            const isExpanded = detailsElement.open;
+            let allKindResults = kindData.results || [];
+            let failedTests = allKindResults.filter(result => !result.passed);
+            let passedTests = allKindResults.filter(result => result.passed);
+
+            console.log(`[${kindKey}] renderSingleKindOutput: Expanded: ${isExpanded}. Total: ${allKindResults.length}, Failed: ${failedTests.length}, Passed: ${passedTests.length}`);
+
+            if (isExpanded) {
+                // EXPANDED STATE: Show all tests (failed then passed) in allTestsContainerWhenOpen
+                previewContainer.style.display = 'none'; // Hide the separate failed preview
+                // mainResultsOutputContainer itself is part of <details>, so its display is handled by <details>
+                // allTestsContainerWhenOpen is inside mainResultsOutputContainer
+
+                if (allKindResults.length === 0) {
+                    logToPage(`No ${kindKey} tests were run or recorded results.`, '', allTestsContainerWhenOpen);
+                } else {
+                    if (failedTests.length > 0) {
+                        const failedHeader = document.createElement('h4');
+                        failedHeader.textContent = `Failed ${kindKey} Tests:`;
+                        failedHeader.className = 'status-failed';
+                        allTestsContainerWhenOpen.appendChild(failedHeader);
+                        failedTests.forEach((result) => {
+                            const testCaseDiv = document.createElement('div');
+                            testCaseDiv.className = 'test-case status-failed'; // Add status class for styling
+                            result.detailsElements.forEach(element => testCaseDiv.appendChild(element.cloneNode(true)));
+                            allTestsContainerWhenOpen.appendChild(testCaseDiv);
+                        });
+                    }
+                    if (passedTests.length > 0) {
+                         const passedHeader = document.createElement('h4');
+                         passedHeader.textContent = `Passed ${kindKey} Tests:`;
+                         passedHeader.className = 'status-passed';
+                         allTestsContainerWhenOpen.appendChild(passedHeader);
+                        passedTests.forEach((result) => {
+                            const testCaseDiv = document.createElement('div');
+                            testCaseDiv.className = 'test-case status-passed'; // Add status class for styling
+                            result.detailsElements.forEach(element => testCaseDiv.appendChild(element.cloneNode(true)));
+                            allTestsContainerWhenOpen.appendChild(testCaseDiv);
+                        });
+                    }
+                    if (failedTests.length === 0 && passedTests.length > 0 && allKindResults.length > 0) {
+                         // If only passed tests, and some tests exist, give a summary message.
+                         // This might be redundant if headers are added as above. Consider if needed.
+                         // logToPage(`All ${passedTests.length} ${kindKey} tests passed.`, 'status-passed', allTestsContainerWhenOpen);
+                    }
+                     if (failedTests.length === 0 && passedTests.length === 0 && allKindResults.length > 0) {
+                        // This case implies results exist but neither failed nor passed, which is odd.
+                        logToPage(`Found ${allKindResults.length} ${kindKey} results, but none are marked as passed or failed. Check test logic.`, 'error-message', allTestsContainerWhenOpen);
+                    }
+                }
+            } else {
+                // COLLAPSED STATE: Show only failed tests in previewContainer
+                // mainResultsOutputContainer and its child allTestsContainerWhenOpen are hidden by <details> being closed.
+                
+                if (failedTests.length > 0) {
+                    previewContainer.style.display = 'block'; // Ensure failed preview is visible
+                    const failedPreviewHeader = document.createElement('h4');
+                    failedPreviewHeader.textContent = `Failed ${kindKey} Tests (${failedTests.length} of ${allKindResults.length} total):`;
+                    failedPreviewHeader.className = 'status-failed';
+                    previewContainer.appendChild(failedPreviewHeader);
+
+                    failedTests.forEach((result) => {
+                        const testCaseDiv = document.createElement('div');
+                        testCaseDiv.className = 'test-case status-failed'; // Add status class for styling
+                        result.detailsElements.forEach(element => testCaseDiv.appendChild(element.cloneNode(true)));
+                        previewContainer.appendChild(testCaseDiv);
+                    });
+                    // Add a note to expand for all tests
+                    const expandNote = document.createElement('p');
+                    expandNote.textContent = `(Expand to see all ${allKindResults.length} tests)`;
+                    expandNote.style.fontStyle = 'italic';
+                    previewContainer.appendChild(expandNote);
+
+                } else if (allKindResults.length > 0) { // All passed
+                    previewContainer.style.display = 'block'; 
+                    const allPassedMessage = document.createElement('p');
+                    allPassedMessage.textContent = `All ${passedTests.length} ${kindKey} tests passed.`;
+                    allPassedMessage.className = 'status-passed';
+                    previewContainer.appendChild(allPassedMessage);
+                     // Add a note to expand for details
+                    const expandNote = document.createElement('p');
+                    expandNote.textContent = `(Expand to see details)`;
+                    expandNote.style.fontStyle = 'italic';
+                    previewContainer.appendChild(expandNote);
+                } else { // No tests for this kind
+                    previewContainer.style.display = 'block'; 
+                    logToPage(`No ${kindKey} tests were run or recorded results.`, '', previewContainer);
+                }
+            }
+            
+            console.log(`[${kindKey}] renderSingleKindOutput: END.`);
+        }
+
+        function renderAllKindResults() {
+            console.log("renderAllKindResults: Started");
+            for (const kindKey in testStats) {
+                console.log(`renderAllKindResults: Processing kind: ${kindKey}`);
+                updateKindSummary(kindKey); // Update the summary line in the <summary> tag
+                renderSingleKindOutput(kindKey); // Render the output based on initial (collapsed) state
+            }
+        }
+        
+        function updateKindSummary(kindKey) {
+            console.log(`updateKindSummary: Updating summary for ${kindKey}`); 
+            console.log(`Stats for ${kindKey}: Total=${(kindKey === 'MONOTONICITY' ? testStats[kindKey].total_pairs : testStats[kindKey].total)}, Passed=${(kindKey === 'MONOTONICITY' ? testStats[kindKey].passed_pairs : testStats[kindKey].passed)}, Failed=${(kindKey === 'MONOTONICITY' ? testStats[kindKey].failed_pairs : testStats[kindKey].failed)}`);
+            const stats = testStats[kindKey];
+            const summaryDiv = document.getElementById(stats.summaryId);
+            if (summaryDiv) {
+                let text = '';
+                if (kindKey === 'MONOTONICITY') {
+                     text = `Monotonicity: ${stats.total_pairs} pairs, ${stats.passed_pairs} passed, ${stats.failed_pairs} failed.`;
+                     summaryDiv.className = stats.failed_pairs > 0 ? 'kind-summary status-failed' : 'kind-summary status-passed';
+                } else {
+                    text = `${kindKey} Tests: ${stats.total} run, ${stats.passed} passed, ${stats.failed} failed.`;
+                    summaryDiv.className = stats.failed > 0 ? 'kind-summary status-failed' : 'kind-summary status-passed';
+                }
+                summaryDiv.textContent = text;
+                summaryDiv.style.display = stats.total > 0 || stats.total_pairs > 0 ? 'block' : 'none';
+            }
+        }
+        
+        function updateOverallPageSummary() {
+            console.log("updateOverallPageSummary: Started");
+            let overallPass = true;
+            let totalTestsActuallyRun = 0;
+            overallSummaryDetailsDiv.innerHTML = ''; // Clear previous summary lines
+
+            for (const kindKey in testStats) {
+                const stats = testStats[kindKey];
+                const numRunThisKind = kindKey === 'MONOTONICITY' ? stats.total_pairs : stats.total;
+                totalTestsActuallyRun += numRunThisKind;
+
+                if (numRunThisKind > 0) { // Only include kinds that ran tests in summary
+                    const kindSummaryLineDiv = document.createElement('div');
+                    kindSummaryLineDiv.className = 'summary-line';
+                    if (kindKey === 'MONOTONICITY') {
+                        kindSummaryLineDiv.textContent = `Monotonicity: ${stats.total_pairs} pairs, ${stats.passed_pairs} passed, ${stats.failed_pairs} failed.`;
+                        if (stats.failed_pairs > 0) overallPass = false;
+                    } else {
+                        kindSummaryLineDiv.textContent = `${kindKey}: ${stats.total} run, ${stats.passed} passed, ${stats.failed} failed.`;
+                        if (stats.failed > 0) overallPass = false;
+                    }
+                    overallSummaryDetailsDiv.appendChild(kindSummaryLineDiv);
+                }
+                updateKindSummary(kindKey);
+            }
+            
+            if (overallPass && totalTestsActuallyRun > 0) {
+                overallStatusIndicatorDiv.textContent = "ALL TESTS PASSED!";
+                overallStatusIndicatorDiv.className = 'status-overall-pass';
+            } else if (totalTestsActuallyRun === 0) {
+                overallStatusIndicatorDiv.textContent = "No tests were run.";
+                overallStatusIndicatorDiv.className = 'status-overall-pending';
+            } else {
+                overallStatusIndicatorDiv.textContent = "FAILURES DETECTED!";
+                overallStatusIndicatorDiv.className = 'status-overall-fail';
+            }
+            console.log("updateOverallPageSummary: Completed");
+        }
+        
+        function performSanityChecks() { // Refactored slightly for new stats structure
+            console.log("performSanityChecks: Started");
+            const kindKey = 'MONOTONICITY';
+            const stats = testStats[kindKey];
+            stats.total_pairs = 0; stats.passed_pairs = 0; stats.failed_pairs = 0; stats.results = [];
+
+            const outputContainer = document.getElementById(stats.containerId); // Keep for reference, though direct logging is removed
+            if (!outputContainer) { console.error("Monotonicity output container not found"); return; }
+
+            const numResults = successfulCNFTestResultsForMapping.length;
+            const EPSILON = 1e-9;
+            const fInverseThreshold = 1e-14;
 
             if (numResults < 2) {
-                logToPage("Not enough successful results for pairwise comparison.", '', sanityCheckDetailsDiv);
-                // No pairs to check, so it's vacuously true that all checked pairs passed
-                sanityCheckStatusDiv.textContent = "Monotonicity: N/A (less than 2 results)";
-                allChecksPassed = true; // Consider this a pass for the sanity section if no checks needed
-            } else {
-                totalMonotonicityPairs = numResults * (numResults - 1) / 2;
-                logToPage(`Performing ${totalMonotonicityPairs} pairwise comparisons...`, '', sanityCheckDetailsDiv);
+                console.log("performSanityChecks: Completed (not enough results for pairwise comparison)"); 
+                return;
+            }
+            stats.total_pairs = numResults * (numResults - 1) / 2;
 
-                for (let i = 0; i < numResults; i++) {
-                    for (let j = i + 1; j < numResults; j++) {
-                        const resA = successfulTestResults[i];
-                        const resB = successfulTestResults[j];
+            for (let i = 0; i < numResults; i++) {
+                for (let j = i + 1; j < numResults; j++) {
+                    const resA = successfulCNFTestResultsForMapping[i]; const resB = successfulCNFTestResultsForMapping[j];
+                    const ordA = resA.ordinal; const ordB = resB.ordinal; const fA = resA.mappedValue; const fB = resB.mappedValue;
+                    let detailMsg = `Comparing ("${resA.input}" -> ${resA.cnf}) vs ("${resB.input}" -> ${resB.cnf}):\n`;
+                    let pairCheckPassed = true; const ordinalComparison = ordA.compareTo(ordB);
+                    if (ordinalComparison < 0) { detailMsg += `  Ord: A < B. Map: f(A)=${fA.toFixed(8)}, f(B)=${fB.toFixed(8)}. `;
+                        if (!(fA < fB - EPSILON)) { pairCheckPassed = false; detailMsg += `Monotonicity FAIL (exp f(A) < f(B))`; } else { detailMsg += `Monotonicity PASS`; }}
+                    else if (ordinalComparison > 0) { detailMsg += `  Ord: A > B. Map: f(A)=${fA.toFixed(8)}, f(B)=${fB.toFixed(8)}. `;
+                        if (!(fA > fB + EPSILON)) { pairCheckPassed = false; detailMsg += `Monotonicity FAIL (exp f(A) > f(B))`; } else { detailMsg += `Monotonicity PASS`; }}
+                    else { detailMsg += `  Ord: A == B. Map: f(A)=${fA.toFixed(8)}, f(B)=${fB.toFixed(8)}. `;
+                        if (!(Math.abs(fA - fB) < EPSILON)) { pairCheckPassed = false; detailMsg += `Monotonicity FAIL (exp f(A) == f(B))`; } else { detailMsg += `Monotonicity PASS`; }}
+                    
+                    const pElement = document.createElement('p'); pElement.textContent = detailMsg; pElement.classList.add('log-output');
+                    if (!pairCheckPassed) pElement.classList.add('comparison-fail');
+                    stats.results.push({ passed: pairCheckPassed, detailsElements: [pElement] });
 
-                        const ordA = resA.ordinal;
-                        const ordB = resB.ordinal;
-                        const fA = resA.mappedValue;
-                        const fB = resB.mappedValue;
-
-                        let detailMsg = `Comparing ("${resA.input}" -> ${resA.cnf}) vs ("${resB.input}" -> ${resB.cnf}):\n`;
-                        let pairCheckPassed = true;
-
-                        const ordinalComparison = ordA.compareTo(ordB);
-
-                        if (ordinalComparison < 0) { // ordA < ordB
-                            detailMsg += `  Ordinal: A < B. Mapped: f(A)=${fA.toFixed(8)}, f(B)=${fB.toFixed(8)}. `;
-                            if (!(fA < fB - EPSILON)) { 
-                               pairCheckPassed = false;
-                               detailMsg += `Monotonicity FAIL (expected f(A) < f(B))`;
-                            } else {
-                               detailMsg += `Monotonicity PASS`;
-                            }
-                        } else if (ordinalComparison > 0) { // ordA > ordB
-                            detailMsg += `  Ordinal: A > B. Mapped: f(A)=${fA.toFixed(8)}, f(B)=${fB.toFixed(8)}. `;
-                            if (!(fA > fB + EPSILON)) { 
-                               pairCheckPassed = false;
-                               detailMsg += `Monotonicity FAIL (expected f(A) > f(B))`;
-                            } else {
-                               detailMsg += `Monotonicity PASS`;
-                            }
-                        } else { // ordA == ordB
-                            detailMsg += `  Ordinal: A == B. Mapped: f(A)=${fA.toFixed(8)}, f(B)=${fB.toFixed(8)}. `;
-                            if (!(Math.abs(fA - fB) < EPSILON)) { 
-                               pairCheckPassed = false;
-                               detailMsg += `Monotonicity FAIL (expected f(A) == f(B))`;
-                            } else {
-                               detailMsg += `Monotonicity PASS`;
-                            }
-                        }
-                        
-                        if (pairCheckPassed) {
-                            monotonicityPairsPassed++;
-                        } else {
-                            allChecksPassed = false;
-                            if (displayedMonotonicityFailures < MAX_DISPLAYED_MONOTONICITY_FAILURES) {
-                                logToPage(detailMsg, 'comparison-fail', sanityCheckDetailsDiv);
-                                displayedMonotonicityFailures++;
-                            } else if (displayedMonotonicityFailures === MAX_DISPLAYED_MONOTONICITY_FAILURES) {
-                                logToPage("...and more monotonicity failures not shown.", 'limited-output-message', sanityCheckDetailsDiv);
-                                displayedMonotonicityFailures++; // Increment to prevent this message from repeating
-                            }
-                        }
-                    }
+                    if (pairCheckPassed) stats.passed_pairs++; else stats.failed_pairs++;
                 }
             }
-
-            if (allChecksPassed) {
-                sanityCheckStatusDiv.textContent = "Monotonicity: PASSED";
-                sanityCheckStatusDiv.className = "sanity-status-passed";
-            } else {
-                sanityCheckStatusDiv.textContent = "Monotonicity: FAILED";
-                sanityCheckStatusDiv.className = "sanity-status-failed";
-            }
+            
+            console.log("performSanityChecks: Completed"); 
+            console.log("Current MONOTONICITY stats after checks:", JSON.stringify(testStats.MONOTONICITY));
         }
 
-        // New function to update the overall summary
-        function updateOverallSummary() {
-            summaryGeneralDiv.textContent = `General Tests: ${totalTestsRun} run, ${testsPassed} passed, ${totalTestsRun - testsPassed} failed.`;
-            if (totalMonotonicityPairs > 0) {
-                summaryMonotonicityDiv.textContent = `Monotonicity Checks: ${totalMonotonicityPairs} pairs checked, ${monotonicityPairsPassed} passed, ${totalMonotonicityPairs - monotonicityPairsPassed} failed.`;
-            } else {
-                summaryMonotonicityDiv.textContent = `Monotonicity Checks: N/A (less than 2 successful results).`;
-            }
-
-            const totalFailures = (totalTestsRun - testsPassed) + (totalMonotonicityPairs - monotonicityPairsPassed);
-
-            if (totalFailures === 0 && totalTestsRun > 0) {
-                overallStatusDiv.textContent = "All Checks Passed!";
-                overallStatusDiv.className = 'status-overall-pass';
-            } else if (totalTestsRun === 0) {
-                 overallStatusDiv.textContent = "No tests were run.";
-                 overallStatusDiv.className = 'status-overall-pending'; // Or a neutral style
-            } else {
-                overallStatusDiv.textContent = "Failures Detected!";
-                overallStatusDiv.className = 'status-overall-fail';
-            }
-        }
-
-        // Run tests and then sanity checks
-        // Need to ensure all testOrdinalCalc calls are done before performSanityChecks.
-        // For simplicity in this script, we'll call it at the end.
-        // In a more complex setup, Promises or a callback system might be used.
-        
-        // Temporarily comment out to diagnose performance
-        // performSanityChecks(); 
-        updateOverallSummary(); // New function call
+        runAllTestsAndRender();
 
     </script>
 </body>
