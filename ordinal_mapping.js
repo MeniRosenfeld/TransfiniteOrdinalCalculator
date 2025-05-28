@@ -1,5 +1,6 @@
 // ordinal_mapping.js
 
+console.log("[Debug] In ordinal_mapping.js, typeof WTowerOrdinal:", typeof WTowerOrdinal, "WTowerOrdinal itself:", WTowerOrdinal);
 const memo = new Map();
 
 // Ordinal Representation Conventions:
@@ -14,6 +15,75 @@ const memo = new Map();
 
 const ORDINAL_ZERO = 0n;
 const ORDINAL_ONE = 1n;
+
+/**
+ * Converts an Ordinal class instance (CNFOrdinal, EpsilonNaughtOrdinal, or WTowerOrdinal)
+ * to the format expected by the f() function in ordinal_mapping.js.
+ * Assumes CNFOrdinal, EpsilonNaughtOrdinal, WTowerOrdinal classes are globally available.
+ * @param {CNFOrdinal | EpsilonNaughtOrdinal | WTowerOrdinal} ordInstance - An instance of an Ordinal class.
+ * @returns {object|BigInt|string} The representation for f(). String for E0_TYPE.
+ */
+function convertOrdinalInstanceToFFormat(ordInstance) {
+    if (!ordInstance || !ordInstance.constructor || !ordInstance.constructor.name) {
+        console.error("[ConvertInternal] ordInstance is null, undefined, or has no constructor/name:", ordInstance);
+        return ORDINAL_ZERO; 
+    }
+
+    console.log("[ConvertInternal] ordInstance.constructor.name is:", ordInstance.constructor.name);
+
+    // Check by constructor name (less robust, but good for debugging this specific issue)
+    if (ordInstance.constructor.name === 'WTowerOrdinal') {
+        console.log("[ConvertInternal] Matched WTowerOrdinal via constructor.name.");
+        return { type: 'w_tower', height: ordInstance.height }; 
+    }
+    
+    if (ordInstance.constructor.name === 'EpsilonNaughtOrdinal') {
+        console.log("[ConvertInternal] Matched EpsilonNaughtOrdinal via constructor.name.");
+        return "E0_TYPE";
+    }
+    
+    if (ordInstance.constructor.name === 'CNFOrdinal') {
+        console.log("[ConvertInternal] Matched CNFOrdinal via constructor.name.");
+        if (ordInstance.isZero()) {
+            return ORDINAL_ZERO;
+        }
+        if (ordInstance.isFinite()) {
+            return ordInstance.getFinitePart();
+        }
+        const terms = ordInstance.terms;
+        if (terms.length === 1 && terms[0].coefficient === 1n && !terms[0].exponent.isZero()) {
+            const k_rep_for_f = convertOrdinalInstanceToFFormat(terms[0].exponent);
+            return { type: 'pow', k: k_rep_for_f };
+        }
+        const firstTerm = terms[0];
+        const beta_rep_for_f = convertOrdinalInstanceToFFormat(firstTerm.exponent);
+        const c_from_ordinal = firstTerm.coefficient;
+        let c_num_for_f = Number(c_from_ordinal);
+        if (c_from_ordinal > BigInt(Number.MAX_SAFE_INTEGER) || c_from_ordinal < BigInt(Number.MIN_SAFE_INTEGER)) {
+            if (Number.isFinite(c_num_for_f)) {
+                 console.warn(`Coefficient ${c_from_ordinal.toString()} was outside JS Number safe integer range for f() mapping. Converted to ${c_num_for_f}.`);
+            } else {
+                 console.warn(`Coefficient ${c_from_ordinal.toString()} converted to ${c_num_for_f} for f() mapping.`);
+            }
+        }
+        let delta_rep_for_f;
+        if (terms.length === 1) {
+            delta_rep_for_f = ORDINAL_ZERO;
+        } else {
+            const remainderTracer = ordInstance._tracer; 
+            const remainderTerms = terms.slice(1).map(t => ({
+                exponent: t.exponent.clone(remainderTracer), 
+                coefficient: t.coefficient
+            }));
+            const remainderOrdinal = new CNFOrdinal(remainderTerms, remainderTracer);
+            delta_rep_for_f = convertOrdinalInstanceToFFormat(remainderOrdinal);
+        }
+        return { type: 'sum', beta: beta_rep_for_f, c: c_num_for_f, delta: delta_rep_for_f };
+    }
+
+    console.error("[ConvertInternalFinal] Did not match any known constructor name. ordInstance.constructor.name was:", ordInstance.constructor.name, "Instance:", ordInstance);
+    return ORDINAL_ZERO; 
+}
 
 function isFiniteOrdinal(ordinalRep) {
     return typeof ordinalRep === 'bigint';
@@ -99,7 +169,17 @@ function f(alphaRep) {
     } else {
         const { type, ...args } = alphaRep;
 
-        if (type === 'pow') { // α = ω^k_rep
+        if (type === 'w_tower') { // New Rule: α is ω↑↑n
+            const height = args.height;
+            if (typeof height !== 'number' || height < 1 || !Number.isInteger(height)){
+                throw new Error(`Invalid height for w_tower in f(): ${height}`);
+            }
+            if (height === 1) { // ω↑↑1 = ω
+                result = f({ type: 'pow', k: ORDINAL_ONE }); // f(ω)
+            } else {
+                result = 5.0 - (4.0 / height);
+            }
+        } else if (type === 'pow') { // α = ω^k_rep
             const kRep = args.k;
             if (isFiniteOrdinal(kRep)) { // Rule 2a: k_rep is a finite ordinal j (BigInt) >= 0n
                 const jBigInt = kRep;

@@ -29,6 +29,8 @@
             <span class="tooltip-trigger" 
                   data-tooltip="This value is from a strictly increasing function f(α) that maps ordinals α < ε₀ to real numbers. The function ensures that if α < β, then f(α) < f(β). The specific mapping used is based on a recursive definition using the Cantor Normal Form of α. Finite ordinals n map to n/(n+1). For ω^k, if k is finite, f(ω^k) = (3k-2)/k; if k ≥ ω, f(ω^k) = (25-f(k))/(9-f(k)). Sums and products are interpolated. This mapping aims to fit ε₀ into [0,5). The mapping uses the original, unsimplified ordinal value.">❓</span>
             <span id="mappedValueText" class="value placeholder-text">Real number representation of the ordinal.</span>
+            <input type="range" id="mappedValueSlider" class="mapped-value-slider" min="0" max="5" step="0.000001" value="0">
+            <span id="nudgeControl" class="nudge-control" title="Click and drag to fine-tune slider value">↔️</span>
         </div>
 
         <div id="errorMessageArea" class="error-display"></div>
@@ -137,6 +139,7 @@ Calculation results were compared against Claudio Kressibucher's <a href="https:
     <script src="ordinal_parser.js"></script>
     <script src="ordinal_calculator.js"></script> <!-- Contains calculateOrdinalCNF -->
     <script src="ordinal_mapping.js"></script>
+    <script src="ordinal_mapping_inverse.js"></script>
 
     <!-- New UI and Rendering Scripts -->
     <script src="ordinal_graphical_renderer.js"></script>

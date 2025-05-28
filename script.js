@@ -3,78 +3,11 @@
 // Assumes calculateOrdinalCNF (from ordinal_calculator.js) and
 // renderOrdinalGraphical (from ordinal_graphical_renderer.js) are globally available.
 // Assumes CNFOrdinal, EpsilonNaughtOrdinal, WTowerOrdinal, and OperationTracer (from ordinal_types.js) are available.
-// Assumes f and ORDINAL_ZERO (from ordinal_mapping.js) are globally available.
+// Assumes f, ORDINAL_ZERO, and convertOrdinalInstanceToFFormat (from ordinal_mapping.js) are globally available.
+// Assumes fInverse and convertFFormatToOrdinalInstance (from ordinal_mapping_inverse.js) are globally available.
 
-/**
- * Converts an Ordinal class instance (CNFOrdinal, EpsilonNaughtOrdinal, or WTowerOrdinal)
- * to the format expected by the f() function in ordinal_mapping.js.
- * @param {CNFOrdinal | EpsilonNaughtOrdinal | WTowerOrdinal} ordInstance - An instance of an Ordinal class.
- * @returns {object|BigInt|string} The representation for f(). String for E0_TYPE.
- */
-function convertOrdinalInstanceToFFormat(ordInstance) {
-    if (!ordInstance) {
-        console.error("Invalid input to convertOrdinalInstanceToFFormat: received null or undefined");
-        return typeof ORDINAL_ZERO !== 'undefined' ? ORDINAL_ZERO : 0n; // Default to 0n if ORDINAL_ZERO is not yet defined
-    }
-
-    if (ordInstance instanceof WTowerOrdinal) {
-        // Convert WTowerOrdinal to CNFOrdinal first, then process that CNFOrdinal.
-        ordInstance = ordInstance.toCNFOrdinal(); 
-    }
-
-    if (ordInstance instanceof EpsilonNaughtOrdinal) {
-        return "E0_TYPE"; // Special marker for epsilon-naught
-    }
-
-    if (ordInstance instanceof CNFOrdinal) {
-        if (ordInstance.isZero()) {
-            return typeof ORDINAL_ZERO !== 'undefined' ? ORDINAL_ZERO : 0n;
-        }
-        if (ordInstance.isFinite()) {
-            return ordInstance.getFinitePart();
-        }
-
-        const terms = ordInstance.terms;
-
-        // Check for ω^k form (single term, coefficient 1, non-zero exponent)
-        if (terms.length === 1 && terms[0].coefficient === 1n && !terms[0].exponent.isZero()) {
-            const k_rep_for_f = convertOrdinalInstanceToFFormat(terms[0].exponent);
-            return { type: 'pow', k: k_rep_for_f };
-        }
-
-        // General sum form: ω^β * c + δ
-        const firstTerm = terms[0];
-        const beta_rep_for_f = convertOrdinalInstanceToFFormat(firstTerm.exponent);
-
-        const c_from_ordinal = firstTerm.coefficient;
-        let c_int_for_f = Number(c_from_ordinal);
-
-        // Warn if precision is lost converting BigInt coefficient to Number for f() mapping
-        if ((c_from_ordinal > BigInt(Number.MAX_SAFE_INTEGER) || c_from_ordinal < BigInt(Number.MIN_SAFE_INTEGER)) && Number.isFinite(c_int_for_f)) {
-            console.warn(`Coefficient ${c_from_ordinal.toString()} was outside JS Number safe integer range. Converted to ${c_int_for_f} for f() mapping.`);
-        }
-
-        let delta_rep_for_f;
-        if (terms.length === 1) {
-            // If only one term, delta is 0
-            delta_rep_for_f = typeof ORDINAL_ZERO !== 'undefined' ? ORDINAL_ZERO : 0n;
-        } else {
-            // Construct a new CNFOrdinal for the remainder (δ)
-            const remainderTerms = terms.slice(1).map(t => ({
-                exponent: t.exponent.clone(ordInstance._tracer), // Ensure deep clone with tracer
-                coefficient: t.coefficient
-            }));
-            const remainderOrdinal = new CNFOrdinal(remainderTerms, ordInstance._tracer);
-            delta_rep_for_f = convertOrdinalInstanceToFFormat(remainderOrdinal);
-        }
-
-        return { type: 'sum', beta: beta_rep_for_f, c: c_int_for_f, delta: delta_rep_for_f };
-    }
-
-    // Fallback for unknown types
-    console.error("Invalid input to convertOrdinalInstanceToFFormat: unknown ordinal type", ordInstance);
-    return typeof ORDINAL_ZERO !== 'undefined' ? ORDINAL_ZERO : 0n;
-}
+// The convertOrdinalInstanceToFFormat function that was previously here is now removed.
+// Its definition in ordinal_mapping.js will be used.
 
 document.addEventListener('DOMContentLoaded', () => {
     const ordinalInputElement = document.getElementById('ordinalInput');
@@ -86,6 +19,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const copyTextBtn = document.getElementById('copyTextBtn');
     const copyImageBtn = document.getElementById('copyImageBtn');
     const mappedValueTextElement = document.getElementById('mappedValueText');
+    const mappedValueSliderElement = document.getElementById('mappedValueSlider');
+    const nudgeControlElement = document.getElementById('nudgeControl'); // Get nudge control
     const placeholderText = "Result will appear here.";
     const simplificationInfoArea = document.getElementById('simplificationInfoArea');
     const graphicalHeaderSimpInfo = document.getElementById('graphicalHeaderSimpInfo');
@@ -211,6 +146,9 @@ document.addEventListener('DOMContentLoaded', () => {
             mappedValueTextElement.textContent = placeholderText;
             mappedValueTextElement.className = 'value placeholder-text';
         }
+        if (mappedValueSliderElement) {
+            mappedValueSliderElement.value = 0;
+        }
         errorMessageArea.textContent = ''; 
         errorMessageArea.style.display = 'none';
 
@@ -284,21 +222,38 @@ document.addEventListener('DOMContentLoaded', () => {
                 graphicalHeaderSimpInfo.style.display = simplificationMessage ? 'inline' : 'none'; // Show if message exists
             }
 
-            // Use ORIGINAL ordinal for f() mapping
+            // --- Calculate and Display f(α) for the ORIGINAL ordinal FIRST ---
             if (mappedValueTextElement && originalOrdinalResultObject) { 
+                console.log("[fCalc] originalOrdinalResultObject type:", originalOrdinalResultObject.constructor.name);
                 try {
-                    const fFormattedOrdinal = convertOrdinalInstanceToFFormat(originalOrdinalResultObject); // USE ORIGINAL
+                    console.log("[fCalc] Calling convertOrdinalInstanceToFFormat with:", originalOrdinalResultObject);
+                    const fFormattedOrdinal = convertOrdinalInstanceToFFormat(originalOrdinalResultObject);
+                    console.log("[fCalc] convertOrdinalInstanceToFFormat returned:", fFormattedOrdinal);
+                    
+                    console.log("[fCalc] Calling f with:", fFormattedOrdinal);
                     const mappedValue = f(fFormattedOrdinal); 
+                    console.log("[fCalc] f returned mappedValue:", mappedValue, "(type:", typeof mappedValue, ")");
+
                     if (typeof mappedValue === 'number' && !isNaN(mappedValue)) {
                         mappedValueTextElement.textContent = mappedValue.toString();
+                        if (mappedValueSliderElement) { 
+                            mappedValueSliderElement.value = mappedValue;
+                        }
                     } else {
-                        mappedValueTextElement.textContent = mappedValue.toString();
+                        console.warn("[fCalc] mappedValue is not a valid number. Value:", mappedValue);
+                        mappedValueTextElement.textContent = "Invalid f(α)"; // More explicit error
+                         if (mappedValueSliderElement) { 
+                            mappedValueSliderElement.value = 0;
+                        }
                     }
                     mappedValueTextElement.classList.remove('placeholder-text');
                 } catch (mapErr) {
-                    console.error("Error calculating mapped value f(α):", mapErr);
-                    mappedValueTextElement.textContent = "Error";
+                    console.error("[fCalc] Error calculating mapped value f(α):", mapErr.message, mapErr.stack);
+                    mappedValueTextElement.textContent = "f(α) Error!"; // More explicit error
                     mappedValueTextElement.classList.add('placeholder-text'); 
+                    if (mappedValueSliderElement) { 
+                        mappedValueSliderElement.value = 0;
+                    }
                 }
             }
 
@@ -316,6 +271,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (mappedValueTextElement) {
                 mappedValueTextElement.textContent = placeholderText;
                 mappedValueTextElement.className = 'value placeholder-text';
+            }
+            if (mappedValueSliderElement) {
+                mappedValueSliderElement.value = 0;
             }
             if (simplificationInfoArea) { // Clear old simplification message area if it still exists
                 simplificationInfoArea.textContent = '';
@@ -470,6 +428,135 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             } else {
                 prompt("Please copy this link manually (your browser does not support modern clipboard API):", shareableUrl);
+            }
+        });
+    }
+
+    // --- Nudge Control Logic (Rate-based with internal target) ---
+    if (nudgeControlElement && mappedValueSliderElement) {
+        let isNudging = false;
+        let nudgeStartX = 0;
+        let currentNudgeRate = 0; 
+        let animationFrameId = null;
+        let lastNudgeTimestamp = 0;
+        let currentTargetSliderValue = 0; // Internal target value, accumulates fine changes
+
+        const nudgeRateSensitivityPixels = 10000; 
+
+        function updateSliderContinuous() {
+            if (!isNudging && currentNudgeRate === 0) {
+                if (animationFrameId) cancelAnimationFrame(animationFrameId);
+                animationFrameId = null;
+                return;
+            }
+
+            const now = performance.now();
+            const deltaTime = (lastNudgeTimestamp && animationFrameId) ? (now - lastNudgeTimestamp) / 1000.0 : 0;
+            lastNudgeTimestamp = now;
+
+            if (deltaTime > 0) {
+                const changeInValue = currentNudgeRate * deltaTime;
+                currentTargetSliderValue += changeInValue;
+
+                const min = parseFloat(mappedValueSliderElement.min);
+                const max = parseFloat(mappedValueSliderElement.max);
+                if (currentTargetSliderValue < min) currentTargetSliderValue = min;
+                if (currentTargetSliderValue > max) currentTargetSliderValue = max;
+                
+                // Set the slider's value to the precise target. 
+                // The slider's own 'input' event listener will then process this, call fInverse,
+                // get an ordinal, and then update the slider to f(ordinal), causing the snap.
+                mappedValueSliderElement.value = currentTargetSliderValue.toString();
+                const inputEvent = new Event('input', { bubbles: true });
+                mappedValueSliderElement.dispatchEvent(inputEvent);
+            }
+            
+            if (isNudging) { // Continue animation only if actively nudging
+                 animationFrameId = requestAnimationFrame(updateSliderContinuous);
+            } else {
+                if (animationFrameId) cancelAnimationFrame(animationFrameId);
+                animationFrameId = null;
+                currentNudgeRate = 0; // Ensure rate is zeroed if not nudging
+            }
+        }
+
+        const onMouseMoveNudge = (event) => {
+            if (!isNudging) return;
+            const deltaX = event.clientX - nudgeStartX;
+            currentNudgeRate = deltaX / nudgeRateSensitivityPixels; 
+        };
+
+        const onMouseUpNudge = () => {
+            if (!isNudging) return;
+            isNudging = false;
+            // currentNudgeRate is not immediately zeroed here, allowing the animation loop 
+            // to make one final update if needed, then it will stop due to isNudging being false.
+            // Or, we can zero it: currentNudgeRate = 0; which will stop updates faster.
+            // Let's zero it for a more immediate stop on mouse release.
+            currentNudgeRate = 0;
+            document.removeEventListener('mousemove', onMouseMoveNudge);
+            document.removeEventListener('mouseup', onMouseUpNudge);
+            document.body.style.cursor = 'default';
+            // The animation loop will stop itself as isNudging is false and rate is 0.
+        };
+
+        nudgeControlElement.addEventListener('mousedown', (event) => {
+            isNudging = true;
+            nudgeStartX = event.clientX;
+            currentTargetSliderValue = parseFloat(mappedValueSliderElement.value); // Initialize target from current slider
+            currentNudgeRate = 0; 
+            lastNudgeTimestamp = performance.now();
+            event.preventDefault();
+
+            document.addEventListener('mousemove', onMouseMoveNudge);
+            document.addEventListener('mouseup', onMouseUpNudge);
+            document.body.style.cursor = 'ew-resize';
+
+            if (animationFrameId) cancelAnimationFrame(animationFrameId);
+            animationFrameId = requestAnimationFrame(updateSliderContinuous);
+        });
+    }
+
+    // Event listener for the main slider (to call fInverse etc.)
+    if (mappedValueSliderElement && ordinalInputElement && typeof fInverse === 'function' && typeof convertFFormatToOrdinalInstance === 'function') {
+        mappedValueSliderElement.addEventListener('input', function() {
+            const sliderValue = parseFloat(this.value);
+            if (isNaN(sliderValue)) return;
+
+            console.log(`Slider moved to: ${sliderValue}`);
+
+            try {
+                const fFormatValue = fInverse(sliderValue);
+                console.log(`fInverse returned:`, fFormatValue);
+
+                let ordinalInstance = null;
+
+                if (fFormatValue && typeof fFormatValue === 'object' && fFormatValue.error) {
+                    console.warn("fInverse explicitly returned an error object:", fFormatValue.error);
+                    // Don't proceed if fInverse itself had an error
+                } else if (fFormatValue === undefined || fFormatValue === null) {
+                    console.warn("fInverse returned null or undefined.");
+                } else {
+                    // Pass directly to convertFFormatToOrdinalInstance, assuming it handles all valid types
+                    const tracer = new OperationTracer(100000); // Budget for conversion
+                    ordinalInstance = convertFFormatToOrdinalInstance(fFormatValue, tracer);
+                }
+
+                if (ordinalInstance) {
+                    const ordinalString = ordinalInstance.toStringCNF();
+                    console.log(`Converted to ordinal string: ${ordinalString}`);
+                    if (ordinalString.trim() !== "") {
+                        ordinalInputElement.value = ordinalString;
+                        calculateAndDisplay();
+                    } else {
+                        console.warn("Converted ordinal string is empty.");
+                    }
+                } else if (!(fFormatValue && typeof fFormatValue === 'object' && fFormatValue.error)) {
+                    // Only log this if it wasn't an explicit error from fInverse already or null/undefined
+                    console.error("Failed to obtain an ordinal instance from fInverse's result. convertFFormatToOrdinalInstance might have failed or fFormatValue was unsuitable.", fFormatValue);
+                }
+            } catch (err) {
+                console.error("Error during fInverse or conversion/update:", err);
             }
         });
     }

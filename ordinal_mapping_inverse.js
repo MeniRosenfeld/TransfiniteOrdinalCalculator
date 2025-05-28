@@ -252,117 +252,130 @@ function findHigherPowerOrdinal(x, threshold, depth) {
 }
 
 function fInverse(x, threshold = 1e-14, depth = 0) {
-    // debugger; // Removed for cleanup, user can re-add if needed
-    if (x < -threshold || x > 5 + threshold) {
+    if (x < -threshold || x > 5.0 + threshold) { // Allow x to be slightly over 5 due to float precision
         throw new Error(`Input value ${x} is outside the valid range [0,5]`);
     }
 
+    // Handle specific values and ranges
     if (Math.abs(x) <= threshold) return 0n;
-    if (Math.abs(x - 1) <= threshold) return { type: 'pow', k: 1n };  
-    if (Math.abs(x - 3) <= threshold) return { type: 'pow', k: { type: 'pow', k: 1n } };  
-    if (Math.abs(x - 5) <= threshold) return "E0_TYPE";
+    if (Math.abs(x - 5.0) <= threshold) return "E0_TYPE";
 
-    if (x < 1) {
+    // New: Check for WTowerOrdinal range (x > 4.96 up to, but not including, 5.0)
+    // The threshold for 4.96 might need adjustment based on how WTower values are spaced.
+    // Let's use a slightly more generous upper bound for this check to avoid conflict with E0_TYPE at exactly 5.0.
+    if (x > 4.96 && x < 5.0 - threshold) { 
+        // Formula: height = floor(4 / (5 - x))
+        // Ensure 5.0 - x is not zero to avoid division by zero.
+        const denominator = 5.0 - x;
+        if (Math.abs(denominator) < 1e-15) { // Should be caught by x < 5.0 - threshold, but as safeguard
+            console.warn(`fInverse: Denominator for w_tower height is near zero (x=${x}). Returning E0_TYPE as fallback.`);
+            return "E0_TYPE";
+        }
+        const height = Math.floor(4.0 / denominator);
+        if (height >= 1) {
+            return { type: 'w_tower', height: height };
+        } else {
+            // This case (height < 1) should ideally not be hit if x > 4.98 and mapping is correct.
+            // It might indicate x is too close to 5, such that 4.0 / (5.0 - x) is small.
+            // Or, x is slightly > 5, which should be caught by the initial range check.
+            console.warn(`fInverse: Calculated w_tower height is < 1 (height=${height}, x=${x}). Fallback might be needed or check x range.`);
+            // Fallback to E0_TYPE if height is not sensible, as x is very close to 5.
+            return "E0_TYPE"; 
+        }
+    }
+
+    // Existing specific value checks (adjust thresholds if needed)
+    if (Math.abs(x - 1.0) <= threshold) return { type: 'pow', k: 1n };  // f(ω) = 1
+    if (Math.abs(x - 3.0) <= threshold) return { type: 'pow', k: { type: 'pow', k: 1n } }; // f(ω^ω) = 3
+
+    if (x < 1.0) {
         return findFiniteOrdinal(x, threshold);
-    } else if (x < 3) {
+    } else if (x < 3.0) { // Covers [1, 3) - f(ω) to f(ω^ω)
         return findOmegaPowerOrdinal(x, threshold, depth);
-    } else {
+    } else { // Covers [3, 5) - f(ω^ω) up to (but not including) f(ε₀)
+        // This also now implicitly covers the range up to 4.98 if not caught by w_tower.
         return findHigherPowerOrdinal(x, threshold, depth);
     }
 }
 
 // Helper function to convert f() format to ordinal instance
-function convertFFormatToOrdinalInstance(ord_representation) {
+function convertFFormatToOrdinalInstance(ord_representation, tracer) {
     // Handles:
     // - BigInt n (finite)
     // - "E0_TYPE"
     // - { type: 'pow', k: k_rep }  (for ω^k_rep)
     // - { type: 'sum', beta: exponent_beta_rep, c: c_num, delta: delta_rep } (for ω^exponent_beta_rep * c_num + delta_rep)
+    // - { type: 'w_tower', height: n } (NEW)
+
+    // Ensure tracer is provided, create a default if not (though script.js should provide one)
+    const effectiveTracer = tracer || new OperationTracer(10000); // Default budget if no tracer given
 
     if (typeof ord_representation === 'bigint') {
-        return new CNFOrdinal(ord_representation); // Finite ordinal
+        return new CNFOrdinal(ord_representation, effectiveTracer); // Pass tracer
     }
 
     if (ord_representation === "E0_TYPE") {
-        return new EpsilonNaughtOrdinal();
+        return new EpsilonNaughtOrdinal(effectiveTracer); // Pass tracer
     }
 
     if (typeof ord_representation === 'object' && ord_representation !== null) {
-        if (ord_representation.type === 'pow') {
-            // Represents ω^k_rep
-            // k_rep needs to be converted to an ordinal object first
-            const exponent_k_object = convertFFormatToOrdinalInstance(ord_representation.k);
-            
-            // Check if exponent_k_object is 0. If so, ω^0 = 1.
-            if (exponent_k_object instanceof CNFOrdinal && exponent_k_object.isZero()) {
-                return new CNFOrdinal(1n); // ω^0 = 1
+        if (ord_representation.type === 'w_tower') { // NEW case for w_tower
+            if (typeof ord_representation.height !== 'number' || ord_representation.height < 1 || !Number.isInteger(ord_representation.height)){
+                 console.error("Invalid height for w_tower in convertFFormatToOrdinalInstance:", ord_representation.height);
+                 return new CNFOrdinal(0n, effectiveTracer); // Fallback to 0
             }
-            // Otherwise, it's ω^(non-zero exponent)
+            return new WTowerOrdinal(ord_representation.height, effectiveTracer);
+        }
+
+        if (ord_representation.type === 'pow') {
+            const exponent_k_object = convertFFormatToOrdinalInstance(ord_representation.k, effectiveTracer); // Pass tracer
+            
+            if (exponent_k_object instanceof CNFOrdinal && exponent_k_object.isZero()) {
+                return new CNFOrdinal(1n, effectiveTracer); 
+            }
             return new CNFOrdinal([{
                 exponent: exponent_k_object,
                 coefficient: 1n
-            }]);
+            }], effectiveTracer); // Pass tracer
         }
 
         if (ord_representation.type === 'sum') {
-            // Represents ω^β_rep * c + δ_rep
-            // where beta is exponent_beta_rep, c is c_num, delta is delta_rep
-
             const exponent_beta_representation = ord_representation.beta;
-            const coefficient_c_js_number = ord_representation.c; // This is a JS Number from findM etc.
+            const coefficient_c_js_number = ord_representation.c; 
             const delta_representation = ord_representation.delta;
 
-            // Convert JS number coefficient to BigInt for CNF.
-            // CNF coefficients must be positive integers.
-            // fInverse should ideally provide c >= 1 if the term is not zero.
             if (typeof coefficient_c_js_number !== 'number' || !Number.isFinite(coefficient_c_js_number) || coefficient_c_js_number < 0) {
                 console.error("convertFFormatToOrdinalInstance 'sum': coefficient c is invalid:", coefficient_c_js_number);
-                // If c_js_number is 0 or invalid, this term might be skippable.
-                // Fallback: effectively c=0 for the main term, so just return converted delta.
-                // This path indicates a potential issue in how fInverse constructed the 'sum' type.
-                return convertFFormatToOrdinalInstance(delta_representation);
+                return convertFFormatToOrdinalInstance(delta_representation, effectiveTracer); // Pass tracer
             }
-            // If the coefficient resolved to 0, the main term doesn't exist.
             if (coefficient_c_js_number === 0) { 
-                return convertFFormatToOrdinalInstance(delta_representation);
+                return convertFFormatToOrdinalInstance(delta_representation, effectiveTracer); // Pass tracer
             }
-            // Ensure coefficient is at least 1 for the CNF term.
             const coefficient_c_bigint = BigInt(Math.max(1, Math.floor(coefficient_c_js_number)));
 
+            const exponent_beta_object = convertFFormatToOrdinalInstance(exponent_beta_representation, effectiveTracer); // Pass tracer
+            const delta_object = convertFFormatToOrdinalInstance(delta_representation, effectiveTracer); // Pass tracer
 
-            // 1. Convert the exponent's representation (exponent_beta_representation) to an actual ordinal object.
-            const exponent_beta_object = convertFFormatToOrdinalInstance(exponent_beta_representation);
-
-            // 2. Convert the delta's representation to an actual ordinal object.
-            const delta_object = convertFFormatToOrdinalInstance(delta_representation);
-
-            // 3. Construct the main term: ω^(exponent_beta_object) * coefficient_c_bigint
             let main_term_ordinal_object;
-
             let is_exponent_beta_zero = false;
             if (exponent_beta_object instanceof CNFOrdinal && exponent_beta_object.isZero()) {
                 is_exponent_beta_zero = true;
             }
-            // Note: exponent_beta_object could also be EpsilonNaughtOrdinal, which is not zero.
 
             if (is_exponent_beta_zero) {
-                // ω^0 * c = 1 * c = c. The term is finite.
-                main_term_ordinal_object = new CNFOrdinal(coefficient_c_bigint);
+                main_term_ordinal_object = new CNFOrdinal(coefficient_c_bigint, effectiveTracer); // Pass tracer
             } else {
-                // The term is ω^exponent_beta_object * coefficient_c_bigint
                 main_term_ordinal_object = new CNFOrdinal([{
                      exponent: exponent_beta_object, 
                      coefficient: coefficient_c_bigint 
-                }]);
+                }], effectiveTracer); // Pass tracer
             }
-
-            // 4. Add the delta_object to this main term.
-            // This relies on .add() being correctly implemented in the ordinal types.
-            return main_term_ordinal_object.add(delta_object);
+            return main_term_ordinal_object.add(delta_object); // add should also handle tracers internally
         }
     }
     console.error("Unknown ordinal format in convertFFormatToOrdinalInstance:", ord_representation);
-    throw new Error(`Unknown ordinal format: ${JSON.stringify(ord_representation)}`);
+    // Ensure a tracer is passed if an error leads to CNFOrdinal(0n) or similar fallback
+    return new CNFOrdinal(0n, effectiveTracer); // Modified fallback to include tracer
 }
 
 // Test cases

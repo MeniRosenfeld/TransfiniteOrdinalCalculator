@@ -836,11 +836,30 @@ class WTowerOrdinal {
 
     equals(otherOrdinal) {
         if (this._tracer) this._tracer.consume();
-        const thisCNF = this.toCNFOrdinal();
+
         if (otherOrdinal instanceof WTowerOrdinal) {
-            return thisCNF.equals(otherOrdinal.toCNFOrdinal());
+            // Direct comparison for two WTowerOrdinals
+            return this.height === otherOrdinal.height;
         }
-        return thisCNF.equals(otherOrdinal);
+        
+        // If comparing WTowerOrdinal with CNFOrdinal or EpsilonNaughtOrdinal,
+        // convert this WTowerOrdinal to CNF for comparison.
+        // This can still be expensive for large towers if otherOrdinal is not also a WTowerOrdinal
+        // that would have been caught above. Consider if this comparison is frequent or critical.
+        // If otherOrdinal is e_0, w^^h = e_0 only if h >= omega (not possible for finite h here)
+        // or specific finite h values like w^^w for parsing (which would not be WTowerOrdinal type directly).
+        // A WTowerOrdinal with finite height 'h' typically corresponds to an ordinal < e_0, 
+        // unless h is large enough that w^^h would be simplified to e_0 by some rule not yet in WTowerOrdinal.
+        // However, the f(w^^h) = 5 - 4/h suggests it always stays < 5 (i.e., < e_0).
+
+        // The primary cause of recursion was WTower.equals(WTower) calling toCNFOrdinal twice.
+        // Now, for WTower.equals(NonWTower), we convert *this* WTower to CNF.
+        // This is still potentially expensive if `this` is a large tower.
+        // A more robust equals would require a type-dispatching comparison system similar to arithmetic ops.
+        // For now, this fixes the WTower-vs-WTower recursion.
+        if (this._tracer) this._tracer.consume(this.height + 1); // Estimate cost for toCNFOrdinal
+        const thisCNF = this.toCNFOrdinal();
+        return thisCNF.equals(otherOrdinal); // Compare this tower (as CNF) with the other ordinal
     }
 
     clone(tracer = null) {

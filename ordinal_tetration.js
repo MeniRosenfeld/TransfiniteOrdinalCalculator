@@ -44,6 +44,34 @@ CNFOrdinal.prototype.tetrateCNF = function(heightCNF) {
         return CNFOrdinal.ONEStatic().clone(this._tracer);
     }
 
+    // NEW Rule: Special handling for w^^n where n is finite integer > 10
+    // This check should come before the general recursive rule for finite heights.
+    // It applies only if the base is exactly omega.
+    if (base.equals(CNFOrdinal.OMEGAStatic()) && height.isFinite()) {
+        const n = height.getFinitePart(); // n is a BigInt
+        if (n > 10n) { // Check if n > 10
+            // WTowerOrdinal expects height as a Number.
+            // We should ensure n is within Number.MAX_SAFE_INTEGER range for WTowerOrdinal height if it has such limits.
+            // For now, assuming n will be reasonably small if it comes from user input or typical calculations.
+            // If Number(n) could lose precision for very large n, a check or different WTowerOrdinal handling would be needed.
+            try {
+                const n_num = Number(n);
+                if (n_num > Number.MAX_SAFE_INTEGER) {
+                    console.warn(`WTowerOrdinal height ${n.toString()}n exceeds MAX_SAFE_INTEGER. Precision loss may occur or lead to issues if WTowerOrdinal expects standard Numbers for height.`);
+                    // Decide if to proceed with potentially imprecise Number(n) or throw/fallback to CNF.
+                    // For now, proceed, but this is a potential issue for extremely large n.
+                }
+                if (this._tracer) this._tracer.consume(); // For creating WTowerOrdinal
+                return new WTowerOrdinal(n_num, this._tracer);
+            } catch (e) {
+                console.error("Error converting height to Number for WTowerOrdinal:", e);
+                // Fallback to standard calculation if conversion fails, though it shouldn't for BigInts unless they are astronomically large.
+            }
+        }
+        // If base is omega, height is finite, but height <= 10, it will fall through to Rule 5.
+        // Heights 0 and 1 are already handled above.
+    }
+
     // Rule 5: β is finite m > 1 (α is CNFOrdinal >= 2)
     // α^^m = α^(α^^(m-1))
     if (height.isFinite()) { // m > 1 because m=0 and m=1 are handled.
