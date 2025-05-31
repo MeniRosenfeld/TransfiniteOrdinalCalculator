@@ -438,16 +438,19 @@
                             if (typeof convertFFormatToOrdinalInstance !== 'function') throw new Error("convertFFormatToOrdinalInstance is not defined");
 
                             const fFormattedOriginal = convertOrdinalInstanceToFFormat(originalOrdinalObject);
-                            const mappedValueOriginal = f(fFormattedOriginal);
+                            // Pass DEFAULT_F_PARAMS to f()
+                            const mappedValueOriginal = f(fFormattedOriginal, DEFAULT_F_PARAMS); 
                             fTripDetailsLogs.push(`f(original: "${actualCNF}") = ${mappedValueOriginal.toPrecision(15)}`);
 
-                            const inverseMappedFFormat = fInverse(mappedValueOriginal, fInverseThreshold);
-                            const inverseOrdinalObject = convertFFormatToOrdinalInstance(inverseMappedFFormat);
+                            // Pass DEFAULT_F_PARAMS to fInverse() and 0 for initial depth
+                            const inverseMappedFFormat = fInverse(mappedValueOriginal, fInverseThreshold, 0, DEFAULT_F_PARAMS);
+                            const inverseOrdinalObject = convertFFormatToOrdinalInstance(inverseMappedFFormat, new OperationTracer(10000)); // Add tracer for safety
                             const inverseCNFForLog = inverseOrdinalObject.toStringCNF ? inverseOrdinalObject.toStringCNF() : String(inverseOrdinalObject);
                             fTripDetailsLogs.push(`fInverse(${mappedValueOriginal.toPrecision(15)}) -> "${inverseCNFForLog}"`);
 
                             const fFormattedInverse = convertOrdinalInstanceToFFormat(inverseOrdinalObject);
-                            const mappedValueOfInverse = f(fFormattedInverse);
+                            // Pass DEFAULT_F_PARAMS to f()
+                            const mappedValueOfInverse = f(fFormattedInverse, DEFAULT_F_PARAMS);
                             fTripDetailsLogs.push(`f(inverse: "${inverseCNFForLog}") = ${mappedValueOfInverse.toPrecision(15)}`);
                             
                             const difference = Math.abs(mappedValueOriginal - mappedValueOfInverse);
@@ -540,7 +543,7 @@
                     if (typeof f === 'function' && typeof convertOrdinalInstanceToFFormat === 'function' && cnfOrdForMapping) {
                         try {
                             const fFormatted = convertOrdinalInstanceToFFormat(cnfOrdForMapping);
-                            successfulCNFTestResultsForMapping.push({ input: `w^^${height}`, ordinal: cnfOrdForMapping, mappedValue: f(fFormatted), cnf: actualCNF });
+                            successfulCNFTestResultsForMapping.push({ input: `w^^${height}`, ordinal: cnfOrdForMapping, mappedValue: f(fFormatted, DEFAULT_F_PARAMS), cnf: actualCNF });
                         } catch (mapErr) {
                             addDetailElement(`Mapped Value f(α): Error - ${mapErr.message}`, 'error-message');
                         }
@@ -724,7 +727,8 @@
                 // Assuming a function convertFFormatToOrdinalInstance exists (it was in ordinal_mapping_inverse.js)
                 // If not, this part needs to be implemented or adjusted.
                 try {
-                    const ordinalInstance = convertFFormatToOrdinalInstance(result); // This function needs to be available
+                    // Add tracer to convertFFormatToOrdinalInstance
+                    const ordinalInstance = convertFFormatToOrdinalInstance(result, new OperationTracer(10000)); 
                     return ordinalInstance.toStringCNF();
                 } catch (e) {
                     console.error("Error converting f-format to ordinal for display:", result, e);
@@ -757,7 +761,8 @@
             addDetailElement(`Input Value: ${inputValue}`);
 
             try {
-                const rawResult = fInverse(inputValue);
+                // Pass DEFAULT_F_PARAMS to fInverse() and 0 for initial depth
+                const rawResult = fInverse(inputValue, useThreshold, 0, DEFAULT_F_PARAMS);
                 actualOutput = formatFInverseOutput(rawResult);
 
                 if (expectError) {

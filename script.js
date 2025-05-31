@@ -5,6 +5,7 @@
 // Assumes CNFOrdinal, EpsilonNaughtOrdinal, WTowerOrdinal, and OperationTracer (from ordinal_types.js) are available.
 // Assumes f, ORDINAL_ZERO, and convertOrdinalInstanceToFFormat (from ordinal_mapping.js) are globally available.
 // Assumes fInverse and convertFFormatToOrdinalInstance (from ordinal_mapping_inverse.js) are globally available.
+// Assumes DEFAULT_F_PARAMS is globally available from ordinal_mapping.js
 
 // The convertOrdinalInstanceToFFormat function that was previously here is now removed.
 // Its definition in ordinal_mapping.js will be used.
@@ -230,8 +231,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     const fFormattedOrdinal = convertOrdinalInstanceToFFormat(originalOrdinalResultObject);
                     console.log("[fCalc] convertOrdinalInstanceToFFormat returned:", fFormattedOrdinal);
                     
-                    console.log("[fCalc] Calling f with:", fFormattedOrdinal);
-                    const mappedValue = f(fFormattedOrdinal); 
+                    console.log("[fCalc] Calling f with fFormattedOrdinal:", fFormattedOrdinal, "and params:", DEFAULT_F_PARAMS);
+                    const mappedValue = f(fFormattedOrdinal, DEFAULT_F_PARAMS);
                     console.log("[fCalc] f returned mappedValue:", mappedValue, "(type:", typeof mappedValue, ")");
 
                     if (typeof mappedValue === 'number' && !isNaN(mappedValue)) {
@@ -526,7 +527,8 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log(`Slider moved to: ${sliderValue}`);
 
             try {
-                const fFormatValue = fInverse(sliderValue);
+                console.log("[SliderInput] Calling fInverse with value:", sliderValue, "and params:", DEFAULT_F_PARAMS);
+                const fFormatValue = fInverse(sliderValue, undefined, undefined, DEFAULT_F_PARAMS);
                 console.log(`fInverse returned:`, fFormatValue);
 
                 let ordinalInstance = null;
