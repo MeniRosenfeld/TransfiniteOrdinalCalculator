@@ -1,0 +1,25 @@
+﻿I rejected the changes for now.
+
+I’ll give a clearer and more detailed plan.
+
+f(n) = n / (n + u_add)
+f(w) = 1
+** f(w*n) = n * (1+u_mul) / (n + u_mul)
+f(w^2) = 1 + u_mul
+for finite n>= 1: f(w^n) = 1 + u_mul * (1+u_exp)*(n-1)/(u_exp+n-1)
+f(w^w) = 1 + u_mul + u_mul * u_exp
+for finite n>=1: f(w^^n) = 1+(1+u_tet)*u_mul*(1+u_exp)*(n-1)/(u_tet+n-1)
+f(e_0) = 1 + (1 + uexp) umul (1 + utet)
+for infinite k: f(w^k) = ((1 + (1 + uexp) umul (1 + utet))^2 +    f(k) (-1 + (1 + uexp) umul (-1 + utet^2)))/(1 -    f(k) + (1 + uexp) umul (1 + utet)^2)
+For any k>=1: f(w^k*n) = f(w^k) + (f(w^(k+1))-f(w^k)) * (n-1) * (1+u_mul) / (n - 1 + u_mul)
+For any k>=1 and b < w^k: f(w^k*n+b) = f(w^k*n) + (f(w^k*(n+1))-f(w^k*n)) * f(b) / f(w^k)
+
+Do not write any code yet.
+
+Examine the formulas in detail. Verify that:
+
+1. They are conistent.
+2. They reduce to our earlier formulas when all parameters are 1.
+3. They are continuous with respect to ordinal limits.
+
+Then, write a detailed plan (without code) for implementing these formulas, taking into account how they affect different steps of the calculation of f and fInverse, and the amplification factors.

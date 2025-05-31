@@ -230,8 +230,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     const fFormattedOrdinal = convertOrdinalInstanceToFFormat(originalOrdinalResultObject);
                     console.log("[fCalc] convertOrdinalInstanceToFFormat returned:", fFormattedOrdinal);
                     
-                    console.log("[fCalc] Calling f with:", fFormattedOrdinal);
-                    const mappedValue = f(fFormattedOrdinal); 
+                    console.log("[fCalc] Calling f with:", fFormattedOrdinal, "and params:", DEFAULT_F_PARAMS);
+                    const mappedValue = f(fFormattedOrdinal, DEFAULT_F_PARAMS); 
                     console.log("[fCalc] f returned mappedValue:", mappedValue, "(type:", typeof mappedValue, ")");
 
                     if (typeof mappedValue === 'number' && !isNaN(mappedValue)) {
@@ -526,37 +526,47 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log(`Slider moved to: ${sliderValue}`);
 
             try {
-                const fFormatValue = fInverse(sliderValue);
-                console.log(`fInverse returned:`, fFormatValue);
+                console.log("[fInverseCalc] Calling fInverse with sliderValue:", sliderValue, "and params:", DEFAULT_F_PARAMS);
+                const ordinalRepFromInverse = fInverse(sliderValue, DEFAULT_F_PARAMS); 
+                console.log("[fInverseCalc] fInverse returned:", ordinalRepFromInverse);
 
-                let ordinalInstance = null;
+                const ordinalInstanceFromInverse = convertFFormatToOrdinalInstance(ordinalRepFromInverse, new OperationTracer(10000)); // Use a fresh tracer
+                console.log("[fInverseCalc] convertFFormatToOrdinalInstance returned:", ordinalInstanceFromInverse);
 
-                if (fFormatValue && typeof fFormatValue === 'object' && fFormatValue.error) {
-                    console.warn("fInverse explicitly returned an error object:", fFormatValue.error);
-                    // Don't proceed if fInverse itself had an error
-                } else if (fFormatValue === undefined || fFormatValue === null) {
-                    console.warn("fInverse returned null or undefined.");
-                } else {
-                    // Pass directly to convertFFormatToOrdinalInstance, assuming it handles all valid types
-                    const tracer = new OperationTracer(100000); // Budget for conversion
-                    ordinalInstance = convertFFormatToOrdinalInstance(fFormatValue, tracer);
+                linearResultTextElement.textContent = ordinalInstanceFromInverse.toStringCNF();
+                graphicalResultArea.innerHTML = renderOrdinalGraphical(ordinalInstanceFromInverse);
+                linearResultTextElement.classList.remove('placeholder-text');
+                graphicalResultArea.querySelector('.placeholder-text')?.remove();
+
+                // Update the f(α) text for the new ordinal from slider
+                const fFormattedOrdinalFromInverse = convertOrdinalInstanceToFFormat(ordinalInstanceFromInverse);
+                console.log("[fInverseCalc] Recalculating f for verification. Calling f with:", fFormattedOrdinalFromInverse, "and params:", DEFAULT_F_PARAMS);
+                const mappedValueVerify = f(fFormattedOrdinalFromInverse, DEFAULT_F_PARAMS);
+                console.log("[fInverseCalc] f returned for verification:", mappedValueVerify);
+                mappedValueTextElement.textContent = typeof mappedValueVerify === 'number' && !isNaN(mappedValueVerify) ? mappedValueVerify.toString() : "N/A";
+                mappedValueTextElement.classList.remove('placeholder-text');
+
+                // Clear any previous calculation error messages if slider interaction is successful
+                if (errorMessageArea) {
+                    errorMessageArea.textContent = '';
+                    errorMessageArea.style.display = 'none';
+                }
+                // Clear simplification message when using slider
+                if (graphicalHeaderSimpInfo) {
+                    graphicalHeaderSimpInfo.textContent = "";
+                    graphicalHeaderSimpInfo.style.display = 'none';
                 }
 
-                if (ordinalInstance) {
-                    const ordinalString = ordinalInstance.toStringCNF();
-                    console.log(`Converted to ordinal string: ${ordinalString}`);
-                    if (ordinalString.trim() !== "") {
-                        ordinalInputElement.value = ordinalString;
-                        calculateAndDisplay();
-                    } else {
-                        console.warn("Converted ordinal string is empty.");
-                    }
-                } else if (!(fFormatValue && typeof fFormatValue === 'object' && fFormatValue.error)) {
-                    // Only log this if it wasn't an explicit error from fInverse already or null/undefined
-                    console.error("Failed to obtain an ordinal instance from fInverse's result. convertFFormatToOrdinalInstance might have failed or fFormatValue was unsuitable.", fFormatValue);
-                }
             } catch (err) {
-                console.error("Error during fInverse or conversion/update:", err);
+                console.error("Error updating ordinal from slider:", err);
+                if (errorMessageArea) {
+                    errorMessageArea.textContent = `Error from slider: ${err.message}`;
+                    errorMessageArea.style.display = 'block';
+                }
+                // Optionally clear or set placeholder text for results if inverse fails
+                linearResultTextElement.textContent = "Error";
+                graphicalResultArea.innerHTML = `<span class="placeholder-text">Error</span>`;
+                mappedValueTextElement.textContent = "Error";
             }
         });
     }

@@ -1,5 +1,53 @@
 // ordinal_mapping.js
 
+// NEW: FParams class to hold scale factors and precomputed values
+class FParams {
+    constructor(scaleAdd, scaleMult, scaleExp, scaleTet) {
+        // Store raw scale factors
+        this.scaleAdd = scaleAdd;
+        this.scaleMult = scaleMult;
+        this.scaleExp = scaleExp;
+        this.scaleTet = scaleTet;
+
+        // Initialize precomputed values array (size 9 for indices 0-8)
+        this.precomputed = new Array(9);
+        this.precomputed[0] = null; // Index 0 is intentionally unused
+
+        // Expression 1: scaleMult * (1 + scaleExp)
+        this.precomputed[1] = this.scaleMult * (1 + this.scaleExp);
+
+        // Expression 2: 1 + scaleMult
+        this.precomputed[2] = 1 + this.scaleMult;
+
+        // Expression 3: 1 + scaleMult + scaleMult * scaleExp
+        // Uses precomputed[1]: 1 + this.precomputed[1]
+        this.precomputed[3] = 1 + this.precomputed[1];
+
+        // Expression 4: (1 + scaleTet) * scaleMult * (1 + scaleExp)
+        // Uses precomputed[1]: (1 + this.scaleTet) * this.precomputed[1]
+        this.precomputed[4] = (1 + this.scaleTet) * this.precomputed[1];
+
+        // Expression 5: 1 + (1 + scaleExp) * scaleMult * (1 + scaleTet)
+        // Uses precomputed[4]: 1 + this.precomputed[4]
+        this.precomputed[5] = 1 + this.precomputed[4];
+
+        // Expression 6: (1 + (1 + scaleExp) * scaleMult * (1 + scaleTet))^2
+        // Uses precomputed[5]: Math.pow(this.precomputed[5], 2)
+        this.precomputed[6] = Math.pow(this.precomputed[5], 2);
+
+        // Expression 7: (-1 + (1 + scaleExp) * scaleMult * (-1 + scaleTet^2))
+        // Uses precomputed[1]: this.precomputed[1] * (Math.pow(this.scaleTet, 2) - 1) - 1
+        this.precomputed[7] = this.precomputed[1] * (Math.pow(this.scaleTet, 2) - 1) - 1;
+
+        // Expression 8: 1 + (1 + scaleExp) * scaleMult * (1 + scaleTet)^2
+        // Uses precomputed[1]: 1 + this.precomputed[1] * Math.pow(1 + this.scaleTet, 2)
+        this.precomputed[8] = 1 + this.precomputed[1] * Math.pow(1 + this.scaleTet, 2);
+    }
+}
+
+// Default parameters for f and fInverse - now an instance of FParams
+const DEFAULT_F_PARAMS = new FParams(1, 1, 1, 1);
+
 console.log("[Debug] In ordinal_mapping.js, typeof WTowerOrdinal:", typeof WTowerOrdinal, "WTowerOrdinal itself:", WTowerOrdinal);
 const memo = new Map();
 
@@ -137,7 +185,7 @@ function bigIntReplacer(key, value) {
     return value;
 }
 
-function f(alphaRep) {
+function f(alphaRep, params) {
     // Handle E0_TYPE first
     if (alphaRep === "E0_TYPE") {
         // No memoization for E0_TYPE as it's a simple constant return.
@@ -146,7 +194,9 @@ function f(alphaRep) {
         // const e0_val = 5.0;
         // memo.set("E0_TYPE", e0_val);
         // return e0_val;
+
         return 5.0; // f(ε₀) = 5.0
+        
     }
 
     if (typeof alphaRep !== 'bigint' && (typeof alphaRep !== 'object' || alphaRep === null || !alphaRep.type)) {
@@ -175,7 +225,7 @@ function f(alphaRep) {
                 throw new Error(`Invalid height for w_tower in f(): ${height}`);
             }
             if (height === 1) { // ω↑↑1 = ω
-                result = f({ type: 'pow', k: ORDINAL_ONE }); // f(ω)
+                result = f({ type: 'pow', k: ORDINAL_ONE }, params); // f(ω)
             } else {
                 result = 5.0 - (4.0 / height);
             }
@@ -184,13 +234,13 @@ function f(alphaRep) {
             if (isFiniteOrdinal(kRep)) { // Rule 2a: k_rep is a finite ordinal j (BigInt) >= 0n
                 const jBigInt = kRep;
                 if (jBigInt === ORDINAL_ZERO) { // k_rep is 0n. α = ω^0 = 1n.
-                    result = f(ORDINAL_ONE); // f(1n)
+                    result = f(ORDINAL_ONE, params); // f(1n)
                 } else { // k_rep is finite j (BigInt) >= 1n. f(ω^j) = 1 + 2f(j-1) = (3j-2)/j.
                     const j_num = Number(jBigInt); // Convert BigInt to Number for formula
                     result = (3.0 * j_num - 2.0) / j_num;
                 }
             } else { // Rule 2b: k_rep >= ω (k_rep is an object representation)
-                const fKRep = f(kRep);
+                const fKRep = f(kRep, params);
                 const denominator = 9.0 - fKRep;
                 if (Math.abs(denominator) < 1e-9) {
                     throw new Error(`Division by near-zero in f(ω^k): f(k)=${fKRep} for k=${JSON.stringify(kRep, bigIntReplacer)}`);
@@ -218,8 +268,8 @@ function f(alphaRep) {
             const betaPlus1Rep = addOneToOrdinal(betaRep); // betaOrdRep from args
             const termOmegaBetaPlus1 = { type: 'pow', k: betaPlus1Rep };
 
-            const fOmegaBeta = f(termOmegaBeta);
-            const fOmegaBetaPlus1 = f(termOmegaBetaPlus1);
+            const fOmegaBeta = f(termOmegaBeta, params);
+            const fOmegaBetaPlus1 = f(termOmegaBetaPlus1, params);
 
             let f_c_minus_1_val;
             let f_c_val;
@@ -246,7 +296,7 @@ function f(alphaRep) {
                 const fOmegaBetaTimesCPlus1Coeff = fOmegaBeta +
                     (fOmegaBetaPlus1 - fOmegaBeta) * f_c_val;
 
-                const fDeltaRep = f(deltaRep);
+                const fDeltaRep = f(deltaRep, params);
 
                 if (Math.abs(fOmegaBeta) < 1e-9) { // fOmegaBeta is f(ω^beta)
                     throw new Error(`f(ω^beta_rep) is near-zero (${fOmegaBeta}) for beta_rep=${JSON.stringify(betaRep, bigIntReplacer)}, in denominator. Alpha was ${JSON.stringify(alphaRep, bigIntReplacer)}`);

@@ -423,6 +423,23 @@
                     const actualCNF = calcResult.cnfString;
                     addDetailElement(`Output CNF: "${actualCNF}"`);
 
+                    // --- BEGIN MODIFICATION ---
+                    if (originalOrdinalObject && !calcResult.error) {
+                        try {
+                            const fFormattedOriginal = convertOrdinalInstanceToFFormat(originalOrdinalObject);
+                            const mappedValue = f(fFormattedOriginal, DEFAULT_F_PARAMS);
+                            successfulCNFTestResultsForMapping.push({
+                                input: input,
+                                ordinal: originalOrdinalObject,
+                                mappedValue: mappedValue,
+                                cnf: actualCNF
+                            });
+                        } catch (mapErr) {
+                            addDetailElement(`Could not add to successfulCNFTestResultsForMapping: f() or conversion error - ${mapErr.message}`, 'error-message');
+                        }
+                    }
+                    // --- END MODIFICATION ---
+
                     const cnfCheckPassed = (actualCNF === expectedCNF);
                     let fRoundTripCheckPassed = false; 
                     const fTripDetailsLogs = [];
@@ -438,16 +455,16 @@
                             if (typeof convertFFormatToOrdinalInstance !== 'function') throw new Error("convertFFormatToOrdinalInstance is not defined");
 
                             const fFormattedOriginal = convertOrdinalInstanceToFFormat(originalOrdinalObject);
-                            const mappedValueOriginal = f(fFormattedOriginal);
+                            const mappedValueOriginal = f(fFormattedOriginal, DEFAULT_F_PARAMS);
                             fTripDetailsLogs.push(`f(original: "${actualCNF}") = ${mappedValueOriginal.toPrecision(15)}`);
 
-                            const inverseMappedFFormat = fInverse(mappedValueOriginal, fInverseThreshold);
+                            const inverseMappedFFormat = fInverse(mappedValueOriginal, DEFAULT_F_PARAMS, fInverseThreshold);
                             const inverseOrdinalObject = convertFFormatToOrdinalInstance(inverseMappedFFormat);
                             const inverseCNFForLog = inverseOrdinalObject.toStringCNF ? inverseOrdinalObject.toStringCNF() : String(inverseOrdinalObject);
                             fTripDetailsLogs.push(`fInverse(${mappedValueOriginal.toPrecision(15)}) -> "${inverseCNFForLog}"`);
 
                             const fFormattedInverse = convertOrdinalInstanceToFFormat(inverseOrdinalObject);
-                            const mappedValueOfInverse = f(fFormattedInverse);
+                            const mappedValueOfInverse = f(fFormattedInverse, DEFAULT_F_PARAMS);
                             fTripDetailsLogs.push(`f(inverse: "${inverseCNFForLog}") = ${mappedValueOfInverse.toPrecision(15)}`);
                             
                             const difference = Math.abs(mappedValueOriginal - mappedValueOfInverse);
@@ -540,7 +557,7 @@
                     if (typeof f === 'function' && typeof convertOrdinalInstanceToFFormat === 'function' && cnfOrdForMapping) {
                         try {
                             const fFormatted = convertOrdinalInstanceToFFormat(cnfOrdForMapping);
-                            successfulCNFTestResultsForMapping.push({ input: `w^^${height}`, ordinal: cnfOrdForMapping, mappedValue: f(fFormatted), cnf: actualCNF });
+                            successfulCNFTestResultsForMapping.push({ input: `w^^${height}`, ordinal: cnfOrdForMapping, mappedValue: f(fFormatted, DEFAULT_F_PARAMS), cnf: actualCNF });
                         } catch (mapErr) {
                             addDetailElement(`Mapped Value f(α): Error - ${mapErr.message}`, 'error-message');
                         }
@@ -757,7 +774,7 @@
             addDetailElement(`Input Value: ${inputValue}`);
 
             try {
-                const rawResult = fInverse(inputValue);
+                const rawResult = fInverse(inputValue, DEFAULT_F_PARAMS);
                 actualOutput = formatFInverseOutput(rawResult);
 
                 if (expectError) {

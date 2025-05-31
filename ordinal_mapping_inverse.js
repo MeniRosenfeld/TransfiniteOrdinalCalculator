@@ -34,9 +34,9 @@ function findFiniteOrdinal(x, threshold) {
     }
 }
 
-function findCoefficientHigher(x, k, threshold) {
-    const fOmegaK = f({ type: 'pow', k: k });
-    const fOmegaKPlus1 = f({ type: 'pow', k: addOneToOrdinal(k) });
+function findCoefficientHigher(x, k, params, threshold) {
+    const fOmegaK = f({ type: 'pow', k: k }, params);
+    const fOmegaKPlus1 = f({ type: 'pow', k: addOneToOrdinal(k) }, params);
 
     const target_f_m_minus_1 = (x - fOmegaK)/(fOmegaKPlus1 - fOmegaK);
 
@@ -75,9 +75,9 @@ function findCoefficientHigher(x, k, threshold) {
     return m; 
 }
 
-function findRemainderHigher(x, k, m, threshold) {
-    const fOmegaK = f({ type: 'pow', k: k });
-    const fOmegaKPlus1 = f({ type: 'pow', k: addOneToOrdinal(k) });
+function findRemainderHigher(x, k, m, params, threshold) {
+    const fOmegaK = f({ type: 'pow', k: k }, params);
+    const fOmegaKPlus1 = f({ type: 'pow', k: addOneToOrdinal(k) }, params);
     const fOmegaKM = fOmegaK + (fOmegaKPlus1 - fOmegaK) * fFinite(BigInt(Math.max(0, m-1)));
     const fOmegaKMPlus1 = fOmegaK + (fOmegaKPlus1 - fOmegaK) * fFinite(BigInt(m));
     
@@ -98,7 +98,7 @@ function findRemainderHigher(x, k, m, threshold) {
         const rAmplification = (Math.abs(denominator) > 1e-15) ? (fOmegaK / denominator) : 1; // Avoid division by zero if denom was small but not caught
         // Pass depth + 1 (assuming depth is available or managed by fInverse wrapper)
         // For now, fInverse will manage its own depth parameter starting from 0 for new calls.
-        return fInverse(fr, threshold * Math.max(1, rAmplification)); // Ensure amplification doesn't reduce threshold too much
+        return fInverse(fr, params, threshold * Math.max(1, rAmplification)); // Ensure amplification doesn't reduce threshold too much
     }
 }
 
@@ -170,7 +170,7 @@ function findM(x, j_base, threshold) {
     }
 }
 
-function findOmegaPowerOrdinal(x, threshold, depth) {
+function findOmegaPowerOrdinal(x, params, threshold, depth) {
     // Use threshold directly instead of epsilon variable for consistency
     const j = findJ(x, threshold);
     if (j === 0) { 
@@ -207,7 +207,7 @@ function findOmegaPowerOrdinal(x, threshold, depth) {
     } else {
         const kAmplificationFactor = (Math.abs(fOmegaJMPlus1_val - fOmegaJM_val) > 1e-15) ? 
                                    (fOmegaJ_val / (fOmegaJMPlus1_val - fOmegaJM_val)) : 1;
-        k_rem_ordinal_representation = fInverse(fk, threshold * Math.max(1, kAmplificationFactor), depth + 1);
+        k_rem_ordinal_representation = fInverse(fk, params, threshold * Math.max(1, kAmplificationFactor), depth + 1);
     }
     
     if (m === 1 && k_rem_ordinal_representation === 0n) {
@@ -222,13 +222,13 @@ function findOmegaPowerOrdinal(x, threshold, depth) {
     }
 }
 
-function findHigherPowerOrdinal(x, threshold, depth) {
+function findHigherPowerOrdinal(x, params, threshold, depth) {
     const fk =  (9*x - 25)/(x - 1); 
     const kAmplification = Math.max(1, (9-fk)*(9-fk)/16); // Ensure amplification is at least 1
-    const k = fInverse(fk, threshold * kAmplification, depth + 1);
+    const k = fInverse(fk, params, threshold * kAmplification, depth + 1);
     
-    const m = findCoefficientHigher(x, k, threshold);
-    const r = findRemainderHigher(x, k, m, threshold); // Pass depth for consistency in amplification? fInverse manages depth.
+    const m = findCoefficientHigher(x, k, params, threshold);
+    const r = findRemainderHigher(x, k, m, params, threshold); // Pass depth for consistency in amplification? fInverse manages depth.
     
     // Check if r is an error object from findRemainderHigher
     if (r instanceof Error) {
@@ -251,7 +251,7 @@ function findHigherPowerOrdinal(x, threshold, depth) {
     };
 }
 
-function fInverse(x, threshold = 1e-14, depth = 0) {
+function fInverse(x, params, threshold = 1e-14, depth = 0) {
     if (x < -threshold || x > 5.0 + threshold) { // Allow x to be slightly over 5 due to float precision
         throw new Error(`Input value ${x} is outside the valid range [0,5]`);
     }
@@ -273,7 +273,19 @@ function fInverse(x, threshold = 1e-14, depth = 0) {
         }
         const height = Math.floor(4.0 / denominator);
         if (height >= 1) {
-            return { type: 'w_tower', height: height };
+            // We need to check if f(w_tower(height)) with params matches x
+            // This requires a call to f() which now needs params
+            const f_w_tower_h = f({ type: 'w_tower', height: height }, params);
+            if (Math.abs(x - f_w_tower_h) < threshold * 10) { // Allow some tolerance for this check
+                 return { type: 'w_tower', height: height };
+            } else {
+                // If direct match fails, it might be close to E0 due to x being very near 5
+                // or the w_tower mapping itself not being a perfect inverse for this x
+                console.warn(`fInverse: WTower candidate h=${height} (x=${x}) did not verify: f(w^^h)=${f_w_tower_h}. Falling back.`);
+                // Fallback strategy: if x is extremely close to 5, prefer E0_TYPE.
+                // Otherwise, the logic will proceed to other checks (omegaPower, higherPower, finite).
+                // This specific WTower block's fallback to E0_TYPE for height < 1 remains.
+            }
         } else {
             // This case (height < 1) should ideally not be hit if x > 4.98 and mapping is correct.
             // It might indicate x is too close to 5, such that 4.0 / (5.0 - x) is small.
@@ -291,10 +303,10 @@ function fInverse(x, threshold = 1e-14, depth = 0) {
     if (x < 1.0) {
         return findFiniteOrdinal(x, threshold);
     } else if (x < 3.0) { // Covers [1, 3) - f(ω) to f(ω^ω)
-        return findOmegaPowerOrdinal(x, threshold, depth);
+        return findOmegaPowerOrdinal(x, params, threshold, depth);
     } else { // Covers [3, 5) - f(ω^ω) up to (but not including) f(ε₀)
         // This also now implicitly covers the range up to 4.98 if not caught by w_tower.
-        return findHigherPowerOrdinal(x, threshold, depth);
+        return findHigherPowerOrdinal(x, params, threshold, depth);
     }
 }
 
