@@ -54,7 +54,11 @@ This web application provides a user-friendly interface to parse expressions rep
                 *   Let `f_c = f(c)`.
                 *   The value for `f(ω^β ⋅ (c+1))` is effectively `f_A + (f_B - f_A) * f_c`.
                 *   Then `f(α) = f(ω^β ⋅ c) + (f(ω^β ⋅ (c+1)) - f(ω^β ⋅ c)) * f(δ) / f_A`.
-    *   The project also includes an inverse mapping function, `fInverse(x)` (in `ordinal_mapping_inverse.js`), which attempts to find an ordinal `α` such that `f(α) ≈ x`. This is primarily used for internal testing.
+*   **Interactive Real-to-Ordinal Exploration:**
+    *   Includes an interactive slider and nudge controls linked to the `f(α)` mapping.
+    *   Users can adjust the slider to select a real number `x` in the `[0, 5)` range.
+    *   The calculator then uses an inverse mapping function, `fInverse(x)`, to find and display an ordinal `α` such that `f(α) ≈ x`.
+    *   This allows users to explore which ordinals correspond to specific real values under the `f(α)` mapping.
 *   **Copy Functionality:**
     *   Button to copy the graphical representation as an image to the clipboard.
     *   Button to copy the linear string representation to the clipboard.
@@ -87,6 +91,10 @@ This web application provides a user-friendly interface to parse expressions rep
     *   Click "Copy Text" to copy the linear string.
 5.  **Share (Optional):**
     *   Click "Share Link" to get a URL for the current expression.
+6.  **Explore (Optional):**
+    *   Use the slider located below the input field to select a real number value (between 0 and 5).
+    *   The calculator will dynamically display the ordinal `α` that corresponds to this real number, i.e., where `f(α) ≈ x`.
+    *   The `↔️` (nudge) control next to the slider can be used for fine-grained adjustments to the selected real value.
 
 ## Technical Details
 
@@ -136,7 +144,7 @@ This web application provides a user-friendly interface to parse expressions rep
     *   `ordinal_calculator.js` (Main `calculateOrdinalCNF` function)
     *   `ordinal_graphical_renderer.js`
     *   `ordinal_mapping.js` (The `f(α)` mapping function)
-    *   `ordinal_mapping_inverse.js` (The `fInverse(x)` inverse mapping function)
+    *   `ordinal_mapping_inverse.js` (The `fInverse(x)` inverse mapping function, used for the interactive slider exploration and for internal testing)
     *   Test files like `ordinal_calculator_test.html` and `haskell_comparison_test.html` are also included.
 3.  **Open `index.html` in a web browser.**
     *   No build step or local server is strictly required. However, for full Clipboard API support and to avoid potential issues with `file://` URLs, using a simple local HTTP server is recommended.
@@ -164,7 +172,7 @@ This web application provides a user-friendly interface to parse expressions rep
 *   `ordinal_calculator.js`: Contains the `calculateOrdinalCNF` function.
 *   `ordinal_graphical_renderer.js`: Contains the `renderOrdinalGraphical` function.
 *   `ordinal_mapping.js`: Defines the `f(α)` ordinal-to-real mapping function.
-*   `ordinal_mapping_inverse.js`: Defines the `fInverse(x)` real-to-ordinal inverse mapping function, used for testing.
+*   `ordinal_mapping_inverse.js`: Defines the `fInverse(x)` real-to-ordinal inverse mapping function, used for the interactive slider exploration and for internal testing.
 *   `ordinal_calculator_test.html`: Comprehensive test suite for JavaScript features, with an interactive UI to view all tests or only failures, and including round-trip consistency checks for `f(α)` and `fInverse(x)`.
 *   `haskell_comparison_test.html` & `haskell_comparison_test.js`: (If Haskell Wasm comparison is set up) For comparing JS results against a Haskell implementation.
 *   `ordinal_haskell.wasm`: (If built) The Haskell Wasm module.
