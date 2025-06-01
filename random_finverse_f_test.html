@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Randomized fInverse(f(x)) Roundtrip Test</title>
+    <style>
+        body { font-family: sans-serif; margin: 20px; }
+        #results { margin-top: 20px; border: 1px solid #ccc; padding: 10px; white-space: pre-wrap; font-family: monospace; max-height: 500px; overflow-y: auto; }
+        .error { color: red; font-weight: bold; }
+        .summary { margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <h1>Randomized fInverse(f(x)) Roundtrip Test</h1>
+    <p>
+        This page tests the stability of <code>fInverse(x)</code> followed by <code>f(alpha)</code>
+        by feeding it random real numbers <code>x</code> within the valid range
+        <code>[0, DEFAULT_F_PARAMS.precomputed[5])</code>.
+    </p>
+    <div>
+        <label for="numTests">Number of tests to run:</label>
+        <input type="number" id="numTests" value="1000" min="1">
+        <button id="runTestsButton">Run Tests</button>
+    </div>
+    <div id="results">Test results will appear here...</div>
+    <div id="summary" class="summary"></div>
+
+    <!-- Core Ordinal Logic Scripts -->
+    <script src="ordinal_types.js"></script>
+    <script src="ordinal_mapping.js"></script>
+    <script src="ordinal_mapping_inverse.js"></script>
+
+    <script>
+        const runTestsButton = document.getElementById('runTestsButton');
+        const numTestsInput = document.getElementById('numTests');
+        const resultsDiv = document.getElementById('results');
+        const summaryDiv = document.getElementById('summary');
+
+        function logMessage(message, isError = false) {
+            console.log(message);
+            const p = document.createElement('p');
+            if (isError) {
+                p.classList.add('error');
+            }
+            p.textContent = message;
+            resultsDiv.appendChild(p);
+            resultsDiv.scrollTop = resultsDiv.scrollHeight; // Auto-scroll
+        }
+
+        async function runRandomRoundtripTests() {
+            resultsDiv.innerHTML = 'Starting tests...\n';
+            summaryDiv.textContent = '';
+            let errorsFound = 0;
+            let testsRun = 0;
+            const numberOfTests = parseInt(numTestsInput.value, 10) || 1000;
+
+            if (typeof DEFAULT_F_PARAMS === 'undefined' || !DEFAULT_F_PARAMS.precomputed || typeof DEFAULT_F_PARAMS.precomputed[5] !== 'number') {
+                logMessage("ERROR: DEFAULT_F_PARAMS or precomputed[5] is not available. Cannot determine test range.", true);
+                return;
+            }
+            const upperBound = DEFAULT_F_PARAMS.precomputed[5];
+            logMessage(`Using DEFAULT_F_PARAMS. Upper bound for random x: ${upperBound.toPrecision(10)}`);
+
+            for (let i = 0; i < numberOfTests; i++) {
+                testsRun++;
+                // Generate random x in [0, upperBound)
+                // Add a very small epsilon to lower bound to avoid issues if fInverse can't handle exactly 0 with some params, though it should.
+                // Subtract a small epsilon from upperBound to ensure it's strictly less than, as fInverse might have issues at the exact boundary.
+                const randomX = Math.random() * (upperBound - 1e-9) + 1e-10; 
+
+                let ordinalRepFromInverse;
+                let finalXPrime;
+
+                if (testsRun % 100 === 0) {
+                    summaryDiv.textContent = `Tests run: ${testsRun}/${numberOfTests}, Errors: ${errorsFound}`;
+                    // Yield to the event loop to keep the page responsive
+                    await new Promise(resolve => setTimeout(resolve, 0));
+                }
+
+                try {
+                    // Step 1: Call fInverse
+                    ordinalRepFromInverse = fInverse(randomX, DEFAULT_F_PARAMS);
+
+                    // Step 2: Call f on the result
+                    finalXPrime = f(ordinalRepFromInverse, DEFAULT_F_PARAMS);
+                    
+                    // Basic check (optional, as we are mainly looking for thrown errors)
+                    // if (Math.abs(randomX - finalXPrime) > 1e-7) { // Adjust tolerance as needed
+                    //     errorsFound++;
+                    //     logMessage(`---- Potential Discrepancy (Test ${i + 1}/${numberOfTests}) ----`, true);
+                    //     logMessage(`  Input x: ${randomX.toPrecision(15)}`, true);
+                    //     logMessage(`  fInverse(x) -> alpha_rep: ${typeof ordinalRepFromInverse === 'object' ? generateOrdinalMemoKey(ordinalRepFromInverse) : ordinalRepFromInverse}`, true);
+                    //     logMessage(`  f(alpha_rep) -> x': ${finalXPrime.toPrecision(15)}`, true);
+                    //     logMessage(`  Difference |x - x'|: ${Math.abs(randomX - finalXPrime).toPrecision(5)}`, true);
+                    // }
+
+                } catch (error) {
+                    errorsFound++;
+                    logMessage(`---- ERROR ENCOUNTERED (Test ${i + 1}/${numberOfTests}) ----`, true);
+                    logMessage(`  Input x that caused error: ${randomX.toPrecision(15)}`, true);
+                    if (typeof ordinalRepFromInverse !== 'undefined') {
+                         logMessage(`  fInverse(x) produced: ${typeof ordinalRepFromInverse === 'object' ? generateOrdinalMemoKey(ordinalRepFromInverse) : ordinalRepFromInverse}`, true);
+                    } else {
+                         logMessage(`  fInverse(x) failed before returning.`, true);
+                    }
+                    logMessage(`  Error Message: ${error.message}`, true);
+                    if (error.stack) {
+                        logMessage(`  Stack Trace:\n${error.stack}`, true);
+                    }
+                    logMessage(`-------------------------------------------------`, true);
+                }
+            }
+            summaryDiv.textContent = `Testing complete. Ran ${testsRun} tests. Errors found: ${errorsFound}.`;
+            logMessage(`Finished. Errors: ${errorsFound}.`);
+        }
+
+        runTestsButton.addEventListener('click', runRandomRoundtripTests);
+    </script>
+</body>
+</html> 

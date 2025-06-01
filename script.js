@@ -130,6 +130,18 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log('Tooltip trigger element NOT found.');
     }
 
+    // --- Set slider max based on DEFAULT_F_PARAMS --- BEGIN
+    if (mappedValueSliderElement && typeof DEFAULT_F_PARAMS !== 'undefined' && DEFAULT_F_PARAMS.precomputed && typeof DEFAULT_F_PARAMS.precomputed[5] === 'number') {
+        const sliderMaxValue = DEFAULT_F_PARAMS.precomputed[5];
+        mappedValueSliderElement.max = sliderMaxValue;
+        // If you have a text element displaying the max range, update it here too.
+        // For example: document.getElementById('sliderMaxRangeDisplay').textContent = sliderMaxValue.toFixed(3);
+        console.log(`Slider max attribute set to: ${sliderMaxValue}`);
+    } else {
+        console.warn('Could not set slider max value dynamically. DEFAULT_F_PARAMS or precomputed[5] is not available or not a number. Slider will use its HTML default max.');
+    }
+    // --- Set slider max based on DEFAULT_F_PARAMS --- END
+
     function calculateAndDisplay() {
         // Ensure elements exist before proceeding, especially ordinalInputElement
         if (!ordinalInputElement || !linearResultTextElement || !graphicalResultArea || !errorMessageArea) {
@@ -441,7 +453,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let lastNudgeTimestamp = 0;
         let currentTargetSliderValue = 0; // Internal target value, accumulates fine changes
 
-        const nudgeRateSensitivityPixels = 10000; 
+        const nudgeRateSensitivityPixels = 1000; 
 
         function updateSliderContinuous() {
             if (!isNudging && currentNudgeRate === 0) {
@@ -546,6 +558,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 mappedValueTextElement.textContent = typeof mappedValueVerify === 'number' && !isNaN(mappedValueVerify) ? mappedValueVerify.toString() : "N/A";
                 mappedValueTextElement.classList.remove('placeholder-text');
 
+                // Update the main input box with the linear string representation
+                const linearStringForInput = ordinalInstanceFromInverse.toStringCNF();
+                if (ordinalInputElement && typeof linearStringForInput === 'string') {
+                    ordinalInputElement.value = linearStringForInput;
+                }
+
                 // Clear any previous calculation error messages if slider interaction is successful
                 if (errorMessageArea) {
                     errorMessageArea.textContent = '';
@@ -555,6 +573,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (graphicalHeaderSimpInfo) {
                     graphicalHeaderSimpInfo.textContent = "";
                     graphicalHeaderSimpInfo.style.display = 'none';
+                }
+
+                if (window.Worker) { // Use Web Worker for rendering if available
+                    // ... existing code ...
                 }
 
             } catch (err) {
@@ -567,6 +589,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 linearResultTextElement.textContent = "Error";
                 graphicalResultArea.innerHTML = `<span class="placeholder-text">Error</span>`;
                 mappedValueTextElement.textContent = "Error";
+                // Also clear the input field on error, or set to a placeholder
+                if (ordinalInputElement) {
+                    ordinalInputElement.value = "Error in slider mapping";
+                }
             }
         });
     }

@@ -10,7 +10,7 @@ class FParams {
         this.scaleTet = scaleTet;
 
         // Initialize precomputed values array (size 9 for indices 0-8)
-        this.precomputed = new Array(9);
+        this.precomputed = new Array(11);
         this.precomputed[0] = null; // Index 0 is intentionally unused
 
         // Expression 1: scaleMult * (1 + scaleExp)
@@ -42,11 +42,16 @@ class FParams {
         // Expression 8: 1 + (1 + scaleExp) * scaleMult * (1 + scaleTet)^2
         // Uses precomputed[1]: 1 + this.precomputed[1] * Math.pow(1 + this.scaleTet, 2)
         this.precomputed[8] = 1 + this.precomputed[1] * Math.pow(1 + this.scaleTet, 2);
+
+        this.precomputed[9] = this.precomputed[6] + this.precomputed[7] * this.precomputed[8];
+
+        this.precomputed[10] = 1 + 99*this.precomputed[4]/(99+this.scaleTet);
     }
 }
 
 // Default parameters for f and fInverse - now an instance of FParams
-const DEFAULT_F_PARAMS = new FParams(1, 1, 1, 1);
+const OLD_F_PARAMS = new FParams(1, 1, 1, 1);
+const DEFAULT_F_PARAMS = new FParams(3, 3, 3, 3);
 
 console.log("[Debug] In ordinal_mapping.js, typeof WTowerOrdinal:", typeof WTowerOrdinal, "WTowerOrdinal itself:", WTowerOrdinal);
 const memo = new Map();
@@ -137,7 +142,7 @@ function isFiniteOrdinal(ordinalRep) {
     return typeof ordinalRep === 'bigint';
 }
 
-function fFinite(nBigInt) {
+function fFinite(nBigInt, scale=1) {
     if (typeof nBigInt !== 'bigint' || nBigInt < 0n) {
         throw new Error(`fFinite called with non-BigInt or negative: ${nBigInt}`);
     }
@@ -149,7 +154,7 @@ function fFinite(nBigInt) {
     // Number(nBigInt) might lose precision if nBigInt > Number.MAX_SAFE_INTEGER,
     // but the ratio will still be very close to 1.
     const n_num = Number(nBigInt);
-    return n_num / (n_num + 1.0);
+    return n_num / (n_num + scale);
 }
 
 function addOneToOrdinal(betaOrdRep) {
@@ -168,6 +173,9 @@ function addOneToOrdinal(betaOrdRep) {
     } else if (type === 'sum') {
         const { beta: bExpRep, c: cCoeffInt, delta: dRemRep } = args;
         return { type: 'sum', beta: bExpRep, c: cCoeffInt, delta: addOneToOrdinal(dRemRep) };
+    } else if (type === 'w_tower') { // NEW CASE
+        // For beta = ω^^h, beta + 1 is represented as (ω^^h)*1 + 1
+        return { type: 'sum', beta: betaOrdRep, c: 1, delta: ORDINAL_ONE };
     } else {
         throw new TypeError(`Unknown ordinal object type for addOneToOrdinal: ${type} in ${JSON.stringify(betaOrdRep, bigIntReplacer)}`);
     }
@@ -185,29 +193,79 @@ function bigIntReplacer(key, value) {
     return value;
 }
 
+// NEW: Custom function to generate a canonical string key for memoization
+function generateOrdinalMemoKey(val) {
+    const type = typeof val;
+    if (type === 'bigint') return val.toString() + 'n';
+    if (val === null) return 'null'; // Important to handle null explicitly
+    if (val === "E0_TYPE") return '"E0_TYPE"'; // Ensure it's treated as a unique string value
+
+    if (type === 'string') {
+        // Basic JSON-like string escaping for consistency.
+        // Handles quotes, backslashes, and common control characters.
+        return '"' + val.replace(/[\\\"\b\f\n\r\t]/g, function (match) {
+            switch (match) {
+                case '\\': return '\\\\';
+                case '"': return '\\"';
+                case '\b': return '\\b';
+                case '\f': return '\\f';
+                case '\n': return '\\n';
+                case '\r': return '\\r';
+                case '\t': return '\\t';
+                default: return match;
+            }
+        }) + '"';
+    }
+    if (type === 'number' || type === 'boolean') return String(val);
+
+    if (type === 'object') {
+        // Ordinal representations are expected to be plain objects.
+        // No arrays expected directly in the f-format objects themselves (values might be, but handled by recursion).
+        if (Array.isArray(val)) { // Should not be top-level for alphaRep, but robust for general values
+            let arrayResult = '[';
+            for (let i = 0; i < val.length; i++) {
+                arrayResult += generateOrdinalMemoKey(val[i]);
+                if (i < val.length - 1) arrayResult += ',';
+            }
+            arrayResult += ']';
+            return arrayResult;
+        }
+
+        const keys = Object.keys(val).sort(); // Canonical order is crucial for memo keys
+        let objectResult = '{';
+        for (let i = 0; i < keys.length; i++) {
+            const key = keys[i];
+            // Keys in our f-format are simple strings, so direct stringification is okay for the key part
+            objectResult += '"' + key + '":' + generateOrdinalMemoKey(val[key]);
+            if (i < keys.length - 1) objectResult += ',';
+        }
+        objectResult += '}';
+        return objectResult;
+    }
+    // Should not happen for valid ordinal representations used as keys
+    console.error("[generateOrdinalMemoKey] Unsupported type for memo key generation:", type, val);
+    throw new Error(`Unsupported type for memo key generation: ${type}`);
+}
+
 function f(alphaRep, params) {
     // Handle E0_TYPE first
     if (alphaRep === "E0_TYPE") {
-        // No memoization for E0_TYPE as it's a simple constant return.
-        // Or, if memoization is desired:
-        // if (memo.has("E0_TYPE")) return memo.get("E0_TYPE");
-        // const e0_val = 5.0;
-        // memo.set("E0_TYPE", e0_val);
-        // return e0_val;
-
-        return 5.0; // f(ε₀) = 5.0
-        
+        return params.precomputed[5]; // Value for f(ε₀) is determined by params
     }
 
     if (typeof alphaRep !== 'bigint' && (typeof alphaRep !== 'object' || alphaRep === null || !alphaRep.type)) {
-        throw new TypeError(`Invalid ordinal representation type: ${typeof alphaRep} for ${JSON.stringify(alphaRep, bigIntReplacer)}`);
+        // Use bigIntReplacer here for error message readability if JSON.stringify is used for it
+        throw new TypeError(`Invalid ordinal representation type: ${typeof alphaRep} for ${alphaRep === null ? 'null' : (typeof alphaRep === 'object' ? JSON.stringify(alphaRep, bigIntReplacer) : alphaRep )}`);
     }
 
-    // For Map, object identity matters for keys unless we serialize.
-    // A robust serialization to string for memo_key might be better for complex structures,
-    // especially if BigInts are involved in keys. For now, primitives (BigInt) are fine.
-    // Objects are by reference.
-    const memoKey = typeof alphaRep === 'object' ? JSON.stringify(alphaRep, bigIntReplacer) : alphaRep;
+    // Use the new custom key generation function
+    const ordinalKeyPart = generateOrdinalMemoKey(alphaRep);
+    
+    // Create a stable string representation of the relevant parts of the params object
+    const paramsKeyPart = `params:${params.scaleAdd}-${params.scaleMult}-${params.scaleExp}-${params.scaleTet}`;
+    
+    const memoKey = `${ordinalKeyPart}|${paramsKeyPart}`;
+
     if (memo.has(memoKey)) {
         return memo.get(memoKey);
     }
@@ -215,7 +273,7 @@ function f(alphaRep, params) {
     let result = 0.0;
 
     if (isFiniteOrdinal(alphaRep)) { // Rule 1: α is finite n (BigInt)
-        result = fFinite(alphaRep);
+        result = fFinite(alphaRep, params.scaleAdd);
     } else {
         const { type, ...args } = alphaRep;
 
@@ -224,11 +282,7 @@ function f(alphaRep, params) {
             if (typeof height !== 'number' || height < 1 || !Number.isInteger(height)){
                 throw new Error(`Invalid height for w_tower in f(): ${height}`);
             }
-            if (height === 1) { // ω↑↑1 = ω
-                result = f({ type: 'pow', k: ORDINAL_ONE }, params); // f(ω)
-            } else {
-                result = 5.0 - (4.0 / height);
-            }
+            result = 1+params.precomputed[4]*fFinite(BigInt(height-1),params.scaleTet);
         } else if (type === 'pow') { // α = ω^k_rep
             const kRep = args.k;
             if (isFiniteOrdinal(kRep)) { // Rule 2a: k_rep is a finite ordinal j (BigInt) >= 0n
@@ -237,15 +291,15 @@ function f(alphaRep, params) {
                     result = f(ORDINAL_ONE, params); // f(1n)
                 } else { // k_rep is finite j (BigInt) >= 1n. f(ω^j) = 1 + 2f(j-1) = (3j-2)/j.
                     const j_num = Number(jBigInt); // Convert BigInt to Number for formula
-                    result = (3.0 * j_num - 2.0) / j_num;
+                    result = 1 + params.precomputed[1]*fFinite(jBigInt-1n,params.scaleExp);
                 }
             } else { // Rule 2b: k_rep >= ω (k_rep is an object representation)
                 const fKRep = f(kRep, params);
-                const denominator = 9.0 - fKRep;
+                const denominator = params.precomputed[8] - fKRep;
                 if (Math.abs(denominator) < 1e-9) {
                     throw new Error(`Division by near-zero in f(ω^k): f(k)=${fKRep} for k=${JSON.stringify(kRep, bigIntReplacer)}`);
                 }
-                result = (25.0 - fKRep) / denominator;
+                result = (params.precomputed[6] + fKRep * params.precomputed[7]) / denominator;
             }
         } else if (type === 'sum') { // Rule 3: α = ω^beta_rep * cNum + delta_rep
             const { beta: betaRep, c: cNum, delta: deltaRep } = args; // cNum is Number(original_BigInt_coeff)
@@ -283,8 +337,8 @@ function f(alphaRep, params) {
                 const cMinus1BigInt = BigInt(Math.max(0, Math.floor(cNum - 1.0)));
                 const cBigInt = BigInt(Math.floor(cNum)); // cNum should be >= 1 here based on prior checks for typical cases
 
-                f_c_minus_1_val = fFinite(cMinus1BigInt);
-                f_c_val = fFinite(cBigInt);
+                f_c_minus_1_val = fFinite(cMinus1BigInt,params.scaleMult);
+                f_c_val = fFinite(cBigInt,params.scaleMult);
             }
             
             const fOmegaBetaTimesC = fOmegaBeta +
@@ -325,43 +379,46 @@ function f(alphaRep, params) {
 if (typeof require !== 'undefined' && require.main === module) { // Basic check if running as main script in Node.js
     console.log("Running test cases for ordinal_mapping.f (JavaScript)...");
 
-    console.log(`f(0) = ${f(ORDINAL_ZERO)}`); // Expected: 0.0
-    console.log(`f(1) = ${f(ORDINAL_ONE)}`); // Expected: 0.5
-    console.log(`f(2) = ${f(2n)}`); // Expected: 2/3 = 0.666...
+    // Use OLD_F_PARAMS for these original test cases to match expected values.
+    const testParams = OLD_F_PARAMS;
 
-    console.log(`f(ε₀) = ${f("E0_TYPE")}`); // Expected: 5.0
+    console.log(`f(0) = ${f(ORDINAL_ZERO, testParams)}`); 
+    console.log(`f(1) = ${f(ORDINAL_ONE, testParams)}`); 
+    console.log(`f(2) = ${f(2n, testParams)}`); 
 
-    console.log(`f(ω^0) = ${f({ type: 'pow', k: ORDINAL_ZERO })}`); // Expected: 0.5 (f(1))
+    console.log(`f(ε₀) = ${f("E0_TYPE", testParams)}`); 
+
+    console.log(`f(ω^0) = ${f({ type: 'pow', k: ORDINAL_ZERO }, testParams)}`); 
 
     const omegaRep = { type: 'pow', k: ORDINAL_ONE };
-    console.log(`f(ω) = ${f(omegaRep)}`); // Expected: 1.0
+    console.log(`f(ω) = ${f(omegaRep, testParams)}`); 
 
     const omegaSqRep = { type: 'pow', k: 2n };
-    console.log(`f(ω^2) = ${f(omegaSqRep)}`); // Expected: 2.0
+    console.log(`f(ω^2) = ${f(omegaSqRep, testParams)}`); 
 
     const omegaCbRep = { type: 'pow', k: 3n };
-    console.log(`f(ω^3) = ${f(omegaCbRep)}`); // Expected: (3*3-2)/3 = 7/3 = 2.333...
+    console.log(`f(ω^3) = ${f(omegaCbRep, testParams)}`); 
 
     const omegaOmegaRep = { type: 'pow', k: omegaRep };
-    console.log(`f(ω^ω) = ${f(omegaOmegaRep)}`); // Expected: 3.0
+    console.log(`f(ω^ω) = ${f(omegaOmegaRep, testParams)}`); 
 
     const omegaOmegaOmegaRep = { type: 'pow', k: omegaOmegaRep };
-    console.log(`f(ω^ω^ω) = ${f(omegaOmegaOmegaRep)}`); // Expected: 11/3 = 3.666...
+    console.log(`f(ω^ω^ω) = ${f(omegaOmegaOmegaRep, testParams)}`); 
 
     const omegaTimes2Rep = { type: 'sum', beta: ORDINAL_ONE, c: 2, delta: ORDINAL_ZERO };
-    console.log(`f(ω*2) = ${f(omegaTimes2Rep)}`); // Expected: 1.5
+    console.log(`f(ω*2) = ${f(omegaTimes2Rep, testParams)}`); 
 
     const omegaTimes3Rep = { type: 'sum', beta: ORDINAL_ONE, c: 3, delta: ORDINAL_ZERO };
-    console.log(`f(ω*3) = ${f(omegaTimes3Rep)}`); // Expected: 5/3 = 1.666...
+    console.log(`f(ω*3) = ${f(omegaTimes3Rep, testParams)}`); 
 
     const omegaTimes2Plus1Rep = { type: 'sum', beta: ORDINAL_ONE, c: 2, delta: ORDINAL_ONE };
-    console.log(`f(ω*2+1) = ${f(omegaTimes2Plus1Rep)}`); // Expected: 19/12 = 1.58333...
+    console.log(`f(ω*2+1) = ${f(omegaTimes2Plus1Rep, testParams)}`); 
 
     const omegaSqTimes2Rep = { type: 'sum', beta: 2n, c: 2, delta: ORDINAL_ZERO };
-    console.log(`f(ω^2*2) = ${f(omegaSqTimes2Rep)}`); // Expected: 13/6 = 2.1666...
+    console.log(`f(ω^2*2) = ${f(omegaSqTimes2Rep, testParams)}`); 
 
     const omegaSqPlusOmegaRep = { type: 'sum', beta: 2n, c: 1, delta: omegaRep };
-    console.log(`f(ω^2+ω) = ${f(omegaSqPlusOmegaRep)}`); // Expected: 25/12 = 2.08333...
+    console.log(`f(ω^2+ω) = ${f(omegaSqPlusOmegaRep, testParams)}`); 
 
     console.log("Test cases finished.");
 }

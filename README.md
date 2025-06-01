@@ -31,9 +31,11 @@ This web application provides a user-friendly interface to parse expressions rep
     *   Automatically simplifies very complex results based on a structural complexity budget (`g(α)`) to enhance readability.
     *   If simplification occurs, an indicator (e.g., `(Displayed complexity: G_simp / G_orig)`) is shown alongside the graphical result.
 *   **Ordinal-to-Real Number Mapping `f(α)`:**
-    *   Displays a strictly increasing mapping `f(α)` which maps ordinals α < ε₀ to the real interval `[0, 5)`.
+    *   Displays a strictly increasing mapping `f(α)` which maps ordinals α < ε₀ to a real interval.
+    *   This mapping is now parameterized by a set of scale factors (`scaleAdd`, `scaleMult`, `scaleExp`, `scaleTet`) which default to 1. These parameters are managed by an `FParams` class.
+    *   With default parameters, the mapping is to `[0, 5)`. The upper bound of this interval (and thus the slider's maximum) is dynamically determined by `DEFAULT_F_PARAMS.precomputed[5]`.
     *   This mapping uses the *original, unsimplified* ordinal value.
-    *   A tooltip explains the basis of this mapping. The function `f(α)` is defined recursively as follows:
+    *   A tooltip explains the basis of this mapping. The function `f(α)` is defined recursively as follows (description below assumes default parameters for simplicity):
         *   **Rule 1: α is a finite ordinal `n`** (represented as a JavaScript `BigInt`)
             *   `f(0) = 0.0`
             *   `f(n) = n / (n + 1)` for `n > 0`
@@ -56,8 +58,9 @@ This web application provides a user-friendly interface to parse expressions rep
                 *   Then `f(α) = f(ω^β ⋅ c) + (f(ω^β ⋅ (c+1)) - f(ω^β ⋅ c)) * f(δ) / f_A`.
 *   **Interactive Real-to-Ordinal Exploration:**
     *   Includes an interactive slider and nudge controls linked to the `f(α)` mapping.
-    *   Users can adjust the slider to select a real number `x` in the `[0, 5)` range.
-    *   The calculator then uses an inverse mapping function, `fInverse(x)`, to find and display an ordinal `α` such that `f(α) ≈ x`.
+    *   Users can adjust the slider to select a real number `x` in the dynamic range determined by `f(α)`.
+    *   The calculator then uses an inverse mapping function, `fInverse(x, params)`, to find and display an ordinal `α` such that `f(α) ≈ x`.
+    *   Moving the slider also updates the main ordinal expression input box with the string representation of the found ordinal `α`.
     *   This allows users to explore which ordinals correspond to specific real values under the `f(α)` mapping.
 *   **Copy Functionality:**
     *   Button to copy the graphical representation as an image to the clipboard.
@@ -92,8 +95,8 @@ This web application provides a user-friendly interface to parse expressions rep
 5.  **Share (Optional):**
     *   Click "Share Link" to get a URL for the current expression.
 6.  **Explore (Optional):**
-    *   Use the slider located below the input field to select a real number value (between 0 and 5).
-    *   The calculator will dynamically display the ordinal `α` that corresponds to this real number, i.e., where `f(α) ≈ x`.
+    *   Use the slider located below the input field to select a real number value (its range is dynamically set by the current `f(α)` parameters, defaulting to approximately [0, 5)).
+    *   The calculator will dynamically display the ordinal `α` that corresponds to this real number (i.e., where `f(α) ≈ x`) and also populate the main "Enter Ordinal Expression" input box with this ordinal's string representation.
     *   The `↔️` (nudge) control next to the slider can be used for fine-grained adjustments to the selected real value.
 
 ## Technical Details
@@ -121,6 +124,10 @@ This web application provides a user-friendly interface to parse expressions rep
     *   Uses heuristics like checking the Main Power Tower (MPT) of exponents and potentially replacing complex terms with `WTowerOrdinal` approximations (e.g., `w^^k`) if they fit the budget.
 *   **Graphical Rendering:** Dynamically generates HTML with `<sup>` tags and specific classes for ω, ε₀, ω↑↑n, operators, and coefficients, styled with CSS.
 *   **Image Copying:** Utilizes the `html2canvas` library.
+*   **Mapping Functions:**
+    *   `ordinal_mapping.js`: Defines the `f(α)` ordinal-to-real mapping function. It now includes the `FParams` class to manage mapping parameters (e.g., `scaleAdd`, `scaleMult`, `scaleExp`, `scaleTet`) and precomputed expressions based on them. It defines `DEFAULT_F_PARAMS` (using current development values) and `OLD_F_PARAMS` (using legacy values of 1 for all scales).
+    *   `ordinal_mapping_inverse.js`: Defines the `fInverse(x, params)` real-to-ordinal inverse mapping function, which now accepts an `FParams` object. It's used for the interactive slider exploration and for internal testing.
+    *   Test files like `ordinal_calculator_test.html` and `haskell_comparison_test.html` are also included.
 
 ## Local Development & Setup
 
@@ -163,7 +170,7 @@ This web application provides a user-friendly interface to parse expressions rep
 
 *   `index.html`: The main page structure.
 *   `style.css`: All CSS styling.
-*   `script.js`: UI interactions, event listeners, simplification logic, and `f(α)` display.
+*   `script.js`: UI interactions, event listeners, simplification logic, and `f(α)` display. Handles passing `DEFAULT_F_PARAMS` to `f` and `fInverse`.
 *   `ordinal_types.js`: Defines `CNFOrdinal`, `EpsilonNaughtOrdinal`, `WTowerOrdinal`, `OperationTracer`, complexity `g(α)` methods, and simplification `simplify()` methods.
 *   `ordinal_comparison.js`: Implements `compareTo` methods for all ordinal types.
 *   `ordinal_auxiliary_ops.js`: Implements `exponentPredecessor`, `divideByOmega`, etc.
@@ -171,9 +178,9 @@ This web application provides a user-friendly interface to parse expressions rep
 *   `ordinal_parser.js`: Defines the `OrdinalParser` class.
 *   `ordinal_calculator.js`: Contains the `calculateOrdinalCNF` function.
 *   `ordinal_graphical_renderer.js`: Contains the `renderOrdinalGraphical` function.
-*   `ordinal_mapping.js`: Defines the `f(α)` ordinal-to-real mapping function.
-*   `ordinal_mapping_inverse.js`: Defines the `fInverse(x)` real-to-ordinal inverse mapping function, used for the interactive slider exploration and for internal testing.
-*   `ordinal_calculator_test.html`: Comprehensive test suite for JavaScript features, with an interactive UI to view all tests or only failures, and including round-trip consistency checks for `f(α)` and `fInverse(x)`.
+*   `ordinal_mapping.js`: Defines the `f(α)` ordinal-to-real mapping function and the `FParams` class.
+*   `ordinal_mapping_inverse.js`: Defines the `fInverse(x, params)` real-to-ordinal inverse mapping function.
+*   `ordinal_calculator_test.html`: Comprehensive test suite for JavaScript features, with an interactive UI to view all tests or only failures, and including round-trip consistency checks for `f(α)` and `fInverse(x)` using `DEFAULT_F_PARAMS`.
 *   `haskell_comparison_test.html` & `haskell_comparison_test.js`: (If Haskell Wasm comparison is set up) For comparing JS results against a Haskell implementation.
 *   `ordinal_haskell.wasm`: (If built) The Haskell Wasm module.
 *   `Ordinal.hs`: (If using Haskell) The Haskell source for ordinal arithmetic.

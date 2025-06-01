@@ -774,7 +774,7 @@
             addDetailElement(`Input Value: ${inputValue}`);
 
             try {
-                const rawResult = fInverse(inputValue, DEFAULT_F_PARAMS);
+                const rawResult = fInverse(inputValue, OLD_F_PARAMS);
                 actualOutput = formatFInverseOutput(rawResult);
 
                 if (expectError) {
@@ -1126,6 +1126,10 @@
             testFInverse('ω^(ω+1)', 3.064516129032258, 'w^(w+1)');
             testFInverse('10/3', 3.333333333333333, 'w^(w^2+w*3+1)+w^13*26');
             testFInverse('Arbitrary', 4.9216738286475129, 'w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w+1))*15+w^10*7+2))))))))))))))))))))))))))))))))))))))))))))))))');
+            testFInverse('w^^400', 4.99, 'w^^400');
+            testFInverse('w^^4000', 4.999, 'w^^4000');
+            testFInverse('w^^40000', 4.9999, 'w^^40000');
+            testFInverse('w^^444', 4.991, 'w^^444');
             testFInverse('ε₀', 5, 'e_0');
             testFInverse('Threshold test (just below 1)', 0.99999999999999, 'w'); // f(9) = 0.9. This test might need adjustment based on fInverse precision for values very close to 1.
             testFInverse('Threshold test (just above 1)', 1.00000000000001, 'w');
