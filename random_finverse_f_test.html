@@ -109,10 +109,18 @@
                         logMessage(`  Stack Trace:\n${error.stack}`, true);
                     }
                     logMessage(`-------------------------------------------------`, true);
+                    break; // Stop on first error
                 }
             }
-            summaryDiv.textContent = `Testing complete. Ran ${testsRun} tests. Errors found: ${errorsFound}.`;
-            logMessage(`Finished. Errors: ${errorsFound}.`);
+            // Update final summary based on whether errors were found
+            if (errorsFound > 0) {
+                summaryDiv.textContent = `Test STOPPED due to error. Attempted ${testsRun} of ${numberOfTests} tests. Errors found: ${errorsFound}.`;
+                logMessage(`Test HALTED after ${testsRun} tests due to an error.`, true);
+            } else {
+                // Ensure testsRun reflects the actual number of successfully completed tests, which should be numberOfTests if no errors.
+                summaryDiv.textContent = `All ${testsRun} tests completed successfully. Errors found: ${errorsFound}.`;
+                logMessage(`Finished. All ${testsRun} tests completed successfully.`);
+            }
         }
 
         runTestsButton.addEventListener('click', runRandomRoundtripTests);

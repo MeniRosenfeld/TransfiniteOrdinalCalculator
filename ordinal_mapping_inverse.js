@@ -88,6 +88,9 @@ function findRemainderHigher(x, k, m, params, threshold) {
         }
     }
     const fr = (x - fOmegaKM) * fOmegaK / denominator;
+    if (fr>=fOmegaK) {
+        return 0n;
+    }
 
     if (fr < threshold) {
         return 0n;
@@ -97,7 +100,14 @@ function findRemainderHigher(x, k, m, params, threshold) {
         const rAmplification = (Math.abs(denominator) > 1e-15) ? (fOmegaK / denominator) : 1; // Avoid division by zero if denom was small but not caught
         // Pass depth + 1 (assuming depth is available or managed by fInverse wrapper)
         // For now, fInverse will manage its own depth parameter starting from 0 for new calls.
-        return fInverse(fr, params, threshold * Math.max(1, rAmplification)); // Ensure amplification doesn't reduce threshold too much
+        const result = fInverse(fr, params, threshold * Math.max(1, rAmplification)); // Ensure amplification doesn't reduce threshold too much
+        if (result === "E0_TYPE") {
+            console.warn(`findRemainderHigher: fInverse returned E0_TYPE for fr=${fr}. This shouldn't be allowed. Returning 0n.`);
+            console.warn(`x=${x}. m=${m}. k=${convertFFormatToOrdinalInstance(k).toStringCNF()}.`);
+            return 0n;
+        } else {
+            return result;
+        }
     }
 }
 
@@ -192,6 +202,10 @@ function findOmegaPowerOrdinal(x, params, threshold, depth) {
         fk = (x - fOmegaJM_val) * fOmegaJ_val / (fOmegaJMPlus1_val - fOmegaJM_val);
     }
     
+    if (fk >= fOmegaJ_val) {
+        fk=0;
+    }
+
     if (fk < -threshold || fk > params.precomputed[5] + threshold) { 
         if (fk < 0 ) { 
             fk = 0;
@@ -256,7 +270,7 @@ function findHigherPowerOrdinal(x, params, threshold, depth) {
     };
 }
 
-function fInverse(x, params, threshold = 1e-14, depth = 0) {
+function fInverse(x, params=DEFAULT_F_PARAMS, threshold = 1e-14, depth = 0) {
     if (x < -threshold || x > params.precomputed[5] + threshold) { // Allow x to be slightly over 5 due to float precision
         throw new Error(`Input value ${x} is outside the valid range [0,5]`);
     }
@@ -388,6 +402,13 @@ function convertFFormatToOrdinalInstance(ord_representation, tracer) {
     console.error("Unknown ordinal format in convertFFormatToOrdinalInstance:", ord_representation);
     // Ensure a tracer is passed if an error leads to CNFOrdinal(0n) or similar fallback
     return new CNFOrdinal(0n, effectiveTracer); // Modified fallback to include tracer
+}
+
+function DisplayfInverse(x, params=DEFAULT_F_PARAMS, threshold = 1e-14, depth = 0) {
+    const result = fInverse(x, params, threshold, depth);
+    const ordinal = convertFFormatToOrdinalInstance(result);
+    const CNFString = ordinal.toStringCNF();
+    return CNFString;
 }
 
 // Test cases

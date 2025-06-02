@@ -247,7 +247,7 @@ function generateOrdinalMemoKey(val) {
     throw new Error(`Unsupported type for memo key generation: ${type}`);
 }
 
-function f(alphaRep, params) {
+function f(alphaRep, params=DEFAULT_F_PARAMS) {
     // Handle E0_TYPE first
     if (alphaRep === "E0_TYPE") {
         return params.precomputed[5]; // Value for f(ε₀) is determined by params
