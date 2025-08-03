@@ -1,13 +1,13 @@
 // ordinal_tetration.js
 
-// Assumes CNFOrdinal, EpsilonNaughtOrdinal, WTowerOrdinal classes and their helpers are defined.
+// Assumes CNFOrdinal, EpsilonOrdinal, WTowerOrdinal classes and their helpers are defined.
 // Assumes comparison, all arithmetic ops (add, multiply, power) are defined.
 
 /**
  * Tetrates this CNFOrdinal by another CNFOrdinal. ( α ↑↑ β )
  * This is the specific implementation for CNFOrdinal ↑↑ CNFOrdinal.
  */
-CNFOrdinal.prototype.tetrateCNF = function(heightCNF) {
+CNFOrdinal.prototype.tetrateCNF = function (heightCNF) {
     if (!(heightCNF instanceof CNFOrdinal)) {
         throw new Error("Height must be a CNFOrdinal for tetrateCNF.");
     }
@@ -82,7 +82,7 @@ CNFOrdinal.prototype.tetrateCNF = function(heightCNF) {
         const mMinus1 = new CNFOrdinal(m - 1n, this._tracer);
         if (this._tracer) this._tracer.consume(); // for the recursive tetrate call
         const tetratedHeightPart = base.tetrate(mMinus1); // Call general dispatcher
-        
+
         if (this._tracer) this._tracer.consume(); // for the power call
         return base.power(tetratedHeightPart); // Call general dispatcher
     }
@@ -96,64 +96,43 @@ CNFOrdinal.prototype.tetrateCNF = function(heightCNF) {
     // Rule 7: β is infinite (height_inf), α is infinite base
     if (!base.isFinite() && !height.isFinite()) {
         // Inf^^Inf = ε₀
-        return new EpsilonNaughtOrdinal(this._tracer);
+        const height_pred = height.exponentPredecessor();
+        if (height_pred) {
+            // This is complex. The rule a^^(b+1) = a^(a^^b) is the general case.
+            // For Inf^^Inf, it typically goes to the next fixed point.
+            // w^^w = e_0.  w^^(w+1) = w^(w^^w) = w^(e_0) = e_0.
+            // Heuristic: If height is a limit ordinal, result is e_0.
+            // A better rule would involve finding the fixed point.
+            // For now, Inf^^Inf -> e_0.
+        }
+        return EpsilonOrdinal.E_ZEROStatic().clone(this._tracer);
     }
 
     throw new Error(`Unhandled case in CNFOrdinal.tetrateCNF: base=${base.toStringCNF()}, height=${height.toStringCNF()}`);
 };
 
 /**
- * Tetrates this EpsilonNaughtOrdinal by another ordinal.
- * This is the specific implementation for e_0 ↑↑ other.
- */
-EpsilonNaughtOrdinal.prototype.tetrateE0 = function(heightOrdinal) {
-    if (this._tracer) this._tracer.consume();
-
-    if (heightOrdinal instanceof CNFOrdinal) {
-        if (heightOrdinal.isZero()) return CNFOrdinal.ONEStatic().clone(this._tracer); // e_0^^0 = 1
-        if (heightOrdinal.equals(CNFOrdinal.ONEStatic())) return this.clone(this._tracer); // e_0^^1 = e_0
-        // e_0^^X where X is CNF and not 0 or 1 is unsupported.
-        throw new Error(`Operation e_0 ^^ CNFOrdinal (${heightOrdinal.toStringCNF()}) is unsupported when CNFOrdinal is not 0 or 1.`);
-    }
-    if (heightOrdinal instanceof EpsilonNaughtOrdinal) {
-        // e_0^^e_0 is unsupported
-        throw new Error("Operation e_0 ^^ e_0 is unsupported.");
-    }
-    throw new Error("EpsilonNaughtOrdinal.tetrateE0: Cannot tetrate with unknown or unconverted ordinal type.");
-};
-
-/**
  * General ordinal tetration dispatcher.
  */
 function tetrateOrdinals(base, height) {
-    if (base instanceof WTowerOrdinal) base = base.toCNFOrdinal();
-    if (height instanceof WTowerOrdinal) height = height.toCNFOrdinal();
+    if (base._tracer) base._tracer.consume();
 
-    if (base instanceof CNFOrdinal) {
-        if (height instanceof CNFOrdinal) return base.tetrateCNF(height);
-        if (height instanceof EpsilonNaughtOrdinal) { // base_CNF ^^ e_0
-            if (base.isZero()) throw new Error("Operation 0 ^^ e_0 is undefined.");
-            if (base.equals(CNFOrdinal.ONEStatic())) return CNFOrdinal.ONEStatic().clone(base._tracer); // 1^^e_0 = 1
-            if (base.isFinite() && base.getFinitePart() > 1n) return CNFOrdinal.OMEGAStatic().clone(base._tracer); // m^^e_0 = w (for m finite > 1)
-            if (!base.isFinite()) return new EpsilonNaughtOrdinal(base._tracer); // a^^e_0 = e_0 (for a infinite CNF)
-        }
-    } else if (base instanceof EpsilonNaughtOrdinal) { // e_0 ^^ height
-        return base.tetrateE0(height);
-    }
-    throw new Error(`tetrateOrdinals: Unsupported ordinal types for tetration: ${base?.constructor?.name} and ${height?.constructor?.name}`);
+    // Convert all operands to CNFOrdinal to unify logic first.
+    const baseCNF = (base instanceof CNFOrdinal) ? base : new CNFOrdinal(base, base._tracer);
+    const heightCNF = (height instanceof CNFOrdinal) ? height : new CNFOrdinal(height, height._tracer);
+
+    return baseCNF.tetrateCNF(heightCNF);
 }
 
 // Public API for tetration on prototypes
-CNFOrdinal.prototype.tetrate = function(otherOrdinal) {
+CNFOrdinal.prototype.tetrate = function (otherOrdinal) {
     return tetrateOrdinals(this, otherOrdinal);
 };
-EpsilonNaughtOrdinal.prototype.tetrate = function(otherOrdinal) {
+EpsilonOrdinal.prototype.tetrate = function (otherOrdinal) {
     return tetrateOrdinals(this, otherOrdinal);
 };
 if (typeof WTowerOrdinal !== 'undefined') {
-    WTowerOrdinal.prototype.tetrate = function(otherOrdinal) {
+    WTowerOrdinal.prototype.tetrate = function (otherOrdinal) {
         return tetrateOrdinals(this, otherOrdinal);
     };
-}
-
-// ordinal_tetration.js 
+} 

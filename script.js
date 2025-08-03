@@ -2,7 +2,7 @@
 
 // Assumes calculateOrdinalCNF (from ordinal_calculator.js) and
 // renderOrdinalGraphical (from ordinal_graphical_renderer.js) are globally available.
-// Assumes CNFOrdinal, EpsilonNaughtOrdinal, WTowerOrdinal, and OperationTracer (from ordinal_types.js) are available.
+// Assumes CNFOrdinal, EpsilonOrdinal, WTowerOrdinal, and OperationTracer (from ordinal_types.js) are available.
 // Assumes f, ORDINAL_ZERO, and convertOrdinalInstanceToFFormat (from ordinal_mapping.js) are globally available.
 // Assumes fInverse and convertFFormatToOrdinalInstance (from ordinal_mapping_inverse.js) are globally available.
 
@@ -27,26 +27,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Tooltip logic
     const tooltipTrigger = document.querySelector('.tooltip-trigger');
-    console.log('Tooltip Trigger Element:', tooltipTrigger); 
-    let customTooltipElement = null; 
+    console.log('Tooltip Trigger Element:', tooltipTrigger);
+    let customTooltipElement = null;
 
     if (tooltipTrigger) {
-        console.log('Tooltip trigger found. Attaching listeners.'); 
+        console.log('Tooltip trigger found. Attaching listeners.');
         const tooltipText = tooltipTrigger.getAttribute('data-tooltip');
-        console.log('Tooltip text from data-attribute:', tooltipText); 
+        console.log('Tooltip text from data-attribute:', tooltipText);
 
         tooltipTrigger.addEventListener('mouseover', (event) => {
-            console.log('Mouseover event fired.'); 
+            console.log('Mouseover event fired.');
             if (!tooltipText) {
-                console.log('No tooltip text, exiting mouseover.'); 
+                console.log('No tooltip text, exiting mouseover.');
                 return;
             }
 
             if (!customTooltipElement) {
                 customTooltipElement = document.createElement('div');
                 // Apply class FIRST, then set content, then append
-                customTooltipElement.className = 'custom-tooltip'; 
-                customTooltipElement.textContent = tooltipText; 
+                customTooltipElement.className = 'custom-tooltip';
+                customTooltipElement.textContent = tooltipText;
                 document.body.appendChild(customTooltipElement);
                 console.log('Custom tooltip element CREATED, class set, content set, and appended.');
             } else {
@@ -54,15 +54,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 customTooltipElement.className = 'custom-tooltip'; // Ensure class is still there
                 console.log('Custom tooltip element REUSED, content set, class ensured.');
             }
-            
+
             // Ensure it's part of the layout flow but invisible for measurement
             customTooltipElement.style.visibility = 'hidden'; // Use hidden, not 'visible' with opacity 0 yet
             customTooltipElement.style.opacity = '0';
             customTooltipElement.style.position = 'absolute'; // Make sure position is absolute for offsetWidth to work correctly for non-static elements
-            customTooltipElement.style.left = '-9999px'; 
+            customTooltipElement.style.left = '-9999px';
             customTooltipElement.style.top = '-9999px';
             // Explicitly set the width via JS to see if it helps the measurement
-            customTooltipElement.style.width = '250px'; 
+            customTooltipElement.style.width = '250px';
             console.log('Tooltip prepped for measurement: JS width set to 250px, class applied.');
 
 
@@ -71,7 +71,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Read dimensions *after* being in DOM and styled (hopefully)
                 const tooltipWidth = customTooltipElement.offsetWidth;
                 const tooltipHeight = customTooltipElement.offsetHeight;
-                
+
                 console.log('--- Inside requestAnimationFrame ---');
                 console.log('Trigger rect:', JSON.stringify(rect));
                 console.log('Tooltip measured: width=', tooltipWidth, 'height=', tooltipHeight);
@@ -109,7 +109,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 customTooltipElement.style.visibility = 'visible';
                 customTooltipElement.style.opacity = '1';
                 customTooltipElement.classList.add('show'); // If you use the .show class for transitions
-                
+
                 console.log('Tooltip positioned: left=', customTooltipElement.style.left, 'top=', customTooltipElement.style.top);
                 console.log('Tooltip final state: visibility=', getComputedStyle(customTooltipElement).visibility, 'opacity=', getComputedStyle(customTooltipElement).opacity);
                 console.log('--- Exiting requestAnimationFrame ---');
@@ -154,35 +154,35 @@ document.addEventListener('DOMContentLoaded', () => {
         linearResultTextElement.textContent = placeholderText;
         linearResultTextElement.className = 'value placeholder-text';
         graphicalResultArea.innerHTML = `<span class="placeholder-text">${placeholderText}</span>`;
-        if (mappedValueTextElement) { 
+        if (mappedValueTextElement) {
             mappedValueTextElement.textContent = placeholderText;
             mappedValueTextElement.className = 'value placeholder-text';
         }
         if (mappedValueSliderElement) {
             mappedValueSliderElement.value = 0;
         }
-        errorMessageArea.textContent = ''; 
+        errorMessageArea.textContent = '';
         errorMessageArea.style.display = 'none';
 
         if (inputString.trim() === "") {
-             if (document.activeElement === calculateButton || (event && event.type === 'keypress')) {
-                 errorMessageArea.textContent = "Please enter an expression.";
-                 errorMessageArea.style.display = 'block';
-                 return;
-             }
+            if (document.activeElement === calculateButton || (event && event.type === 'keypress')) {
+                errorMessageArea.textContent = "Please enter an expression.";
+                errorMessageArea.style.display = 'block';
+                return;
+            }
         }
 
-        let resultFromCalc; 
+        let resultFromCalc;
         try {
             // const tempTracer = new OperationTracer(10000000); // REMOVE THIS LINE
-            
+
             // Pass the budget number directly
             resultFromCalc = calculateOrdinalCNF(inputString, 10000000); // PASS BUDGET NUMBER
 
             if (resultFromCalc.error) {
-                throw new Error(resultFromCalc.error); 
+                throw new Error(resultFromCalc.error);
             }
-            
+
             const originalOrdinalResultObject = resultFromCalc.ordinalObject;
             // const cnfString = resultFromCalc.cnfString; // Original CNF string, not used directly for display anymore
 
@@ -197,17 +197,17 @@ document.addEventListener('DOMContentLoaded', () => {
             if (originalOrdinalResultObject && typeof originalOrdinalResultObject.simplify === 'function') {
                 try {
                     originalComplexity = originalOrdinalResultObject.complexity();
-                    const simplifyResult = originalOrdinalResultObject.simplify(complexityBudget, false); 
+                    const simplifyResult = originalOrdinalResultObject.simplify(complexityBudget, false);
                     simplifiedOrdinalObject = simplifyResult.simplifiedOrdinal;
                     // remainingBudget = simplifyResult.remainingBudget; // Store if needed elsewhere
                     simplifiedComplexity = simplifiedOrdinalObject.complexity();
 
                     if (!originalOrdinalResultObject.equals(simplifiedOrdinalObject)) {
                         // Format: "Displayed complexity: G_simp / G_orig"
-                        simplificationMessage = `(Displayed complexity: ${simplifiedComplexity} / ${originalComplexity})`; 
+                        simplificationMessage = `(Displayed complexity: ${simplifiedComplexity} / ${originalComplexity})`;
                     } else {
-                        // No simplification message if they are equal.
-                        simplificationMessage = ""; 
+                        // Always show complexity, even if not simplified.
+                        simplificationMessage = `(Complexity: ${originalComplexity})`;
                     }
                 } catch (simplifyError) {
                     console.error("Error during simplification:", simplifyError);
@@ -221,7 +221,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const displayCnfString = displayOrdinalObject.toStringCNF();
 
             // Update linear and graphical results with the (potentially) simplified ordinal
-            linearResultTextElement.textContent = displayCnfString; 
+            linearResultTextElement.textContent = displayCnfString;
             linearResultTextElement.classList.remove('placeholder-text');
 
             graphicalResultArea.innerHTML = renderOrdinalGraphical(displayOrdinalObject);
@@ -235,26 +235,26 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             // --- Calculate and Display f(α) for the ORIGINAL ordinal FIRST ---
-            if (mappedValueTextElement && originalOrdinalResultObject) { 
+            if (mappedValueTextElement && originalOrdinalResultObject) {
                 console.log("[fCalc] originalOrdinalResultObject type:", originalOrdinalResultObject.constructor.name);
                 try {
                     console.log("[fCalc] Calling convertOrdinalInstanceToFFormat with:", originalOrdinalResultObject);
                     const fFormattedOrdinal = convertOrdinalInstanceToFFormat(originalOrdinalResultObject);
                     console.log("[fCalc] convertOrdinalInstanceToFFormat returned:", fFormattedOrdinal);
-                    
+
                     console.log("[fCalc] Calling f with:", fFormattedOrdinal, "and params:", DEFAULT_F_PARAMS);
-                    const mappedValue = f(fFormattedOrdinal, DEFAULT_F_PARAMS); 
+                    const mappedValue = f(fFormattedOrdinal, DEFAULT_F_PARAMS);
                     console.log("[fCalc] f returned mappedValue:", mappedValue, "(type:", typeof mappedValue, ")");
 
                     if (typeof mappedValue === 'number' && !isNaN(mappedValue)) {
                         mappedValueTextElement.textContent = mappedValue.toString();
-                        if (mappedValueSliderElement) { 
+                        if (mappedValueSliderElement) {
                             mappedValueSliderElement.value = mappedValue;
                         }
                     } else {
                         console.warn("[fCalc] mappedValue is not a valid number. Value:", mappedValue);
                         mappedValueTextElement.textContent = "Invalid f(α)"; // More explicit error
-                         if (mappedValueSliderElement) { 
+                        if (mappedValueSliderElement) {
                             mappedValueSliderElement.value = 0;
                         }
                     }
@@ -262,8 +262,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 } catch (mapErr) {
                     console.error("[fCalc] Error calculating mapped value f(α):", mapErr.message, mapErr.stack);
                     mappedValueTextElement.textContent = "f(α) Error!"; // More explicit error
-                    mappedValueTextElement.classList.add('placeholder-text'); 
-                    if (mappedValueSliderElement) { 
+                    mappedValueTextElement.classList.add('placeholder-text');
+                    if (mappedValueSliderElement) {
                         mappedValueSliderElement.value = 0;
                     }
                 }
@@ -317,11 +317,11 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         // Process URL parameters only if input element exists
-        processUrlParameters(); 
+        processUrlParameters();
     }
 
     if (copyTextBtn && linearResultTextElement) {
-        copyTextBtn.addEventListener('click', function() {
+        copyTextBtn.addEventListener('click', function () {
             const textToCopy = linearResultTextElement.textContent;
             if (textToCopy && textToCopy !== placeholderText && linearResultTextElement.classList.contains('placeholder-text') === false) { // Check it's not placeholder
                 if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -348,23 +348,23 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (copyImageBtn && graphicalResultArea) {
-        copyImageBtn.addEventListener('click', function() {
-            if (graphicalResultArea.childElementCount === 0 || 
+        copyImageBtn.addEventListener('click', function () {
+            if (graphicalResultArea.childElementCount === 0 ||
                 (graphicalResultArea.firstElementChild && graphicalResultArea.firstElementChild.classList.contains('placeholder-text'))) {
                 alert("Nothing to copy as image yet.");
                 return;
             }
-    
+
             if (typeof html2canvas === 'undefined') {
                 alert("Error: html2canvas library is not loaded. Cannot copy as image.");
                 return;
             }
-    
+
             html2canvas(graphicalResultArea, {
-                backgroundColor: '#FFFFFF', 
-                scale: 2 
+                backgroundColor: '#FFFFFF',
+                scale: 2
             }).then(canvas => {
-                canvas.toBlob(function(blob) {
+                canvas.toBlob(function (blob) {
                     if (!blob) {
                         alert("Error creating image blob.");
                         return;
@@ -405,20 +405,20 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!ordinalInputElement) return;
 
         const urlParams = new URLSearchParams(window.location.search);
-        const ordinalExpression = urlParams.get('expr'); 
+        const ordinalExpression = urlParams.get('expr');
 
-        if (ordinalExpression !== null) { 
+        if (ordinalExpression !== null) {
             ordinalInputElement.value = ordinalExpression;
-            calculateAndDisplay(); 
+            calculateAndDisplay();
         }
     }
 
     if (shareUrlButton && ordinalInputElement) {
-        const originalShareButtonText = shareUrlButton.textContent; 
-        shareUrlButton.addEventListener('click', function() {
+        const originalShareButtonText = shareUrlButton.textContent;
+        shareUrlButton.addEventListener('click', function () {
             const currentExpression = ordinalInputElement.value;
             if (currentExpression.trim() === "") {
-                alert("Please enter an ordinal expression first to share."); 
+                alert("Please enter an ordinal expression first to share.");
                 return;
             }
 
@@ -428,12 +428,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (navigator.clipboard && navigator.clipboard.writeText) {
                 navigator.clipboard.writeText(shareableUrl).then(() => {
-                    shareUrlButton.textContent = 'Link Copied!'; 
-                    shareUrlButton.classList.add('success'); 
-                    setTimeout(() => { 
-                        shareUrlButton.textContent = originalShareButtonText; 
-                        shareUrlButton.classList.remove('success'); 
-                    }, 2000); 
+                    shareUrlButton.textContent = 'Link Copied!';
+                    shareUrlButton.classList.add('success');
+                    setTimeout(() => {
+                        shareUrlButton.textContent = originalShareButtonText;
+                        shareUrlButton.classList.remove('success');
+                    }, 2000);
                 }).catch(err => {
                     console.error('Failed to copy shareable link: ', err);
                     prompt("Copy to clipboard failed. Please copy this link manually:", shareableUrl);
@@ -448,12 +448,12 @@ document.addEventListener('DOMContentLoaded', () => {
     if (nudgeControlElement && mappedValueSliderElement) {
         let isNudging = false;
         let nudgeStartX = 0;
-        let currentNudgeRate = 0; 
+        let currentNudgeRate = 0;
         let animationFrameId = null;
         let lastNudgeTimestamp = 0;
         let currentTargetSliderValue = 0; // Internal target value, accumulates fine changes
 
-        const nudgeRateSensitivityPixels = 1000; 
+        const nudgeRateSensitivityPixels = 1000;
 
         function updateSliderContinuous() {
             if (!isNudging && currentNudgeRate === 0) {
@@ -474,7 +474,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const max = parseFloat(mappedValueSliderElement.max);
                 if (currentTargetSliderValue < min) currentTargetSliderValue = min;
                 if (currentTargetSliderValue > max) currentTargetSliderValue = max;
-                
+
                 // Set the slider's value to the precise target. 
                 // The slider's own 'input' event listener will then process this, call fInverse,
                 // get an ordinal, and then update the slider to f(ordinal), causing the snap.
@@ -482,9 +482,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 const inputEvent = new Event('input', { bubbles: true });
                 mappedValueSliderElement.dispatchEvent(inputEvent);
             }
-            
+
             if (isNudging) { // Continue animation only if actively nudging
-                 animationFrameId = requestAnimationFrame(updateSliderContinuous);
+                animationFrameId = requestAnimationFrame(updateSliderContinuous);
             } else {
                 if (animationFrameId) cancelAnimationFrame(animationFrameId);
                 animationFrameId = null;
@@ -495,7 +495,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const onMouseMoveNudge = (event) => {
             if (!isNudging) return;
             const deltaX = event.clientX - nudgeStartX;
-            currentNudgeRate = deltaX / nudgeRateSensitivityPixels; 
+            currentNudgeRate = deltaX / nudgeRateSensitivityPixels;
         };
 
         const onMouseUpNudge = () => {
@@ -516,7 +516,7 @@ document.addEventListener('DOMContentLoaded', () => {
             isNudging = true;
             nudgeStartX = event.clientX;
             currentTargetSliderValue = parseFloat(mappedValueSliderElement.value); // Initialize target from current slider
-            currentNudgeRate = 0; 
+            currentNudgeRate = 0;
             lastNudgeTimestamp = performance.now();
             event.preventDefault();
 
@@ -531,7 +531,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Event listener for the main slider (to call fInverse etc.)
     if (mappedValueSliderElement && ordinalInputElement && typeof fInverse === 'function' && typeof convertFFormatToOrdinalInstance === 'function') {
-        mappedValueSliderElement.addEventListener('input', function() {
+        mappedValueSliderElement.addEventListener('input', function () {
             const sliderValue = parseFloat(this.value);
             if (isNaN(sliderValue)) return;
 
@@ -539,7 +539,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             try {
                 console.log("[fInverseCalc] Calling fInverse with sliderValue:", sliderValue, "and params:", DEFAULT_F_PARAMS);
-                const ordinalRepFromInverse = fInverse(sliderValue, DEFAULT_F_PARAMS); 
+                const ordinalRepFromInverse = fInverse(sliderValue, DEFAULT_F_PARAMS);
                 console.log("[fInverseCalc] fInverse returned:", ordinalRepFromInverse);
 
                 const ordinalInstanceFromInverse = convertFFormatToOrdinalInstance(ordinalRepFromInverse, new OperationTracer(10000)); // Use a fresh tracer

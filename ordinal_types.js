@@ -1,17 +1,27 @@
 // ordinal_types.js
 
 /**
+ * A helper function to check if an object is a valid Ordinal instance.
+ * @param {any} obj The object to check.
+ * @returns {boolean}
+ */
+function isOrdinal(obj) {
+    return obj instanceof CNFOrdinal || obj instanceof EpsilonOrdinal || obj instanceof WTowerOrdinal;
+}
+
+
+/**
  * Represents an Ordinal number in Cantor Normal Form (CNF).
  * CNF: w^a1*c1 + w^a2*c2 + ... + w^ak*ck + n
  * where a1 > a2 > ... > ak > 0 are ordinals, and c_i, n are positive integers.
  * Internally, terms are stored as:
- * [{ exponent: CNFOrdinal, coefficient: number }, ...]
+ * [{ exponent: CNFOrdinal | EpsilonOrdinal, coefficient: BigInt }, ...]
  * The finite part 'n' is represented as a term with exponent CNFOrdinal.ZERO.
  */
 class CNFOrdinal {
-    // terms: Array of { exponent: CNFOrdinal, coefficient: BigInt }
+    // terms: Array of { exponent: CNFOrdinal | EpsilonOrdinal, coefficient: BigInt }
     // Sorted by exponent descending. Coefficients are positive BigInts.
-    constructor(initVal, operationTracer = null) { // Added operationTracer
+    constructor(initVal, operationTracer = null) {
         this.terms = [];
         this._tracer = operationTracer; // For operation counting
 
@@ -43,18 +53,30 @@ class CNFOrdinal {
         } else if (Array.isArray(initVal)) {
             // Assumes initVal is an array of term objects, used internally by operations
             this.terms = initVal.map(t => {
-                if (!(t.exponent instanceof CNFOrdinal) || typeof t.coefficient !== 'bigint' || t.coefficient <= 0n) {
-                    throw new Error('Invalid term structure in CNFOrdinal constructor. Exponent must be CNFOrdinal. Coefficient must be a positive BigInt.');
+                if (!isOrdinal(t.exponent) || typeof t.coefficient !== 'bigint' || t.coefficient <= 0n) {
+                    throw new Error('Invalid term structure in CNFOrdinal constructor. Exponent must be an Ordinal. Coefficient must be a positive BigInt.');
                 }
                 return { exponent: t.exponent.clone(this._tracer), coefficient: t.coefficient };
             });
             this._normalize();
-        } else if (initVal instanceof CNFOrdinal) { // Constructor from another CNFOrdinal (clone)
-            this.terms = initVal.terms.map(t => ({
-                exponent: t.exponent.clone(this._tracer), // Deep clone exponents
-                coefficient: t.coefficient // coefficient is already a BigInt
-            }));
+        } else if (isOrdinal(initVal)) { // Constructor from another Ordinal instance (clone)
             this._tracer = initVal._tracer; // Share tracer on clone
+            if (initVal instanceof CNFOrdinal) {
+                this.terms = initVal.terms.map(t => ({
+                    exponent: t.exponent.clone(this._tracer), // Deep clone exponents
+                    coefficient: t.coefficient
+                }));
+            } else if (initVal instanceof EpsilonOrdinal) {
+                // This converts an EpsilonOrdinal into a CNF representation of w^(that epsilon).
+                // This is a crucial step for operations like w^(e_k).
+                this.terms.push({ exponent: initVal.clone(this._tracer), coefficient: 1n });
+            } else if (initVal instanceof WTowerOrdinal) {
+                // If cloning from a WTower, convert it to CNF first.
+                const cnf = initVal.toCNFOrdinal();
+                this.terms = cnf.terms;
+            } else {
+                throw new Error(`Invalid Ordinal type for CNFOrdinal cloning: ${initVal.constructor.name}`);
+            }
         } else {
             throw new Error(`Invalid CNFOrdinal constructor argument: ${initVal}`);
         }
@@ -69,24 +91,24 @@ class CNFOrdinal {
 
         // Sort terms by exponent (descending)
         if (typeof this.compareTo === 'function') {
-             this.terms.sort((a, b) => b.exponent.compareTo(a.exponent));
+            this.terms.sort((a, b) => b.exponent.compareTo(a.exponent));
         } else {
-            // console.warn("_normalize called before compareTo is fully available. Sorting might be partial.");
-            this.terms.sort((a,b) => {
+            // Basic sort for bootstrap before compareTo is available.
+            this.terms.sort((a, b) => {
                 if (a.exponent.isZero() && !b.exponent.isZero()) return 1;
                 if (!a.exponent.isZero() && b.exponent.isZero()) return -1;
-                return 0; 
+                return 0;
             });
         }
 
         if (this.terms.length > 1) {
             const newTerms = [];
-            let currentTerm = { ...this.terms[0] }; 
-            currentTerm.exponent = this.terms[0].exponent.clone(this._tracer); 
+            let currentTerm = { ...this.terms[0] };
+            currentTerm.exponent = this.terms[0].exponent.clone(this._tracer);
 
             for (let i = 1; i < this.terms.length; i++) {
                 if (this.terms[i].exponent.equals(currentTerm.exponent)) {
-                    currentTerm.coefficient += this.terms[i].coefficient; 
+                    currentTerm.coefficient += this.terms[i].coefficient;
                 } else {
                     if (currentTerm.coefficient > 0n) newTerms.push(currentTerm);
                     currentTerm = { ...this.terms[i] };
@@ -97,11 +119,11 @@ class CNFOrdinal {
             this.terms = newTerms;
         }
     }
-    
+
     static _ZERO_INSTANCE = null;
     static ZEROStatic() {
         if (!CNFOrdinal._ZERO_INSTANCE) {
-            CNFOrdinal._ZERO_INSTANCE = new CNFOrdinal(); 
+            CNFOrdinal._ZERO_INSTANCE = new CNFOrdinal();
         }
         return CNFOrdinal._ZERO_INSTANCE;
     }
@@ -109,7 +131,7 @@ class CNFOrdinal {
     static _ONE_INSTANCE = null;
     static ONEStatic() {
         if (!CNFOrdinal._ONE_INSTANCE) {
-            const one = new CNFOrdinal(undefined, null); 
+            const one = new CNFOrdinal(undefined, null);
             one.terms.push({ exponent: CNFOrdinal.ZEROStatic(), coefficient: 1n });
             CNFOrdinal._ONE_INSTANCE = one;
         }
@@ -119,14 +141,14 @@ class CNFOrdinal {
     static _OMEGA_INSTANCE = null;
     static OMEGAStatic() {
         if (!CNFOrdinal._OMEGA_INSTANCE) {
-            const omega = new CNFOrdinal(undefined, null); 
+            const omega = new CNFOrdinal(undefined, null);
             omega.terms.push({ exponent: CNFOrdinal.ONEStatic(), coefficient: 1n });
             CNFOrdinal._OMEGA_INSTANCE = omega;
         }
         return CNFOrdinal._OMEGA_INSTANCE;
     }
-    
-    static get ZERO() { return CNFOrdinal.ZEROStatic().clone(); } 
+
+    static get ZERO() { return CNFOrdinal.ZEROStatic().clone(); }
     static get ONE() { return CNFOrdinal.ONEStatic().clone(); }
     static get OMEGA() { return CNFOrdinal.OMEGAStatic().clone(); }
 
@@ -145,37 +167,46 @@ class CNFOrdinal {
     }
 
     isLimitOrdinal() {
-        if (this.isZero()) return false; 
+        if (this.isZero()) return false;
         if (this.isFinite()) return false;
         const lastTerm = this.terms[this.terms.length - 1];
-        return !lastTerm.exponent.isZero(); 
-    }
-    
-    isOmega() {
-        return this.terms.length === 1 &&
-               this.terms[0].coefficient === 1n &&
-               this.terms[0].exponent.equals(CNFOrdinal.ONEStatic());
+        return !lastTerm.exponent.isZero();
     }
 
-    isOmegaPower() { 
+    isOmega() {
+        return this.terms.length === 1 &&
+            this.terms[0].coefficient === 1n &&
+            this.terms[0].exponent.equals(CNFOrdinal.ONEStatic());
+    }
+
+    isOmegaPower() {
         if (this.isZero() || this.isFinite()) return false;
         return this.terms.length === 1 && this.terms[0].coefficient === 1n && !this.terms[0].exponent.isZero();
     }
 
+    isEpsilonNumber() {
+        if (this.isZero() || this.isFinite()) return false;
+        // An epsilon number has the form w^a where a is the epsilon number itself.
+        if (this.terms.length === 1 && this.terms[0].coefficient === 1n) {
+            return this.terms[0].exponent.equals(this);
+        }
+        return false;
+    }
+
 
     getFinitePart() {
-        if (this.isZero()) return 0n; 
+        if (this.isZero()) return 0n;
         const lastTerm = this.terms[this.terms.length - 1];
         if (lastTerm.exponent.isZero()) {
-            return lastTerm.coefficient; 
+            return lastTerm.coefficient;
         }
-        return 0n; 
+        return 0n;
     }
 
     getLimitPart() {
         if (this.isFinite()) return new CNFOrdinal(0, this._tracer);
         const limitTerms = this.terms.filter(term => !term.exponent.isZero());
-        return new CNFOrdinal(limitTerms, this._tracer); 
+        return new CNFOrdinal(limitTerms, this._tracer);
     }
 
     getLeadingTerm() {
@@ -188,36 +219,71 @@ class CNFOrdinal {
 
     getRest() {
         if (this.terms.length <= 1) return new CNFOrdinal(0, this._tracer);
-        return new CNFOrdinal(this.terms.slice(1), this._tracer); 
+        return new CNFOrdinal(this.terms.slice(1), this._tracer);
     }
 
     toStringCNF() {
         if (this.isZero()) return "0";
+
         return this.terms.map(term => {
-            const coeff = term.coefficient; 
+            const coeff = term.coefficient;
             const exp = term.exponent;
 
-            if (exp.isZero()) return coeff.toString(); 
+            if (exp.isZero()) return coeff.toString();
 
             let expStr;
             if (exp.equals(CNFOrdinal.ONEStatic())) {
                 expStr = "w";
-            } else { 
+            } else {
                 const expCNF = exp.toStringCNF();
-                if (exp.terms.length > 1 || (exp.terms.length === 1 && !exp.terms[0].exponent.isZero() && !exp.isOmega())) {
-                     expStr = `w^(${expCNF})`;
+                // Parenthesize if the exponent is "complex" (not a simple number or w)
+                let needsParen = false;
+                if (exp instanceof CNFOrdinal) {
+                    // An exponent needs parentheses if it's not a single term
+                    // that is just a finite number or just 'w'.
+                    if (!exp.isFinite() && !exp.isOmega()) {
+                        needsParen = true;
+                    }
+                } else if (exp instanceof EpsilonOrdinal) {
+                    // e.g. e_(w+1) needs parentheses
+                    const index = exp.index;
+                    if (index instanceof CNFOrdinal && index.terms.length > 1) {
+                        needsParen = true;
+                    }
+                }
+
+                if (needsParen) {
+                    expStr = `w^(${expCNF})`;
                 } else {
                     expStr = `w^${expCNF}`;
                 }
             }
 
-            if (coeff === 1n) return expStr; 
-            return `${expStr}*${coeff.toString()}`; 
+            if (coeff === 1n) return expStr;
+            return `${expStr}*${coeff.toString()}`;
         }).join("+");
     }
 
     equals(otherOrdinal) {
+        if (!isOrdinal(otherOrdinal)) return false;
+
+        // The order of comparison matters to avoid infinite loops.
+        // CNFOrdinal has the primary responsibility for checking if it's a representation of another type.
+
+        // Is this CNF object representing w^A equal to an EpsilonOrdinal A?
+        if (otherOrdinal instanceof EpsilonOrdinal) {
+            return this.terms.length === 1 &&
+                this.terms[0].coefficient === 1n &&
+                this.terms[0].exponent.equals(otherOrdinal);
+        }
+
+        // Is this CNF object equal to a WTowerOrdinal? Let the tower handle it.
+        if (otherOrdinal instanceof WTowerOrdinal) {
+            return otherOrdinal.equals(this);
+        }
+
         if (!(otherOrdinal instanceof CNFOrdinal)) return false;
+
         if (this.terms.length !== otherOrdinal.terms.length) return false;
         for (let i = 0; i < this.terms.length; i++) {
             if (this.terms[i].coefficient !== otherOrdinal.terms[i].coefficient ||
@@ -230,93 +296,69 @@ class CNFOrdinal {
 
     clone(tracer = null) {
         const effectiveTracer = tracer !== null ? tracer : this._tracer;
-        const clonedOrdinal = new CNFOrdinal(undefined, effectiveTracer);
-        clonedOrdinal.terms = this.terms.map(t => ({
-            exponent: t.exponent.clone(effectiveTracer), 
-            coefficient: t.coefficient
-        }));
-        return clonedOrdinal;
+        return new CNFOrdinal(this, effectiveTracer);
     }
 
-    // compareTo will be defined on CNFOrdinal.prototype in ordinal_comparison.js
-    // add, multiply, power, tetrate will be defined on its prototype in their respective files.
-
-    /**
-     * Calculates the complexity of the CNFOrdinal based on a defined set of rules.
-     * g(n) = number of decimal digits in n
-     * g(w) = 1
-     * g(w*m) = g(m)+2
-     * g(w^a) = g(a)+4  (where a is not 0 or 1, and not part of w*m)
-     * g(w^a*m) = g(a)+g(m)+5 (where a is not 0 or 1, and not part of w*m)
-     * g(x+y) = g(x)+g(y)+1
-     * @returns {number} The calculated complexity.
-     */
     complexity() {
-        if (this._tracer) this._tracer.consume(); // Count as an operation
+        if (this._tracer) this._tracer.consume();
 
-        if (this.isZero()) {
-            return 0; // g(0) - Now defined as 0
-        }
+        if (this.isZero()) return 0;
 
         if (this.isFinite()) {
-            const n_str = this.terms[0].coefficient.toString();
-            return n_str.length; // g(n) = number of decimal digits
+            return this.terms[0].coefficient.toString().length;
         }
 
-        // Specific rules for single term ordinals take precedence
+        // Handle single-term ordinals first, as per README rules.
         if (this.terms.length === 1) {
             const term = this.terms[0];
-            const exponent = term.exponent; // This is a CNFOrdinal instance
+            const exponent = term.exponent;
             const coefficient = term.coefficient;
 
-            // g(w) = 1
-            if (this.isOmega()) { // Checks if this ordinal is precisely w^1*1
+            // Check for canonical equivalence to the exponent, e.g., w^e_k === e_k
+            if (coefficient === 1n) {
+                if (this.equals(exponent)) {
+                    return exponent.complexity();
+                }
+            }
+
+            // Rule g(w) = 1
+            if (this.isOmega()) {
                 return 1;
             }
-
-            // g(w*m) = g(m)+2 
-            // (this is w^1*m where m > 1)
-            if (exponent.equals(CNFOrdinal.ONEStatic()) && coefficient > 1n) {
-                const m_complexity = coefficient.toString().length;
-                return m_complexity + 2;
+            // Rule g(w*m) = g(m)+2
+            if (exponent.equals(CNFOrdinal.ONEStatic())) {
+                return coefficient.toString().length + 2;
             }
-            
-            // g(w^a*m) or g(w^a) where a is not 0 or 1.
-            // The checks for isOmega and (exponent.isOne() && coeff > 1n) cover a=1 cases.
-            // If exponent is zero, it's finite (handled above).
-            if (!exponent.isZero() && !exponent.equals(CNFOrdinal.ONEStatic())) {
-                const a_complexity = exponent.complexity(); // g(a)
-                if (coefficient === 1n) { // g(w^a) = g(a)+4
-                    return a_complexity + 4;
-                }
-                // g(w^a*m) = g(a)+g(m)+5 (m > 1)
-                const m_complexity = coefficient.toString().length;
-                return a_complexity + m_complexity + 5;
+            // Rule g(w^a) = g(a)+4
+            if (coefficient === 1n) {
+                return exponent.complexity() + 4;
             }
-            // Fallback for any single term not caught above (should ideally not happen if rules are comprehensive)
-            // For example, if it was w^0*m (a finite number), it's caught by isFinite().
-            // If it was w^1*1 (i.e. w), it's caught by isOmega().
-            // If it was w^1*m (m>1), it's caught by the g(w*m) rule.
+            // Rule g(w^a*m) = g(a)+g(m)+5
+            return exponent.complexity() + coefficient.toString().length + 5;
         }
 
-        // General sum: g(x+y) = g(x)+g(y)+1. Applied iteratively.
-        // The CNF is t1 + t2 + ... + tk
+        // General sum rule: g(x+y) = g(x)+g(y)+1
         let totalComplexity = 0;
-        for (let i = 0; i < this.terms.length; i++) {
-            // Create a temporary CNFOrdinal for each term to get its individual complexity
-            // This ensures the single-term rules (g(w), g(w*m), g(w^a), g(w^a*m)) are applied to each term.
-            const singleTermOrdinal = new CNFOrdinal([this.terms[i]], this._tracer);
-            totalComplexity += singleTermOrdinal.complexity(); 
+        for (const term of this.terms) {
+            const singleTermOrdinal = new CNFOrdinal([term], this._tracer);
+            totalComplexity += singleTermOrdinal.complexity();
         }
-        
-        if (this.terms.length > 1) {
-            totalComplexity += (this.terms.length - 1); // Add 1 for each '+' sign
-        }
-        
+        totalComplexity += (this.terms.length - 1); // Add 1 for each '+'
+
         return totalComplexity;
     }
 
     simplify(complexityBudget, skipMyOwnMPTFCheck = false) {
+        // First, check for canonical representation. If this is w^A and is equal to A,
+        // we should be working with A.
+        if (this.terms.length === 1 && this.terms[0].coefficient === 1n) {
+            const exponent = this.terms[0].exponent;
+            if (this.equals(exponent)) {
+                // We are w^A and we are equal to A. Simplify A instead.
+                return exponent.simplify(complexityBudget, skipMyOwnMPTFCheck);
+            }
+        }
+
         if (this._tracer) this._tracer.consume(); // For the simplify call itself
 
         // --- Top-Level MPT Fallback Check (only if not skipping) ---
@@ -324,10 +366,10 @@ class CNFOrdinal {
             if (!this.isZero() && !this.isFinite()) { // Only relevant for infinite ordinals
                 const E_this = this.terms[0].exponent; // Consider leading exponent for the MPT structure of 'this'
                 // const C_this_leading = this.terms[0].coefficient; // Coefficient not directly used in g(w^(mpt_of_E_this)) check
-                
+
                 const towerInfo_this = getTowerInfo(E_this, this._tracer);
                 let mptStructureOfThis_expPart;
-                if (E_this.isZero()) { 
+                if (E_this.isZero()) {
                     mptStructureOfThis_expPart = CNFOrdinal.ZEROStatic().clone(this._tracer);
                 } else {
                     mptStructureOfThis_expPart = towerInfo_this.mptOrdinalForG;
@@ -400,15 +442,15 @@ class CNFOrdinal {
                 // Determine cost of operator before simplifying the term
                 let operatorCost = 0;
                 if (!simplifiedAccumulator.isZero()) { // If accumulator is not empty, a '+' will be needed IF the current term isn't zero.
-                                                    // We don't know if term will be zero yet, but must provision for '+'.
-                                                    // However, if currentOverallBudget is already too low for a '+', we might break early.
+                    // We don't know if term will be zero yet, but must provision for '+'.
+                    // However, if currentOverallBudget is already too low for a '+', we might break early.
                     operatorCost = 1;
                 }
 
                 const budgetForTermSimplification = currentOverallBudget - operatorCost;
 
                 if (budgetForTermSimplification < 0 && operatorCost > 0) { // Cannot even afford the operator
-                     // If operatorCost was 0 (e.g. first term), budgetForTermSimplification is currentOverallBudget, proceed.
+                    // If operatorCost was 0 (e.g. first term), budgetForTermSimplification is currentOverallBudget, proceed.
                     break;
                 }
                 if (budgetForTermSimplification < 0 && operatorCost === 0) { // Budget is negative even for the first term
@@ -461,9 +503,9 @@ class CNFOrdinal {
             let finalRemainingBudget = currentOverallBudget;
 
             // Condition 1: The built accumulator is acceptable
-            let accumulatorIsAcceptable = (g_simplifiedAccumulator <= complexityBudget && 
-                                           simplifiedAccumulator.compareTo(this) <= 0);
-            
+            let accumulatorIsAcceptable = (g_simplifiedAccumulator <= complexityBudget &&
+                simplifiedAccumulator.compareTo(this) <= 0);
+
             if (accumulatorIsAcceptable) {
                 // Use finalSimplifiedOrdinal = simplifiedAccumulator and finalRemainingBudget = currentOverallBudget
             } else {
@@ -586,7 +628,7 @@ class CNFOrdinal {
             const h_expB_result = expB.simplify(budgetFor_expB_simplification, true);
             const h_expB = h_expB_result.simplifiedOrdinal;
             const cost_of_h_expB_simplification = budgetFor_expB_simplification - h_expB_result.remainingBudget;
-            
+
             const cost_for_w_h_expB_part = cost_w_op_structure + cost_of_h_expB_simplification;
 
             if (cost_for_w_h_expB_part <= budgetForThisTerm) {
@@ -604,27 +646,27 @@ class CNFOrdinal {
                         const final_ordinal_with_coeff = new CNFOrdinal([{ exponent: h_expB, coefficient: coeffM }], tracer);
                         // Ensure final ordinal doesn't exceed original budget due to combined g()
                         if (final_ordinal_with_coeff.complexity() <= budgetForThisTerm) {
-                             return { 
-                                simplifiedOrdinal: final_ordinal_with_coeff, 
+                            return {
+                                simplifiedOrdinal: final_ordinal_with_coeff,
                                 remainingBudget: budgetForThisTerm - final_ordinal_with_coeff.complexity()
                             };
                         }
                         // If adding coeffM makes it too complex, revert to w^(h_expB)
                         // but use the already calculated remaining_budget_after_exp_part based on w^(h_expB)'s complexity
-                        return { 
-                            simplifiedOrdinal: current_simplified_ordinal, 
-                            remainingBudget: remaining_budget_after_exp_part 
+                        return {
+                            simplifiedOrdinal: current_simplified_ordinal,
+                            remainingBudget: remaining_budget_after_exp_part
                         };
                     } else {
                         // Cannot afford *coeffM, use w^(h_expB)
-                        return { 
-                            simplifiedOrdinal: current_simplified_ordinal, 
-                            remainingBudget: remaining_budget_after_exp_part 
+                        return {
+                            simplifiedOrdinal: current_simplified_ordinal,
+                            remainingBudget: remaining_budget_after_exp_part
                         };
                     }
                 } else { // coeffM is 1n, so w^(h_expB) is the final form for this path
-                    return { 
-                        simplifiedOrdinal: current_simplified_ordinal, 
+                    return {
+                        simplifiedOrdinal: current_simplified_ordinal,
                         remainingBudget: remaining_budget_after_exp_part
                     };
                 }
@@ -655,12 +697,169 @@ class CNFOrdinal {
     }
 }
 
-CNFOrdinal.ZEROStatic();
-CNFOrdinal.ONEStatic();
-CNFOrdinal.OMEGAStatic();
 
-// Make tracer utilities available (simple version)
-// To be passed to parser and then to CNFOrdinal instances.
+/**
+ * Represents an epsilon number, ε_k, where k is an ordinal.
+ */
+class EpsilonOrdinal {
+    constructor(index, operationTracer = null) {
+        if (!isOrdinal(index)) {
+            throw new Error(`EpsilonOrdinal index must be a valid Ordinal object. Got: ${index ? index.constructor.name : index}`);
+        }
+        this.index = index;
+        this._tracer = operationTracer;
+    }
+
+    static _E_ZERO_INSTANCE = null;
+    static E_ZEROStatic() {
+        if (!EpsilonOrdinal._E_ZERO_INSTANCE) {
+            EpsilonOrdinal._E_ZERO_INSTANCE = new EpsilonOrdinal(CNFOrdinal.ZEROStatic(), null);
+        }
+        return EpsilonOrdinal._E_ZERO_INSTANCE;
+    }
+    static get E_ZERO() {
+        return EpsilonOrdinal.E_ZEROStatic().clone();
+    }
+
+    isZero() { return false; }
+    isFinite() { return false; }
+    getFinitePart() { return 0n; }
+    getLimitPart() { return this.clone(); }
+    isEpsilonNumber() { return true; }
+
+    toStringCNF() {
+        const indexStr = this.index.toStringCNF();
+        if (this.index.isZero()) return "e_0";
+        // Parenthesize if the index is a sum
+        if (this.index instanceof CNFOrdinal && this.index.terms.length > 1) {
+            return `e_(${indexStr})`;
+        }
+        // No parens for simple indices like 1, 5, w, w^2, e_1 etc.
+        return `e_${indexStr}`;
+    }
+
+    equals(otherOrdinal) {
+        if (!isOrdinal(otherOrdinal)) return false;
+
+        if (otherOrdinal instanceof EpsilonOrdinal) {
+            return this.index.equals(otherOrdinal.index);
+        }
+
+        // The CNFOrdinal.equals method now has the primary responsibility 
+        // for this check, so we just delegate to it.
+        if (otherOrdinal instanceof CNFOrdinal) {
+            return otherOrdinal.equals(this);
+        }
+
+        return false;
+    }
+
+    clone(tracer = null) {
+        const effectiveTracer = tracer !== null ? tracer : this._tracer;
+        return new EpsilonOrdinal(this.index.clone(effectiveTracer), effectiveTracer);
+    }
+
+    complexity() {
+        if (this._tracer) this._tracer.consume();
+        return this.index.complexity() + 6; // g(e_k) = g(k) + 6
+    }
+
+    simplify(complexityBudget, skipMyOwnMPTFCheck = false) {
+        const g_this = this.complexity();
+        if (g_this <= complexityBudget) {
+            return { simplifiedOrdinal: this.clone(), remainingBudget: complexityBudget - g_this };
+        }
+
+        // If 'this' doesn't fit, try to simplify the index.
+        const cost_e_structure = 6; // g(e_k) = g(k) + 6
+        const budgetForIndex = complexityBudget - cost_e_structure;
+
+        if (budgetForIndex >= 0) {
+            const simplifiedIndexResult = this.index.simplify(budgetForIndex, true);
+            const simplifiedIndex = simplifiedIndexResult.simplifiedOrdinal;
+
+            // Construct a new epsilon ordinal with the simplified index.
+            const newEpsilon = new EpsilonOrdinal(simplifiedIndex, this._tracer);
+            const g_newEpsilon = newEpsilon.complexity();
+
+            // Check if this new, simpler epsilon ordinal fits the original budget.
+            if (g_newEpsilon <= complexityBudget) {
+                return { simplifiedOrdinal: newEpsilon, remainingBudget: complexityBudget - g_newEpsilon };
+            }
+        }
+
+        // If simplifying the index was not possible or did not produce a valid result, fallback to 0.
+        const zeroOrd = CNFOrdinal.ZEROStatic().clone(this._tracer);
+        return { simplifiedOrdinal: zeroOrd, remainingBudget: complexityBudget - zeroOrd.complexity() };
+    }
+}
+
+/**
+ * Represents an ordinal of the form ω^^n (omega tetrated to n).
+ */
+class WTowerOrdinal {
+    constructor(height, operationTracer = null) {
+        if (typeof height !== 'number' || !Number.isInteger(height) || height < 0) {
+            throw new Error(`WTowerOrdinal height must be a non-negative integer, got ${height}`);
+        }
+        this.height = height;
+        this._tracer = operationTracer;
+    }
+
+    toCNFOrdinal() {
+        if (this._tracer) this._tracer.consume();
+
+        // This should call the global tetrate function, which will be updated later.
+        if (typeof tetrateOrdinals !== "function") {
+            throw new Error("tetrateOrdinals function not available for WTowerOrdinal conversion.");
+        }
+        return tetrateOrdinals(CNFOrdinal.OMEGAStatic().clone(this._tracer), CNFOrdinal.fromInt(this.height, this._tracer));
+    }
+
+    isZero() { return false; }
+    isFinite() { return this.height === 0; }
+    getFinitePart() { return this.height === 0 ? 1n : 0n; }
+    getLimitPart() { return this.isFinite() ? CNFOrdinal.ZEROStatic().clone(this._tracer) : this.toCNFOrdinal(); }
+
+    toStringCNF() {
+        return `w^^${this.height}`;
+    }
+
+    equals(otherOrdinal) {
+        if (otherOrdinal instanceof WTowerOrdinal) {
+            return this.height === otherOrdinal.height;
+        }
+        // For other types, convert this to CNF and compare.
+        return this.toCNFOrdinal().equals(otherOrdinal);
+    }
+
+    clone(tracer = null) {
+        const effectiveTracer = tracer !== null ? tracer : this._tracer;
+        return new WTowerOrdinal(this.height, effectiveTracer);
+    }
+
+    complexity() {
+        if (this._tracer) this._tracer.consume();
+        const m_complexity = this.height.toString().length;
+        return m_complexity + 3; // g(w^^m) = g(m)+3
+    }
+
+    simplify(complexityBudget, skipMyOwnMPTFCheck = false) {
+        const costThis = this.complexity();
+        if (costThis <= complexityBudget) {
+            return { simplifiedOrdinal: this.clone(), remainingBudget: complexityBudget - costThis };
+        } else {
+            const zeroOrdinal = CNFOrdinal.ZEROStatic().clone(this._tracer);
+            const costZero = zeroOrdinal.complexity();
+            if (costZero <= complexityBudget) {
+                return { simplifiedOrdinal: zeroOrdinal, remainingBudget: complexityBudget - costZero };
+            } else {
+                return { simplifiedOrdinal: zeroOrdinal, remainingBudget: 0 };
+            }
+        }
+    }
+}
+
 class OperationTracer {
     constructor(budget) {
         this.budget = budget;
@@ -674,300 +873,50 @@ class OperationTracer {
         }
     }
 
-    getCount() {
-        return this.count;
-    }
-
-    getBudget() {
-        return this.budget;
-    }
+    getCount() { return this.count; }
+    getBudget() { return this.budget; }
 }
 
-
-// Export if in a module system (e.g., Node.js)
-// if (typeof module !== 'undefined' && module.exports) {
-//     module.exports = { CNFOrdinal, OperationTracer };
-// }
-
-// ordinal_types.js
-
-/**
- * Represents the ordinal ε₀ (epsilon-naught).
- * This is a distinct type and does not have terms like CNFOrdinal.
- */
-class EpsilonNaughtOrdinal {
-    constructor(operationTracer = null) {
-        this._tracer = operationTracer;
-        // No fields needed as it represents a single, specific ordinal.
-    }
-
-    isZero() {
-        return false; // e_0 is not zero
-    }
-
-    isFinite() {
-        return false; // e_0 is not finite
-    }
-
-    // Add other query methods as needed, generally returning false or specific values for e_0
-    // For example, getFinitePart() would be 0n for e_0.
-    getFinitePart() { return 0n; }
-    getLimitPart() { return this.clone(); } // e_0 is its own limit part
-
-    toStringCNF() {
-        return "e_0";
-    }
-
-    equals(otherOrdinal) {
-        return (otherOrdinal instanceof EpsilonNaughtOrdinal);
-    }
-
-    clone(tracer = null) {
-        const effectiveTracer = tracer !== null ? tracer : this._tracer;
-        return new EpsilonNaughtOrdinal(effectiveTracer);
-    }
-    // compareTo will be defined on EpsilonNaughtOrdinal.prototype in ordinal_comparison.js
-    // add, multiply, power, tetrate will be defined on its prototype in their respective files.
-
-    /**
-     * Calculates the complexity of e_0.
-     * g(e_0) = 3
-     * @returns {number} The complexity (3).
-     */
-    complexity() {
-        if (this._tracer) this._tracer.consume(); // Ensure op consumption
-        return 3; // g(e_0) = 3
-    }
-
-    /**
-     * Simplifies this EpsilonNaughtOrdinal based on the provided complexity budget.
-     * @param {number} complexityBudget The maximum allowed complexity for the result.
-     * @returns {{simplifiedOrdinal: EpsilonNaughtOrdinal | CNFOrdinal, remainingBudget: number}}
-     */
-    simplify(complexityBudget, skipMyOwnMPTFCheck = false) {
-        if (this._tracer) this._tracer.consume(); // Consume for the simplify call itself
-        // skipMyOwnMPTFCheck is ignored for EpsilonNaughtOrdinal
-        const costThis = this.complexity(); // This will consume another op
-        if (costThis <= complexityBudget) {
-            return { simplifiedOrdinal: this.clone(), remainingBudget: complexityBudget - costThis };
-        } else {
-            const zeroTracer = this._tracer; // Reuse tracer
-            const zeroOrdinal = CNFOrdinal.ZEROStatic().clone(zeroTracer);
-            const costZero = zeroOrdinal.complexity(); // Consumes op
-            if (costZero <= complexityBudget) {
-                return { simplifiedOrdinal: zeroOrdinal, remainingBudget: complexityBudget - costZero };
-            } else {
-                return { simplifiedOrdinal: zeroOrdinal, remainingBudget: 0 }; // Cannot even afford 0
-            }
-        }
-    }
-}
-
-/**
- * Represents an ordinal of the form ω^^n (omega tetrated to n), where n is a non-negative integer.
- * This type primarily serves as a compact representation that converts to CNFOrdinal for arithmetic.
- */
-class WTowerOrdinal {
-    constructor(height, operationTracer = null) {
-        if (typeof height !== 'number' || !Number.isInteger(height) || height < 0) {
-            throw new Error(`WTowerOrdinal height must be a non-negative integer, got ${height}`);
-        }
-        this.height = height;
-        this._tracer = operationTracer;
-    }
-
-    /**
-     * Converts this WTowerOrdinal to its equivalent CNFOrdinal representation.
-     * Calculates ω^^n.
-     * @returns {CNFOrdinal}
-     */
-    toCNFOrdinal() {
-        if (this._tracer) this._tracer.consume(); // Count conversion as an operation
-
-        const baseOmega = CNFOrdinal.OMEGAStatic().clone(this._tracer);
-        const heightOrdinal = CNFOrdinal.fromInt(this.height, this._tracer);
-
-        // Need to ensure tetrateOrdinals is available and can be called here,
-        // or call a prototype method on baseOmega if tetrate is defined on CNFOrdinal.prototype
-        // For now, assuming tetrateOrdinals will be defined globally or accessible.
-        if (typeof tetrateOrdinals === "function") {
-            return tetrateOrdinals(baseOmega, heightOrdinal);
-        } else {
-            // Fallback or assumption that CNFOrdinal.prototype.tetrate exists and calls the dispatcher
-            if (typeof baseOmega.tetrate !== 'function') {
-                 throw new Error("tetrateOrdinals dispatcher or CNFOrdinal.prototype.tetrate not available for WTowerOrdinal.toCNFOrdinal.");
-            }
-            return baseOmega.tetrate(heightOrdinal);
-        }
-    }
-
-    isZero() {
-        // w^^0 = 1, w^^n for n>0 is > 1. So never zero.
-        return false;
-    }
-
-    isFinite() {
-        // w^^0 = 1 (finite). w^^n for n>0 is infinite (w, w^w, e_0).
-        return this.height === 0;
-    }
-
-    getFinitePart() {
-        if (this.isFinite()) { // Only if height is 0, where w^^0 = 1
-            return 1n;
-        }
-        return 0n; // For w^^n where n > 0, the CNF is infinite with 0 finite part.
-    }
-
-    getLimitPart() {
-        if (this.isFinite()) { // w^^0 = 1
-            return CNFOrdinal.ZEROStatic().clone(this._tracer);
-        }
-        // For n > 0, w^^n is a limit ordinal (w, w^w, e_0).
-        // The actual limit part comes from its CNF representation.
-        return this.toCNFOrdinal(); // Or its limit part: this.toCNFOrdinal().getLimitPart();
-                                    // Let's return the full CNF as its "limit part" if infinite for simplicity,
-                                    // as it doesn't have a separate finite component for n > 0.
-    }
-
-    // toStringCNF for this type means its own linear string representation.
-    toStringCNF() {
-        return `w^^${this.height}`;
-    }
-
-    equals(otherOrdinal) {
-        if (this._tracer) this._tracer.consume();
-
-        if (otherOrdinal instanceof WTowerOrdinal) {
-            // Direct comparison for two WTowerOrdinals
-            return this.height === otherOrdinal.height;
-        }
-        
-        // If comparing WTowerOrdinal with CNFOrdinal or EpsilonNaughtOrdinal,
-        // convert this WTowerOrdinal to CNF for comparison.
-        // This can still be expensive for large towers if otherOrdinal is not also a WTowerOrdinal
-        // that would have been caught above. Consider if this comparison is frequent or critical.
-        // If otherOrdinal is e_0, w^^h = e_0 only if h >= omega (not possible for finite h here)
-        // or specific finite h values like w^^w for parsing (which would not be WTowerOrdinal type directly).
-        // A WTowerOrdinal with finite height 'h' typically corresponds to an ordinal < e_0, 
-        // unless h is large enough that w^^h would be simplified to e_0 by some rule not yet in WTowerOrdinal.
-        // However, the f(w^^h) = 5 - 4/h suggests it always stays < 5 (i.e., < e_0).
-
-        // The primary cause of recursion was WTower.equals(WTower) calling toCNFOrdinal twice.
-        // Now, for WTower.equals(NonWTower), we convert *this* WTower to CNF.
-        // This is still potentially expensive if `this` is a large tower.
-        // A more robust equals would require a type-dispatching comparison system similar to arithmetic ops.
-        // For now, this fixes the WTower-vs-WTower recursion.
-        if (this._tracer) this._tracer.consume(this.height + 1); // Estimate cost for toCNFOrdinal
-        const thisCNF = this.toCNFOrdinal();
-        return thisCNF.equals(otherOrdinal); // Compare this tower (as CNF) with the other ordinal
-    }
-
-    clone(tracer = null) {
-        const effectiveTracer = tracer !== null ? tracer : this._tracer;
-        return new WTowerOrdinal(this.height, effectiveTracer);
-    }
-
-    // compareTo, add, multiply, power, tetrate will be defined on its prototype
-    // or handled by dispatchers that convert to CNF first.
-
-    /**
-     * Calculates the complexity of a WTowerOrdinal.
-     * g(w^^m) = g(m)+3
-     * @returns {number} The calculated complexity.
-     */
-    complexity() {
-        if (this._tracer) this._tracer.consume(); // Ensure op consumption
-        const m_complexity = this.height.toString().length; // g(m) = number of digits in height
-        return m_complexity + 3; // g(w^^m) = g(m)+3
-    }
-
-    /**
-     * Simplifies this WTowerOrdinal based on the provided complexity budget.
-     * @param {number} complexityBudget The maximum allowed complexity for the result.
-     * @returns {{simplifiedOrdinal: WTowerOrdinal | CNFOrdinal, remainingBudget: number}}
-     */
-    simplify(complexityBudget, skipMyOwnMPTFCheck = false) {
-        if (this._tracer) this._tracer.consume(); // Consume for the simplify call itself
-        // skipMyOwnMPTFCheck is ignored for WTowerOrdinal
-        const costThis = this.complexity(); // Consumes op
-        if (costThis <= complexityBudget) {
-            return { simplifiedOrdinal: this.clone(), remainingBudget: complexityBudget - costThis };
-        } else {
-            const zeroTracer = this._tracer; // Reuse tracer
-            const zeroOrdinal = CNFOrdinal.ZEROStatic().clone(zeroTracer);
-            const costZero = zeroOrdinal.complexity(); // Consumes op
-            if (costZero <= complexityBudget) {
-                return { simplifiedOrdinal: zeroOrdinal, remainingBudget: complexityBudget - costZero };
-            } else {
-                return { simplifiedOrdinal: zeroOrdinal, remainingBudget: 0 }; // Cannot even afford 0
-            }
-        }
-    }
-}
-
-// Helper function for CNFOrdinal.simplify (will be defined before CNFOrdinal.simplify or passed)
-// This function should be defined in a scope accessible by CNFOrdinal.prototype.simplify
-// For now, let's imagine it as a static helper or a free function defined before its use.
-/**
- * Helper to get main power tower information from an exponent.
- * @param {CNFOrdinal} exponent The exponent to analyze.
- * @param {OperationTracer} tracer
- * @returns {{ mptOrdinalForG: CNFOrdinal, numOmegas: number }}
- *           mptOrdinalForG is the w^(w^(...w^F)...) structure.
- *           numOmegas is the count of omegas in this tower structure.
- */
 function getTowerInfo(exponent, tracer) {
-    if (tracer) tracer.consume(); // For calling getTowerInfo
+    if (tracer) tracer.consume();
 
-    let current = exponent;
-    let depth = 0;
-    let coreExponent = CNFOrdinal.ZEROStatic().clone(tracer); // Default to F=0 if E is 0 or not w-based
-
-    if (exponent.isZero() || exponent.isFinite()) { // If exponent is finite F (or 0)
-        coreExponent = exponent.clone(tracer);
-        // numOmegas (depth) remains 0
-        // mptOrdinalForG for a finite F is F itself (no w^ structure)
-        // However, the rule applies to w^(exp). If exp is F, mpt is w^F.
-        // The example "main power tower of w^(w^w^2+w^4) is w^w^w^2" means
-        // we are interested in the tower *within* the exponent if it's part of w^exponent.
-        // getTowerInfo is about the structure *of the exponent E* itself.
-        // If E is finite 'F', then mptOrdinalForG is 'F', numOmegas is 0.
-        return { mptOrdinalForG: exponent.clone(tracer), numOmegas: 0 };
+    if (exponent instanceof EpsilonOrdinal) {
+        // The MPT of an epsilon number is complex. For simplification purposes,
+        // we can treat its tower as w^(e_k), so the "core" is the epsilon number itself.
+        return { mptOrdinalForG: exponent.clone(tracer), numOmegas: 1 };
     }
 
-    // Traverse down the "spine" of the exponent
-    // Spine means w^(w^(...w^F)...) where F is finite.
-    // We are looking for the structure of E = E_0 in the form w^(E_1)*C_0 + ... -> E_1 = w^(E_2)*C_1 + ...
+    if (!(exponent instanceof CNFOrdinal)) {
+        // Should not happen if logic is correct
+        return { mptOrdinalForG: CNFOrdinal.ZEROStatic().clone(tracer), numOmegas: 0 };
+    }
+
+    let depth = 0;
     let tempCurrent = exponent.clone(tracer);
-    let structureForG = null; // This will be the F at the bottom first
 
     while (tempCurrent instanceof CNFOrdinal && !tempCurrent.isFinite()) {
-        if (tracer) tracer.consume(); // For step in loop
+        if (tracer) tracer.consume();
         depth++;
-        if (tempCurrent.terms.length === 1 && tempCurrent.terms[0].coefficient === 1n) { // Pure w^X
+        if (tempCurrent.terms.length === 1 && tempCurrent.terms[0].coefficient === 1n) {
             tempCurrent = tempCurrent.terms[0].exponent;
-        } else { // Sum or w^X*C with C>1, or other complex form. Take leading exponent.
-            if (tempCurrent.isZero()) { // Should not happen if !isFinite and is CNFOrdinal
-                 depth--; // Correct depth if we hit zero unexpectedly
-                 tempCurrent = CNFOrdinal.ZEROStatic().clone(tracer); // Set to zero and break
-                 break;
-            }
+        } else {
             tempCurrent = tempCurrent.getLeadingTerm().exponent;
         }
     }
-    // tempCurrent is now the innermost finite exponent F (or 0 if original was purely w^(w...))
-    coreExponent = tempCurrent.clone(tracer); // This is F
 
-    // Construct the mptOrdinalForG: w^(w^(...w^F)...) with 'depth' omegas
+    let coreExponent = tempCurrent.clone(tracer);
+
+    // Reconstruct the main power tower for complexity calculation
     let mptG = coreExponent;
     for (let i = 0; i < depth; i++) {
-        if (tracer) tracer.consume(); // For each w^ application
+        if (tracer) tracer.consume();
         mptG = new CNFOrdinal([{ exponent: mptG.clone(tracer), coefficient: 1n }], tracer);
     }
     return { mptOrdinalForG: mptG, numOmegas: depth };
 }
 
-// Export if in a module system
-// if (typeof module !== 'undefined' && module.exports) {
-//     module.exports = { CNFOrdinal, EpsilonNaughtOrdinal, WTowerOrdinal, OperationTracer };
-// }
+// Initialize static singletons after all classes are defined.
+CNFOrdinal.ZEROStatic();
+CNFOrdinal.ONEStatic();
+CNFOrdinal.OMEGAStatic();
+EpsilonOrdinal.E_ZEROStatic();

@@ -1,39 +1,37 @@
 // ordinal_comparison.js
 
-// Assumes CNFOrdinal, EpsilonNaughtOrdinal, and WTowerOrdinal classes are defined.
+// Assumes CNFOrdinal, EpsilonOrdinal, and WTowerOrdinal classes are defined from ordinal_types.js
 
 /**
  * Compares this CNFOrdinal to another ordinal.
- * @param {CNFOrdinal | EpsilonNaughtOrdinal | WTowerOrdinal} otherOrdinal The ordinal to compare against.
+ * @param {CNFOrdinal | EpsilonOrdinal | WTowerOrdinal} otherOrdinal The ordinal to compare against.
  * @returns {number} -1 if this < otherOrdinal, 0 if this == otherOrdinal, 1 if this > otherOrdinal.
  */
-CNFOrdinal.prototype.compareTo = function(otherOrdinal) {
+CNFOrdinal.prototype.compareTo = function (other) {
     if (this._tracer) this._tracer.consume();
 
-    if (otherOrdinal instanceof WTowerOrdinal) {
-        otherOrdinal = otherOrdinal.toCNFOrdinal(); // Convert WTower to CNF for comparison
+    if (other instanceof EpsilonOrdinal || other instanceof WTowerOrdinal) {
+        // Delegate comparison to the other type, but reverse the result.
+        // e.g., for this.compareTo(other), call other.compareTo(this) and flip the sign.
+        return -other.compareTo(this);
     }
 
-    if (otherOrdinal instanceof EpsilonNaughtOrdinal) {
-        return -1; // Any CNFOrdinal (less than e_0) is less than e_0.
-    }
-    if (!(otherOrdinal instanceof CNFOrdinal)) {
+    if (!(other instanceof CNFOrdinal)) {
         throw new Error("Cannot compare CNFOrdinal with unknown ordinal type.");
     }
 
-    // Handle easy cases with zero
-    if (this.isZero() && otherOrdinal.isZero()) return 0;
-    if (this.isZero()) return -1; // 0 is less than any positive ordinal
-    if (otherOrdinal.isZero()) return 1;  // Any positive ordinal is greater than 0
+    // Comparing two CNFOrdinals
+    if (this.isZero() && other.isZero()) return 0;
+    if (this.isZero()) return -1;
+    if (other.isZero()) return 1;
 
-    // Iterate through terms for lexicographical comparison
     const lenThis = this.terms.length;
-    const lenOther = otherOrdinal.terms.length;
+    const lenOther = other.terms.length;
     const minLen = Math.min(lenThis, lenOther);
 
     for (let i = 0; i < minLen; i++) {
         const thisTerm = this.terms[i];
-        const otherTerm = otherOrdinal.terms[i];
+        const otherTerm = other.terms[i];
 
         const expComparison = thisTerm.exponent.compareTo(otherTerm.exponent);
         if (expComparison !== 0) {
@@ -42,43 +40,66 @@ CNFOrdinal.prototype.compareTo = function(otherOrdinal) {
         if (thisTerm.coefficient < otherTerm.coefficient) return -1;
         if (thisTerm.coefficient > otherTerm.coefficient) return 1;
     }
+
     if (lenThis < lenOther) return -1;
     if (lenThis > lenOther) return 1;
     return 0; // Equal
 };
 
 /**
- * Compares this EpsilonNaughtOrdinal to another ordinal.
- * @param {CNFOrdinal | EpsilonNaughtOrdinal | WTowerOrdinal} otherOrdinal The ordinal to compare against.
- * @returns {number} -1 if this < otherOrdinal, 0 if this == otherOrdinal, 1 if this > otherOrdinal.
+ * Compares this EpsilonOrdinal to another ordinal.
+ * @param {CNFOrdinal | EpsilonOrdinal | WTowerOrdinal} other The ordinal to compare against.
+ * @returns {number} -1 if this < other, 0 if this == other, 1 if this > other.
  */
-EpsilonNaughtOrdinal.prototype.compareTo = function(otherOrdinal) {
+EpsilonOrdinal.prototype.compareTo = function (other) {
     if (this._tracer) this._tracer.consume();
 
-    if (otherOrdinal instanceof WTowerOrdinal) {
-        otherOrdinal = otherOrdinal.toCNFOrdinal(); // Convert WTower to CNF for comparison
+    if (other instanceof EpsilonOrdinal) {
+        // To compare e_k and e_j, we just compare their indices k and j.
+        return this.index.compareTo(other.index);
     }
 
-    if (otherOrdinal instanceof EpsilonNaughtOrdinal) {
-        return 0; // e_0 == e_0
+    if (other instanceof WTowerOrdinal) {
+        return -other.compareTo(this); // Delegate and flip
     }
-    if (otherOrdinal instanceof CNFOrdinal) {
-        return 1; // e_0 > any CNFOrdinal
+
+    if (other instanceof CNFOrdinal) {
+        // Comparing e_k to a CNF sum a = w^a_1*c_1 + ...
+        // If a is zero or finite, e_k > a.
+        if (other.isZero() || other.isFinite()) {
+            return 1;
+        }
+        // Get the leading exponent of the CNF ordinal.
+        const leadingExp = other.terms[0].exponent;
+
+        // Compare this (e_k) to the leading exponent.
+        const cmp = this.compareTo(leadingExp);
+        if (cmp === 1) { // e_k > a_1
+            return 1; // Then e_k > w^a_1*c_1 + ...
+        }
+        if (cmp === -1) { // e_k < a_1
+            return -1; // Then e_k < w^a_1*c_1 + ...
+        }
+        // If cmp === 0, then e_k === a_1.
+        // This means the CNF ordinal is w^(e_k)*c_1 + ...
+        // which is greater than e_k.
+        return -1;
     }
-    throw new Error("Cannot compare EpsilonNaughtOrdinal with unknown ordinal type.");
+
+    throw new Error("Cannot compare EpsilonOrdinal with unknown ordinal type.");
 };
 
 /**
  * Compares this WTowerOrdinal to another ordinal.
- * @param {CNFOrdinal | EpsilonNaughtOrdinal | WTowerOrdinal} otherOrdinal The ordinal to compare against.
- * @returns {number} -1 if this < otherOrdinal, 0 if this == otherOrdinal, 1 if this > otherOrdinal.
+ * @param {CNFOrdinal | EpsilonOrdinal | WTowerOrdinal} other The ordinal to compare against.
+ * @returns {number} -1 if this < other, 0 if this == other, 1 if this > other.
  */
 if (typeof WTowerOrdinal !== 'undefined') {
-    WTowerOrdinal.prototype.compareTo = function(otherOrdinal) {
+    WTowerOrdinal.prototype.compareTo = function (other) {
         if (this._tracer) this._tracer.consume();
+        // Convert this tower to CNF and then compare.
         const thisCNF = this.toCNFOrdinal();
-        // No need to convert otherOrdinal to CNF here, as thisCNF.compareTo will handle it.
-        return thisCNF.compareTo(otherOrdinal);
+        return thisCNF.compareTo(other);
     };
 }
 
@@ -88,5 +109,3 @@ if (typeof WTowerOrdinal !== 'undefined') {
 // It's generally safer to ensure all prototype methods are defined before creating complex static instances,
 // or to re-normalize them if necessary. Our static getters for ZERO, ONE, OMEGA return clones,
 // and the constructor calls _normalize, so new instances should be fine.
-
-// ordinal_comparison.js

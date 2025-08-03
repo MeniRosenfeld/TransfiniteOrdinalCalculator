@@ -1,20 +1,28 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Transfinite Ordinal Calculator</title>
     <link rel="stylesheet" href="style.css">
     <!-- html2canvas library for "Copy as Image" -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" integrity="sha512-BNaRQnYJYiPSqHHDb58B0yaPfCu+Wgds8Gp/gU33kqBtgNS4tSPHuGibyoeqMV/TJlSKda6FXzoEyYGjTe+vXA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"
+        integrity="sha512-BNaRQnYJYiPSqHHDb58B0yaPfCu+Wgds8Gp/gU33kqBtgNS4tSPHuGibyoeqMV/TJlSKda6FXzoEyYGjTe+vXA=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 </head>
+
 <body>
     <header>
         <h1>Transfinite Ordinal Calculator</h1>
         <p>Convert ordinal expressions to their Cantor Normal Form (CNF)</p>
-        <div style="margin-top: 15px; padding: 10px; background-color: #e8f4f8; border-radius: 6px; text-align: center;">
-            <a href="ordinal-video-generator.html" style="color: #007bff; text-decoration: none; font-weight: bold; margin: 0 10px;">🎬 Create Ordinal Videos</a>
-            <a href="ordinal_calculator_test.html" style="color: #007bff; text-decoration: none; font-weight: bold; margin: 0 10px;">🧪 Test Suite</a>
+        <div
+            style="margin-top: 15px; padding: 10px; background-color: #e8f4f8; border-radius: 6px; text-align: center;">
+            <a href="ordinal-video-generator.html"
+                style="color: #007bff; text-decoration: none; font-weight: bold; margin: 0 10px;">🎬 Create Ordinal
+                Videos</a>
+            <a href="ordinal_calculator_test.html"
+                style="color: #007bff; text-decoration: none; font-weight: bold; margin: 0 10px;">🧪 Test Suite</a>
         </div>
     </header>
 
@@ -30,10 +38,11 @@
 
         <!-- New Mapped Value Display Area -->
         <div id="mappedValueDisplayArea" class="mapped-value-inline-display">
-            <span class="tooltip-trigger" 
-                  data-tooltip="This value is from a strictly increasing function f(α) that maps ordinals α < ε₀ to real numbers. The function ensures that if α < β, then f(α) < f(β). The mapping is based on a recursive definition using the Cantor Normal Form of α. This mapping aims to fit ε₀ into [0,49).">❓</span>
+            <span class="tooltip-trigger"
+                data-tooltip="This value is from a strictly increasing function f(α) that maps ordinals α < ε₀ to real numbers. The function ensures that if α < β, then f(α) < f(β). The mapping is based on a recursive definition using the Cantor Normal Form of α. This mapping aims to fit ε₀ into [0,49).">❓</span>
             <span id="mappedValueText" class="value placeholder-text">Real number representation of the ordinal.</span>
-            <input type="range" id="mappedValueSlider" class="mapped-value-slider" min="0" max="91" step="0.000001" value="0">
+            <input type="range" id="mappedValueSlider" class="mapped-value-slider" min="0" max="91" step="0.000001"
+                value="0">
             <span id="nudgeControl" class="nudge-control" title="Click and drag to fine-tune slider value">↔️</span>
         </div>
 
@@ -41,7 +50,8 @@
 
         <div class="result-container">
             <div class="result-section graphical-result-section">
-                <h3>Graphical Representation: <span id="graphicalHeaderSimpInfo" class="simplification-header-info"></span></h3>
+                <h3>Graphical Representation: <span id="graphicalHeaderSimpInfo"
+                        class="simplification-header-info"></span></h3>
                 <div id="graphicalResultArea" class="graphical-display">
                     <span class="placeholder-text">Result will appear here.</span>
                 </div>
@@ -65,75 +75,100 @@
             <li>Use non-negative integers (e.g., <code>0</code>, <code>1</code>, <code>5</code>, <code>123</code>).</li>
             <li>Use <code>w</code> to represent the smallest infinite ordinal, omega (ω).</li>
             <li>Use <code>e_0</code> to represent epsilon-naught (ε₀), the first fixed point of ω^x=x.</li>
-            <li>Supported operations: <code>+</code> (addition), <code>*</code> (multiplication), <code>^</code> (exponentiation), <code>^^</code> (tetration).</li>
+            <li>Supported operations: <code>+</code> (addition), <code>*</code> (multiplication), <code>^</code>
+                (exponentiation), <code>^^</code> (tetration).</li>
             <li>Use parentheses <code>()</code> for grouping.</li>
-            <li>Standard operator precedence is followed: <code>^^</code> (highest, right-associative), then <code>^</code> (right-associative), then <code>*</code> (left-associative), then <code>+</code> (left-associative).</li>
+            <li>Standard operator precedence is followed: <code>^^</code> (highest, right-associative), then
+                <code>^</code> (right-associative), then <code>*</code> (left-associative), then <code>+</code>
+                (left-associative).</li>
         </ul>
         <p><strong>Examples:</strong></p>
         <ul>
-            <li><code>1+w</code>  ➜  <code>w</code></li>
-            <li><code>w+1</code>  ➜  <code>w+1</code></li>
-            <li><code>(w+1)*2</code>  ➜  <code>w*2+1</code></li>
-            <li><code>w*w</code>  ➜  <code>w^2</code></li>
-            <li><code>2^w</code>  ➜  <code>w</code></li>
-            <li><code>w^(w+1)</code>  ➜  <code>w^(w+1)</code></li>
-            <li><code>(w^w)^w</code>  ➜  <code>w^(w^2)</code></li>
-            <li><code>2^^3</code> (2↑↑3) ➜  <code>16</code> (finite repeated exponentiation: 2^(2^2) = 2^4 = 16)</li>
-            <li><code>w^^2</code> (ω↑↑2) ➜  <code>w^w</code></li>
-            <li><code>w^^w</code> (ω↑↑ω) ➜  <code>e_0</code></li>
-            <li><code>2^^w</code> (2↑↑ω) ➜  <code>w</code></li>
+            <li><code>1+w</code> ➜ <code>w</code></li>
+            <li><code>w+1</code> ➜ <code>w+1</code></li>
+            <li><code>(w+1)*2</code> ➜ <code>w*2+1</code></li>
+            <li><code>w*w</code> ➜ <code>w^2</code></li>
+            <li><code>2^w</code> ➜ <code>w</code></li>
+            <li><code>w^(w+1)</code> ➜ <code>w^(w+1)</code></li>
+            <li><code>(w^w)^w</code> ➜ <code>w^(w^2)</code></li>
+            <li><code>2^^3</code> (2↑↑3) ➜ <code>16</code> (finite repeated exponentiation: 2^(2^2) = 2^4 = 16)</li>
+            <li><code>w^^2</code> (ω↑↑2) ➜ <code>w^w</code></li>
+            <li><code>w^^w</code> (ω↑↑ω) ➜ <code>e_0</code></li>
+            <li><code>2^^w</code> (2↑↑ω) ➜ <code>w</code></li>
             <li><code>e_0+1</code> ➜ <code>Error</code>(Currently unsupported)</li>
             <li><code>w+e_0</code> ➜ <code>e_0</code></li>
         </ul>
 
     </div>
 
-   <div class="about-section">
+    <div class="about-section">
         <h2>About This Calculator</h2>
         <p>
-            This Ordinal Number Calculator is a tool designed to explore the fascinating world of transfinite arithmetic.
+            This Ordinal Number Calculator is a tool designed to explore the fascinating world of transfinite
+            arithmetic.
             It takes ordinal expressions written with non-negative integers, the symbol <code>w</code> (omega),
-            standard arithmetic operators (<code>+</code>, <code>*</code>, <code>^</code>, <code>^^</code>), and parentheses,
-            and computes their <a href="https://en.wikipedia.org/wiki/Cantor_normal_form" target="_blank" rel="noopener noreferrer">Cantor Normal Form (CNF)</a>
+            standard arithmetic operators (<code>+</code>, <code>*</code>, <code>^</code>, <code>^^</code>), and
+            parentheses,
+            and computes their <a href="https://en.wikipedia.org/wiki/Cantor_normal_form" target="_blank"
+                rel="noopener noreferrer">Cantor Normal Form (CNF)</a>
             or evaluates them according to defined rules up to ε₀ (epsilon-naught).
         </p>
         <p>
             The Cantor Normal Form provides a unique representation for ordinals less than epsilon-naught (ε₀).
-            This calculator implements the standard rules for ordinal addition, multiplication, exponentiation, and tetration
+            This calculator implements the standard rules for ordinal addition, multiplication, exponentiation, and
+            tetration
             to ensure accurate CNF results.
         </p>
         <p>
             <strong>Key Features:</strong>
         </p>
         <ul>
-            <li>Parses complex ordinal expressions, including those with tetration (<code>^^</code>) and epsilon-naught (<code>e_0</code>).</li>
+            <li>Parses complex ordinal expressions, including those with tetration (<code>^^</code>) and epsilon-naught
+                (<code>e_0</code>).</li>
             <li>Calculates accurate Cantor Normal Form based on established ordinal arithmetic rules.</li>
-            <li>Displays results in both a traditional linear string format and a graphical representation (e.g., using ω, ε₀, and ω↑↑n for ω tetrated to n).</li>
-            <li>Automatically simplifies very complex results based on a structural complexity budget to enhance readability. If simplification occurs, an indicator (e.g., <code>(Displayed complexity: G_simp / G_orig)</code>) is shown.</li>
-            <li>Provides an ordinal-to-real number mapping `f(α)` for the original, unsimplified ordinal. This mapping is <span class="tooltip-trigger" data-tooltip="The mapping uses a set of configurable scale parameters (scaleAdd, scaleMult, scaleExp, scaleTet) which allow its behavior to be adjusted. The default parameters map ordinals to approximately [0,5), but other parameter sets can change this range.">parameterized</span> and its range (e.g., for the slider) is set dynamically.</li>
+            <li>Displays results in both a traditional linear string format and a graphical representation (e.g., using
+                ω, ε₀, and ω↑↑n for ω tetrated to n).</li>
+            <li>Automatically simplifies very complex results based on a structural complexity budget to enhance
+                readability. If simplification occurs, an indicator (e.g.,
+                <code>(Displayed complexity: G_simp / G_orig)</code>) is shown.</li>
+            <li>Provides an ordinal-to-real number mapping `f(α)` for the original, unsimplified ordinal. This mapping
+                is <span class="tooltip-trigger"
+                    data-tooltip="The mapping uses a set of configurable scale parameters (scaleAdd, scaleMult, scaleExp, scaleTet) which allow its behavior to be adjusted. The default parameters map ordinals to approximately [0,5), but other parameter sets can change this range.">parameterized</span>
+                and its range (e.g., for the slider) is set dynamically.</li>
             <li>Allows copying of both the text and graphical (as image) representations.</li>
             <li>Includes an operation budget to prevent excessively long computations for extremely complex inputs.</li>
         </ul>
         <p>
             A particularly useful feature is the <strong>interactive ordinal explorer</strong>.
-            Use the slider (located just below the expression input area) to select a real number 
-            (the range of the slider is dynamically set based on the current `f(α)` mapping parameters). The calculator will then instantly display the transfinite ordinal 
-            <code style="font-family: 'Times New Roman', Times, serif;">&alpha;</code> that corresponds to this real number (where <code style="font-family: 'Times New Roman', Times, serif;">f(&alpha;)</code> &approx; your selected value), 
-            and it will also update the main "Enter Ordinal Expression:" box with this ordinal's string representation. 
-            The <code style="font-size: 1.2em;">↔️</code> (nudge) control next to the slider allows for fine-grained adjustments. 
-            This provides a powerful way to discover and understand different ordinal structures by exploring their 
+            Use the slider (located just below the expression input area) to select a real number
+            (the range of the slider is dynamically set based on the current `f(α)` mapping parameters). The calculator
+            will then instantly display the transfinite ordinal
+            <code style="font-family: 'Times New Roman', Times, serif;">&alpha;</code> that corresponds to this real
+            number (where <code style="font-family: 'Times New Roman', Times, serif;">f(&alpha;)</code> &approx; your
+            selected value),
+            and it will also update the main "Enter Ordinal Expression:" box with this ordinal's string representation.
+            The <code style="font-size: 1.2em;">↔️</code> (nudge) control next to the slider allows for fine-grained
+            adjustments.
+            This provides a powerful way to discover and understand different ordinal structures by exploring their
             <code style="font-family: 'Times New Roman', Times, serif;">f(&alpha;)</code> mappings.
         </p>
         <p>
             This project was developed to provide an accessible way to experiment with and visualize ordinal numbers
             up to the first epsilon number.
         </p>
-<p>
-<a href="https://github.com/MeniRosenfeld/TransfiniteOrdinalCalculator" target="_blank" rel="noopener noreferrer">Developed</a> by Gemini 2.5 Pro, with the guidance of ordinal number enthusiast <a href="https://github.com/MeniRosenfeld" target="_blank" rel="noopener noreferrer">Meni Rosenfeld</a>. You can read more about ordinal numbers here: <a href="https://fieryspinningsword.com/2021/08/20/the-unabashed-expanse-of-ordinal-numbers/" target="_blank" rel="noopener noreferrer">The Unabashed Expanse of Ordinal numbers</a>.
-</p>
-<p>
-Calculation results were compared against Claudio Kressibucher's <a href="https://www.transfinite.ch/" target="_blank" rel="noopener noreferrer">Ordinal Calculator</a> to verify accuracy. There might still be mistakes - if you find any, please let me know!
-</p>
+        <p>
+            <a href="https://github.com/MeniRosenfeld/TransfiniteOrdinalCalculator" target="_blank"
+                rel="noopener noreferrer">Developed</a> by Gemini 2.5 Pro, with the guidance of ordinal number
+            enthusiast <a href="https://github.com/MeniRosenfeld" target="_blank" rel="noopener noreferrer">Meni
+                Rosenfeld</a>. You can read more about ordinal numbers here: <a
+                href="https://fieryspinningsword.com/2021/08/20/the-unabashed-expanse-of-ordinal-numbers/"
+                target="_blank" rel="noopener noreferrer">The Unabashed Expanse of Ordinal numbers</a>.
+        </p>
+        <p>
+            Calculation results were compared against Claudio Kressibucher's <a href="https://www.transfinite.ch/"
+                target="_blank" rel="noopener noreferrer">Ordinal Calculator</a> to verify accuracy. There might still
+            be mistakes - if you find any, please let me know!
+        </p>
         <!-- You can add more details, like your name/GitHub link if you wish -->
         <!-- <p>Created by [Your Name/Handle]. Source code available on <a href="[Your GitHub Repo Link]" target="_blank" rel="noopener noreferrer">GitHub</a>.</p> -->
     </div>
@@ -160,4 +195,5 @@ Calculation results were compared against Claudio Kressibucher's <a href="https:
     <script src="script.js"></script> <!-- Main UI interaction logic -->
 
 </body>
+
 </html>

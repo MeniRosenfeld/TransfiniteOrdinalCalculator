@@ -1,13 +1,13 @@
 // ordinal_addition.js
 
-// Assumes CNFOrdinal, EpsilonNaughtOrdinal, WTowerOrdinal classes are defined.
+// Assumes CNFOrdinal, EpsilonOrdinal, WTowerOrdinal classes are defined.
 // Assumes tetrateOrdinals (used by WTowerOrdinal.toCNFOrdinal) is defined.
 
 /**
  * Adds a CNFOrdinal to this CNFOrdinal. ( α + β )
  * This is the specific implementation for CNF + CNF.
  */
-CNFOrdinal.prototype.addCNF = function(otherCNF) {
+CNFOrdinal.prototype.addCNF = function (otherCNF) {
     if (this._tracer) this._tracer.consume();
 
     if (!(otherCNF instanceof CNFOrdinal)) {
@@ -99,73 +99,42 @@ CNFOrdinal.prototype.addCNF = function(otherCNF) {
 };
 
 /**
- * Adds an ordinal to this EpsilonNaughtOrdinal.
- * This is the specific implementation for e_0 + other.
- */
-EpsilonNaughtOrdinal.prototype.addE0 = function(otherOrdinal) {
-    if (this._tracer) this._tracer.consume();
-
-    if (otherOrdinal instanceof CNFOrdinal) {
-        if (otherOrdinal.isZero()) {
-            // Rule: e_0 + 0 = e_0
-            return this.clone(this._tracer);
-        } else {
-            // Rules: e_0 + non-zero CNFOrdinal is unsupported
-            throw new Error(`Operation e_0 + non-zero CNFOrdinal (${otherOrdinal.toStringCNF()}) is unsupported.`);
-        }
-    }
-    if (otherOrdinal instanceof EpsilonNaughtOrdinal) {
-        // Rule: e_0 + e_0 is unsupported
-        throw new Error("Operation e_0 + e_0 is unsupported.");
-    }
-    // WTowerOrdinal should have been converted by the dispatcher
-    throw new Error("EpsilonNaughtOrdinal.addE0: Cannot add with unknown or unconverted ordinal type.");
-};
-
-/**
  * General ordinal addition dispatcher.
  * @param {Ordinal} alpha - The first ordinal.
  * @param {Ordinal} beta - The second ordinal.
  * @returns {Ordinal} The sum of alpha and beta.
  */
 function addOrdinals(alpha, beta) {
-    // Convert WTowerOrdinal to CNFOrdinal before proceeding
-    if (alpha instanceof WTowerOrdinal) {
-        alpha = alpha.toCNFOrdinal();
+    if (alpha._tracer) alpha._tracer.consume();
+
+    // Handle identity cases first to preserve canonical types.
+    if (alpha.isZero()) {
+        return beta.clone();
     }
-    if (beta instanceof WTowerOrdinal) {
-        beta = beta.toCNFOrdinal();
+    if (beta.isZero()) {
+        return alpha.clone();
     }
 
-    if (alpha instanceof CNFOrdinal) {
-        if (beta instanceof CNFOrdinal) {
-            return alpha.addCNF(beta);
-        } else if (beta instanceof EpsilonNaughtOrdinal) {
-            // x + e_0 = e_0
-            return beta.clone(alpha._tracer); // effectively beta.addE0(alpha) but e_0 is absorbing
-        }
-    } else if (alpha instanceof EpsilonNaughtOrdinal) {
-        // e_0 + x
-        return alpha.addE0(beta); // beta can be CNFOrdinal or EpsilonNaughtOrdinal
-    }
-    throw new Error(`addOrdinals: Unsupported ordinal types for addition: ${alpha?.constructor?.name} and ${beta?.constructor?.name}`);
+    // Convert all operands to CNFOrdinal to unify logic.
+    // The CNFOrdinal constructor handles conversion from EpsilonOrdinal and WTowerOrdinal.
+    const alphaCNF = (alpha instanceof CNFOrdinal) ? alpha : new CNFOrdinal(alpha, alpha._tracer);
+    const betaCNF = (beta instanceof CNFOrdinal) ? beta : new CNFOrdinal(beta, beta._tracer);
+
+    return alphaCNF.addCNF(betaCNF);
 }
 
 // Public API for addition on prototypes, calling the dispatcher
-CNFOrdinal.prototype.add = function(otherOrdinal) {
+CNFOrdinal.prototype.add = function (otherOrdinal) {
     return addOrdinals(this, otherOrdinal);
 };
 
-EpsilonNaughtOrdinal.prototype.add = function(otherOrdinal) {
+EpsilonOrdinal.prototype.add = function (otherOrdinal) {
     return addOrdinals(this, otherOrdinal);
 };
 
 // WTowerOrdinal.prototype.add will also call addOrdinals
-// This will be added in ordinal_types.js or here. For consistency, let's add it here.
 if (typeof WTowerOrdinal !== 'undefined') { // Check if WTowerOrdinal is loaded
-    WTowerOrdinal.prototype.add = function(otherOrdinal) {
+    WTowerOrdinal.prototype.add = function (otherOrdinal) {
         return addOrdinals(this, otherOrdinal);
     };
 }
-
-// ordinal_addition.js

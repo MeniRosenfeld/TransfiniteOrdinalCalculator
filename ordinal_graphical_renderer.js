@@ -1,69 +1,63 @@
 // ordinal_graphical_renderer.js
 
-// Assumes CNFOrdinal class and its methods (isZero, terms, exponent, coefficient, equals, ONEStatic)
-// are available globally or via modules if this were refactored.
-// Assumes EpsilonNaughtOrdinal and WTowerOrdinal classes are defined.
+// Assumes CNFOrdinal, EpsilonOrdinal, and WTowerOrdinal classes are defined.
 
 /**
- * Renders an Ordinal object (CNFOrdinal, EpsilonNaughtOrdinal, or WTowerOrdinal) 
- * into an HTML string for graphical display.
- * Uses ω for omega, ε₀ for epsilon-naught, ω↑↑n for WTowerOrdinal, and actual superscripts for exponentiation.
- * @param {CNFOrdinal | EpsilonNaughtOrdinal | WTowerOrdinal} ordinal The Ordinal object to render.
- * @returns {string} HTML string representation.
+ * Renders an Ordinal object into an HTML string for graphical display.
+ * @param {CNFOrdinal | EpsilonOrdinal | WTowerOrdinal} ordinal The Ordinal object to render.
+ * @returns {string} The HTML string representation.
  */
 function renderOrdinalGraphical(ordinal) {
     if (!ordinal) {
-        console.error("renderOrdinalGraphical received null or undefined input.");
-        return '<span style="color:red;">Error: Invalid input to renderer</span>';
+        return '<span class="ordinal-placeholder">Invalid Ordinal</span>';
     }
 
-    if (ordinal instanceof EpsilonNaughtOrdinal) {
-        return '<span class="epsilon-naught">ε<sub>0</sub></span>';
+    if (ordinal instanceof EpsilonOrdinal) {
+        if (ordinal.index.isZero()) {
+            return `<span class="ordinal-e0">ε₀</span>`;
+        }
+        const indexRender = renderOrdinalGraphical(ordinal.index);
+        let needsParen = ordinal.index instanceof CNFOrdinal && ordinal.index.terms.length > 1;
+        if (needsParen) {
+            return `<span class="ordinal-epsilon">ε<sub class="ordinal-subscript">(<span class="ordinal-sub-content">${indexRender}</span>)</sub></span>`;
+        } else {
+            return `<span class="ordinal-epsilon">ε<sub class="ordinal-subscript"><span class="ordinal-sub-content">${indexRender}</span></sub></span>`;
+        }
     }
 
     if (ordinal instanceof WTowerOrdinal) {
-        // Render as ω↑↑n or similar. Example: ω<span class="tetration-symbol">↑↑</span><span class="height">n</span>
-        // Using standard text for arrows for now, can be enhanced with CSS or MathML-like spans if needed.
-        return `<span class="omega">ω</span><span class="operator tetration-operator">↑↑</span><span class="coefficient tower-height">${ordinal.height}</span>`;
+        return `<span class="ordinal-w-tower">ω<sup class="ordinal-tet-op">↑↑</sup><span class="ordinal-w-tower-height">${ordinal.height}</span></span>`;
     }
 
     if (ordinal instanceof CNFOrdinal) {
         if (ordinal.isZero()) {
-            return '<span class="ord-char">0</span>';
+            return '<span class="ordinal-finite">0</span>';
         }
 
         const renderedTerms = ordinal.terms.map(term => {
-            let termStr = '';
-            const expOrdinal = term.exponent;
+            const exp = term.exponent;
             const coeff = term.coefficient;
 
-            if (expOrdinal.isZero()) { // Term is a finite number (w^0 * coeff)
-                termStr = `<span class="coefficient">${coeff}</span>`;
-            } else {
-                // Term has an omega part
-                termStr += '<span class="omega">ω</span>';
-
-                if (!expOrdinal.equals(CNFOrdinal.ONEStatic())) { // Use CNFOrdinal.ONEStatic()
-                    // Recursively render the exponent.
-                    // The CSS will handle font size reduction for `sup`.
-                    const expRendered = renderOrdinalGraphical(expOrdinal); // Recursive call
-                    termStr += `<sup>${expRendered}</sup>`;
-                }
-                // else: exponent is 1, so it's just ω (no explicit ^1 displayed)
-
-                if (coeff > 1n) { // Changed from > 1 to > 1n for BigInt comparison
-                    // Standard CNF writes coefficient after: ω^A*c
-                    // Use · for the center dot multiplication symbol
-                    termStr += `<span class="operator multiplication-dot">·</span><span class="coefficient">${coeff}</span>`;
-                }
+            if (exp.isZero()) {
+                return `<span class="ordinal-finite">${coeff}</span>`;
             }
-            return `<span class="ord-term">${termStr}</span>`;
-        });
 
-        return renderedTerms.join('<span class="operator addition-plus"> + </span>'); // Added class for + operator
+            let termStr = '';
+            if (exp.equals(CNFOrdinal.ONEStatic())) { // Term is w*c
+                termStr = '<span class="ordinal-w">ω</span>';
+            } else { // Term is w^a*c
+                const expRender = renderOrdinalGraphical(exp);
+                termStr = `<span class="ordinal-w">ω</span><sup class="ordinal-exponent">${expRender}</sup>`;
+            }
+
+            if (coeff > 1n) {
+                termStr += `<span class="ordinal-op">·</span><span class="ordinal-coeff">${coeff}</span>`;
+            }
+            return `<span class="ordinal-term">${termStr}</span>`;
+        });
+        return renderedTerms.join('<span class="ordinal-op">+</span>');
     }
 
-    // Fallback for unknown ordinal types
-    console.error("renderOrdinalGraphical expects a CNFOrdinal, EpsilonNaughtOrdinal, or WTowerOrdinal object.", ordinal);
-    return '<span style="color:red;">Error: Unknown ordinal type</span>';
+    console.error("renderOrdinalGraphical expects a CNFOrdinal, EpsilonOrdinal, or WTowerOrdinal object.", ordinal);
+    return '<span class="ordinal-error">Error</span>';
 }

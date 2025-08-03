@@ -2,12 +2,13 @@
 
 // NEW: FParams class to hold scale factors and precomputed values
 class FParams {
-    constructor(scaleAdd, scaleMult, scaleExp, scaleTet) {
+    constructor(scaleAdd, scaleMult, scaleExp, scaleTet, scaleEpsilon) {
         // Store raw scale factors
         this.scaleAdd = scaleAdd;
         this.scaleMult = scaleMult;
         this.scaleExp = scaleExp;
         this.scaleTet = scaleTet;
+        this.scaleEpsilon = scaleEpsilon;
 
         // Initialize precomputed values array (size 9 for indices 0-8)
         this.precomputed = new Array(11);
@@ -45,13 +46,13 @@ class FParams {
 
         this.precomputed[9] = this.precomputed[6] + this.precomputed[7] * this.precomputed[8];
 
-        this.precomputed[10] = 1 + 99*this.precomputed[4]/(99+this.scaleTet);
+        this.precomputed[10] = 1 + 99 * this.precomputed[4] / (99 + this.scaleTet);
     }
 }
 
 // Default parameters for f and fInverse - now an instance of FParams
-const OLD_F_PARAMS = new FParams(1, 1, 1, 1);
-const DEFAULT_F_PARAMS = new FParams(3, 3, 3, 3);
+const OLD_F_PARAMS = new FParams(1, 1, 1, 1, 3);
+const DEFAULT_F_PARAMS = new FParams(3, 3, 3, 3, 3);
 
 console.log("[Debug] In ordinal_mapping.js, typeof WTowerOrdinal:", typeof WTowerOrdinal, "WTowerOrdinal itself:", WTowerOrdinal);
 const memo = new Map();
@@ -64,38 +65,35 @@ const memo = new Map();
 //   - c_int: JavaScript number for c (c >= 1). This 'c' is the coefficient from the CNF term.
 //   - delta_rep: ordinal representation for δ (use ORDINAL_ZERO if no remainder).
 //   - It is assumed that δ < ω^β.
-// - ε₀: The string "E0_TYPE"
+// - ε_k: { type: 'epsilon', index: k_rep } where k_rep is an ordinal representation for k.
 
 const ORDINAL_ZERO = 0n;
 const ORDINAL_ONE = 1n;
 
 /**
- * Converts an Ordinal class instance (CNFOrdinal, EpsilonNaughtOrdinal, or WTowerOrdinal)
+ * Converts an Ordinal class instance (CNFOrdinal, EpsilonOrdinal, or WTowerOrdinal)
  * to the format expected by the f() function in ordinal_mapping.js.
- * Assumes CNFOrdinal, EpsilonNaughtOrdinal, WTowerOrdinal classes are globally available.
- * @param {CNFOrdinal | EpsilonNaughtOrdinal | WTowerOrdinal} ordInstance - An instance of an Ordinal class.
- * @returns {object|BigInt|string} The representation for f(). String for E0_TYPE.
+ * Assumes CNFOrdinal, EpsilonOrdinal, WTowerOrdinal classes are globally available.
+ * @param {CNFOrdinal | EpsilonOrdinal | WTowerOrdinal} ordInstance - An instance of an Ordinal class.
+ * @returns {object|BigInt|string} The representation for f().
  */
 function convertOrdinalInstanceToFFormat(ordInstance) {
     if (!ordInstance || !ordInstance.constructor || !ordInstance.constructor.name) {
         console.error("[ConvertInternal] ordInstance is null, undefined, or has no constructor/name:", ordInstance);
-        return ORDINAL_ZERO; 
+        return ORDINAL_ZERO;
     }
 
     console.log("[ConvertInternal] ordInstance.constructor.name is:", ordInstance.constructor.name);
 
-    // Check by constructor name (less robust, but good for debugging this specific issue)
-    if (ordInstance.constructor.name === 'WTowerOrdinal') {
-        console.log("[ConvertInternal] Matched WTowerOrdinal via constructor.name.");
-        return { type: 'w_tower', height: ordInstance.height }; 
+    if (ordInstance instanceof WTowerOrdinal) {
+        return { type: 'w_tower', height: ordInstance.height };
     }
-    
-    if (ordInstance.constructor.name === 'EpsilonNaughtOrdinal') {
-        console.log("[ConvertInternal] Matched EpsilonNaughtOrdinal via constructor.name.");
-        return "E0_TYPE";
+
+    if (ordInstance instanceof EpsilonOrdinal) {
+        return { type: 'epsilon', index: convertOrdinalInstanceToFFormat(ordInstance.index) };
     }
-    
-    if (ordInstance.constructor.name === 'CNFOrdinal') {
+
+    if (ordInstance instanceof CNFOrdinal) {
         console.log("[ConvertInternal] Matched CNFOrdinal via constructor.name.");
         if (ordInstance.isZero()) {
             return ORDINAL_ZERO;
@@ -114,18 +112,18 @@ function convertOrdinalInstanceToFFormat(ordInstance) {
         let c_num_for_f = Number(c_from_ordinal);
         if (c_from_ordinal > BigInt(Number.MAX_SAFE_INTEGER) || c_from_ordinal < BigInt(Number.MIN_SAFE_INTEGER)) {
             if (Number.isFinite(c_num_for_f)) {
-                 console.warn(`Coefficient ${c_from_ordinal.toString()} was outside JS Number safe integer range for f() mapping. Converted to ${c_num_for_f}.`);
+                console.warn(`Coefficient ${c_from_ordinal.toString()} was outside JS Number safe integer range for f() mapping. Converted to ${c_num_for_f}.`);
             } else {
-                 console.warn(`Coefficient ${c_from_ordinal.toString()} converted to ${c_num_for_f} for f() mapping.`);
+                console.warn(`Coefficient ${c_from_ordinal.toString()} converted to ${c_num_for_f} for f() mapping.`);
             }
         }
         let delta_rep_for_f;
         if (terms.length === 1) {
             delta_rep_for_f = ORDINAL_ZERO;
         } else {
-            const remainderTracer = ordInstance._tracer; 
+            const remainderTracer = ordInstance._tracer;
             const remainderTerms = terms.slice(1).map(t => ({
-                exponent: t.exponent.clone(remainderTracer), 
+                exponent: t.exponent.clone(remainderTracer),
                 coefficient: t.coefficient
             }));
             const remainderOrdinal = new CNFOrdinal(remainderTerms, remainderTracer);
@@ -135,14 +133,14 @@ function convertOrdinalInstanceToFFormat(ordInstance) {
     }
 
     console.error("[ConvertInternalFinal] Did not match any known constructor name. ordInstance.constructor.name was:", ordInstance.constructor.name, "Instance:", ordInstance);
-    return ORDINAL_ZERO; 
+    return ORDINAL_ZERO;
 }
 
 function isFiniteOrdinal(ordinalRep) {
     return typeof ordinalRep === 'bigint';
 }
 
-function fFinite(nBigInt, scale=1) {
+function fFinite(nBigInt, scale = 1) {
     if (typeof nBigInt !== 'bigint' || nBigInt < 0n) {
         throw new Error(`fFinite called with non-BigInt or negative: ${nBigInt}`);
     }
@@ -175,6 +173,8 @@ function addOneToOrdinal(betaOrdRep) {
         return { type: 'sum', beta: bExpRep, c: cCoeffInt, delta: addOneToOrdinal(dRemRep) };
     } else if (type === 'w_tower') { // NEW CASE
         // For beta = ω^^h, beta + 1 is represented as (ω^^h)*1 + 1
+        return { type: 'sum', beta: betaOrdRep, c: 1, delta: ORDINAL_ONE };
+    } else if (type === 'epsilon') { // NEW CASE for e_k + 1
         return { type: 'sum', beta: betaOrdRep, c: 1, delta: ORDINAL_ONE };
     } else {
         throw new TypeError(`Unknown ordinal object type for addOneToOrdinal: ${type} in ${JSON.stringify(betaOrdRep, bigIntReplacer)}`);
@@ -247,23 +247,80 @@ function generateOrdinalMemoKey(val) {
     throw new Error(`Unsupported type for memo key generation: ${type}`);
 }
 
-function f(alphaRep, params=DEFAULT_F_PARAMS) {
-    // Handle E0_TYPE first
+function f_omega_k_greater_than_e0(kRep, params) {
+    const k_ord = convertFFormatToOrdinalInstance(kRep);
+    const j_ord_index = findLargestEpsilonIndexLessThan(k_ord);
+
+    if (j_ord_index) {
+        // We found j, now we need e_j and e_{j+1}
+        const ej_ord = new EpsilonOrdinal(j_ord_index, null);
+        const ej_plus_1_ord = new EpsilonOrdinal(j_ord_index.add(CNFOrdinal.ONEStatic()), null);
+
+        const f_ej = f(convertOrdinalInstanceToFFormat(ej_ord), params);
+        const f_ej1 = f(convertOrdinalInstanceToFFormat(ej_plus_1_ord), params);
+        const f_k = f(kRep, params);
+
+        if (Math.abs(f_k) < 1e-9) {
+            throw new Error(`Division by near-zero in f(w^k) interpolation: f(k)=${f_k}`);
+        }
+
+        return f_ej + f_ej1 - (f_ej * f_ej1) / f_k;
+    }
+
+    // Fallback if j cannot be found, use original logic
+    return f_omega_k_less_than_e0(kRep, params);
+}
+
+function f_omega_k_less_than_e0(kRep, params) {
+    const fKRep = f(kRep, params);
+    const denominator = params.precomputed[8] - fKRep;
+    if (Math.abs(denominator) < 1e-9) {
+        throw new Error(`Division by near-zero in f(ω^k): f(k)=${fKRep} for k=${JSON.stringify(kRep, bigIntReplacer)}`);
+    }
+    return (params.precomputed[6] + fKRep * params.precomputed[7]) / denominator;
+}
+
+function f(alphaRep, params = DEFAULT_F_PARAMS) {
+    // Handle Epsilon type now
+    if (typeof alphaRep === 'object' && alphaRep !== null && alphaRep.type === 'epsilon') {
+        const indexRep = alphaRep.index;
+
+        // Base case: f(e_0) is a precomputed value.
+        if (indexRep === ORDINAL_ZERO) {
+            return params.precomputed[5];
+        }
+
+        // Recursive formula for f(e_k) where k > 0, from user
+        const f_of_k = f(indexRep, params);        // f
+        const f_of_e0 = params.precomputed[5];     // c
+        const scaleExp = params.scaleExp;          // s
+
+        const numerator = f_of_e0 * scaleExp * (f_of_k * (-2 + scaleExp) + f_of_e0 * scaleExp);
+        const denominator = -f_of_k + f_of_e0 * Math.pow(scaleExp, 2);
+
+        if (Math.abs(denominator) < 1e-9) {
+            throw new Error(`Division by near-zero in f(e_k): f(k)=${f_of_k} for k=${JSON.stringify(indexRep, bigIntReplacer)}`);
+        }
+
+        return numerator / denominator;
+    }
+
+    // Check for old "E0_TYPE" for backward compatibility if needed, but it should be deprecated.
     if (alphaRep === "E0_TYPE") {
-        return params.precomputed[5]; // Value for f(ε₀) is determined by params
+        return params.precomputed[5];
     }
 
     if (typeof alphaRep !== 'bigint' && (typeof alphaRep !== 'object' || alphaRep === null || !alphaRep.type)) {
         // Use bigIntReplacer here for error message readability if JSON.stringify is used for it
-        throw new TypeError(`Invalid ordinal representation type: ${typeof alphaRep} for ${alphaRep === null ? 'null' : (typeof alphaRep === 'object' ? JSON.stringify(alphaRep, bigIntReplacer) : alphaRep )}`);
+        throw new TypeError(`Invalid ordinal representation type: ${typeof alphaRep} for ${alphaRep === null ? 'null' : (typeof alphaRep === 'object' ? JSON.stringify(alphaRep, bigIntReplacer) : alphaRep)}`);
     }
 
     // Use the new custom key generation function
     const ordinalKeyPart = generateOrdinalMemoKey(alphaRep);
-    
+
     // Create a stable string representation of the relevant parts of the params object
-    const paramsKeyPart = `params:${params.scaleAdd}-${params.scaleMult}-${params.scaleExp}-${params.scaleTet}`;
-    
+    const paramsKeyPart = `params:${params.scaleAdd}-${params.scaleMult}-${params.scaleExp}-${params.scaleTet}-${params.scaleEpsilon}`;
+
     const memoKey = `${ordinalKeyPart}|${paramsKeyPart}`;
 
     if (memo.has(memoKey)) {
@@ -279,10 +336,10 @@ function f(alphaRep, params=DEFAULT_F_PARAMS) {
 
         if (type === 'w_tower') { // New Rule: α is ω↑↑n
             const height = args.height;
-            if (typeof height !== 'number' || height < 1 || !Number.isInteger(height)){
+            if (typeof height !== 'number' || height < 1 || !Number.isInteger(height)) {
                 throw new Error(`Invalid height for w_tower in f(): ${height}`);
             }
-            result = 1+params.precomputed[4]*fFinite(BigInt(height-1),params.scaleTet);
+            result = 1 + params.precomputed[4] * fFinite(BigInt(height - 1), params.scaleTet);
         } else if (type === 'pow') { // α = ω^k_rep
             const kRep = args.k;
             if (isFiniteOrdinal(kRep)) { // Rule 2a: k_rep is a finite ordinal j (BigInt) >= 0n
@@ -291,15 +348,19 @@ function f(alphaRep, params=DEFAULT_F_PARAMS) {
                     result = f(ORDINAL_ONE, params); // f(1n)
                 } else { // k_rep is finite j (BigInt) >= 1n. f(ω^j) = 1 + 2f(j-1) = (3j-2)/j.
                     const j_num = Number(jBigInt); // Convert BigInt to Number for formula
-                    result = 1 + params.precomputed[1]*fFinite(jBigInt-1n,params.scaleExp);
+                    result = 1 + params.precomputed[1] * fFinite(jBigInt - 1n, params.scaleExp);
                 }
             } else { // Rule 2b: k_rep >= ω (k_rep is an object representation)
-                const fKRep = f(kRep, params);
-                const denominator = params.precomputed[8] - fKRep;
-                if (Math.abs(denominator) < 1e-9) {
-                    throw new Error(`Division by near-zero in f(ω^k): f(k)=${fKRep} for k=${JSON.stringify(kRep, bigIntReplacer)}`);
+                if (kRep.type === 'epsilon') {
+                    return f(kRep, params); // w^e_k = e_k, so f(w^e_k) = f(e_k)
                 }
-                result = (params.precomputed[6] + fKRep * params.precomputed[7]) / denominator;
+
+                const k_ord = convertFFormatToOrdinalInstance(kRep);
+                if (k_ord.compareTo(EpsilonOrdinal.E_ZEROStatic()) > 0) {
+                    return f_omega_k_greater_than_e0(kRep, params);
+                } else {
+                    return f_omega_k_less_than_e0(kRep, params);
+                }
             }
         } else if (type === 'sum') { // Rule 3: α = ω^beta_rep * cNum + delta_rep
             const { beta: betaRep, c: cNum, delta: deltaRep } = args; // cNum is Number(original_BigInt_coeff)
@@ -307,14 +368,14 @@ function f(alphaRep, params=DEFAULT_F_PARAMS) {
             // Validate cNum: it should be a positive number (possibly Infinity if original BigInt was huge)
             // The Ordinal class ensures coefficients are positive BigInts for its terms.
             // convertOrdinalInstanceToFFormat converts this to Number for cNum.
-            if (typeof cNum !== 'number' || !(Number.isFinite(cNum) || cNum === Infinity) || (cNum <= 0 && cNum !== Infinity) ) {
-                 throw new Error(`Mapping 'sum' type received cNum=${cNum}, which is not a positive finite number or positive Infinity as expected from a positive coefficient.`);
+            if (typeof cNum !== 'number' || !(Number.isFinite(cNum) || cNum === Infinity) || (cNum <= 0 && cNum !== Infinity)) {
+                throw new Error(`Mapping 'sum' type received cNum=${cNum}, which is not a positive finite number or positive Infinity as expected from a positive coefficient.`);
             }
             if (Number.isFinite(cNum) && cNum < 1) {
                 // This should ideally not happen if the original coefficient was a positive BigInt.
                 // If Number(positive_BigInt) became < 1 (e.g. 0), it's an issue.
-                 console.warn(`Mapping 'sum' received cNum=${cNum} < 1. The mapping formula assumes c >= 1 for ω^β*c.`);
-                 // For robustness, if it's < 1 but finite, the formula below will use Math.max(0, floor(cNum-1))
+                console.warn(`Mapping 'sum' received cNum=${cNum} < 1. The mapping formula assumes c >= 1 for ω^β*c.`);
+                // For robustness, if it's < 1 but finite, the formula below will use Math.max(0, floor(cNum-1))
             }
 
 
@@ -337,16 +398,16 @@ function f(alphaRep, params=DEFAULT_F_PARAMS) {
                 const cMinus1BigInt = BigInt(Math.max(0, Math.floor(cNum - 1.0)));
                 const cBigInt = BigInt(Math.floor(cNum)); // cNum should be >= 1 here based on prior checks for typical cases
 
-                f_c_minus_1_val = fFinite(cMinus1BigInt,params.scaleMult);
-                f_c_val = fFinite(cBigInt,params.scaleMult);
+                f_c_minus_1_val = fFinite(cMinus1BigInt, params.scaleMult);
+                f_c_val = fFinite(cBigInt, params.scaleMult);
             }
-            
+
             const fOmegaBetaTimesC = fOmegaBeta +
                 (fOmegaBetaPlus1 - fOmegaBeta) * f_c_minus_1_val;
 
             if (deltaRep === ORDINAL_ZERO) { // delta is 0n
                 result = fOmegaBetaTimesC;
-            } else { 
+            } else {
                 const fOmegaBetaTimesCPlus1Coeff = fOmegaBeta +
                     (fOmegaBetaPlus1 - fOmegaBeta) * f_c_val;
 
@@ -382,43 +443,44 @@ if (typeof require !== 'undefined' && require.main === module) { // Basic check 
     // Use OLD_F_PARAMS for these original test cases to match expected values.
     const testParams = OLD_F_PARAMS;
 
-    console.log(`f(0) = ${f(ORDINAL_ZERO, testParams)}`); 
-    console.log(`f(1) = ${f(ORDINAL_ONE, testParams)}`); 
-    console.log(`f(2) = ${f(2n, testParams)}`); 
+    console.log(`f(0) = ${f(ORDINAL_ZERO, testParams)}`);
+    console.log(`f(1) = ${f(ORDINAL_ONE, testParams)}`);
+    console.log(`f(2) = ${f(2n, testParams)}`);
 
-    console.log(`f(ε₀) = ${f("E0_TYPE", testParams)}`); 
+    const epsilon0Rep = { type: 'epsilon', index: ORDINAL_ZERO };
+    console.log(`f(ε₀) = ${f(epsilon0Rep, testParams)}`);
 
-    console.log(`f(ω^0) = ${f({ type: 'pow', k: ORDINAL_ZERO }, testParams)}`); 
+    console.log(`f(ω^0) = ${f({ type: 'pow', k: ORDINAL_ZERO }, testParams)}`);
 
     const omegaRep = { type: 'pow', k: ORDINAL_ONE };
-    console.log(`f(ω) = ${f(omegaRep, testParams)}`); 
+    console.log(`f(ω) = ${f(omegaRep, testParams)}`);
 
     const omegaSqRep = { type: 'pow', k: 2n };
-    console.log(`f(ω^2) = ${f(omegaSqRep, testParams)}`); 
+    console.log(`f(ω^2) = ${f(omegaSqRep, testParams)}`);
 
     const omegaCbRep = { type: 'pow', k: 3n };
-    console.log(`f(ω^3) = ${f(omegaCbRep, testParams)}`); 
+    console.log(`f(ω^3) = ${f(omegaCbRep, testParams)}`);
 
     const omegaOmegaRep = { type: 'pow', k: omegaRep };
-    console.log(`f(ω^ω) = ${f(omegaOmegaRep, testParams)}`); 
+    console.log(`f(ω^ω) = ${f(omegaOmegaRep, testParams)}`);
 
     const omegaOmegaOmegaRep = { type: 'pow', k: omegaOmegaRep };
-    console.log(`f(ω^ω^ω) = ${f(omegaOmegaOmegaRep, testParams)}`); 
+    console.log(`f(ω^ω^ω) = ${f(omegaOmegaOmegaRep, testParams)}`);
 
     const omegaTimes2Rep = { type: 'sum', beta: ORDINAL_ONE, c: 2, delta: ORDINAL_ZERO };
-    console.log(`f(ω*2) = ${f(omegaTimes2Rep, testParams)}`); 
+    console.log(`f(ω*2) = ${f(omegaTimes2Rep, testParams)}`);
 
     const omegaTimes3Rep = { type: 'sum', beta: ORDINAL_ONE, c: 3, delta: ORDINAL_ZERO };
-    console.log(`f(ω*3) = ${f(omegaTimes3Rep, testParams)}`); 
+    console.log(`f(ω*3) = ${f(omegaTimes3Rep, testParams)}`);
 
     const omegaTimes2Plus1Rep = { type: 'sum', beta: ORDINAL_ONE, c: 2, delta: ORDINAL_ONE };
-    console.log(`f(ω*2+1) = ${f(omegaTimes2Plus1Rep, testParams)}`); 
+    console.log(`f(ω*2+1) = ${f(omegaTimes2Plus1Rep, testParams)}`);
 
     const omegaSqTimes2Rep = { type: 'sum', beta: 2n, c: 2, delta: ORDINAL_ZERO };
-    console.log(`f(ω^2*2) = ${f(omegaSqTimes2Rep, testParams)}`); 
+    console.log(`f(ω^2*2) = ${f(omegaSqTimes2Rep, testParams)}`);
 
     const omegaSqPlusOmegaRep = { type: 'sum', beta: 2n, c: 1, delta: omegaRep };
-    console.log(`f(ω^2+ω) = ${f(omegaSqPlusOmegaRep, testParams)}`); 
+    console.log(`f(ω^2+ω) = ${f(omegaSqPlusOmegaRep, testParams)}`);
 
     console.log("Test cases finished.");
 }

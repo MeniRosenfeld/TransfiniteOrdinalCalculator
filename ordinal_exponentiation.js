@@ -1,13 +1,13 @@
 // ordinal_exponentiation.js
 
-// Assumes CNFOrdinal, EpsilonNaughtOrdinal, WTowerOrdinal classes and their helpers are defined.
+// Assumes CNFOrdinal, EpsilonOrdinal, WTowerOrdinal classes and their helpers are defined.
 // Assumes comparison, addition, multiplication, auxiliary ops are defined.
 
 /**
  * Raises this CNFOrdinal to the power of another CNFOrdinal. ( α^β )
  * This is the specific implementation for CNFOrdinal ^ CNFOrdinal.
  */
-CNFOrdinal.prototype.powerCNF = function(exponentCNF) {
+CNFOrdinal.prototype.powerCNF = function (exponentCNF) {
     if (!(exponentCNF instanceof CNFOrdinal)) {
         throw new Error("Exponent must be a CNFOrdinal for powerCNF.");
     }
@@ -54,20 +54,20 @@ CNFOrdinal.prototype.powerCNF = function(exponentCNF) {
             if (this._tracer) this._tracer.consume();
             return new CNFOrdinal(k ** r_val, this._tracer);
         }
-        
+
         if (this._tracer) this._tracer.consume(2);
         const xi_exp = B_exp.divideByOmega();
         const k_pow_r_val = k ** r_val;
         const k_pow_r_ord = new CNFOrdinal(k_pow_r_val, this._tracer);
         const omega_pow_xi = new CNFOrdinal([{ exponent: xi_exp, coefficient: 1n }], this._tracer);
-        
+
         if (this._tracer) this._tracer.consume();
         return omega_pow_xi.multiply(k_pow_r_ord);
     }
 
     if (!base.isFinite() && exponent.isFinite()) {
         const m = exponent.getFinitePart();
-        if (m < 0n) { 
+        if (m < 0n) {
             throw new Error("Finite exponent cannot be negative in ordinal exponentiation.");
         }
         // Optimized case for (w^a*c)^m = w^(a*m)*c^m if c is 1 (or handled carefully)
@@ -88,7 +88,7 @@ CNFOrdinal.prototype.powerCNF = function(exponentCNF) {
             const new_omega_exponent = a_ord.multiply(m_as_ordinal);
             return new CNFOrdinal([{ exponent: new_omega_exponent, coefficient: 1n }], this._tracer);
         }
-         // General case: (X)^m = X * X * ... * X (m times)
+        // General case: (X)^m = X * X * ... * X (m times)
         let result = CNFOrdinal.ONEStatic().clone(this._tracer);
         for (let i = 0n; i < m; i++) {
             if (this._tracer) this._tracer.consume();
@@ -125,53 +125,52 @@ CNFOrdinal.prototype.powerCNF = function(exponentCNF) {
 };
 
 /**
- * Raises this EpsilonNaughtOrdinal to the power of another ordinal.
- * This is the specific implementation for e_0 ^ other.
- */
-EpsilonNaughtOrdinal.prototype.powerE0 = function(exponentOrdinal) {
-    if (this._tracer) this._tracer.consume();
-    if (exponentOrdinal instanceof CNFOrdinal) {
-        if (exponentOrdinal.isZero()) return CNFOrdinal.ONEStatic().clone(this._tracer); // e_0 ^ 0 = 1
-        if (exponentOrdinal.equals(CNFOrdinal.ONEStatic())) return this.clone(this._tracer); // e_0 ^ 1 = e_0
-        throw new Error("e_0 ^ CNFOrdinal (where CNFOrdinal is not 0 or 1) is unsupported in this implementation.");
-    }
-    if (exponentOrdinal instanceof EpsilonNaughtOrdinal) {
-        throw new Error("e_0 ^ e_0 is unsupported in this implementation.");
-    }
-    throw new Error("EpsilonNaughtOrdinal.powerE0: Cannot power with unknown or unconverted ordinal type.");
-};
-
-/**
  * General ordinal exponentiation dispatcher.
  */
 function powerOrdinals(base, exponent) {
-    if (base instanceof WTowerOrdinal) base = base.toCNFOrdinal();
-    if (exponent instanceof WTowerOrdinal) exponent = exponent.toCNFOrdinal();
+    if (base._tracer) base._tracer.consume();
 
-    if (base instanceof CNFOrdinal) {
-        if (exponent instanceof CNFOrdinal) return base.powerCNF(exponent);
-        if (exponent instanceof EpsilonNaughtOrdinal) { // x ^ e_0
-            if (base.isZero()) return CNFOrdinal.ZEROStatic().clone(base._tracer); // 0 ^ e_0 = 0
-            if (base.equals(CNFOrdinal.ONEStatic())) return CNFOrdinal.ONEStatic().clone(base._tracer); // 1 ^ e_0 = 1
-            return exponent.clone(base._tracer); // e_0 for other x
-        }
-    } else if (base instanceof EpsilonNaughtOrdinal) { // e_0 ^ x
-        return base.powerE0(exponent);
+    // Convert all operands to CNFOrdinal first to ensure consistent types.
+    const baseCNF = (base instanceof CNFOrdinal) ? base : new CNFOrdinal(base, base._tracer);
+    const exponentCNF = (exponent instanceof CNFOrdinal) ? exponent : new CNFOrdinal(exponent, exponent._tracer);
+
+    // Handle identity cases first.
+    if (exponentCNF.isZero()) {
+        return CNFOrdinal.ONEStatic().clone(base._tracer);
     }
-    throw new Error(`powerOrdinals: Unsupported ordinal types for exponentiation: ${base?.constructor?.name} and ${exponent?.constructor?.name}`);
+    if (exponentCNF.equals(CNFOrdinal.ONEStatic())) {
+        return baseCNF.clone();
+    }
+    if (baseCNF.equals(CNFOrdinal.ONEStatic())) {
+        return CNFOrdinal.ONEStatic().clone(base._tracer);
+    }
+    if (baseCNF.isZero()) {
+        return CNFOrdinal.ZEROStatic().clone(base._tracer);
+    }
+
+    // Critical identity: w^e_k = e_k
+    if (baseCNF.isOmega() && exponent instanceof EpsilonOrdinal) {
+        return exponent.clone();
+    }
+
+    // Rule: a^e_k = e_k for 2 <= a < e_k
+    const two = CNFOrdinal.fromInt(2);
+    if (exponent instanceof EpsilonOrdinal && baseCNF.compareTo(two) >= 0 && baseCNF.compareTo(exponent) < 0) {
+        return exponent.clone();
+    }
+
+    return baseCNF.powerCNF(exponentCNF);
 }
 
 // Public API for power on prototypes
-CNFOrdinal.prototype.power = function(otherOrdinal) {
+CNFOrdinal.prototype.power = function (otherOrdinal) {
     return powerOrdinals(this, otherOrdinal);
 };
-EpsilonNaughtOrdinal.prototype.power = function(otherOrdinal) {
+EpsilonOrdinal.prototype.power = function (otherOrdinal) {
     return powerOrdinals(this, otherOrdinal);
 };
 if (typeof WTowerOrdinal !== 'undefined') {
-    WTowerOrdinal.prototype.power = function(otherOrdinal) {
+    WTowerOrdinal.prototype.power = function (otherOrdinal) {
         return powerOrdinals(this, otherOrdinal);
     };
 }
-
-// ordinal_exponentiation.js

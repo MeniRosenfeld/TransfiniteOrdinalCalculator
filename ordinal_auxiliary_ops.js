@@ -15,7 +15,7 @@
  * - If γ = 0, γ⊖1 = 0 (convention for non-negative exponent results).
  * @returns {CNFOrdinal} A new CNFOrdinal instance representing the predecessor.
  */
-CNFOrdinal.prototype.exponentPredecessor = function() {
+CNFOrdinal.prototype.exponentPredecessor = function () {
     if (this._tracer) this._tracer.consume(); // Count as an operation
 
     if (this.isZero()) {
@@ -29,16 +29,16 @@ CNFOrdinal.prototype.exponentPredecessor = function() {
     }
 
     const lastTermIndex = this.terms.length - 1;
-    const lastTerm = this.terms[lastTermIndex]; 
+    const lastTerm = this.terms[lastTermIndex];
 
-    if (lastTerm.exponent.isZero()) { 
-        const newTerms = this.terms.map(t => ({ 
+    if (lastTerm.exponent.isZero()) {
+        const newTerms = this.terms.map(t => ({
             exponent: t.exponent.clone(this._tracer),
-            coefficient: t.coefficient 
+            coefficient: t.coefficient
         }));
 
-        if (lastTerm.coefficient > 1n) { 
-            newTerms[lastTermIndex].coefficient -= 1n; 
+        if (lastTerm.coefficient > 1n) {
+            newTerms[lastTermIndex].coefficient -= 1n;
         } else {
             newTerms.pop();
         }
@@ -56,25 +56,46 @@ CNFOrdinal.prototype.exponentPredecessor = function() {
  * Assumes `this` is the ordinal B (should be composed of terms with exp > 0).
  * @returns {CNFOrdinal} A new CNFOrdinal instance representing ξ.
  */
-CNFOrdinal.prototype.divideByOmega = function() {
-    if (this._tracer) this._tracer.consume(); 
+CNFOrdinal.prototype.divideByOmega = function () {
+    if (this._tracer) this._tracer.consume();
 
     if (this.isZero() || this.isFinite()) {
         return CNFOrdinal.ZEROStatic().clone(this._tracer); // Use CNFOrdinal
     }
 
     const newTerms = [];
-    for (const term of this.terms) { 
+    for (const term of this.terms) {
         const newExponent = term.exponent.exponentPredecessor();
 
-        if (!newExponent.isZero() || term.coefficient > 0n) { 
+        if (!newExponent.isZero() || term.coefficient > 0n) {
             newTerms.push({ exponent: newExponent, coefficient: term.coefficient });
         }
     }
 
     const result = new CNFOrdinal(newTerms, this._tracer); // Use CNFOrdinal
-    result._normalize(); 
+    result._normalize();
     return result;
 };
 
-// ordinal_auxiliary_ops.js
+function findLargestEpsilonIndexLessThan(k_ord) {
+    if (!isOrdinal(k_ord)) {
+        return null; // Not an ordinal
+    }
+
+    if (k_ord.isFinite() || k_ord instanceof WTowerOrdinal) {
+        return null; // Finite numbers and w-towers are less than e_0
+    }
+
+    if (k_ord instanceof EpsilonOrdinal) {
+        return k_ord.index.clone(); // For e_k, return k
+    }
+
+    if (k_ord instanceof CNFOrdinal) {
+        if (k_ord.terms.length > 0) {
+            const leadingExp = k_ord.terms[0].exponent;
+            return findLargestEpsilonIndexLessThan(leadingExp); // Recurse on the exponent
+        }
+    }
+
+    return null; // Default for any other case
+}

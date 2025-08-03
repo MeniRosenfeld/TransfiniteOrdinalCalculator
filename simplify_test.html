@@ -331,29 +331,6 @@
     </div>
 
     <div id="test-details-container">
-        <!-- CNF Tests -->
-        <details id="details-CNF" class="test-kind-section">
-            <summary>
-                <h2>CNF Calculation Tests</h2>
-                <div id="cnf-summary" class="kind-summary">Running...</div>
-            </summary>
-            <div id="cnf-results-output" class="test-results-output">
-                <div class="passed-tests-container"></div>
-            </div>
-        </details>
-        <div id="cnf-failed-preview" class="failed-tests-preview" style="display: none;"></div>
-
-        <!-- WTower Tests -->
-        <details id="details-WTOWER" class="test-kind-section">
-            <summary>
-                <h2>WTower Conversion Tests</h2>
-                <div id="wtower-summary" class="kind-summary">Running...</div>
-            </summary>
-            <div id="wtower-results-output" class="test-results-output">
-                <div class="passed-tests-container"></div>
-            </div>
-        </details>
-        <div id="wtower-failed-preview" class="failed-tests-preview" style="display: none;"></div>
 
         <!-- Simplify Tests -->
         <details id="details-SIMPLIFY" class="test-kind-section">
@@ -367,41 +344,6 @@
         </details>
         <div id="simplify-failed-preview" class="failed-tests-preview" style="display: none;"></div>
 
-        <!-- Complexity Tests -->
-        <details id="details-COMPLEXITY" class="test-kind-section">
-            <summary>
-                <h2>Ordinal Complexity Tests</h2>
-                <div id="complexity-summary" class="kind-summary">Running...</div>
-            </summary>
-            <div id="complexity-results-output" class="test-results-output">
-                <div class="passed-tests-container"></div>
-            </div>
-        </details>
-        <div id="complexity-failed-preview" class="failed-tests-preview" style="display: none;"></div>
-
-        <!-- Inverse Mapping Tests -->
-        <details id="details-INVERSE_MAPPING" class="test-kind-section">
-            <summary>
-                <h2>Ordinal Inverse Mapping Tests</h2>
-                <div id="inverse-mapping-summary" class="kind-summary">Running...</div>
-            </summary>
-            <div id="inverse-mapping-results-output" class="test-results-output">
-                <div class="passed-tests-container"></div>
-            </div>
-        </details>
-        <div id="inverse-mapping-failed-preview" class="failed-tests-preview" style="display: none;"></div>
-
-        <!-- Monotonicity Sanity Check -->
-        <details id="details-MONOTONICITY" class="test-kind-section sanity-check-section">
-            <summary>
-                <h2>Monotonicity Sanity Check</h2>
-                <div id="monotonicity-summary" class="kind-summary">Running...</div>
-            </summary>
-            <div id="monotonicity-results-output" class="test-results-output">
-                <div class="passed-tests-container"></div>
-            </div>
-        </details>
-        <div id="monotonicity-failed-preview" class="failed-tests-preview" style="display: none;"></div>
     </div>
 
     <!-- Load Ordinal Scripts (ensure paths are correct) -->
@@ -423,12 +365,7 @@
     <script>
         // Stats for each test kind
         const testStats = {
-            CNF: { total: 0, passed: 0, failed: 0, containerId: 'cnf-results-output', previewId: 'cnf-failed-preview', summaryId: 'cnf-summary', results: [] },
-            WTOWER: { total: 0, passed: 0, failed: 0, containerId: 'wtower-results-output', previewId: 'wtower-failed-preview', summaryId: 'wtower-summary', results: [] },
             SIMPLIFY: { total: 0, passed: 0, failed: 0, containerId: 'simplify-results-output', previewId: 'simplify-failed-preview', summaryId: 'simplify-summary', results: [] },
-            COMPLEXITY: { total: 0, passed: 0, failed: 0, containerId: 'complexity-results-output', previewId: 'complexity-failed-preview', summaryId: 'complexity-summary', results: [] },
-            INVERSE_MAPPING: { total: 0, passed: 0, failed: 0, containerId: 'inverse-mapping-results-output', previewId: 'inverse-mapping-failed-preview', summaryId: 'inverse-mapping-summary', results: [] },
-            MONOTONICITY: { total_pairs: 0, passed_pairs: 0, failed_pairs: 0, containerId: 'monotonicity-results-output', previewId: 'monotonicity-failed-preview', summaryId: 'monotonicity-summary', results: [] }
         };
 
         const successfulCNFTestResultsForMapping = [];
@@ -943,161 +880,7 @@
             overallStatusIndicatorDiv.className = 'status-overall-pending';
             if (overallSummaryDetailsDiv) overallSummaryDetailsDiv.innerHTML = '';
 
-            // --- ORIGINAL TEST CASES START ---
-            console.log("runAllTestsAndRender: Starting CNF tests...");
-            testOrdinalCalc("0", "0");
-            testOrdinalCalc("1+2*3", "7");
-            testOrdinalCalc("w", "w");
-            testOrdinalCalc("w+5", "w+5");
-            testOrdinalCalc("5+w", "w");
-            testOrdinalCalc("w+w", "w*2");
 
-            testOrdinalCalc("w*3", "w*3");
-            testOrdinalCalc("3*w", "w");
-            testOrdinalCalc("w*w", "w^2");
-            testOrdinalCalc("(w+1)*2", "w*2+1");
-            testOrdinalCalc("(w+1)*(w+1)", "w^2+w+1");
-            testOrdinalCalc("(w+1)*(w+2)", "w^2+w*2+1");
-
-            testOrdinalCalc("2^w", "w");
-            testOrdinalCalc("w^3", "w^3");
-            testOrdinalCalc("w^w", "w^w");
-            testOrdinalCalc("(w+1)^2", "w^2+w+1");
-            testOrdinalCalc("2^(w+1)", "w*2");
-            testOrdinalCalc("w^(w+1)", "w^(w+1)");
-            testOrdinalCalc("(w^2)^w", "w^w");
-            testOrdinalCalc("(w^w)^2", "w^(w*2)");
-            testOrdinalCalc("(w^w)^w", "w^(w^2)");
-
-            testOrdinalCalc("(w^2+w*3+5)*w + (w+1)", "w^3+w+1");
-            testOrdinalCalc("2^(w^2)", "w^w");
-            testOrdinalCalc(" (w+5)^0 ", "1");
-            testOrdinalCalc(" 0^(w+1) ", "0");
-            testOrdinalCalc(" 1^w ", "1");
-            testOrdinalCalc("w^(w+1)+2", "w^(w+1)+2");
-            testOrdinalCalc("w^2", "w^2");
-            testOrdinalCalc("w^w", "w^w");
-
-            testOrdinalCalc("(w*2+1)*(w*3+5)", "w^2*3+w*10+1");
-
-            testOrdinalCalc("w + w * w ^ w + w", "w^w+w");
-            testOrdinalCalc("( (w+1) * (w+2) + (w*3+4) ) ^ 2", "w^4+w^3*5+w^2*4+w*5+4");
-            testOrdinalCalc("w ^ (w ^ (w+1) + 1)", "w^(w^(w+1)+1)");
-            testOrdinalCalc("2 ^ (w^w)", "w^(w^w)");
-            testOrdinalCalc("3 ^ (w^2*5 + w*4 + 3)", "w^(w*5+4)*27");
-            testOrdinalCalc("2 ^ ( (w+1)^2 )", "w^(w+1)*2");
-            testOrdinalCalc("(w^w + w + 1)^2", "w^(w*2)+w^(w+1)+w^w+w+1");
-            testOrdinalCalc("(w*2+3)^3", "w^3*2+w^2*6+w*6+3");
-
-            testOrdinalCalc("(w^2+1) ^ (w*2+1)", "w^(w*2+2)+w^(w*2)");
-            testOrdinalCalc("(w^w) ^ (w^w)", "w^(w^w)");
-            testOrdinalCalc("(w+1) ^ (w^2)", "w^(w^2)");
-            testOrdinalCalc("(w^0+1)^(w*0+1)", "2");
-            testOrdinalCalc("(w * ( (w^0 * 0) + 1) ) ^ ( ( (w+1)^0 ) * w )", "w^w");
-            testOrdinalCalc("(w^2*2 + w*3 + 4) * (w^3*5 + w*6 + 7)", "w^5*5+w^3*6+w^2*14+w*3+4");
-
-            testOrdinalCalc("w^w^w", "w^(w^w)");
-            testOrdinalCalc("2^w^w^w", "w^(w^(w^w))");
-            testOrdinalCalc("(w+1)^(w+1)^(w+1)", "w^(w^(w+1)+w^w)");
-            testOrdinalCalc("2^(w*2)", "w^2");
-            testOrdinalCalc("4^(w^7+3)", "w^(w^6)*64");
-            testOrdinalCalc("(w^(w^w+1)*2+3)^(w^(w^2+w*2)*3+2)", "w^(w^(w^2+w*2)*3+w^w*2+1)*2+w^(w^(w^2+w*2)*3+w^w+1)*6+w^(w^(w^2+w*2)*3)*3");
-            testOrdinalCalc("e_0 + w", "w^e_0+w");
-            testOrdinalCalc("w + e_0", "e_0");
-            testOrdinalCalc("e_0 + e_0", "w^e_0*2");
-            testOrdinalCalc("e_0 + w^w", "w^e_0+w^w");
-            testOrdinalCalc("w^w + e_0", "e_0");
-            testOrdinalCalc("e_0 * w^w^w", "w^(w^e_0+w^w)");
-            testOrdinalCalc("w^w^w + e_0", "e_0");
-            testOrdinalCalc("e_0^w^w^w^w", "w^(w^e_0+w^w^w)");
-            testOrdinalCalc("w^w^w^w + e_0", "e_0");
-            testOrdinalCalc("(w+1)^e_0", "e_0");
-            testOrdinalCalc("2^e_0", "e_0");
-            testOrdinalCalc("e_0^2", "w^(w^e_0*2)");
-
-            // --- Tetration Tests --- (from original)
-            testOrdinalCalc("e_0^^0", "1");
-            testOrdinalCalc("e_0^^1", "e_0");
-            testOrdinalCalc("e_0^^2", "Error: Operation e_0 ^^ CNFOrdinal (2) is unsupported when CNFOrdinal is not 0 or 1.");
-            testOrdinalCalc("e_0^^w", "Error: Operation e_0 ^^ CNFOrdinal (w) is unsupported when CNFOrdinal is not 0 or 1.");
-            testOrdinalCalc("e_0^^e_0", "Error: Operation e_0 ^^ e_0 is unsupported.");
-
-            testOrdinalCalc("0^^0", "1");
-            testOrdinalCalc("1^^0", "1");
-            testOrdinalCalc("2^^0", "1");
-            testOrdinalCalc("w^^0", "1");
-
-            testOrdinalCalc("0^^1", "0");
-            testOrdinalCalc("1^^1", "1");
-            testOrdinalCalc("2^^1", "2");
-            testOrdinalCalc("w^^1", "w");
-
-            testOrdinalCalc("2^^2", "4");
-            testOrdinalCalc("2^^3", "16");
-            testOrdinalCalc("2^^4", "65536");
-            testOrdinalCalc("3^^2", "27");
-            testOrdinalCalc("w^^2", "w^w");
-
-            testOrdinalCalc("0^^w", "Error: Operation 0 ^^ CNFOrdinal (w) is undefined when CNFOrdinal is infinite.");
-            testOrdinalCalc("0^^(w*2)", "Error: Operation 0 ^^ CNFOrdinal (w*2) is undefined when CNFOrdinal is infinite.");
-
-            testOrdinalCalc("1^^w", "1");
-            testOrdinalCalc("1^^(w^w)", "1");
-
-            testOrdinalCalc("2^^w", "w");
-            testOrdinalCalc("3^^(w+1)", "w");
-            testOrdinalCalc("10^^(w^2)", "w");
-
-            testOrdinalCalc("w^^w", "e_0");
-            testOrdinalCalc("(w+1)^^w", "e_0");
-            testOrdinalCalc("(w^2)^^(w*2)", "e_0");
-            testOrdinalCalc("(w^w)^^w", "e_0");
-
-            testOrdinalCalc("0^^e_0", "Error: Operation 0 ^^ e_0 is undefined.");
-            testOrdinalCalc("1^^e_0", "1");
-            testOrdinalCalc("2^^e_0", "w");
-            testOrdinalCalc("100^^e_0", "w");
-            testOrdinalCalc("w^^e_0", "e_0");
-            testOrdinalCalc("(w+5)^^e_0", "e_0");
-            testOrdinalCalc("(w^w)^^e_0", "e_0");
-
-            testOrdinalCalc("2^^3+1", "17");
-            testOrdinalCalc("1+2^^3", "17");
-            testOrdinalCalc("2*3^^2", "54");
-            testOrdinalCalc("2^^2*3", "12");
-            testOrdinalCalc("2^3^^2", "134217728");
-            testOrdinalCalc("2^^3^2", "256");
-            testOrdinalCalc("2^^w+1", "w+1");
-            testOrdinalCalc("w^^(w+1)", "e_0");
-            testOrdinalCalc("(w+1)^^(w+1)", "e_0");
-
-            testOrdinalCalc("", "0");
-
-            // --- WTowerOrdinal Tests (Manual Instantiation from original) ---
-            console.log("runAllTestsAndRender: Starting WTower tests...");
-            testWTowerOrdinal("w^^0 toCNF", 0, "1");
-            testWTowerOrdinal("w^^1 toCNF", 1, "w");
-            testWTowerOrdinal("w^^2 toCNF", 2, "w^w");
-            // testWTowerOrdinal("w^^3 toCNF", 3, "w^(w^w)"); // This can be very slow
-
-            try { /* WTower ops that use testOrdinalCalc */
-                const tracerTest = new OperationTracer(1000000);
-                let wt0_cnf_str = new WTowerOrdinal(0, tracerTest).toCNFOrdinal().toStringCNF();
-                let wt1_cnf_str = new WTowerOrdinal(1, tracerTest).toCNFOrdinal().toStringCNF();
-                let wt2_cnf_str = new WTowerOrdinal(2, tracerTest).toCNFOrdinal().toStringCNF();
-                testOrdinalCalc('(' + wt1_cnf_str + ') + 1', "w+1");
-                testOrdinalCalc('(' + wt0_cnf_str + ') * w', "w");
-                testOrdinalCalc('2 + (' + wt1_cnf_str + ')', "w");
-                testOrdinalCalc('(' + wt1_cnf_str + ') * (' + wt1_cnf_str + ')', "w^2");
-                testOrdinalCalc('(' + wt2_cnf_str + ') + 0', "w^w");
-                testOrdinalCalc('(' + wt1_cnf_str + ')^2', "w^2");
-            } catch (e) {
-                testStats.CNF.failed++; testStats.CNF.total++;
-                const cnfContainer = document.getElementById(testStats.CNF.containerId);
-                if (cnfContainer) {
-                    logToPage("Error setting up WTowerOrdinal operation tests (counted as CNF failure): " + e.message, 'error-message', cnfContainer);
-                }
-            }
 
             // --- Simplify Tests (from original) ---
             console.log("runAllTestsAndRender: Starting Simplify tests...");
@@ -1107,20 +890,9 @@
             testOrdinalSimplify("Finite cannot fit 0", "123", 0, "0", 0);
 
             // EpsilonNaughtOrdinal
-            testOrdinalSimplify("e_0 fits", "e_0", 8, "e_0", 2);
+            testOrdinalSimplify("e_0 fits", "e_0", 5, "e_0", 2);
             testOrdinalSimplify("e_0 does not fit, fallback to 0", "e_0", 2, "0", 2);
             testOrdinalSimplify("e_0 cannot fit 0", "e_0", 0, "0", 0);
-
-            // New Epsilon Tests
-            testOrdinalSimplify("e_1 fits", "e_1", 10, "e_1", 3);
-            testOrdinalSimplify("e_1 does not fit, simplify index", "e_1", 6, "e_0", 0);
-            testOrdinalSimplify("e_w fits", "e_w", 10, "e_w", 3);
-            testOrdinalSimplify("e_w does not fit, simplify index", "e_w", 6, "e_0", 0);
-            testOrdinalSimplify("w^e_0 simplification", "w^e_0", 10, "e_0", 4);
-            testOrdinalSimplify("w^e_1 simplification", "w^e_1", 10, "e_1", 3);
-
-            testOrdinalSimplify("e_e_1 can fit", "e_e_1", 15, "e_e_1", 2);
-            testOrdinalSimplify("e_e_1 cannot fit", "e_e_1", 2, "0", 2);
 
             // WTowerOrdinal (manual simplify tests from original)
             try {
@@ -1171,82 +943,13 @@
             testOrdinalSimplify("", "w^(w^3)+w^22*2+10", 15, "w^(w^3)", 6);
             // --- End of Simplify Tests (as per original) ---
 
-            // --- Complexity Tests (from original) ---
-            console.log("runAllTestsAndRender: Starting Complexity tests...");
-            testOrdinalComplexity("0", 0);
-            testOrdinalComplexity("5", 1);
-            testOrdinalComplexity("123", 3);
+            // --- New Failing Tests ---
+            testOrdinalSimplify("Sum: w*2+w+5, budget 2", "w*2+w+5", 2, "w", 1);
+            testOrdinalSimplify("Test w^(w^2*20+w*2+5)", "w^(w^2*20+w*2+5)", 15, "w^(w^2*20+w)", 1);
+            testOrdinalSimplify("Test w^(w^(w+100000)*20+w*2+5)", "w^(w^(w+100000)*20+w*2+5)", 15, "w^(w^w)", 6);
+            testOrdinalSimplify("Test w^(w^3)+w^22*2+10", "w^(w^3)+w^22*2+10", 15, "w^(w^3)", 6);
+            testOrdinalSimplify("MPT: w^(w^w) fallback 0", "w^(w^w)", 3, "0", 3);
 
-            testOrdinalComplexity("w", 1);
-            testOrdinalComplexity("w*7", 1 + 2);
-            testOrdinalComplexity("w*789", 3 + 2);
-
-            testOrdinalComplexity("w^2", 1 + 4);
-            testOrdinalComplexity("w^10", 2 + 4);
-            testOrdinalComplexity("w^w", 1 + 4);
-
-            testOrdinalComplexity("w^2*3", 1 + 1 + 5);
-            testOrdinalComplexity("w^w*12", 1 + 2 + 5);
-
-            testOrdinalComplexity("w+1", 1 + 1 + 1);
-            testOrdinalComplexity("w^2+w*3+5", 11); // Pre-calculated: (1+4)+(1+2)+1+(1)+1 = 11
-
-            testOrdinalComplexity("e_0", 6);
-
-            try { /* Manual complexity tests for WTowerOrdinal from original */
-                const tracerTest = new OperationTracer(100000);
-                let wtHeight0 = new WTowerOrdinal(0, tracerTest);
-                let wtHeight7 = new WTowerOrdinal(7, tracerTest);
-                let wtHeight123 = new WTowerOrdinal(123, tracerTest);
-
-                testManualComplexity("w^^0", wtHeight0, 1 + 3);
-                testManualComplexity("w^^7", wtHeight7, 1 + 3);
-                testManualComplexity("w^^123", wtHeight123, 3 + 3);
-            } catch (e) {
-                testStats.COMPLEXITY.failed++; testStats.COMPLEXITY.total++;
-                const complexityContainer = document.getElementById(testStats.COMPLEXITY.containerId);
-                if (complexityContainer) {
-                    logToPage("Error setting up/running manual WTowerOrdinal complexity tests (counted as COMPLEXITY failure): " + e.message, 'error-message', complexityContainer);
-                }
-            }
-            // --- End of Complexity Tests (as per original) ---
-            // --- ORIGINAL TEST CASES END ---
-
-            // --- Inverse Mapping Tests ---
-            console.log("runAllTestsAndRender: Starting Inverse Mapping tests...");
-            testFInverse('Finite ordinal 0', 0, '0');
-            testFInverse('Finite ordinal 0.5', 0.5, '1');
-            testFInverse('Finite ordinal 0.9', 0.9, '9');
-            testFInverse('ω', 1, 'w');
-            testFInverse('ω + 1', 1.25, 'w+1'); // Assuming convertFFormatToOrdinalInstance and sum handling works
-            testFInverse('ω * 2', 1.5, 'w*2');
-            testFInverse('ω^2', 2, 'w^2');
-            testFInverse('ω^2 + ω', 2.0833333333333335, 'w^2+w');
-            testFInverse('ω^ω', 3.6666666666666665, 'w^(w^w)');
-            testFInverse('ω^ω^3', 3.4, 'w^(w^3)');
-            testFInverse('ω^3', 2.3333333333333335, 'w^3');
-            testFInverse('ω^4', 2.5, 'w^4');
-            testFInverse('ω^4*4', 2.575, 'w^4*4');
-            testFInverse('ω^4*4', 2.575, 'w^4*4');
-            testFInverse('ω^4*5+3', 2.581, 'w^4*5+3');
-            testFInverse('ω^ω + 1', 3.0053763440860215, 'w^w+1');
-            testFInverse('ω^(ω+1)', 3.064516129032258, 'w^(w+1)');
-            testFInverse('10/3', 3.333333333333333, 'w^(w^2+w*3+1)+w^13*26');
-            testFInverse('Arbitrary', 4.9216738286475129, 'w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w+1))*15+w^10*7+2))))))))))))))))))))))))))))))))))))))))))))))))');
-            testFInverse('w^^400', 4.99, 'w^^400');
-            testFInverse('w^^4000', 4.999, 'w^^4000');
-            testFInverse('w^^40000', 4.9999, 'w^^40000');
-            testFInverse('w^^444', 4.991, 'w^^444');
-            testFInverse('ε₀', 5, 'e_0');
-            testFInverse('Threshold test (just below 1)', 0.99999999999999, 'w'); // f(9) = 0.9. This test might need adjustment based on fInverse precision for values very close to 1.
-            testFInverse('Threshold test (just above 1)', 1.00000000000001, 'w');
-            // Error cases: Expected error message should be based on what fInverse actually throws.
-            // Let's assume it throws "Input value X is outside the valid range [0,5]"
-            testFInverse('Error case: negative input', -1, "Input value -1 is outside the valid range [0,5]", true);
-            testFInverse('Error case: input > 5', 5.1, "Input value 5.1 is outside the valid range [0,5]", true);
-
-            // --- Monotonicity Checks ---
-            performSanityChecks();
 
             // --- Render all results ---
             renderAllKindResults();

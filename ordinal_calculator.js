@@ -36,7 +36,7 @@ function calculateOrdinalCNF(expressionString, maxOperations = DEFAULT_OPERATION
         const ordinalResult = parser.parse(); // This now returns a CNFOrdinal instance
         return {
             cnfString: ordinalResult.toStringCNF(),
-            ordinalObject: ordinalResult 
+            ordinalObject: ordinalResult
         };
     } catch (e) {
         if (e.message.startsWith("Operation budget exceeded")) {
@@ -51,7 +51,7 @@ function calculateOrdinalCNF(expressionString, maxOperations = DEFAULT_OPERATION
 function testOrdinalCalc(label, input, expected) {
     console.log(`Test: ${label}`);
     console.log(`Input: "${input}"`);
-    const outputObj = calculateOrdinalCNF(input, 100000); 
+    const outputObj = calculateOrdinalCNF(input, 100000);
     const output = outputObj.error ? outputObj.error : outputObj.cnfString;
     console.log(`Output: "${output}"`);
     if (output === expected) {

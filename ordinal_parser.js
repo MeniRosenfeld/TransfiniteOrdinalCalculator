@@ -1,8 +1,6 @@
 // ordinal_parser.js
 
-// Assumes CNFOrdinal class and its arithmetic methods are defined.
-// Assumes EpsilonNaughtOrdinal class is defined.
-// Assumes OperationTracer class is defined.
+// Assumes CNFOrdinal, EpsilonOrdinal, and OperationTracer classes are defined.
 
 class OrdinalParser {
     constructor(inputString, operationTracer) {
@@ -16,16 +14,17 @@ class OrdinalParser {
     }
 
     _tokenize(str) {
-        // Regex to capture numbers, 'w', 'e_0', '^^', '^', other operators (+, *), parentheses, and ignore whitespace.
-        // Order matters: '^^' must be checked before '^'.
-        const regex = /\s*(?:(\d+)|(w)|(e_0)|(\^\^)|([+*^()])|(\S))\s*/g;
+        // Updated Regex:
+        // Catches 'e_' as a special operator for epsilon numbers.
+        // No longer hardcodes 'e_0'.
+        const regex = /\s*(?:(\d+)|(w)|(e_)|(\^\^)|([+*^()])|(\S))\s*/g;
         // \d+ : numbers
         // w   : omega
-        // e_0 : epsilon-naught
+        // e_  : epsilon operator
         // \^\^ : tetration
-        // [+*^()] : other operators and parens. Note: ^ is also here for single ^, ^^ is caught by prior group.
+        // [+*^()] : other operators and parens
         // \S  : any non-whitespace (to catch errors)
-        
+
         const tokens = [];
         let match;
         while ((match = regex.exec(str)) !== null) {
@@ -33,8 +32,8 @@ class OrdinalParser {
                 tokens.push({ type: 'NUMBER', value: BigInt(match[1]) });
             } else if (match[2]) { // Omega 'w'
                 tokens.push({ type: 'OMEGA' });
-            } else if (match[3]) { // Epsilon-naught 'e_0'
-                tokens.push({ type: 'EPSILON_NAUGHT' });
+            } else if (match[3]) { // Epsilon 'e_'
+                tokens.push({ type: 'EPSILON' });
             } else if (match[4]) { // Tetration '^^'
                 tokens.push({ type: 'OPERATOR', value: '^^' });
             } else if (match[5]) { // Operator (+, *, ^) or Parenthesis
@@ -66,9 +65,9 @@ class OrdinalParser {
             if (token.type !== 'OPERATOR' || token.value !== expectedTarget) {
                 typeOrValueMismatch = true;
             }
-        } 
+        }
         // Else, assume expectedTarget is a token type (e.g., 'NUMBER', 'OMEGA')
-        else if (expectedTarget) { 
+        else if (expectedTarget) {
             expectedDescription = `token type "${expectedTarget}"`;
             if (token.type !== expectedTarget) {
                 typeOrValueMismatch = true;
@@ -84,29 +83,32 @@ class OrdinalParser {
         return token;
     }
 
-    // Parses atoms: numbers, 'w', 'e_0', or (expression)
+    // Parses atoms: numbers, 'w', e_k, or (expression)
     _parseAtom() {
-        const token = this._peek(); // Peek to decide the path
+        const token = this._peek();
         if (!token) {
             throw new Error("Unexpected end of input while parsing atom.");
         }
 
         if (token.type === 'NUMBER') {
-            const consumedToken = this._consume('NUMBER'); // Consume and get the token
+            const consumedToken = this._consume('NUMBER');
             return CNFOrdinal.fromInt(consumedToken.value, this.tracer);
         } else if (token.type === 'OMEGA') {
-            this._consume('OMEGA'); // Just consume, type is enough
+            this._consume('OMEGA');
             return CNFOrdinal.OMEGAStatic().clone(this.tracer);
-        } else if (token.type === 'EPSILON_NAUGHT') {
-            this._consume('EPSILON_NAUGHT');
-            return new EpsilonNaughtOrdinal(this.tracer);
+        } else if (token.type === 'EPSILON') {
+            this._consume('EPSILON');
+            // After 'e_', we must parse the index, which is an atom itself.
+            // This allows for e_0, e_w, e_(w+1), etc.
+            const index = this._parseAtom();
+            return new EpsilonOrdinal(index, this.tracer);
         } else if (token.type === 'OPERATOR' && token.value === '(') {
-            this._consume('('); // Consume the '(' operator
+            this._consume('(');
             const expr = this._parseExpression();
-            this._consume(')'); // Consume the ')' operator
+            this._consume(')');
             return expr;
         } else {
-            throw new Error(`Unexpected token "${token.value !== undefined ? token.value : token.type}" at pos ${this.pos}, expected a number, 'w', 'e_0', or '('.`);
+            throw new Error(`Unexpected token "${token.value !== undefined ? token.value : token.type}" at pos ${this.pos}, expected a number, 'w', 'e_', or '('.`);
         }
     }
 
@@ -114,12 +116,12 @@ class OrdinalParser {
     // TetrationFactor ::= Atom (^^ TetrationFactor)*
     _parseTetration() {
         let left = this._parseAtom();
-        
+
         let token = this._peek();
         if (token && token.type === 'OPERATOR' && token.value === '^^') {
             this._consume('^^');
             // For right-associativity, the right operand of ^^ is also a _parseTetration
-            const right = this._parseTetration(); 
+            const right = this._parseTetration();
             if (this.tracer) this.tracer.consume(); // Count the tetration operation itself
             left = left.tetrate(right); // Assumes left ordinal has .tetrate method
         }
@@ -130,22 +132,22 @@ class OrdinalParser {
     // PowerFactor ::= TetrationFactor (^ PowerFactor)*  (Updated: was Atom)
     _parsePower() {
         let left = this._parseTetration(); // Now calls _parseTetration instead of _parseAtom
-        
+
         let token = this._peek();
         if (token && token.type === 'OPERATOR' && token.value === '^') {
             this._consume('^');
             // For right-associativity, the right operand of ^ is also a _parsePower
-            const right = this._parsePower(); 
+            const right = this._parsePower();
             if (this.tracer) this.tracer.consume(); // Count the power operation itself
-            left = left.power(right); 
+            left = left.power(right);
         }
         return left;
     }
-    
+
     // Parses products (left-associative)
     // Term ::= PowerFactor (* PowerFactor)* (Updated: was Factor)
     _parseProduct() {
-        let left = this._parsePower(); 
+        let left = this._parsePower();
 
         let token = this._peek();
         while (token && token.type === 'OPERATOR' && token.value === '*') {
@@ -179,15 +181,13 @@ class OrdinalParser {
             // Handle empty input string - return Ordinal 0
             return CNFOrdinal.ZEROStatic().clone(this.tracer);
         }
-        
+
         const result = this._parseExpression();
 
         if (this.pos < this.tokens.length) {
-            const remainingTokens = this.tokens.slice(this.pos).map(t=>t.value || t.type).join(" ");
+            const remainingTokens = this.tokens.slice(this.pos).map(t => t.value || t.type).join(" ");
             throw new Error(`Unexpected tokens remaining after parsing: "${remainingTokens}"`);
         }
         return result;
     }
 }
-
-// ordinal_parser.js
