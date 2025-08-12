@@ -813,7 +813,16 @@ class WTowerOrdinal {
         if (typeof tetrateOrdinals !== "function") {
             throw new Error("tetrateOrdinals function not available for WTowerOrdinal conversion.");
         }
-        return tetrateOrdinals(CNFOrdinal.OMEGAStatic().clone(this._tracer), CNFOrdinal.fromInt(this.height, this._tracer));
+        const res = tetrateOrdinals(CNFOrdinal.OMEGAStatic().clone(this._tracer), CNFOrdinal.fromInt(this.height, this._tracer));
+        // Ensure we always return a CNFOrdinal for toCNFOrdinal()
+        if (res instanceof CNFOrdinal) return res;
+        if (typeof ENFOrdinal !== 'undefined' && res instanceof ENFOrdinal) return res.toCNFOrdinal();
+        if (res instanceof EpsilonOrdinal) return new CNFOrdinal(res, this._tracer);
+        // Fallback: try to wrap if it's a basic number/bigint
+        if (typeof res === 'number' || typeof res === 'bigint') return new CNFOrdinal(res, this._tracer);
+        // As a last resort, attempt to call toCNFOrdinal() if available
+        if (res && typeof res.toCNFOrdinal === 'function') return res.toCNFOrdinal();
+        return res; // Let caller fail loudly if unexpected
     }
 
     isZero() { return false; }

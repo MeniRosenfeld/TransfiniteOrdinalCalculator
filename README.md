@@ -101,13 +101,32 @@ This web application provides a user-friendly interface to parse expressions rep
 
 ## Technical Details
 
-*   **Ordinal Types & Arithmetic:**
-    *   `CNFOrdinal`: Represents ordinals as `ω^α₁·c₁ + ω^α₂·c₂ + ... + ω^αₖ·cₖ + n` where `α₁ > α₂ > ... > αₖ > 0` are ordinals and `cᵢ` are positive `BigInt` coefficients, `n` is a `BigInt`.
-    *   `EpsilonNaughtOrdinal`: Represents ε₀.
-    *   `WTowerOrdinal`: Represents ω↑↑m for finite integer m.
-    *   Dispatcher functions route arithmetic operations (`+`, `*`, `^`, `^^`) to type-specific methods.
-    *   Uses `BigInt` for coefficients and finite parts, ensuring exact integer arithmetic.
-    *   Multiplication `α * m` (finite `m`) is optimized.
+*   **Representations and dispatch**
+    *   `CNFOrdinal` (Cantor Normal Form), `EpsilonOrdinal` (ε-indexed), `WTowerOrdinal` (ω↑↑n), and `ENFOrdinal` (Epsilon Normal Form).
+    *   Addition and multiplication default to CNF when both operands are epsilon-free; if either operand has epsilon structure, the operation is performed in ENF to respect rank order.
+    *   Exponentiation uses ENF by default. It falls back to CNF only when both operands are CNF and epsilon-free.
+    *   Tetration is implemented on CNF; epsilon-base special cases throw explicit legacy-compatible error messages (e.g., `Error: Operation e_0 ^^ CNFOrdinal (2) is unsupported when CNFOrdinal is not 0 or 1.`).
+
+*   **ENF rank-based exponentiation**
+    *   Basic ordinals: 1, ω, and each ε_a.
+    *   Rank(α): greatest basic ordinal ≤ α. For finite, rank=1; for infinite ω-based terms, rank=ω; for ε-based terms, the basic ε.
+    *   For a^b:
+        - If rank(b) > rank(a): write b = k·x + r with k = rank(b), return k^x · a^r.
+        - Else: let a’s leading factor be k^c; decompose b = d + r (d limit, r finite); return k^(c·d) · a^r.
+    *   Identities used: ω^(ε_k) = ε_k; ω^(ε_k + r_finite) = ε_k · ω^r.
+
+*   **Parser options**
+    *   `new OrdinalParser(input, tracer, options)` supports `{ coerceToCNF?: boolean }` (default true).
+    *   Tests that compare ENF objects use `{ coerceToCNF: false }` to stay in ENF space.
+
+*   **Comparison**
+    *   `CNFOrdinal.compareTo` converts ENF inputs to CNF for comparison.
+    *   `ENFOrdinal.compareTo` converts CNF/Epsilon/WTower inputs to ENF.
+    *   ENF term ordering: epsilon factors (rank-first, base then exponent), then ω-exponent (CNF), then finite coefficient.
+
+*   **Stability and conversion**
+    *   `WTowerOrdinal.toCNFOrdinal()` always returns a `CNFOrdinal` (converting if needed).
+    *   Conversions avoid recursion loops: use `ENFOrdinal.fromCNF` for CNF→ENF; `ENFOrdinal.toCNFOrdinal` builds CNF structurally.
 *   **Parser:** Recursive descent parser that handles numbers, `w`, `e_0`, operators `+`, `*`, `^`, `^^` (with correct precedence and associativity), and parentheses.
 *   **Complexity Function `g(α)`:**
     *   `g(n)` = number of digits of `n`
@@ -168,22 +187,25 @@ This web application provides a user-friendly interface to parse expressions rep
 
 ## File Structure
 
-*   `index.html`: The main page structure.
-*   `style.css`: All CSS styling.
-*   `script.js`: UI interactions, event listeners, simplification logic, and `f(α)` display. Handles passing `DEFAULT_F_PARAMS` to `f` and `fInverse`.
-*   `ordinal_types.js`: Defines `CNFOrdinal`, `EpsilonNaughtOrdinal`, `WTowerOrdinal`, `OperationTracer`, complexity `g(α)` methods, and simplification `simplify()` methods.
-*   `ordinal_comparison.js`: Implements `compareTo` methods for all ordinal types.
-*   `ordinal_auxiliary_ops.js`: Implements `exponentPredecessor`, `divideByOmega`, etc.
-*   `ordinal_addition.js`, `ordinal_multiplication.js`, `ordinal_exponentiation.js`, `ordinal_tetration.js`: Implement the respective arithmetic operations and dispatchers.
-*   `ordinal_parser.js`: Defines the `OrdinalParser` class.
-*   `ordinal_calculator.js`: Contains the `calculateOrdinalCNF` function.
-*   `ordinal_graphical_renderer.js`: Contains the `renderOrdinalGraphical` function.
-*   `ordinal_mapping.js`: Defines the `f(α)` ordinal-to-real mapping function and the `FParams` class.
-*   `ordinal_mapping_inverse.js`: Defines the `fInverse(x, params)` real-to-ordinal inverse mapping function.
-*   `ordinal_calculator_test.html`: Comprehensive test suite for JavaScript features, with an interactive UI to view all tests or only failures, and including round-trip consistency checks for `f(α)` and `fInverse(x)` using `DEFAULT_F_PARAMS`.
-*   `haskell_comparison_test.html` & `haskell_comparison_test.js`: (If Haskell Wasm comparison is set up) For comparing JS results against a Haskell implementation.
-*   `ordinal_haskell.wasm`: (If built) The Haskell Wasm module.
-*   `Ordinal.hs`: (If using Haskell) The Haskell source for ordinal arithmetic.
+*   `index.html`, `style.css`, `script.js`
+*   Ordinal core:
+    - `ordinal_types.js` (CNFOrdinal, EpsilonOrdinal, WTowerOrdinal, OperationTracer)
+    - `ordinal_comparison.js`
+    - `ordinal_auxiliary_ops.js` (exponentPredecessor, divideByOmega, helpers)
+    - `ordinal_addition.js`, `ordinal_multiplication.js`, `ordinal_exponentiation.js`, `ordinal_tetration.js`
+    - `ordinal_parser.js` (supports `{ coerceToCNF }`)
+    - `ordinal_graphical_renderer.js`
+*   Mapping:
+    - `ordinal_mapping.js` (f(α), FParams)
+    - `ordinal_mapping_inverse.js` (fInverse)
+*   ENF:
+    - `ordinal_enf.js` (ENFOrdinal, ENFTerm, ENF arithmetic and rank-based exponentiation)
+    - `ordinal_enf_test.html`, `ordinal_enf_expected_results.js`
+*   Calculator / tests:
+    - `ordinal_calculator.js` (calculateOrdinalCNF)
+    - `ordinal_calculator_test.html`
+    - `haskell_comparison_test.html`, `haskell_comparison_test.js` (optional)
+    - `Ordinal.hs` (optional)
 
 ## Technologies Used
 
@@ -194,6 +216,8 @@ This web application provides a user-friendly interface to parse expressions rep
 
 ## Development
 Developed by Gemini 2.5 Pro, with extensive guidance, testing, and feature specification by ordinal number enthusiast [Meni Rosenfeld](https://github.com/MeniRosenfeld).
+
+Important: AI agents MUST read `AGENT_DOCUMENTATION.md` before making changes. It captures architectural rules, dispatch decisions, parser options, comparison invariants, and common pitfalls that caused regressions (e.g., CNF⇄ENF conversion loops, multiplication coefficient absorption, monotonicity checks in ENF vs CNF).
 
 Calculation results have been primarily validated through a comprehensive internal test suite (`ordinal_calculator_test.html`), which includes checks for CNF accuracy and the consistency of the ordinal-to-real mapping (`f(α)`) and its inverse. Comparisons are also made, where applicable, with Claudio Kressibucher's [Ordinal Calculator](https://www.transfinite.ch/).
 

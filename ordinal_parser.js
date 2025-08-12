@@ -3,12 +3,13 @@
 // Assumes CNFOrdinal, EpsilonOrdinal, and OperationTracer classes are defined.
 
 class OrdinalParser {
-    constructor(inputString, operationTracer) {
+    constructor(inputString, operationTracer, options = undefined) {
         if (!(operationTracer instanceof OperationTracer)) {
             throw new Error("OrdinalParser requires a valid OperationTracer instance.");
         }
         this.inputString = inputString;
         this.tracer = operationTracer;
+        this._coerceToCNF = !options || options.coerceToCNF !== false; // default true
         this.tokens = this._tokenize(inputString);
         this.pos = 0;
     }
@@ -182,7 +183,11 @@ class OrdinalParser {
             return CNFOrdinal.ZEROStatic().clone(this.tracer);
         }
 
-        const result = this._parseExpression();
+        let result = this._parseExpression();
+        // Optionally coerce ENF results to CNF for legacy callers
+        if (this._coerceToCNF && typeof ENFOrdinal !== 'undefined' && result instanceof ENFOrdinal) {
+            result = result.toCNFOrdinal();
+        }
 
         if (this.pos < this.tokens.length) {
             const remainingTokens = this.tokens.slice(this.pos).map(t => t.value || t.type).join(" ");

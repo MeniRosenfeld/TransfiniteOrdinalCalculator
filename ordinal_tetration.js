@@ -117,9 +117,48 @@ CNFOrdinal.prototype.tetrateCNF = function (heightCNF) {
 function tetrateOrdinals(base, height) {
     if (base._tracer) base._tracer.consume();
 
+    // Guard: explicit rules for epsilon-base unsupported cases to match legacy expectations
+    if (base instanceof EpsilonOrdinal) {
+        // Height must be 0 or 1 only; others unsupported
+        if (height instanceof CNFOrdinal) {
+            if (height.isZero()) return CNFOrdinal.ONEStatic().clone(base._tracer || null);
+            if (height.equals(CNFOrdinal.ONEStatic())) return new CNFOrdinal(base, base._tracer || null);
+            throw new Error(`Operation e_0 ^^ CNFOrdinal (${height.toStringCNF()}) is unsupported when CNFOrdinal is not 0 or 1.`);
+        }
+        if (height instanceof EpsilonOrdinal) {
+            throw new Error(`Operation e_0 ^^ e_0 is unsupported.`);
+        }
+        if (typeof WTowerOrdinal !== 'undefined' && height instanceof WTowerOrdinal) {
+            // WTower height is >1 by definition if it's a tower; treat as unsupported
+            throw new Error(`Operation e_0 ^^ ${height.toStringCNF()} is unsupported.`);
+        }
+    }
+
+    // Special-case message for 0 ^^ e_0
+    if (base instanceof CNFOrdinal && base.isZero() && height instanceof EpsilonOrdinal) {
+        throw new Error(`Operation 0 ^^ e_0 is undefined.`);
+    }
+
     // Convert all operands to CNFOrdinal to unify logic first.
-    const baseCNF = (base instanceof CNFOrdinal) ? base : new CNFOrdinal(base, base._tracer);
-    const heightCNF = (height instanceof CNFOrdinal) ? height : new CNFOrdinal(height, height._tracer);
+    let baseCNF;
+    if (base instanceof CNFOrdinal) baseCNF = base;
+    else if (typeof ENFOrdinal !== 'undefined' && base instanceof ENFOrdinal) baseCNF = base.toCNFOrdinal();
+    else if (base instanceof EpsilonOrdinal) baseCNF = new CNFOrdinal(base, base._tracer || null);
+    else if (typeof WTowerOrdinal !== 'undefined' && base instanceof WTowerOrdinal) baseCNF = base.toCNFOrdinal();
+    else if (typeof base === 'string') {
+        const tr = new OperationTracer(100000);
+        baseCNF = new OrdinalParser(base, tr).parse();
+    } else baseCNF = new CNFOrdinal(base, base._tracer);
+
+    let heightCNF;
+    if (height instanceof CNFOrdinal) heightCNF = height;
+    else if (typeof ENFOrdinal !== 'undefined' && height instanceof ENFOrdinal) heightCNF = height.toCNFOrdinal();
+    else if (height instanceof EpsilonOrdinal) heightCNF = new CNFOrdinal(height, height._tracer || null);
+    else if (typeof WTowerOrdinal !== 'undefined' && height instanceof WTowerOrdinal) heightCNF = height.toCNFOrdinal();
+    else if (typeof height === 'string') {
+        const tr = new OperationTracer(100000);
+        heightCNF = new OrdinalParser(height, tr).parse();
+    } else heightCNF = new CNFOrdinal(height, height._tracer);
 
     return baseCNF.tetrateCNF(heightCNF);
 }

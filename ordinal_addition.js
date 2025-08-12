@@ -104,6 +104,18 @@ CNFOrdinal.prototype.addCNF = function (otherCNF) {
  * @param {Ordinal} beta - The second ordinal.
  * @returns {Ordinal} The sum of alpha and beta.
  */
+function _ensureCNF(x) {
+    if (x instanceof CNFOrdinal) return x;
+    if (typeof ENFOrdinal !== 'undefined' && x instanceof ENFOrdinal) return x.toCNFOrdinal();
+    if (x instanceof EpsilonOrdinal) return new CNFOrdinal(x, x._tracer || null);
+    if (typeof WTowerOrdinal !== 'undefined' && x instanceof WTowerOrdinal) return x.toCNFOrdinal();
+    if (typeof x === 'string') {
+        const tracer = new OperationTracer(10000);
+        return new OrdinalParser(x, tracer).parse();
+    }
+    throw new Error("addOrdinals: unsupported operand type");
+}
+
 function addOrdinals(alpha, beta) {
     if (alpha._tracer) alpha._tracer.consume();
 
@@ -115,11 +127,19 @@ function addOrdinals(alpha, beta) {
         return alpha.clone();
     }
 
-    // Convert all operands to CNFOrdinal to unify logic.
-    // The CNFOrdinal constructor handles conversion from EpsilonOrdinal and WTowerOrdinal.
-    const alphaCNF = (alpha instanceof CNFOrdinal) ? alpha : new CNFOrdinal(alpha, alpha._tracer);
-    const betaCNF = (beta instanceof CNFOrdinal) ? beta : new CNFOrdinal(beta, beta._tracer);
+    // Prefer ENF for any expressions involving epsilon numbers to preserve structure
+    const involvesENF = (typeof ENFOrdinal !== 'undefined' && (alpha instanceof ENFOrdinal || beta instanceof ENFOrdinal))
+        || (alpha instanceof EpsilonOrdinal) || (beta instanceof EpsilonOrdinal);
 
+    if (involvesENF) {
+        const aENF = (alpha instanceof ENFOrdinal) ? alpha : ENFOrdinal.fromCNF(alpha);
+        const bENF = (beta instanceof ENFOrdinal) ? beta : ENFOrdinal.fromCNF(beta);
+        return aENF.add(bENF);
+    }
+
+    // Otherwise, use CNF addition
+    const alphaCNF = _ensureCNF(alpha);
+    const betaCNF = _ensureCNF(beta);
     return alphaCNF.addCNF(betaCNF);
 }
 

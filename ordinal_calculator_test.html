@@ -406,6 +406,8 @@
 
     <!-- Load Ordinal Scripts (ensure paths are correct) -->
     <script src="ordinal_types.js"></script>
+    <!-- Ensure ENF is available for modules that depend on it -->
+    <script src="ordinal_enf.js"></script>
     <script src="ordinal_comparison.js"></script>
     <script src="ordinal_auxiliary_ops.js"></script>
     <script src="ordinal_addition.js"></script>
@@ -841,7 +843,13 @@
                     return ordinalInstance.toStringCNF();
                 } catch (e) {
                     console.error("Error converting f-format to ordinal for display:", result, e);
-                    return "ErrorInConversion: " + JSON.stringify(result);
+                    // Avoid JSON.stringify BigInt errors by converting bigints to strings
+                    const safeString = (obj => {
+                        try {
+                            return JSON.stringify(obj, (k, v) => typeof v === 'bigint' ? v.toString() : v);
+                        } catch (_) { return String(obj); }
+                    })(result);
+                    return "ErrorInConversion: " + safeString;
                 }
             }
             if (typeof result === 'string') { // Might be an error message already

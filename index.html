@@ -23,6 +23,8 @@
                 Videos</a>
             <a href="ordinal_calculator_test.html"
                 style="color: #007bff; text-decoration: none; font-weight: bold; margin: 0 10px;">🧪 Test Suite</a>
+            <a href="ordinal_enf_test.html"
+                style="color: #007bff; text-decoration: none; font-weight: bold; margin: 0 10px;">🧪 ENF Test Suite</a>
         </div>
     </header>
 
@@ -33,6 +35,13 @@
             <div class="button-row">
                 <button id="calculateButton">Calculate</button>
                 <button id="shareUrlButton" class="utility-button">Share Link</button>
+            </div>
+            <div class="output-format-selector" style="margin-top: 10px; text-align: center;">
+                <label style="margin-right: 5px;">Output Format:</label>
+                <input type="radio" id="formatCNF" name="outputFormat" value="CNF" checked>
+                <label for="formatCNF" style="margin-right: 15px;">CNF</label>
+                <input type="radio" id="formatENF" name="outputFormat" value="ENF">
+                <label for="formatENF">ENF</label>
             </div>
         </div>
 
@@ -80,7 +89,8 @@
             <li>Use parentheses <code>()</code> for grouping.</li>
             <li>Standard operator precedence is followed: <code>^^</code> (highest, right-associative), then
                 <code>^</code> (right-associative), then <code>*</code> (left-associative), then <code>+</code>
-                (left-associative).</li>
+                (left-associative).
+            </li>
         </ul>
         <p><strong>Examples:</strong></p>
         <ul>
@@ -130,7 +140,8 @@
                 ω, ε₀, and ω↑↑n for ω tetrated to n).</li>
             <li>Automatically simplifies very complex results based on a structural complexity budget to enhance
                 readability. If simplification occurs, an indicator (e.g.,
-                <code>(Displayed complexity: G_simp / G_orig)</code>) is shown.</li>
+                <code>(Displayed complexity: G_simp / G_orig)</code>) is shown.
+            </li>
             <li>Provides an ordinal-to-real number mapping `f(α)` for the original, unsimplified ordinal. This mapping
                 is <span class="tooltip-trigger"
                     data-tooltip="The mapping uses a set of configurable scale parameters (scaleAdd, scaleMult, scaleExp, scaleTet) which allow its behavior to be adjusted. The default parameters map ordinals to approximately [0,5), but other parameter sets can change this range.">parameterized</span>
@@ -185,6 +196,7 @@
     <script src="ordinal_multiplication.js"></script>
     <script src="ordinal_exponentiation.js"></script>
     <script src="ordinal_tetration.js"></script>
+    <script src="ordinal_enf.js"></script>
     <script src="ordinal_parser.js"></script>
     <script src="ordinal_calculator.js"></script> <!-- Contains calculateOrdinalCNF -->
     <script src="ordinal_mapping.js"></script>

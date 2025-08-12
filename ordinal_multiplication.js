@@ -42,7 +42,10 @@ CNFOrdinal.prototype.multiplyCNF = function (otherCNF) {
     for (const term_b of b_limit_part.terms) {
         const bj_exp = term_b.exponent;
         const mj_coeff = term_b.coefficient;
-        const new_exp = a1_exp.add(bj_exp);
+        // Ensure exponent addition stays in CNF space
+        const aExpCNF = (a1_exp instanceof CNFOrdinal) ? a1_exp : new CNFOrdinal(a1_exp, this._tracer);
+        const bExpCNF = (bj_exp instanceof CNFOrdinal) ? bj_exp : new CNFOrdinal(bj_exp, this._tracer);
+        const new_exp = aExpCNF.addCNF(bExpCNF);
         newTerms.push({ exponent: new_exp, coefficient: mj_coeff });
     }
 
@@ -61,6 +64,27 @@ CNFOrdinal.prototype.multiplyCNF = function (otherCNF) {
 /**
  * General ordinal multiplication dispatcher.
  */
+function _ensureCNF_mult(x) {
+    if (x instanceof CNFOrdinal) return x;
+    if (typeof ENFOrdinal !== 'undefined' && x instanceof ENFOrdinal) return x.toCNFOrdinal();
+    if (x instanceof EpsilonOrdinal) return new CNFOrdinal(x, x._tracer || null);
+    if (typeof WTowerOrdinal !== 'undefined' && x instanceof WTowerOrdinal) return x.toCNFOrdinal();
+    if (typeof x === 'string') {
+        const tracer = new OperationTracer(10000);
+        return new OrdinalParser(x, tracer).parse();
+    }
+    throw new Error("multiplyOrdinals: unsupported operand type");
+}
+
+function _hasEpsilon(x) {
+    if (typeof ENFOrdinal !== 'undefined' && x instanceof ENFOrdinal) return true;
+    if (x instanceof EpsilonOrdinal) return true;
+    if (x instanceof CNFOrdinal) {
+        return x.terms.some(t => (t.exponent instanceof EpsilonOrdinal));
+    }
+    return false;
+}
+
 function multiplyOrdinals(alpha, beta) {
     if (alpha._tracer) alpha._tracer.consume();
 
@@ -75,10 +99,16 @@ function multiplyOrdinals(alpha, beta) {
         return alpha.clone();
     }
 
-    // Convert all operands to CNFOrdinal to unify logic.
-    const alphaCNF = (alpha instanceof CNFOrdinal) ? alpha : new CNFOrdinal(alpha, alpha._tracer);
-    const betaCNF = (beta instanceof CNFOrdinal) ? beta : new CNFOrdinal(beta, beta._tracer);
+    // If either operand involves epsilon numbers, prefer ENF multiplication
+    if (_hasEpsilon(alpha) || _hasEpsilon(beta)) {
+        const aENF = (typeof ENFOrdinal !== 'undefined' && alpha instanceof ENFOrdinal) ? alpha : ENFOrdinal.fromCNF(alpha);
+        const bENF = (typeof ENFOrdinal !== 'undefined' && beta instanceof ENFOrdinal) ? beta : ENFOrdinal.fromCNF(beta);
+        return aENF.multiply(bENF);
+    }
 
+    // Otherwise CNF multiplication
+    const alphaCNF = _ensureCNF_mult(alpha);
+    const betaCNF = _ensureCNF_mult(beta);
     return alphaCNF.multiplyCNF(betaCNF);
 }
 

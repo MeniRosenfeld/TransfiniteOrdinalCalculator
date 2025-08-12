@@ -1,0 +1,1041 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>ENF Ordinal Test Suite</title>
+    <meta charset="utf-8">
+    <style>
+        body {
+            font-family: monospace;
+            white-space: pre;
+        }
+
+        .test-case {
+            margin-bottom: 10px;
+            padding: 10px;
+            border-radius: 4px;
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+        }
+
+        .status-passed {
+            color: green;
+        }
+
+        .status-failed {
+            color: red;
+            font-weight: bold;
+        }
+
+        .log-output {
+            margin: 1px 0;
+            padding: 2px 8px;
+            line-height: 1.3;
+        }
+
+        #test-summary {
+            padding: 15px;
+            margin-bottom: 20px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+
+        .summary-line {
+            background: #f0f0f0;
+            padding: 8px 12px;
+            margin: 5px 0;
+            border-radius: 4px;
+        }
+
+        .status-overall-pass {
+            background-color: #d4edda;
+            color: #155724;
+            font-weight: bold;
+            padding: 15px;
+        }
+
+        .status-overall-fail {
+            background-color: #f8d7da;
+            color: #721c24;
+            font-weight: bold;
+            padding: 15px;
+        }
+
+        /* Styles for scrollable tables */
+        .table-wrapper {
+            margin-top: 20px;
+            overflow: auto;
+            /* Changed to auto for both directions */
+            max-width: 100%;
+            max-height: 700px;
+            /* Added height limit */
+            border: 1px solid #ccc;
+        }
+
+        table {
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        th,
+        td {
+            border: 1px solid #ccc;
+            padding: 5px;
+            text-align: left;
+            white-space: nowrap;
+        }
+
+        /* General header styling */
+        thead th {
+            position: sticky;
+            top: 0;
+            background-color: #f0f0f0;
+            z-index: 2;
+        }
+
+        /* Frozen column styling */
+        .sticky-col {
+            position: sticky;
+            left: 0;
+            background-color: #e9e9e9;
+            z-index: 1;
+        }
+
+        /* Top-left corner cell styling */
+        thead .sticky-col {
+            z-index: 3;
+            /* Must be on top of both header and column */
+        }
+
+        .copy-btn {
+            margin-top: 10px;
+            padding: 8px 12px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>ENF Ordinal Test Suite</h1>
+    <a href="index.html" style="display: block; margin-bottom: 20px;">Back to Calculator</a>
+
+    <div id="test-summary">
+        <h2>Test Summary</h2>
+        <div id="overall-status-indicator">Running tests...</div>
+    </div>
+
+    <div id="test-details-container"></div>
+    <div id="addition-table-container"></div>
+    <div id="multiplication-table-container"></div>
+    <div id="exponentiation-table-container"></div>
+
+
+    <!-- Load Ordinal Scripts -->
+    <script src="ordinal_types.js"></script>
+    <script src="ordinal_comparison.js"></script>
+    <script src="ordinal_auxiliary_ops.js"></script>
+    <script src="ordinal_addition.js"></script>
+    <script src="ordinal_multiplication.js"></script>
+    <script src="ordinal_exponentiation.js"></script>
+    <script src="ordinal_tetration.js"></script>
+    <script src="ordinal_enf.js"></script>
+    <script src="ordinal_parser.js"></script>
+    <script src="ordinal_calculator.js"></script>
+    <script src="ordinal_enf_expected_results.js"></script>
+
+    <script>
+        const testResults = [];
+        let totalTests = 0;
+        let passedTests = 0;
+
+        function runComparisonTest(testName, ordinals, expectedOrder) {
+            totalTests++;
+            const container = document.createElement('div');
+            container.className = 'test-case';
+            const title = document.createElement('h3');
+            title.textContent = `Test: ${testName}`;
+            container.appendChild(title);
+
+            try {
+                const sortedOrdinals = [...ordinals].sort((a, b) => a.compareTo(b));
+                const sortedStrings = sortedOrdinals.map(o => o.toString());
+
+                const passed = JSON.stringify(sortedStrings) === JSON.stringify(expectedOrder);
+
+                const status = document.createElement('p');
+                status.textContent = `Status: ${passed ? 'PASSED' : 'FAILED'}`;
+                status.className = passed ? 'status-passed' : 'status-failed';
+                container.appendChild(status);
+
+                const originalOrderP = document.createElement('p');
+                originalOrderP.className = 'log-output';
+                originalOrderP.textContent = `Original Order: ${ordinals.map(o => o.toString()).join(', ')}`;
+                container.appendChild(originalOrderP);
+
+                const sortedOrderP = document.createElement('p');
+                sortedOrderP.className = 'log-output';
+                sortedOrderP.textContent = `Actual Sorted:  ${sortedStrings.join(', ')}`;
+                container.appendChild(sortedOrderP);
+
+                if (!passed) {
+                    const expectedOrderP = document.createElement('p');
+                    expectedOrderP.className = 'log-output status-failed';
+                    expectedOrderP.textContent = `Expected Sorted: ${expectedOrder.join(', ')}`;
+                    container.appendChild(expectedOrderP);
+                    testResults.push(false);
+                } else {
+                    testResults.push(true);
+                    passedTests++;
+                }
+
+            } catch (e) {
+                const status = document.createElement('p');
+                status.textContent = `Status: CRITICAL ERROR - ${e.message}`;
+                status.className = 'status-failed';
+                container.appendChild(status);
+                testResults.push(false);
+                console.error(`Error in test "${testName}":`, e);
+            }
+
+            document.getElementById('test-details-container').appendChild(container);
+        }
+
+        function runAdditionTest(testName, ordA, ordB, expectedString) {
+            totalTests++;
+            const container = document.createElement('div');
+            container.className = 'test-case';
+            const title = document.createElement('h3');
+            title.textContent = `Test: ${testName}`;
+            container.appendChild(title);
+
+            try {
+                const result = ordA.add(ordB);
+                const resultString = result.toString();
+                const passed = resultString === expectedString;
+
+                const status = document.createElement('p');
+                status.textContent = `Status: ${passed ? 'PASSED' : 'FAILED'}`;
+                status.className = passed ? 'status-passed' : 'status-failed';
+                container.appendChild(status);
+
+                const inputP = document.createElement('p');
+                inputP.className = 'log-output';
+                inputP.textContent = `Input: (${ordA.toString()}) + (${ordB.toString()})`;
+                container.appendChild(inputP);
+
+                const actualP = document.createElement('p');
+                actualP.className = 'log-output';
+                actualP.textContent = `Actual:   ${resultString}`;
+                container.appendChild(actualP);
+
+                if (!passed) {
+                    const expectedP = document.createElement('p');
+                    expectedP.className = 'log-output status-failed';
+                    expectedP.textContent = `Expected: ${expectedString}`;
+                    container.appendChild(expectedP);
+                    testResults.push(false);
+                } else {
+                    testResults.push(true);
+                    passedTests++;
+                }
+
+            } catch (e) {
+                const status = document.createElement('p');
+                status.textContent = `Status: CRITICAL ERROR - ${e.message}`;
+                status.className = 'status-failed';
+                container.appendChild(status);
+                testResults.push(false);
+                console.error(`Error in test "${testName}":`, e);
+            }
+
+            document.getElementById('test-details-container').appendChild(container);
+        }
+
+        function runComprehensiveAdditionTest(ordinals) {
+            totalTests++;
+            const container = document.createElement('div');
+            container.className = 'test-case';
+            const title = document.createElement('h3');
+            title.textContent = 'Test: Comprehensive Pairwise Addition';
+            container.appendChild(title);
+
+            try {
+                let allPassed = true;
+                let failureCount = 0;
+                const maxFailuresToShow = 5; // Limit output for readability
+
+                // Verify ordinals match expected labels
+                const actualLabels = ordinals.map(o => o.toString());
+                const expectedLabelsMatch = JSON.stringify(actualLabels) === JSON.stringify(ordinalLabels);
+
+                if (!expectedLabelsMatch) {
+                    throw new Error(`Ordinal labels don't match expected. Expected: ${ordinalLabels.length} ordinals, got: ${actualLabels.length}`);
+                }
+
+                for (let i = 0; i < ordinals.length; i++) {
+                    for (let j = 0; j < ordinals.length; j++) {
+                        const result = ordinals[i].add(ordinals[j]);
+                        const actualResult = result.toString();
+                        const expectedResult = expectedAdditionResults[i][j];
+
+                        if (actualResult !== expectedResult) {
+                            allPassed = false;
+                            failureCount++;
+
+                            if (failureCount <= maxFailuresToShow) {
+                                const failureP = document.createElement('p');
+                                failureP.className = 'log-output status-failed';
+                                failureP.textContent = `FAIL [${i},${j}]: (${ordinals[i].toString()}) + (${ordinals[j].toString()}) = ${actualResult}, expected ${expectedResult}`;
+                                container.appendChild(failureP);
+                            }
+                        }
+                    }
+                }
+
+                if (failureCount > maxFailuresToShow) {
+                    const moreFailuresP = document.createElement('p');
+                    moreFailuresP.className = 'log-output status-failed';
+                    moreFailuresP.textContent = `... and ${failureCount - maxFailuresToShow} more failures (showing first ${maxFailuresToShow})`;
+                    container.appendChild(moreFailuresP);
+                }
+
+                const status = document.createElement('p');
+                status.textContent = allPassed ? 'Status: PASSED' : `Status: FAILED (${failureCount} out of ${ordinals.length * ordinals.length} additions failed)`;
+                status.className = allPassed ? 'status-passed' : 'status-failed';
+                container.appendChild(status);
+
+                const summaryP = document.createElement('p');
+                summaryP.className = 'log-output';
+                summaryP.textContent = `Tested ${ordinals.length}×${ordinals.length} = ${ordinals.length * ordinals.length} pairwise additions`;
+                container.appendChild(summaryP);
+
+                if (allPassed) {
+                    testResults.push(true);
+                    passedTests++;
+                } else {
+                    testResults.push(false);
+                }
+
+            } catch (e) {
+                const status = document.createElement('p');
+                status.textContent = `Status: CRITICAL ERROR - ${e.message}`;
+                status.className = 'status-failed';
+                container.appendChild(status);
+                testResults.push(false);
+                console.error('Error in comprehensive addition test:', e);
+            }
+
+            document.getElementById('test-details-container').appendChild(container);
+        }
+
+        function runAdditionMonotonicityTest(ordinals) {
+            totalTests++;
+            const container = document.createElement('div');
+            container.className = 'test-case';
+
+            const titleH3 = document.createElement('h3');
+            titleH3.textContent = 'Addition Monotonicity Sanity Test';
+            container.appendChild(titleH3);
+
+            const description = document.createElement('p');
+            description.className = 'log-output';
+            description.textContent = 'Testing: if b<c then a+b<a+c and b+a≤c+a for all entries in table';
+            container.appendChild(description);
+
+            try {
+                let violations = 0;
+                const violationMessages = [];
+
+                // Test right monotonicity: if b < c then a + b < a + c
+                for (let a = 0; a < ordinals.length; a++) {
+                    for (let b = 0; b < ordinals.length; b++) {
+                        for (let c = 0; c < ordinals.length; c++) {
+                            if (b < c) { // b appears before c in sorted order, so b < c
+                                const ab_result = expectedAdditionResults[a][b];
+                                const ac_result = expectedAdditionResults[a][c];
+
+                                const ab_ord = new OrdinalParser(ab_result, new OperationTracer(10000), { coerceToCNF: false }).parse();
+                                const ac_ord = new OrdinalParser(ac_result, new OperationTracer(10000), { coerceToCNF: false }).parse();
+
+                                if (ab_ord.compareTo(ac_ord) >= 0) {
+                                    violations++;
+                                    violationMessages.push(`Right monotonicity: ${ordinalLabels[a]}+${ordinalLabels[b]} = ${ab_result} should be < ${ordinalLabels[a]}+${ordinalLabels[c]} = ${ac_result}`);
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Test left monotonicity: if b ≤ c then b + a ≤ c + a
+                for (let a = 0; a < ordinals.length; a++) {
+                    for (let b = 0; b < ordinals.length; b++) {
+                        for (let c = 0; c < ordinals.length; c++) {
+                            if (b <= c) { // b appears before or at same position as c in sorted order
+                                const ba_result = expectedAdditionResults[b][a];
+                                const ca_result = expectedAdditionResults[c][a];
+
+                                const ba_ord = new OrdinalParser(ba_result, new OperationTracer(10000), { coerceToCNF: false }).parse();
+                                const ca_ord = new OrdinalParser(ca_result, new OperationTracer(10000), { coerceToCNF: false }).parse();
+
+                                if (ba_ord.compareTo(ca_ord) > 0) {
+                                    violations++;
+                                    violationMessages.push(`Left monotonicity: ${ordinalLabels[b]}+${ordinalLabels[a]} = ${ba_result} should be ≤ ${ordinalLabels[c]}+${ordinalLabels[a]} = ${ca_result}`);
+                                }
+                            }
+                        }
+                    }
+                }
+
+                const status = document.createElement('p');
+                if (violations === 0) {
+                    status.textContent = 'Status: PASSED';
+                    status.className = 'status-passed';
+                    testResults.push(true);
+                    passedTests++;
+                } else {
+                    status.textContent = `Status: FAILED (${violations} monotonicity violations)`;
+                    status.className = 'status-failed';
+                    testResults.push(false);
+
+                    // Show first few violations
+                    for (let i = 0; i < Math.min(5, violationMessages.length); i++) {
+                        const violation = document.createElement('p');
+                        violation.className = 'log-output';
+                        violation.textContent = violationMessages[i];
+                        container.appendChild(violation);
+                    }
+                    if (violationMessages.length > 5) {
+                        const more = document.createElement('p');
+                        more.className = 'log-output';
+                        more.textContent = `... and ${violationMessages.length - 5} more violations`;
+                        container.appendChild(more);
+                    }
+                }
+                container.appendChild(status);
+
+            } catch (e) {
+                const status = document.createElement('p');
+                status.textContent = `Status: CRITICAL ERROR - ${e.message}`;
+                status.className = 'status-failed';
+                container.appendChild(status);
+                testResults.push(false);
+                console.error('Error in addition monotonicity test:', e);
+            }
+
+            document.getElementById('test-details-container').appendChild(container);
+        }
+
+        function runMultiplicationMonotonicityTest(ordinals) {
+            totalTests++;
+            const container = document.createElement('div');
+            container.className = 'test-case';
+
+            const titleH3 = document.createElement('h3');
+            titleH3.textContent = 'Multiplication Monotonicity Sanity Test';
+            container.appendChild(titleH3);
+
+            const description = document.createElement('p');
+            description.className = 'log-output';
+            description.textContent = 'Testing: if b<c then a*b<a*c (for a>0) and b*a≤c*a for all entries in table';
+            container.appendChild(description);
+
+            try {
+                let violations = 0;
+                const violationMessages = [];
+
+                // Test right monotonicity: if b < c then a * b < a * c (for a > 0)
+                for (let a = 1; a < ordinals.length; a++) { // Skip a=0 since 0*anything = 0
+                    for (let b = 0; b < ordinals.length; b++) {
+                        for (let c = 0; c < ordinals.length; c++) {
+                            if (b < c) { // b appears before c in sorted order, so b < c
+                                const ab_result = expectedMultiplicationResults[a][b];
+                                const ac_result = expectedMultiplicationResults[a][c];
+
+                                const ab_ord = new OrdinalParser(ab_result, new OperationTracer(10000), { coerceToCNF: false }).parse();
+                                const ac_ord = new OrdinalParser(ac_result, new OperationTracer(10000), { coerceToCNF: false }).parse();
+
+                                if (ab_ord.compareTo(ac_ord) >= 0) {
+                                    violations++;
+                                    violationMessages.push(`Right monotonicity: ${ordinalLabels[a]}*${ordinalLabels[b]} = ${ab_result} should be < ${ordinalLabels[a]}*${ordinalLabels[c]} = ${ac_result}`);
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Test left monotonicity: if b ≤ c then b * a ≤ c * a
+                for (let a = 0; a < ordinals.length; a++) {
+                    for (let b = 0; b < ordinals.length; b++) {
+                        for (let c = 0; c < ordinals.length; c++) {
+                            if (b <= c) { // b appears before or at same position as c in sorted order
+                                const ba_result = expectedMultiplicationResults[b][a];
+                                const ca_result = expectedMultiplicationResults[c][a];
+
+                                const ba_ord = new OrdinalParser(ba_result, new OperationTracer(10000), { coerceToCNF: false }).parse();
+                                const ca_ord = new OrdinalParser(ca_result, new OperationTracer(10000), { coerceToCNF: false }).parse();
+
+                                if (ba_ord.compareTo(ca_ord) > 0) {
+                                    violations++;
+                                    violationMessages.push(`Left monotonicity: ${ordinalLabels[b]}*${ordinalLabels[a]} = ${ba_result} should be ≤ ${ordinalLabels[c]}*${ordinalLabels[a]} = ${ca_result}`);
+                                }
+                            }
+                        }
+                    }
+                }
+
+                const status = document.createElement('p');
+                if (violations === 0) {
+                    status.textContent = 'Status: PASSED';
+                    status.className = 'status-passed';
+                    testResults.push(true);
+                    passedTests++;
+                } else {
+                    status.textContent = `Status: FAILED (${violations} monotonicity violations)`;
+                    status.className = 'status-failed';
+                    testResults.push(false);
+
+                    // Show first few violations
+                    for (let i = 0; i < Math.min(5, violationMessages.length); i++) {
+                        const violation = document.createElement('p');
+                        violation.className = 'log-output';
+                        violation.textContent = violationMessages[i];
+                        container.appendChild(violation);
+                    }
+                    if (violationMessages.length > 5) {
+                        const more = document.createElement('p');
+                        more.className = 'log-output';
+                        more.textContent = `... and ${violationMessages.length - 5} more violations`;
+                        container.appendChild(more);
+                    }
+                }
+                container.appendChild(status);
+
+            } catch (e) {
+                const status = document.createElement('p');
+                status.textContent = `Status: CRITICAL ERROR - ${e.message}`;
+                status.className = 'status-failed';
+                container.appendChild(status);
+                testResults.push(false);
+                console.error('Error in multiplication monotonicity test:', e);
+            }
+
+            document.getElementById('test-details-container').appendChild(container);
+        }
+
+        function runExponentiationMonotonicityTest(ordinals) {
+            totalTests++;
+            const container = document.createElement('div');
+            container.className = 'test-case';
+
+            const titleH3 = document.createElement('h3');
+            titleH3.textContent = 'Exponentiation Monotonicity Sanity Test';
+            container.appendChild(titleH3);
+
+            const description = document.createElement('p');
+            description.className = 'log-output';
+            description.textContent = 'Testing: if b<c then a^b<a^c (for a>1) and if b≤c then b^a≤c^a (for a>0)';
+            container.appendChild(description);
+
+            try {
+                let violations = 0;
+                const violationMessages = [];
+
+                // Right monotonicity in exponent: if b < c then a^b < a^c for a > 1
+                for (let a = 0; a < ordinals.length; a++) {
+                    try {
+                        if (ordinals[a].compareTo(ENFOrdinal.one()) <= 0) continue; // skip a <= 1
+                    } catch (_) { continue; }
+                    for (let b = 0; b < ordinals.length; b++) {
+                        for (let c = 0; c < ordinals.length; c++) {
+                            if (b < c) {
+                                const ab = ordinals[a].power(ordinals[b]);
+                                const ac = ordinals[a].power(ordinals[c]);
+                                if (ab.compareTo(ac) >= 0) {
+                                    violations++;
+                                    violationMessages.push(`Right monotonicity: ${ordinalLabels[a]}^${ordinalLabels[b]} = ${ab.toString()} should be < ${ordinalLabels[a]}^${ordinalLabels[c]} = ${ac.toString()}`);
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Left monotonicity in base: if b ≤ c then b^a ≤ c^a for a > 0
+                for (let a = 0; a < ordinals.length; a++) {
+                    try {
+                        if (ordinals[a].compareTo(ENFOrdinal.zero()) <= 0) continue; // skip a <= 0
+                    } catch (_) { continue; }
+                    for (let b = 0; b < ordinals.length; b++) {
+                        for (let c = 0; c < ordinals.length; c++) {
+                            if (b <= c) {
+                                const ba = ordinals[b].power(ordinals[a]);
+                                const ca = ordinals[c].power(ordinals[a]);
+                                if (ba.compareTo(ca) > 0) {
+                                    violations++;
+                                    violationMessages.push(`Left monotonicity: ${ordinalLabels[b]}^${ordinalLabels[a]} = ${ba.toString()} should be ≤ ${ordinalLabels[c]}^${ordinalLabels[a]} = ${ca.toString()}`);
+                                }
+                            }
+                        }
+                    }
+                }
+
+                const status = document.createElement('p');
+                if (violations === 0) {
+                    status.textContent = 'Status: PASSED';
+                    status.className = 'status-passed';
+                    testResults.push(true);
+                    passedTests++;
+                } else {
+                    status.textContent = `Status: FAILED (${violations} monotonicity violations)`;
+                    status.className = 'status-failed';
+                    testResults.push(false);
+
+                    for (let i = 0; i < Math.min(5, violationMessages.length); i++) {
+                        const violation = document.createElement('p');
+                        violation.className = 'log-output';
+                        violation.textContent = violationMessages[i];
+                        container.appendChild(violation);
+                    }
+                    if (violationMessages.length > 5) {
+                        const more = document.createElement('p');
+                        more.className = 'log-output';
+                        more.textContent = `... and ${violationMessages.length - 5} more violations`;
+                        container.appendChild(more);
+                    }
+                }
+                container.appendChild(status);
+
+            } catch (e) {
+                const status = document.createElement('p');
+                status.textContent = `Status: CRITICAL ERROR - ${e.message}`;
+                status.className = 'status-failed';
+                container.appendChild(status);
+                testResults.push(false);
+                console.error('Error in exponentiation monotonicity test:', e);
+            }
+
+            document.getElementById('test-details-container').appendChild(container);
+        }
+
+        function runComprehensiveMultiplicationTest(ordinals) {
+            totalTests++;
+            const container = document.createElement('div');
+            container.className = 'test-case';
+
+            const titleH3 = document.createElement('h3');
+            titleH3.textContent = 'Comprehensive Multiplication Test';
+            container.appendChild(titleH3);
+
+            const description = document.createElement('p');
+            description.className = 'log-output';
+            description.textContent = `Testing ${ordinals.length}×${ordinals.length} = ${ordinals.length * ordinals.length} pairwise multiplications against expected results`;
+            container.appendChild(description);
+
+            try {
+                let allPassed = true;
+                let failureCount = 0;
+
+                for (let i = 0; i < ordinals.length; i++) {
+                    for (let j = 0; j < ordinals.length; j++) {
+                        const computed = ordinals[i].multiply(ordinals[j]);
+                        const expected = expectedMultiplicationResults[i][j];
+
+                        if (computed.toString() !== expected) {
+                            allPassed = false;
+                            failureCount++;
+
+                            if (failureCount <= 5) { // Show first 5 failures
+                                const failure = document.createElement('p');
+                                failure.className = 'log-output';
+                                failure.textContent = `FAIL: ${ordinalLabels[i]} * ${ordinalLabels[j]} = ${computed.toString()}, expected ${expected}`;
+                                container.appendChild(failure);
+                            }
+                        }
+                    }
+                }
+
+                if (failureCount > 5) {
+                    const moreFailures = document.createElement('p');
+                    moreFailures.className = 'log-output';
+                    moreFailures.textContent = `... and ${failureCount - 5} more failures`;
+                    container.appendChild(moreFailures);
+                }
+
+                const status = document.createElement('p');
+                status.textContent = allPassed ? 'Status: PASSED' : `Status: FAILED (${failureCount} out of ${ordinals.length * ordinals.length} multiplications failed)`;
+                status.className = allPassed ? 'status-passed' : 'status-failed';
+                container.appendChild(status);
+
+                const summaryP = document.createElement('p');
+                summaryP.className = 'log-output';
+                summaryP.textContent = `Tested ${ordinals.length}×${ordinals.length} = ${ordinals.length * ordinals.length} pairwise multiplications`;
+                container.appendChild(summaryP);
+
+                if (allPassed) {
+                    testResults.push(true);
+                    passedTests++;
+                } else {
+                    testResults.push(false);
+                }
+
+            } catch (e) {
+                const status = document.createElement('p');
+                status.textContent = `Status: CRITICAL ERROR - ${e.message}`;
+                status.className = 'status-failed';
+                container.appendChild(status);
+                testResults.push(false);
+                console.error('Error in comprehensive multiplication test:', e);
+            }
+
+            document.getElementById('test-details-container').appendChild(container);
+        }
+
+        function defineTests() {
+            const tracer = new OperationTracer(10000);
+
+            // Basic Test Cases
+            const ord_zero = ENFOrdinal.zero();
+            const ord_one = ENFOrdinal.one();
+            const ord_five = ENFOrdinal.fromInt(5);
+            const ord_w = ENFOrdinal.omega();
+            const ord_w_plus_1 = new ENFOrdinal([
+                new ENFTerm([], CNFOrdinal.ONE, 1n),
+                new ENFTerm([], CNFOrdinal.ZERO, 1n)
+            ]);
+            const ord_w_times_2 = new ENFOrdinal([new ENFTerm([], CNFOrdinal.ONE, 2n)]);
+            const ord_w_squared = new ENFOrdinal([new ENFTerm([], CNFOrdinal.fromInt(2), 1n)]);
+
+            const e0_base = ENFOrdinal.zero();
+            const ord_e0 = new ENFOrdinal([new ENFTerm([{ base: e0_base, exp: ENFOrdinal.one() }], CNFOrdinal.ZERO, 1n)]);
+            const ord_e0_plus_1 = new ENFOrdinal([
+                new ENFTerm([{ base: e0_base, exp: ENFOrdinal.one() }], CNFOrdinal.ZERO, 1n),
+                new ENFTerm([], CNFOrdinal.ZERO, 1n)
+            ]);
+
+            runComparisonTest(
+                "Basic Comparison",
+                [ord_w_plus_1, ord_w, ord_five, ord_one, ord_zero, ord_w_times_2, ord_w_squared, ord_e0, ord_e0_plus_1],
+                ["0", "1", "5", "w", "w+1", "w*2", "w^2", "e_0", "e_0+1"]
+            );
+
+            // --- More Complex Test Case ---
+            const ord_w_w = new ENFOrdinal([new ENFTerm([], CNFOrdinal.OMEGA, 1n)]);
+            const ord_w_w_plus_1 = new ENFOrdinal([new ENFTerm([], CNFOrdinal.OMEGA, 1n), new ENFTerm([], CNFOrdinal.ZERO, 1n)]);
+            const ord_w_w_times_2 = new ENFOrdinal([new ENFTerm([], CNFOrdinal.OMEGA, 2n)]);
+            const ord_w_w2 = new ENFOrdinal([new ENFTerm([], new OrdinalParser("w^2", tracer).parse(), 1n)]);
+
+            const ord_e0_plus_w = new ENFOrdinal([ord_e0.terms[0].clone(), ord_w.terms[0].clone()]);
+            const ord_e0_plus_w_w = new ENFOrdinal([ord_e0.terms[0].clone(), ord_w_w.terms[0].clone()]);
+            const ord_e0_times_2 = new ENFOrdinal([new ENFTerm([{ base: e0_base, exp: ENFOrdinal.one() }], CNFOrdinal.ZERO, 2n)]);
+            const ord_e0_times_w = new ENFOrdinal([new ENFTerm([{ base: e0_base, exp: ENFOrdinal.one() }], CNFOrdinal.ONE, 1n)]);
+            const ord_e0_squared = new ENFOrdinal([new ENFTerm([{ base: e0_base, exp: ENFOrdinal.fromInt(2) }])]);
+
+            const e1_base = ENFOrdinal.one();
+            const ord_e1 = new ENFOrdinal([new ENFTerm([{ base: e1_base, exp: ENFOrdinal.one() }])]);
+            const ord_e1_times_2 = new ENFOrdinal([new ENFTerm([{ base: e1_base, exp: ENFOrdinal.one() }], CNFOrdinal.ZERO, 2n)]);
+            const ord_e1_times_w = new ENFOrdinal([new ENFTerm([{ base: e1_base, exp: ENFOrdinal.one() }], CNFOrdinal.ONE, 1n)]);
+            const ord_e1_times_e0 = new ENFOrdinal([new ENFTerm([{ base: e1_base, exp: ENFOrdinal.one() }, { base: e0_base, exp: ENFOrdinal.one() }])]);
+            const ord_e2 = new ENFOrdinal([new ENFTerm([{ base: ENFOrdinal.fromInt(2), exp: ENFOrdinal.one() }])]);
+
+            runComparisonTest(
+                "Complex Comparison",
+                [ord_e1_times_2, ord_e0_plus_w, ord_e0_squared, ord_e1_times_e0, ord_w_w_plus_1, ord_e1, ord_e2, ord_w_w_times_2, ord_e0_plus_1, ord_e0_times_w, ord_e1_times_w, ord_e0_plus_w_w, ord_w_w, ord_e0, ord_w_w2, ord_e0_times_2],
+                ["w^w", "w^w+1", "w^w*2", "w^w^2", "e_0", "e_0+1", "e_0+w", "e_0+w^w", "e_0*2", "e_0*w", "e_0^2", "e_1", "e_1*2", "e_1*w", "e_1*e_0", "e_2"]
+            );
+
+            // --- Very Complex Test Case ---
+            const ord_e0_pow_w = new ENFOrdinal([new ENFTerm([{ base: e0_base, exp: ord_w }])]);
+            const ord_e1_plus_e0 = new ENFOrdinal([ord_e1.terms[0].clone(), ord_e0.terms[0].clone()]);
+            const ord_e_w_base = ENFOrdinal.omega();
+            const ord_e_w = new ENFOrdinal([new ENFTerm([{ base: ord_e_w_base, exp: ENFOrdinal.one() }])]);
+            const ord_e_e0_base = ord_e0;
+            const ord_e_e0 = new ENFOrdinal([new ENFTerm([{ base: ord_e_e0_base, exp: ENFOrdinal.one() }])]);
+            const ord_e1_pow_e0 = new ENFOrdinal([new ENFTerm([{ base: e1_base, exp: ord_e0 }])]);
+
+            const multi_term_1 = new ENFOrdinal([
+                new ENFTerm([{ base: e1_base, exp: ord_w }, { base: e0_base, exp: ord_five }], new OrdinalParser("w^3+2", tracer).parse(), 3n),
+                new ENFTerm([], new OrdinalParser("w^2", tracer).parse(), 5n),
+                new ENFTerm([], CNFOrdinal.ZERO, 10n)
+            ]);
+            const multi_term_2 = new ENFOrdinal([
+                new ENFTerm([{ base: e1_base, exp: ord_w }, { base: e0_base, exp: ord_five }], new OrdinalParser("w^3+2", tracer).parse(), 2n)
+            ]);
+
+            runComparisonTest(
+                "Very Complex Comparison",
+                [multi_term_2, ord_e_w, ord_e1, ord_e0_pow_w, multi_term_1, ord_e_e0, ord_e1_plus_e0, ord_e1_pow_e0],
+                ["e_0^w", "e_1", "e_1+e_0", "e_1^w*e_0^5*w^(w^3+2)*2", "e_1^w*e_0^5*w^(w^3+2)*3+w^w^2*5+10", "e_1^e_0", "e_w", "e_e_0"]
+            );
+
+            // --- Addition Tests ---
+            runAdditionTest("w + 1", ord_w, ord_one, "w+1");
+            runAdditionTest("1 + w", ord_one, ord_w, "w");
+            runAdditionTest("w*2 + w*3", ord_w_times_2, new ENFOrdinal([new ENFTerm([], CNFOrdinal.ONE, 3n)]), "w*5");
+            runAdditionTest("(w^2*3 + w*5) + (w*8 + 1)", new ENFOrdinal([new ENFTerm([], CNFOrdinal.fromInt(2), 3n), new ENFTerm([], CNFOrdinal.ONE, 5n)]), new ENFOrdinal([new ENFTerm([], CNFOrdinal.ONE, 8n), new ENFTerm([], CNFOrdinal.ZERO, 1n)]), "w^2*3+w*13+1");
+            runAdditionTest("(w^2 + 5) + (w+3)", new ENFOrdinal([new ENFTerm([], CNFOrdinal.fromInt(2), 1n), new ENFTerm([], CNFOrdinal.ZERO, 5n)]), new ENFOrdinal([new ENFTerm([], CNFOrdinal.ONE, 1n), new ENFTerm([], CNFOrdinal.ZERO, 3n)]), "w^2+w+3");
+            runAdditionTest("e_0 + w^w", ord_e0, ord_w_w, "e_0+w^w");
+            runAdditionTest("w^w + e_0", ord_w_w, ord_e0, "e_0");
+
+            // --- All Ordinals for Tables ---
+            const allOrdinals = [
+                ord_zero, ord_one, ord_five, ord_w, ord_w_plus_1, ord_w_times_2, ord_w_squared,
+                ord_w_w, ord_w_w_plus_1, ord_w_w_times_2, ord_w_w2,
+                ord_e0, ord_e0_plus_1, ord_e0_plus_w, ord_e0_plus_w_w, ord_e0_times_2, ord_e0_times_w, ord_e0_squared, ord_e0_pow_w,
+                ord_e1, ord_e1_plus_e0, ord_e1_times_2, ord_e1_times_w, ord_e1_times_e0, ord_e1_pow_e0,
+                ord_e2, ord_e_w, ord_e_e0,
+                multi_term_1, multi_term_2
+            ].sort((a, b) => a.compareTo(b));
+
+            // Run comprehensive tests against expected results
+            runComprehensiveAdditionTest(allOrdinals);
+            runComprehensiveMultiplicationTest(allOrdinals);
+
+            // Run monotonicity sanity tests
+            runAdditionMonotonicityTest(allOrdinals);
+            runMultiplicationMonotonicityTest(allOrdinals);
+            runExponentiationMonotonicityTest(allOrdinals);
+
+            // Generate Tables
+            generateAdditionTable(allOrdinals);
+            generateMultiplicationTable(allOrdinals);
+            generateExponentiationTable(allOrdinals);
+        }
+
+        function generateExponentiationTable(ordinals) {
+            const container = document.getElementById('exponentiation-table-container');
+            container.innerHTML = '<h2>Comprehensive Exponentiation Table</h2>';
+
+            const wrapper = document.createElement('div');
+            wrapper.className = 'table-wrapper';
+
+            const table = document.createElement('table');
+            const thead = document.createElement('thead');
+            const tbody = document.createElement('tbody');
+            let tsvContent = "α \\ β\t" + ordinals.map(o => o.toString()).join('\t') + '\n';
+
+            // Header Row
+            const headerRow = document.createElement('tr');
+            const th = document.createElement('th');
+            th.textContent = 'α \\ β';
+            th.classList.add('sticky-col');
+            headerRow.appendChild(th);
+            ordinals.forEach(o => {
+                const th = document.createElement('th');
+                th.textContent = o.toString();
+                headerRow.appendChild(th);
+            });
+            thead.appendChild(headerRow);
+
+            // Body Rows
+            ordinals.forEach(ordA => {
+                const row = document.createElement('tr');
+                const th = document.createElement('th');
+                const aStr = ordA.toString();
+                th.textContent = aStr;
+                th.classList.add('sticky-col');
+                row.appendChild(th);
+                let tsvRow = aStr + '\t';
+
+                ordinals.forEach(ordB => {
+                    const cell = document.createElement('td');
+                    try {
+                        const result = ordA.power(ordB);
+                        const resultStr = result.toString();
+                        cell.textContent = resultStr;
+                        tsvRow += resultStr + '\t';
+                    } catch (e) {
+                        cell.textContent = "ERROR";
+                        cell.style.color = 'red';
+                        tsvRow += 'ERROR\t';
+                        console.error(`Error exponentiating ${aStr} ^ ${ordB.toString()}:`, e);
+                    }
+                    row.appendChild(cell);
+                });
+                tbody.appendChild(row);
+                tsvContent += tsvRow.slice(0, -1) + '\n';
+            });
+
+            table.appendChild(thead);
+            table.appendChild(tbody);
+            wrapper.appendChild(table);
+            container.appendChild(wrapper);
+
+            const copyButton = document.createElement('button');
+            copyButton.className = 'copy-btn';
+            copyButton.textContent = 'Copy Exponentiation TSV';
+            container.appendChild(copyButton);
+
+            copyButton.addEventListener('click', () => {
+                navigator.clipboard.writeText(tsvContent).then(() => {
+                    copyButton.textContent = 'Copied!';
+                    setTimeout(() => copyButton.textContent = 'Copy Exponentiation TSV', 2000);
+                }).catch(err => {
+                    console.error('Failed to copy TSV: ', err);
+                    alert('Failed to copy. See console for details.');
+                });
+            });
+        }
+
+
+        function generateAdditionTable(ordinals) {
+            const container = document.getElementById('addition-table-container');
+            container.innerHTML = '<h2>Comprehensive Addition Table</h2>';
+
+            const wrapper = document.createElement('div');
+            wrapper.className = 'table-wrapper';
+
+            const table = document.createElement('table');
+            const thead = document.createElement('thead');
+            const tbody = document.createElement('tbody');
+            let tsvContent = "α \\ β\t" + ordinals.map(o => o.toString()).join('\t') + '\n';
+
+            // Header Row
+            const headerRow = document.createElement('tr');
+            const th = document.createElement('th');
+            th.textContent = 'α \\ β';
+            th.classList.add('sticky-col');
+            headerRow.appendChild(th);
+            ordinals.forEach(o => {
+                const th = document.createElement('th');
+                th.textContent = o.toString();
+                headerRow.appendChild(th);
+            });
+            thead.appendChild(headerRow);
+
+            // Body Rows
+            ordinals.forEach(ordA => {
+                const row = document.createElement('tr');
+                const th = document.createElement('th');
+                const aStr = ordA.toString();
+                th.textContent = aStr;
+                th.classList.add('sticky-col');
+                row.appendChild(th);
+                let tsvRow = aStr + '\t';
+
+                ordinals.forEach(ordB => {
+                    const cell = document.createElement('td');
+                    const result = ordA.add(ordB);
+                    const resultStr = result.toString();
+                    cell.textContent = resultStr;
+                    row.appendChild(cell);
+                    tsvRow += resultStr + '\t';
+                });
+                tbody.appendChild(row);
+                tsvContent += tsvRow.slice(0, -1) + '\n';
+            });
+
+            table.appendChild(thead);
+            table.appendChild(tbody);
+            wrapper.appendChild(table);
+            container.appendChild(wrapper);
+
+            const copyButton = document.createElement('button');
+            copyButton.className = 'copy-btn';
+            copyButton.textContent = 'Copy Addition TSV';
+            container.appendChild(copyButton);
+
+            copyButton.addEventListener('click', () => {
+                navigator.clipboard.writeText(tsvContent).then(() => {
+                    copyButton.textContent = 'Copied!';
+                    setTimeout(() => copyButton.textContent = 'Copy Addition TSV', 2000);
+                }).catch(err => {
+                    console.error('Failed to copy TSV: ', err);
+                    alert('Failed to copy. See console for details.');
+                });
+            });
+        }
+
+        function generateMultiplicationTable(ordinals) {
+            const container = document.getElementById('multiplication-table-container');
+            container.innerHTML = '<h2>Comprehensive Multiplication Table</h2>';
+
+            const wrapper = document.createElement('div');
+            wrapper.className = 'table-wrapper';
+
+            const table = document.createElement('table');
+            const thead = document.createElement('thead');
+            const tbody = document.createElement('tbody');
+            let tsvContent = "α \\ β\t" + ordinals.map(o => o.toString()).join('\t') + '\n';
+
+            // Header Row
+            const headerRow = document.createElement('tr');
+            const th = document.createElement('th');
+            th.textContent = 'α \\ β';
+            th.classList.add('sticky-col');
+            headerRow.appendChild(th);
+            ordinals.forEach(o => {
+                const th = document.createElement('th');
+                th.textContent = o.toString();
+                headerRow.appendChild(th);
+            });
+            thead.appendChild(headerRow);
+
+            // Body Rows
+            ordinals.forEach(ordA => {
+                const row = document.createElement('tr');
+                const th = document.createElement('th');
+                const aStr = ordA.toString();
+                th.textContent = aStr;
+                th.classList.add('sticky-col');
+                row.appendChild(th);
+                let tsvRow = aStr + '\t';
+
+                ordinals.forEach(ordB => {
+                    const cell = document.createElement('td');
+                    try {
+                        const result = ordA.multiply(ordB);
+                        const resultStr = result.toString();
+                        cell.textContent = resultStr;
+                        tsvRow += resultStr + '\t';
+                    } catch (e) {
+                        cell.textContent = "ERROR";
+                        cell.style.color = 'red';
+                        tsvRow += 'ERROR\t';
+                        console.error(`Error multiplying ${aStr} * ${ordB.toString()}:`, e);
+                    }
+                    row.appendChild(cell);
+                });
+                tbody.appendChild(row);
+                tsvContent += tsvRow.slice(0, -1) + '\n';
+            });
+
+            table.appendChild(thead);
+            table.appendChild(tbody);
+            wrapper.appendChild(table);
+            container.appendChild(wrapper);
+
+            const copyButton = document.createElement('button');
+            copyButton.className = 'copy-btn';
+            copyButton.textContent = 'Copy Multiplication TSV';
+            container.appendChild(copyButton);
+
+            copyButton.addEventListener('click', () => {
+                navigator.clipboard.writeText(tsvContent).then(() => {
+                    copyButton.textContent = 'Copied!';
+                    setTimeout(() => copyButton.textContent = 'Copy Multiplication TSV', 2000);
+                }).catch(err => {
+                    console.error('Failed to copy TSV: ', err);
+                    alert('Failed to copy. See console for details.');
+                });
+            });
+        }
+
+        function finalizeSummary() {
+            const summaryDiv = document.getElementById('overall-status-indicator');
+            summaryDiv.textContent = `Overall Status: ${passedTests} / ${totalTests} passed.`;
+            if (passedTests === totalTests && totalTests > 0) {
+                summaryDiv.className = 'status-overall-pass';
+            } else {
+                summaryDiv.className = 'status-overall-fail';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            defineTests();
+            finalizeSummary();
+        });
+
+    </script>
+</body>
+
+</html>

@@ -125,41 +125,35 @@ CNFOrdinal.prototype.powerCNF = function (exponentCNF) {
 };
 
 /**
+ * Converts various ordinal types to a unified ENFOrdinal representation.
+ * @param {Ordinal} ord The ordinal to convert.
+ * @returns {ENFOrdinal}
+ */
+function convertToENF(ord) {
+    return ENFOrdinal.fromCNF(ord);
+}
+
+function cnfHasEpsilonStructure(cnf) {
+    if (!(cnf instanceof CNFOrdinal)) return true;
+    for (const t of cnf.terms) {
+        if (t.exponent instanceof EpsilonOrdinal) return true;
+    }
+    return false;
+}
+
+
+/**
  * General ordinal exponentiation dispatcher.
  */
 function powerOrdinals(base, exponent) {
-    if (base._tracer) base._tracer.consume();
-
-    // Convert all operands to CNFOrdinal first to ensure consistent types.
-    const baseCNF = (base instanceof CNFOrdinal) ? base : new CNFOrdinal(base, base._tracer);
-    const exponentCNF = (exponent instanceof CNFOrdinal) ? exponent : new CNFOrdinal(exponent, exponent._tracer);
-
-    // Handle identity cases first.
-    if (exponentCNF.isZero()) {
-        return CNFOrdinal.ONEStatic().clone(base._tracer);
+    // Prefer CNF path when both operands are CNF and do not involve epsilon structure
+    if (base instanceof CNFOrdinal && exponent instanceof CNFOrdinal && !cnfHasEpsilonStructure(base) && !cnfHasEpsilonStructure(exponent)) {
+        return base.powerCNF(exponent);
     }
-    if (exponentCNF.equals(CNFOrdinal.ONEStatic())) {
-        return baseCNF.clone();
-    }
-    if (baseCNF.equals(CNFOrdinal.ONEStatic())) {
-        return CNFOrdinal.ONEStatic().clone(base._tracer);
-    }
-    if (baseCNF.isZero()) {
-        return CNFOrdinal.ZEROStatic().clone(base._tracer);
-    }
-
-    // Critical identity: w^e_k = e_k
-    if (baseCNF.isOmega() && exponent instanceof EpsilonOrdinal) {
-        return exponent.clone();
-    }
-
-    // Rule: a^e_k = e_k for 2 <= a < e_k
-    const two = CNFOrdinal.fromInt(2);
-    if (exponent instanceof EpsilonOrdinal && baseCNF.compareTo(two) >= 0 && baseCNF.compareTo(exponent) < 0) {
-        return exponent.clone();
-    }
-
-    return baseCNF.powerCNF(exponentCNF);
+    // Otherwise, use ENF rank-aware power
+    const baseENF = convertToENF(base);
+    const exponentENF = convertToENF(exponent);
+    return baseENF.power(exponentENF);
 }
 
 // Public API for power on prototypes

@@ -16,6 +16,11 @@ CNFOrdinal.prototype.compareTo = function (other) {
         return -other.compareTo(this);
     }
 
+    if (typeof ENFOrdinal !== 'undefined' && other instanceof ENFOrdinal) {
+        // Convert ENF to CNF and continue CNF vs CNF comparison to avoid recursion in mapping
+        other = other.toCNFOrdinal();
+    }
+
     if (!(other instanceof CNFOrdinal)) {
         throw new Error("Cannot compare CNFOrdinal with unknown ordinal type.");
     }
@@ -61,6 +66,12 @@ EpsilonOrdinal.prototype.compareTo = function (other) {
 
     if (other instanceof WTowerOrdinal) {
         return -other.compareTo(this); // Delegate and flip
+    }
+
+    if (typeof ENFOrdinal !== 'undefined' && other instanceof ENFOrdinal) {
+        // Convert ENF to CNF for comparison using existing CNF logic
+        const otherCNF = other.toCNFOrdinal();
+        return this.compareTo(otherCNF);
     }
 
     if (other instanceof CNFOrdinal) {

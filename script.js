@@ -219,9 +219,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const displayOrdinalObject = simplifiedOrdinalObject; // Use simplified for display
             const displayCnfString = displayOrdinalObject.toStringCNF();
+            const linearResultHeader = document.querySelector('.linear-result-section h3');
+
+            // --- Output Format Selection ---
+            const outputFormat = document.querySelector('input[name="outputFormat"]:checked').value;
+
+            if (outputFormat === 'ENF') {
+                alert("ENF conversion is temporarily disabled and under development.");
+                // Revert to CNF if user tries to select ENF
+                document.getElementById('formatCNF').checked = true;
+                linearResultTextElement.textContent = displayCnfString;
+                if (linearResultHeader) linearResultHeader.textContent = "Linear String Representation (CNF):";
+            } else {
+                linearResultTextElement.textContent = displayCnfString;
+                if (linearResultHeader) linearResultHeader.textContent = "Linear String Representation (CNF):";
+            }
+            // --- End Output Format Selection ---
 
             // Update linear and graphical results with the (potentially) simplified ordinal
-            linearResultTextElement.textContent = displayCnfString;
+            //linearResultTextElement.textContent = displayCnfString; // This is now handled above
             linearResultTextElement.classList.remove('placeholder-text');
 
             graphicalResultArea.innerHTML = renderOrdinalGraphical(displayOrdinalObject);
@@ -314,6 +330,11 @@ document.addEventListener('DOMContentLoaded', () => {
             if (e.key === 'Enter') {
                 calculateAndDisplay();
             }
+        });
+
+        // Add event listeners to radio buttons to recalculate on change
+        document.querySelectorAll('input[name="outputFormat"]').forEach(radio => {
+            radio.addEventListener('change', calculateAndDisplay);
         });
 
         // Process URL parameters only if input element exists
