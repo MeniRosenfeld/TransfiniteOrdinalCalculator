@@ -15,14 +15,17 @@ The primary goal is to parse ordinal expressions from strings, perform arithmeti
 
 -   `index.html`: The main application entry point and user interface.
 -   `script.js`: Handles UI logic, event listeners, and orchestrates calls between the UI and the ordinal logic.
--   `ordinal_types.js`: Defines `CNFOrdinal`, `EpsilonOrdinal`, `WTowerOrdinal`, and `OperationTracer`.
+-   `ordinal_types.js`: Defines `CNFOrdinal`, `EpsilonOrdinal`, `WTowerOrdinal`, and `OperationTracer`. All ordinal classes are branded with a shared symbol and expose `toDisplayString({ format })`, `toCNFOrdinal()`, and `toENFOrdinal()`.
 -   `ordinal_enf.js`: Defines the `ENFOrdinal` and `ENFTerm` classes; core ENF arithmetic and rank-based exponentiation.
 -   `ordinal_parser.js`: `OrdinalParser(input, tracer, options?)`, where `options.coerceToCNF` (default true) controls whether ENF results are coerced to CNF at parse time.
+    -   For ENF-first evaluation, pass `{ coerceToCNF: false }` to keep parsed results in ENF space.
 -   `ordinal_enf_test.html`: ENF test suite; uses `{ coerceToCNF: false }` when parsing expected ENF strings.
 -   `ordinal_enf_expected_results.js`: Expected strings for comprehensive pairwise tests.
 -   `ordinal_addition.js`, `ordinal_multiplication.js`, `ordinal_exponentiation.js`, `ordinal_tetration.js`: Dispatch and arithmetic.
+-   `ordinal_ops.js`: Central operation registry exposing `ordinalAdd`, `ordinalMultiply`, `ordinalPower`, `ordinalTetrate`. Currently delegates to existing dispatchers as a non-breaking indirection layer.
 -   `ordinal_comparison.js`, `ordinal_auxiliary_ops.js` (helpers: `exponentPredecessor`, `divideByOmega`, `findLargestEpsilonIndexLessThan`).
 -   `ordinal_mapping.js`, `ordinal_mapping_inverse.js` for f/fInverse.
+    -   Display uses `toDisplayString({ format })` consistently; avoid mixing type-specific string calls in UI.
 
 ## 3. Core Data Structures & Concepts
 
@@ -30,7 +33,7 @@ The primary goal is to parse ordinal expressions from strings, perform arithmeti
 
 -   **Represents:** An ordinal in Cantor Normal Form: `w^a1*c1 + w^a2*c2 + ... + n`.
 -   **Structure:** An array of terms `[{ exponent: Ordinal, coefficient: BigInt }]`.
--   **Usage:** It's the foundational representation for ordinals `< ε₀` and is critically used as the type for the omega exponent (`w^k`) within an `ENFTerm`.
+-   **Usage:** Foundational for ordinals `< ε₀` and used as the type for the omega exponent (`w^k`) within an `ENFTerm`. Legacy CNF epsilon interop is guarded behind a feature flag and is being phased out.
 
 ### `ENFOrdinal` (`ordinal_enf.js`)
 
@@ -46,6 +49,25 @@ The primary goal is to parse ordinal expressions from strings, perform arithmeti
     3.  `coefficient`: A JavaScript `BigInt`.
 
 ### `OperationTracer` (`ordinal_types.js`)
+### Ordinal branding & polymorphic display
+
+-   All ordinal classes carry a shared internal brand (`Symbol.for('TransfiniteOrdinal.OrdinalBrand')`) to enable duck-typed `isOrdinal` checks without a common base class.
+-   Use `toDisplayString({ format: 'CNF'|'ENF' })` to render strings, instead of calling `toStringCNF()`/`toString()` directly. This keeps UI/tests decoupled from representation choices.
+    -   ENF string parentheses: epsilon indices avoid superfluous parentheses but disambiguate composite indices. Examples:
+        *   `(e_e_0)^2` → `e_e_0^2`
+        *   `e_(e_0^2)` → `e_(e_0^2)`
+
+### Centralized operation registry
+
+-   Use `ordinal_ops.js` when evolving dispatch policies. It currently forwards to existing dispatchers (`addOrdinals`, `multiplyOrdinals`, `powerOrdinals`, `tetrateOrdinals`).
+-   Future changes to multi-dispatch should be implemented here to avoid touching call sites.
+
+### Graphical renderer
+
+-   `ordinal_graphical_renderer.js` now supports `ENFOrdinal` directly:
+    -   Renders epsilon factors (ε with subscripted ENF base, exponent shown when ≠ 1), ω^k (k as CNF ordinal), and finite coefficient.
+    -   Terms are joined by `+`, factors within a term by a centered dot.
+    -   ω is rendered using a single `.omega` CSS class for consistent LaTeX-like appearance in and out of superscripts.
 
 -   **Purpose:** A crucial utility to prevent infinitely long or excessively complex computations. It is a simple counter with a budget.
 -   **Mechanism:** Key computational steps (e.g., a recursive call, a loop iteration) must call `tracer.consume()`. If the internal counter exceeds the budget, it throws an error, halting the operation.
@@ -102,6 +124,7 @@ This section documents guidelines based on bugs and misunderstandings encountere
     - Addition/multiplication: prefer CNF when both operands are epsilon-free; otherwise use ENF.
     - Exponentiation: prefer ENF; fall back to CNF only for pure-CNF, epsilon-free operands.
     - Tetration: CNF; explicit error strings for epsilon-base cases.
+    - Note: CNF epsilon support in construction/equality is guarded behind a feature flag and will be disabled when tests/UI migrate fully to ENF for ε-structure.
 -   **Comparison:**
     - CNF comparer converts ENF input to CNF (not vice versa) to avoid recursion in mapping and tests.
     - ENF comparer converts inputs to ENF, then compares by: epsilon factors (rank-first), ω-exponent (CNF), coefficient.
@@ -110,13 +133,19 @@ This section documents guidelines based on bugs and misunderstandings encountere
 
 -   Coefficients can be absorbed into the merged leading factor during multiplication. Do not naively multiply coefficients across terms unless mathematically justified. Keep the existing semantics in `ENFTerm.multiply`.
 
-### **Guideline 5: String Representation and Parentheses**
+### **Guideline 7: String Representation and Parentheses**
 
 -   **The Bug:** `e_0^2` was incorrectly rendered as `e_0^(2)`.
 -   **The Cause:** The `toString()` logic was too aggressive in adding parentheses around exponents.
 -   **The Rule:** In an expression `a^b`, the exponent `b` should only be enclosed in parentheses if it is a sum of multiple terms (e.g., `w+1`) or a product of multiple factors (e.g., `e_0*w`). An exponent is exempt from parentheses only when it is represented by a single `ENFTerm` which itself contains only a single factor (e.g., `2`, `w`, `w^2`, `e_0`, `e_1^e_0`).
 
 By consulting this document, future agents should be better equipped to understand the project's architecture and avoid these common pitfalls. AI agents MUST read this document before making changes.
+
+## 6. Migration Notes (OOP scaffolding)
+
+-   The codebase now includes a non-breaking OOP surface and a central ops registry. Behavior is unchanged.
+-   Prefer `toDisplayString({ format })` for output. Avoid assuming CNF-only `toStringCNF()` in new code.
+-   When ready to drop CNF epsilon support, flip the `ALLOW_EPSILON_IN_CNF` flag in `ordinal_types.js` and update any remaining CNF ε call sites/tests.
 
 ## 5. Maintaining This Document
 

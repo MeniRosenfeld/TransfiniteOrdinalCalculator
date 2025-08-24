@@ -1,12 +1,18 @@
 // ordinal_types.js
 
+// Global ordinal contract brand and configuration flags
+// Using Symbol.for ensures a shared symbol across files without imports
+const ORDINAL_BRAND = Symbol.for('TransfiniteOrdinal.OrdinalBrand');
+// Keep legacy behavior for CNF epsilon handling for now; can be flipped later
+const ALLOW_EPSILON_IN_CNF = true;
+
 /**
  * A helper function to check if an object is a valid Ordinal instance.
  * @param {any} obj The object to check.
  * @returns {boolean}
  */
 function isOrdinal(obj) {
-    return obj instanceof CNFOrdinal || obj instanceof EpsilonOrdinal || obj instanceof WTowerOrdinal;
+    return obj instanceof CNFOrdinal || obj instanceof EpsilonOrdinal || obj instanceof WTowerOrdinal || (obj && obj._ordinalBrand === ORDINAL_BRAND);
 }
 
 
@@ -67,8 +73,10 @@ class CNFOrdinal {
                     coefficient: t.coefficient
                 }));
             } else if (initVal instanceof EpsilonOrdinal) {
-                // This converts an EpsilonOrdinal into a CNF representation of w^(that epsilon).
-                // This is a crucial step for operations like w^(e_k).
+                // Legacy epsilon support in CNF; guarded for future deprecation
+                if (!ALLOW_EPSILON_IN_CNF) {
+                    throw new Error('CNFOrdinal: Epsilon-based ordinals are not supported in CNF when ALLOW_EPSILON_IN_CNF=false');
+                }
                 this.terms.push({ exponent: initVal.clone(this._tracer), coefficient: 1n });
             } else if (initVal instanceof WTowerOrdinal) {
                 // If cloning from a WTower, convert it to CNF first.
@@ -188,6 +196,7 @@ class CNFOrdinal {
         if (this.isZero() || this.isFinite()) return false;
         // An epsilon number has the form w^a where a is the epsilon number itself.
         if (this.terms.length === 1 && this.terms[0].coefficient === 1n) {
+            if (!ALLOW_EPSILON_IN_CNF) return false;
             return this.terms[0].exponent.equals(this);
         }
         return false;
@@ -272,6 +281,7 @@ class CNFOrdinal {
 
         // Is this CNF object representing w^A equal to an EpsilonOrdinal A?
         if (otherOrdinal instanceof EpsilonOrdinal) {
+            if (!ALLOW_EPSILON_IN_CNF) return false;
             return this.terms.length === 1 &&
                 this.terms[0].coefficient === 1n &&
                 this.terms[0].exponent.equals(otherOrdinal);
@@ -698,6 +708,25 @@ class CNFOrdinal {
 }
 
 
+// Attach ordinal brand and display/conversion helpers to prototypes for OOP surface
+CNFOrdinal.prototype._ordinalBrand = ORDINAL_BRAND;
+CNFOrdinal.prototype.toDisplayString = function (options = undefined) {
+    const format = options && options.format ? options.format : 'CNF';
+    if (format === 'ENF' && typeof ENFOrdinal !== 'undefined') {
+        try {
+            return ENFOrdinal.fromCNF(this).toString();
+        } catch (_) { /* fall back to CNF */ }
+    }
+    return this.toStringCNF();
+};
+CNFOrdinal.prototype.toCNFOrdinal = function () { return this.clone(this._tracer); };
+CNFOrdinal.prototype.toENFOrdinal = function () {
+    if (typeof ENFOrdinal === 'undefined') {
+        throw new Error('ENFOrdinal is not available to convert CNF to ENF');
+    }
+    return ENFOrdinal.fromCNF(this);
+};
+
 /**
  * Represents an epsilon number, ε_k, where k is an ordinal.
  */
@@ -794,6 +823,24 @@ class EpsilonOrdinal {
     }
 }
 
+EpsilonOrdinal.prototype._ordinalBrand = ORDINAL_BRAND;
+EpsilonOrdinal.prototype.toDisplayString = function (options = undefined) {
+    const format = options && options.format ? options.format : 'CNF';
+    if (format === 'ENF' && typeof ENFOrdinal !== 'undefined') {
+        try {
+            return ENFOrdinal.fromCNF(this).toString();
+        } catch (_) { /* fall through */ }
+    }
+    return this.toStringCNF();
+};
+EpsilonOrdinal.prototype.toCNFOrdinal = function () { return new CNFOrdinal(this, this._tracer); };
+EpsilonOrdinal.prototype.toENFOrdinal = function () {
+    if (typeof ENFOrdinal === 'undefined') {
+        throw new Error('ENFOrdinal is not available to convert Epsilon to ENF');
+    }
+    return ENFOrdinal.fromCNF(this);
+};
+
 /**
  * Represents an ordinal of the form ω^^n (omega tetrated to n).
  */
@@ -868,6 +915,27 @@ class WTowerOrdinal {
         }
     }
 }
+
+WTowerOrdinal.prototype._ordinalBrand = ORDINAL_BRAND;
+WTowerOrdinal.prototype.toDisplayString = function (options = undefined) {
+    const format = options && options.format ? options.format : 'CNF';
+    if (format === 'ENF' && typeof ENFOrdinal !== 'undefined') {
+        try {
+            return this.toENFOrdinal().toString();
+        } catch (_) { /* fall through */ }
+    }
+    try {
+        return this.toCNFOrdinal().toStringCNF();
+    } catch (_) {
+        return this.toStringCNF();
+    }
+};
+WTowerOrdinal.prototype.toENFOrdinal = function () {
+    if (typeof ENFOrdinal === 'undefined') {
+        throw new Error('ENFOrdinal is not available to convert WTower to ENF');
+    }
+    return ENFOrdinal.fromCNF(this.toCNFOrdinal());
+};
 
 class OperationTracer {
     constructor(budget) {

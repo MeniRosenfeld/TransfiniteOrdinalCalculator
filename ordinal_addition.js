@@ -143,18 +143,7 @@ function addOrdinals(alpha, beta) {
     return alphaCNF.addCNF(betaCNF);
 }
 
-// Public API for addition on prototypes, calling the dispatcher
-CNFOrdinal.prototype.add = function (otherOrdinal) {
-    return addOrdinals(this, otherOrdinal);
-};
-
-EpsilonOrdinal.prototype.add = function (otherOrdinal) {
-    return addOrdinals(this, otherOrdinal);
-};
-
-// WTowerOrdinal.prototype.add will also call addOrdinals
-if (typeof WTowerOrdinal !== 'undefined') { // Check if WTowerOrdinal is loaded
-    WTowerOrdinal.prototype.add = function (otherOrdinal) {
-        return addOrdinals(this, otherOrdinal);
-    };
-}
+// Public API for addition on prototypes, calling the central registry (current dispatcher)
+CNFOrdinal.prototype.add = function (otherOrdinal) { return addOrdinals(this, otherOrdinal); };
+EpsilonOrdinal.prototype.add = function (otherOrdinal) { return addOrdinals(this, otherOrdinal); };
+if (typeof WTowerOrdinal !== 'undefined') { WTowerOrdinal.prototype.add = function (otherOrdinal) { return addOrdinals(this, otherOrdinal); }; }

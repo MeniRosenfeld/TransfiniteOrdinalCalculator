@@ -163,15 +163,7 @@ function tetrateOrdinals(base, height) {
     return baseCNF.tetrateCNF(heightCNF);
 }
 
-// Public API for tetration on prototypes
-CNFOrdinal.prototype.tetrate = function (otherOrdinal) {
-    return tetrateOrdinals(this, otherOrdinal);
-};
-EpsilonOrdinal.prototype.tetrate = function (otherOrdinal) {
-    return tetrateOrdinals(this, otherOrdinal);
-};
-if (typeof WTowerOrdinal !== 'undefined') {
-    WTowerOrdinal.prototype.tetrate = function (otherOrdinal) {
-        return tetrateOrdinals(this, otherOrdinal);
-    };
-} 
+// Public API for tetration on prototypes (central registry)
+CNFOrdinal.prototype.tetrate = function (otherOrdinal) { return tetrateOrdinals(this, otherOrdinal); };
+EpsilonOrdinal.prototype.tetrate = function (otherOrdinal) { return tetrateOrdinals(this, otherOrdinal); };
+if (typeof WTowerOrdinal !== 'undefined') { WTowerOrdinal.prototype.tetrate = function (otherOrdinal) { return tetrateOrdinals(this, otherOrdinal); }; }

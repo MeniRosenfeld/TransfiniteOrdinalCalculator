@@ -2,10 +2,12 @@ body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
     line-height: 1.6;
     color: #333;
-    max-width: 900px; /* Slightly wider for two columns */
+    max-width: 900px;
+    /* Slightly wider for two columns */
     margin: 20px auto;
     padding: 0 20px;
-    background-color: #f8f9fa; /* Lighter overall background */
+    background-color: #f8f9fa;
+    /* Lighter overall background */
 }
 
 header {
@@ -29,7 +31,7 @@ header p {
     background-color: #fff;
     padding: 25px;
     border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
 .input-section label {
@@ -40,23 +42,29 @@ header p {
 }
 
 input[type="text"] {
-    width: calc(100% - 24px); /* Account for padding and border */
+    width: calc(100% - 24px);
+    /* Account for padding and border */
     padding: 12px;
-    margin-bottom: 15px; /* This margin is fine, it's above the button-row */
+    margin-bottom: 15px;
+    /* This margin is fine, it's above the button-row */
     border: 1px solid #ced4da;
     border-radius: 4px;
     font-size: 1.05em;
     font-family: 'Courier New', Courier, monospace;
 }
 
-.button-row { /* New style for the button container */
+.button-row {
+    /* New style for the button container */
     display: flex;
-    gap: 10px; /* Creates space between the buttons */
-    margin-bottom: 15px; /* Space below the button row, before error message area */
+    gap: 10px;
+    /* Creates space between the buttons */
+    margin-bottom: 15px;
+    /* Space below the button row, before error message area */
 }
 
 #calculateButton {
-    flex-grow: 4; /* Will take up 4 parts of available space */
+    flex-grow: 4;
+    /* Will take up 4 parts of available space */
     padding: 12px;
     background-color: #007bff;
     color: white;
@@ -65,7 +73,8 @@ input[type="text"] {
     font-size: 1.1em;
     cursor: pointer;
     transition: background-color 0.2s ease;
-    text-align: center; /* Ensure text is centered if it wasn't already */
+    text-align: center;
+    /* Ensure text is centered if it wasn't already */
 }
 
 #calculateButton:hover {
@@ -78,61 +87,88 @@ input[type="text"] {
 */
 
 #shareUrlButton {
-    flex-grow: 1; /* Will take up 1 part of available space (approx 20% if calc is 4 parts) */
-    padding: 12px; /* Match calculateButton padding for consistent height */
-    font-size: 1.0em; /* Can adjust if needed */
+    flex-grow: 1;
+    /* Will take up 1 part of available space (approx 20% if calc is 4 parts) */
+    padding: 12px;
+    /* Match calculateButton padding for consistent height */
+    font-size: 1.0em;
+    /* Can adjust if needed */
     text-align: center;
-    white-space: nowrap; /* Try to prevent text wrapping on a smaller button */
-    
+    white-space: nowrap;
+    /* Try to prevent text wrapping on a smaller button */
+
     /* Overrides for .utility-button class if needed, or ensure .utility-button styles are complementary */
-    margin-top: 0; /* Override .utility-button margin-top */
-    margin-left: 0; /* Override .utility-button margin-left (gap in .button-row handles spacing) */
-    
+    margin-top: 0;
+    /* Override .utility-button margin-top */
+    margin-left: 0;
+    /* Override .utility-button margin-left (gap in .button-row handles spacing) */
+
     /* Retain visual style from utility-button or define explicitly */
-    background-color: #6c757d; /* Explicitly define, matches .utility-button */
-    color: white; /* Explicitly define */
-    border: none; /* Explicitly define */
-    border-radius: 4px; /* Explicitly define */
-    cursor: pointer; /* Explicitly define */
-    transition: background-color 0.2s ease, color 0.2s ease; /* Explicitly define */
+    background-color: #6c757d;
+    /* Explicitly define, matches .utility-button */
+    color: white;
+    /* Explicitly define */
+    border: none;
+    /* Explicitly define */
+    border-radius: 4px;
+    /* Explicitly define */
+    cursor: pointer;
+    /* Explicitly define */
+    transition: background-color 0.2s ease, color 0.2s ease;
+    /* Explicitly define */
 }
+
 /* No hover for #shareUrlButton needed here if utility-button:hover is acceptable or defined above */
 
 .error-display {
     margin-top: 15px;
     padding: 12px;
-    background-color: #f8d7da; /* Bootstrap danger background */
-    border: 1px solid #f5c6cb; /* Bootstrap danger border */
+    background-color: #f8d7da;
+    /* Bootstrap danger background */
+    border: 1px solid #f5c6cb;
+    /* Bootstrap danger border */
     border-radius: 4px;
-    color: #721c24; /* Bootstrap danger text */
+    color: #721c24;
+    /* Bootstrap danger text */
     font-family: 'Courier New', Courier, monospace;
 }
-.error-display:empty { /* Hide if no error message */
+
+.error-display:empty {
+    /* Hide if no error message */
     display: none;
 }
 
 
 .result-container {
-    /* display: flex; */ /* Remove this to stack vertically */
-    /* flex-wrap: wrap; */ /* No longer needed */
-    /* gap: 25px; */ /* We'll use margin-bottom on sections instead */
+    /* display: flex; */
+    /* Remove this to stack vertically */
+    /* flex-wrap: wrap; */
+    /* No longer needed */
+    /* gap: 25px; */
+    /* We'll use margin-bottom on sections instead */
     margin-top: 25px;
 }
 
 .result-section {
-    /* flex: 1; */ /* No longer needed for flex behavior */
-    /* min-width: 320px; */ /* No longer needed for flex item sizing */
-    width: 100%; /* Make each section take full available width */
-    box-sizing: border-box; /* Include padding and border in the element's total width and height */
+    /* flex: 1; */
+    /* No longer needed for flex behavior */
+    /* min-width: 320px; */
+    /* No longer needed for flex item sizing */
+    width: 100%;
+    /* Make each section take full available width */
+    box-sizing: border-box;
+    /* Include padding and border in the element's total width and height */
     background-color: #e9ecef;
     padding: 20px;
     border-radius: 6px;
     border: 1px solid #dee2e6;
-    margin-bottom: 25px; /* Add space between stacked sections */
+    margin-bottom: 25px;
+    /* Add space between stacked sections */
 }
 
 .result-section:last-child {
-    margin-bottom: 0; /* No bottom margin for the last section */
+    margin-bottom: 0;
+    /* No bottom margin for the last section */
 }
 
 .result-section h3 {
@@ -153,27 +189,39 @@ input[type="text"] {
     font-size: 1.25em;
     word-wrap: break-word;
     overflow-x: auto;
-    line-height: 1.8; /* Improved line height for superscripts */
+    line-height: 1.8;
+    /* Improved line height for superscripts */
 }
 
-.graphical-display { /* Let's increase the base font size here for overall larger rendering */
+.graphical-display {
+    /* Let's increase the base font size here for overall larger rendering */
     padding: 15px;
     background-color: #fff;
     border: 1px solid #ced4da;
     border-radius: 4px;
     min-height: 70px;
-    font-size: 1.4em; /* Increased from 1.25em */
+    font-size: 1.4em;
+    /* Increased from 1.25em */
     word-wrap: break-word;
     overflow-x: auto;
-    line-height: 1.5; /* Adjusted line height for better sup alignment */
-} 
+    line-height: 1.5;
+    /* Adjusted line height for better sup alignment */
+}
 
-.linear-display .value { color: #155724; /* Bootstrap success text */ }
-.placeholder-text { color: #6c757d; font-style: italic; }
+.linear-display .value {
+    color: #155724;
+    /* Bootstrap success text */
+}
+
+.placeholder-text {
+    color: #6c757d;
+    font-style: italic;
+}
 
 
 .utility-button {
-    background-color: #6c757d; /* Bootstrap secondary gray */
+    background-color: #6c757d;
+    /* Bootstrap secondary gray */
     color: white;
     padding: 8px 15px;
     border: none;
@@ -184,9 +232,11 @@ input[type="text"] {
     transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
     margin-left: 5px;
 }
+
 .utility-button:first-of-type {
     margin-left: 0;
 }
+
 .utility-button:hover {
     background-color: #5a6268;
 }
@@ -204,15 +254,17 @@ input[type="text"] {
 .graphical-display .operator,
 
 .graphical-display sup {
-    font-family: 'Times New Roman', Times, serif; /* Consistent math font */
-    display: inline-block; /* Better control over spacing and alignment */
+    font-family: 'Times New Roman', Times, serif;
+    /* Consistent math font */
+    display: inline-block;
+    /* Better control over spacing and alignment */
 }
 
 /* You might also want to adjust the base size of omega and coefficients if needed */
 .graphical-display .omega {
+    font-family: 'Times New Roman', Times, serif;
     font-style: italic;
-    /* font-size: 1.1em; /* Optionally make omega slightly larger than surrounding text */
-    margin-right: 0.05em; /* Minimal space before superscript */
+    margin-right: 0.05em;
 }
 
 
@@ -223,58 +275,79 @@ input[type="text"] {
     /* font-size: 0.95em; /* Optionally make coefficients slightly smaller than omega */
 }
 
-.graphical-display .operator { /* General operator styling if needed */
+.graphical-display .operator {
+    /* General operator styling if needed */
     font-weight: normal;
-    display: inline-block; /* Ensures margins are applied correctly */
+    display: inline-block;
+    /* Ensures margins are applied correctly */
 }
 
 .graphical-display .multiplication-dot {
-    margin: 0 0.1em; /* Reduce horizontal space significantly for the dot */
+    margin: 0 0.1em;
+    /* Reduce horizontal space significantly for the dot */
     /* vertical-align: -0.05em; /* Optional: slight vertical adjustment if needed */
 }
 
 .graphical-display .addition-plus {
-    margin: 0 0.3em; /* Keep a reasonable space for the plus sign */
+    margin: 0 0.3em;
+    /* Keep a reasonable space for the plus sign */
 }
 
 .graphical-display .ord-term {
     white-space: nowrap;
-    vertical-align: baseline; /* Align terms on their baseline */
+    vertical-align: baseline;
+    /* Align terms on their baseline */
 }
-.graphical-display .ord-term + .operator + .ord-term { /* Spacing between terms correctly */
+
+.graphical-display .ord-term+.operator+.ord-term {
+    /* Spacing between terms correctly */
     /* display: inline; */
 }
 
 
 .graphical-display sup {
-    font-size: 0.8em;      /* Make superscripts a bit larger relative to base */
-    vertical-align: super; /* Standard way to position superscripts */
-    position: relative;    /* Keep for fine-tuning if needed, but rely on vertical-align more */
-    /* top: -0.35em; */    /* Reduce the upward shift, `vertical-align: super` handles much of this */
-    /* margin-left: -0.1em; *//* Reduce or remove aggressive left nudge */
-    line-height: 1;        /* Important to prevent it from affecting the main line's height */
-    display: inline-block; /* Helps with consistent behavior */
+    font-size: 0.8em;
+    /* Make superscripts a bit larger relative to base */
+    vertical-align: super;
+    /* Standard way to position superscripts */
+    position: relative;
+    /* Keep for fine-tuning if needed, but rely on vertical-align more */
+    /* top: -0.35em; */
+    /* Reduce the upward shift, `vertical-align: super` handles much of this */
+    /* margin-left: -0.1em; */
+    /* Reduce or remove aggressive left nudge */
+    line-height: 1;
+    /* Important to prevent it from affecting the main line's height */
+    display: inline-block;
+    /* Helps with consistent behavior */
 }
 
-.graphical-display sup .ord-char, /* Ensure nested elements inherit math font */
+.graphical-display sup .ord-char,
 .graphical-display sup .omega {
-    font-size: 1em; /* Make them 100% of their parent sup's size */
+    font-family: 'Times New Roman', Times, serif;
+    font-style: italic;
+    font-size: 1em;
 }
+
 .graphical-display sup .coefficient,
 .graphical-display sup .operator {
     font-family: 'Times New Roman', Times, serif;
-    font-size: 1em; /* Make them 100% of their parent sup's size */
+    font-size: 1em;
+    /* Make them 100% of their parent sup's size */
 }
 
 /* Further nested superscripts */
 .graphical-display sup sup {
-    font-size: 0.85em;  /* Slightly larger than before, relative to its parent sup */
-    /* top: -0.3em; */ /* Adjust if needed, but vertical-align:super in parent helps */
+    font-size: 0.85em;
+    /* Slightly larger than before, relative to its parent sup */
+    /* top: -0.3em; */
+    /* Adjust if needed, but vertical-align:super in parent helps */
     /* margin-left: -0.05em; */
 }
 
 .graphical-display sup sup sup {
-    font-size: 0.9em;   /* Even less shrinkage for the third level */
+    font-size: 0.9em;
+    /* Even less shrinkage for the third level */
     /* top: -0.25em; */
 }
 
@@ -285,14 +358,17 @@ input[type="text"] {
     border: 1px solid #e9ecef;
     border-radius: 4px;
 }
+
 .instructions h2 {
     margin-top: 0;
     color: #007bff;
 }
+
 .instructions ul {
     list-style-type: disc;
     padding-left: 20px;
 }
+
 .instructions code {
     background-color: #e9ecef;
     padding: 2px 5px;
@@ -302,17 +378,21 @@ input[type="text"] {
 
 /* New Styling for About Section */
 .about-section {
-    margin-top: 30px; /* Space above the about section */
+    margin-top: 30px;
+    /* Space above the about section */
     padding: 20px;
-    background-color: #f8f9fa; /* Slightly different background, or same as instructions */
+    background-color: #f8f9fa;
+    /* Slightly different background, or same as instructions */
     border: 1px solid #dee2e6;
     border-radius: 4px;
-    font-size: 0.95em; /* Slightly smaller text if desired */
+    font-size: 0.95em;
+    /* Slightly smaller text if desired */
 }
 
 .about-section h2 {
     margin-top: 0;
-    color: #2c3e50; /* Match main heading color or choose another */
+    color: #2c3e50;
+    /* Match main heading color or choose another */
     border-bottom: 1px solid #ced4da;
     padding-bottom: 8px;
     margin-bottom: 15px;
@@ -323,7 +403,8 @@ input[type="text"] {
 }
 
 .about-section ul {
-    list-style-type: square; /* Or keep as disc */
+    list-style-type: square;
+    /* Or keep as disc */
     padding-left: 20px;
     margin-bottom: 1em;
 }
@@ -353,21 +434,23 @@ footer {
 /* This rule seems to be missing from style.css */
 .custom-tooltip {
     position: absolute;
-    z-index: 1070; 
+    z-index: 1070;
     display: block;
     font-size: 0.875rem;
     line-height: 1.5;
     opacity: 0;
     visibility: hidden;
     transition: opacity 0.15s linear, visibility 0.15s linear;
-    padding: 0.5rem 0.75rem; 
-    color: #fff; 
-    background-color: #333; 
-    border: 1px solid #000; 
-    border-radius: 0.25rem; 
-    box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.1); 
-    max-width: 300px; /* Adjust as needed */
-    min-width: 150px; /* Adjust as needed */
+    padding: 0.5rem 0.75rem;
+    color: #fff;
+    background-color: #333;
+    border: 1px solid #000;
+    border-radius: 0.25rem;
+    box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.1);
+    max-width: 300px;
+    /* Adjust as needed */
+    min-width: 150px;
+    /* Adjust as needed */
     /* The following might be set by JS, but good to have defaults if needed */
     /* left: 0; */
     /* top: 0; */
@@ -381,11 +464,16 @@ footer {
 /* Styling for the new compact mapped value display */
 .mapped-value-inline-display {
     display: flex;
-    align-items: center; /* Vertically align items */
-    gap: 8px; /* Space between the number and the question mark */
-    padding: 6px 0; /* Compact vertical padding */
-    margin-top: 12px; /* Space above this section */
-    margin-bottom: 12px; /* Space below this section, before errors/results */
+    align-items: center;
+    /* Vertically align items */
+    gap: 8px;
+    /* Space between the number and the question mark */
+    padding: 6px 0;
+    /* Compact vertical padding */
+    margin-top: 12px;
+    /* Space above this section */
+    margin-bottom: 12px;
+    /* Space below this section, before errors/results */
     /* Optional: add a light border or background if you want to subtly box it */
     /* border: 1px solid #e0e0e0; */
     /* border-radius: 4px; */
@@ -398,61 +486,85 @@ footer {
    applied by JavaScript.
 */
 #mappedValueText {
-    font-size: 1.05em; /* Adjust size as needed */
-    /* color: #155724; */ /* This color is applied when it's a value (not placeholder) */
-    padding: 4px 8px; /* Compact padding */
-    background-color: #f0f0f0; /* Light background for the number itself */
+    font-size: 1.05em;
+    /* Adjust size as needed */
+    /* color: #155724; */
+    /* This color is applied when it's a value (not placeholder) */
+    padding: 4px 8px;
+    /* Compact padding */
+    background-color: #f0f0f0;
+    /* Light background for the number itself */
     border-radius: 3px;
-    min-width: 60px; /* Ensure it has some width even when placeholder */
-    text-align: left; /* Or 'right' if you prefer numbers aligned to the right */
+    min-width: 60px;
+    /* Ensure it has some width even when placeholder */
+    text-align: left;
+    /* Or 'right' if you prefer numbers aligned to the right */
     line-height: 1.4;
 }
 
 /* Styles for when it's a placeholder (JS adds/removes 'placeholder-text' class) */
 #mappedValueText.placeholder-text {
-    /* color: #6c757d; */ /* Inherited from existing .placeholder-text */
-    /* font-style: italic; */ /* Inherited from existing .placeholder-text */
-    background-color: transparent; /* No background for placeholder text */
-    padding: 4px 0; /* Adjust padding for placeholder if needed */
+    /* color: #6c757d; */
+    /* Inherited from existing .placeholder-text */
+    /* font-style: italic; */
+    /* Inherited from existing .placeholder-text */
+    background-color: transparent;
+    /* No background for placeholder text */
+    padding: 4px 0;
+    /* Adjust padding for placeholder if needed */
 }
 
 /* Ensure the .value class (added by JS) provides the correct text color for the actual number */
 #mappedValueText.value {
-    color: #155724; /* Success text color for the calculated value */
+    color: #155724;
+    /* Success text color for the calculated value */
 }
 
 
 .mapped-value-inline-display .tooltip-trigger {
-    font-size: 1.1em; /* Adjust question mark size if desired */
+    font-size: 1.1em;
+    /* Adjust question mark size if desired */
     cursor: pointer;
-    line-height: 1; /* Helps with alignment if font size is different */
-    align-self: center; /* Ensure it's centered with the text box */
+    line-height: 1;
+    /* Helps with alignment if font size is different */
+    align-self: center;
+    /* Ensure it's centered with the text box */
 }
 
 .simplification-header-info {
-    font-size: 0.85em; /* Adjust as needed */
-    font-weight: normal !important; /* Added !important for testing */
-    color: #555;       /* Adjust as needed */
-    margin-left: 8px; /* Adjust as needed */
+    font-size: 0.85em;
+    /* Adjust as needed */
+    font-weight: normal !important;
+    /* Added !important for testing */
+    color: #555;
+    /* Adjust as needed */
+    margin-left: 8px;
+    /* Adjust as needed */
 }
 
 .mapped-value-slider {
-    width: 550px; /* Set a fixed width */
-    margin-left: auto; /* Push slider to the right */
+    width: 550px;
+    /* Set a fixed width */
+    margin-left: auto;
+    /* Push slider to the right */
     /* Add any other desired slider-specific styles here */
 }
 
 .nudge-control {
     display: inline-block;
     padding: 2px 6px;
-    margin-left: 8px; /* Space between slider and nudge control */
-    cursor: ew-resize; /* Indicates horizontal dragging */
-    user-select: none; /* Prevent text selection during drag */
+    margin-left: 8px;
+    /* Space between slider and nudge control */
+    cursor: ew-resize;
+    /* Indicates horizontal dragging */
+    user-select: none;
+    /* Prevent text selection during drag */
     border: 1px solid #ccc;
     border-radius: 4px;
     background-color: #f0f0f0;
     font-size: 0.9em;
-    line-height: 1.4; /* Align with mappedValueText if possible */
+    line-height: 1.4;
+    /* Align with mappedValueText if possible */
 }
 
 .nudge-control:hover {

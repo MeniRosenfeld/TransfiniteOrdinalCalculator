@@ -17,16 +17,17 @@ This web application provides a user-friendly interface to parse expressions rep
         *   Tetration: `^^` (right-associative, highest precedence)
     *   Parentheses `()` for grouping and controlling order of operations.
 *   **Multiple Ordinal Types:** Internally represents and operates on:
-    *   `CNFOrdinal`: For ordinals representable in Cantor Normal Form.
+    *   `CNFOrdinal`: For ordinals in Cantor Normal Form (primarily < ε₀; CNF epsilon support is being phased out behind a flag).
     *   `EpsilonNaughtOrdinal`: For the ordinal ε₀.
     *   `WTowerOrdinal`: For ordinals of the form ω↑↑n (ω tetrated to a finite height n), like ω, ω^ω, ω^(ω^ω), etc. These are converted to `CNFOrdinal` for most operations.
+    *   `ENFOrdinal`/`ENFTerm`: Epsilon Normal Form used whenever epsilon structure is present.
 *   **Calculates Ordinal Forms:**
     *   Implements the standard rules for ordinal addition, multiplication, exponentiation, and tetration.
     *   Produces accurate CNF for ordinals less than ε₀.
     *   Handles operations involving ε₀ according to defined rules (e.g., `α + ε₀ = ε₀` for α < ε₀, `k^^ε₀ = ω` for finite k>1, `α^^ε₀ = ε₀` for infinite α).
 *   **Dual Display:**
     *   **Graphical Representation:** Renders the result using symbols like ω, ε₀, ω↑↑n, and true superscripts for exponents, with nested superscripts sized appropriately.
-    *   **Linear String Representation:** Provides the standard text-based CNF or "e_0" / "w^^n".
+    *   **Linear String Representation (default ENF):** Uses a polymorphic API across ordinal types. Prefer `ordinal.toDisplayString({ format: 'CNF'|'ENF' })` over type-specific string methods. The main UI now defaults to ENF; users can switch to CNF via the radio selector.
 *   **Result Simplification:**
     *   Automatically simplifies very complex results based on a structural complexity budget (`g(α)`) to enhance readability.
     *   If simplification occurs, an indicator (e.g., `(Displayed complexity: G_simp / G_orig)`) is shown alongside the graphical result.
@@ -107,6 +108,14 @@ This web application provides a user-friendly interface to parse expressions rep
     *   Exponentiation uses ENF by default. It falls back to CNF only when both operands are CNF and epsilon-free.
     *   Tetration is implemented on CNF; epsilon-base special cases throw explicit legacy-compatible error messages (e.g., `Error: Operation e_0 ^^ CNFOrdinal (2) is unsupported when CNFOrdinal is not 0 or 1.`).
 
+*   **Central operation registry**
+    *   `ordinal_ops.js` defines `ordinalAdd`, `ordinalMultiply`, `ordinalPower`, `ordinalTetrate`. It currently delegates to existing dispatchers and provides a single place to evolve multi-dispatch logic.
+
+*   **Calculator API (format-aware)**
+    *   `calculateOrdinalCNF(expressionString, maxOperations, options?)` accepts `{ format?: 'CNF' | 'ENF' }`.
+      - `format: 'ENF'` parses with `{ coerceToCNF: false }`, evaluates using ENF, and returns `{ enfString, ordinalObject }` where `ordinalObject` is an `ENFOrdinal`.
+      - `format: 'CNF'` (default) returns `{ cnfString, ordinalObject }` with a `CNFOrdinal`.
+
 *   **ENF rank-based exponentiation**
     *   Basic ordinals: 1, ω, and each ε_a.
     *   Rank(α): greatest basic ordinal ≤ α. For finite, rank=1; for infinite ω-based terms, rank=ω; for ε-based terms, the basic ε.
@@ -127,7 +136,8 @@ This web application provides a user-friendly interface to parse expressions rep
 *   **Stability and conversion**
     *   `WTowerOrdinal.toCNFOrdinal()` always returns a `CNFOrdinal` (converting if needed).
     *   Conversions avoid recursion loops: use `ENFOrdinal.fromCNF` for CNF→ENF; `ENFOrdinal.toCNFOrdinal` builds CNF structurally.
-*   **Parser:** Recursive descent parser that handles numbers, `w`, `e_0`, operators `+`, `*`, `^`, `^^` (with correct precedence and associativity), and parentheses.
+*   **Parser:** Recursive descent parser that handles numbers, `w`, `e_0`, operators `+`, `*`, `^`, `^^` (with correct precedence and associativity), and parentheses. Use `{ coerceToCNF: false }` when you intend to keep ENF.
+*   **Polymorphic display API:** All ordinal types carry an internal brand and implement `toDisplayString({ format })`. Use this for rendering strings (CNF/ENF) instead of calling `toStringCNF()` directly.
 *   **Complexity Function `g(α)`:**
     *   `g(n)` = number of digits of `n`
     *   `g(w)` = 1
@@ -193,8 +203,10 @@ This web application provides a user-friendly interface to parse expressions rep
     - `ordinal_comparison.js`
     - `ordinal_auxiliary_ops.js` (exponentPredecessor, divideByOmega, helpers)
     - `ordinal_addition.js`, `ordinal_multiplication.js`, `ordinal_exponentiation.js`, `ordinal_tetration.js`
+    - `ordinal_ops.js` (central operation registry)
     - `ordinal_parser.js` (supports `{ coerceToCNF }`)
     - `ordinal_graphical_renderer.js`
+    - `style.css` (math-like styling; Ω uses a single `.omega` class consistently in and out of superscripts)
 *   Mapping:
     - `ordinal_mapping.js` (f(α), FParams)
     - `ordinal_mapping_inverse.js` (fInverse)

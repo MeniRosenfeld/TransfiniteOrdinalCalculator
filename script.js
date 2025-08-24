@@ -177,7 +177,8 @@ document.addEventListener('DOMContentLoaded', () => {
             // const tempTracer = new OperationTracer(10000000); // REMOVE THIS LINE
 
             // Pass the budget number directly
-            resultFromCalc = calculateOrdinalCNF(inputString, 10000000); // PASS BUDGET NUMBER
+            const outputFormatWanted = document.querySelector('input[name="outputFormat"]:checked').value;
+            resultFromCalc = calculateOrdinalCNF(inputString, 10000000, { format: outputFormatWanted });
 
             if (resultFromCalc.error) {
                 throw new Error(resultFromCalc.error);
@@ -218,20 +219,20 @@ document.addEventListener('DOMContentLoaded', () => {
             // --- End Simplification Step ---
 
             const displayOrdinalObject = simplifiedOrdinalObject; // Use simplified for display
-            const displayCnfString = displayOrdinalObject.toStringCNF();
+            const outputFormat = document.querySelector('input[name="outputFormat"]:checked').value;
+            const displayString = (typeof displayOrdinalObject.toDisplayString === 'function')
+                ? displayOrdinalObject.toDisplayString({ format: outputFormat })
+                : (outputFormat === 'ENF'
+                    ? (typeof ENFOrdinal !== 'undefined' ? ENFOrdinal.fromCNF(displayOrdinalObject).toString() : displayOrdinalObject.toString())
+                    : displayOrdinalObject.toStringCNF());
             const linearResultHeader = document.querySelector('.linear-result-section h3');
 
             // --- Output Format Selection ---
-            const outputFormat = document.querySelector('input[name="outputFormat"]:checked').value;
-
             if (outputFormat === 'ENF') {
-                alert("ENF conversion is temporarily disabled and under development.");
-                // Revert to CNF if user tries to select ENF
-                document.getElementById('formatCNF').checked = true;
-                linearResultTextElement.textContent = displayCnfString;
-                if (linearResultHeader) linearResultHeader.textContent = "Linear String Representation (CNF):";
+                linearResultTextElement.textContent = displayString;
+                if (linearResultHeader) linearResultHeader.textContent = "Linear String Representation (ENF):";
             } else {
-                linearResultTextElement.textContent = displayCnfString;
+                linearResultTextElement.textContent = displayString;
                 if (linearResultHeader) linearResultHeader.textContent = "Linear String Representation (CNF):";
             }
             // --- End Output Format Selection ---
@@ -240,6 +241,7 @@ document.addEventListener('DOMContentLoaded', () => {
             //linearResultTextElement.textContent = displayCnfString; // This is now handled above
             linearResultTextElement.classList.remove('placeholder-text');
 
+            // Graphical renderer now supports ENFOrdinal directly
             graphicalResultArea.innerHTML = renderOrdinalGraphical(displayOrdinalObject);
             graphicalResultArea.querySelector('.placeholder-text')?.remove();
 

@@ -112,15 +112,7 @@ function multiplyOrdinals(alpha, beta) {
     return alphaCNF.multiplyCNF(betaCNF);
 }
 
-// Public API for multiplication on prototypes
-CNFOrdinal.prototype.multiply = function (otherOrdinal) {
-    return multiplyOrdinals(this, otherOrdinal);
-};
-EpsilonOrdinal.prototype.multiply = function (otherOrdinal) {
-    return multiplyOrdinals(this, otherOrdinal);
-};
-if (typeof WTowerOrdinal !== 'undefined') {
-    WTowerOrdinal.prototype.multiply = function (otherOrdinal) {
-        return multiplyOrdinals(this, otherOrdinal);
-    };
-}
+// Public API for multiplication on prototypes (central registry)
+CNFOrdinal.prototype.multiply = function (otherOrdinal) { return multiplyOrdinals(this, otherOrdinal); };
+EpsilonOrdinal.prototype.multiply = function (otherOrdinal) { return multiplyOrdinals(this, otherOrdinal); };
+if (typeof WTowerOrdinal !== 'undefined') { WTowerOrdinal.prototype.multiply = function (otherOrdinal) { return multiplyOrdinals(this, otherOrdinal); }; }

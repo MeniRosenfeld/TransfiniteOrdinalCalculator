@@ -12,16 +12,17 @@
 const DEFAULT_OPERATION_BUDGET = 1000000; // Default limit for operations
 
 /**
- * Parses an ordinal expression string, calculates its Cantor Normal Form,
- * and returns its string representation and the CNFOrdinal object.
+ * Parses an ordinal expression string, evaluates it, and returns a representation
+ * and the ordinal object.
+ * - By default returns CNF string and CNFOrdinal object.
+ * - When options.format === 'ENF', returns ENF string and ENFOrdinal object.
  *
  * @param {string} expressionString The string to parse (e.g., "(w+1)*w^2").
- * @param {number} [maxOperations=DEFAULT_OPERATION_BUDGET] The maximum number of
- *        internal operations allowed before halting with an error.
- * @returns {object} An object { cnfString, ordinalObject } or { error }.
- *                   `ordinalObject` is an instance of CNFOrdinal.
+ * @param {number} [maxOperations=DEFAULT_OPERATION_BUDGET]
+ * @param {{ format?: 'CNF'|'ENF' }} [options]
+ * @returns {object} { cnfString?, enfString?, ordinalObject } or { error }
  */
-function calculateOrdinalCNF(expressionString, maxOperations = DEFAULT_OPERATION_BUDGET) {
+function calculateOrdinalCNF(expressionString, maxOperations = DEFAULT_OPERATION_BUDGET, options = undefined) {
     if (typeof expressionString !== 'string') {
         return { error: "Error: Input expression must be a string." };
     }
@@ -30,14 +31,33 @@ function calculateOrdinalCNF(expressionString, maxOperations = DEFAULT_OPERATION
     }
 
     const tracer = new OperationTracer(maxOperations);
+    const targetFormat = options && options.format ? options.format : 'CNF';
 
     try {
-        const parser = new OrdinalParser(expressionString, tracer);
-        const ordinalResult = parser.parse(); // This now returns a CNFOrdinal instance
-        return {
-            cnfString: ordinalResult.toStringCNF(),
-            ordinalObject: ordinalResult
-        };
+        if (targetFormat === 'ENF') {
+            const parser = new OrdinalParser(expressionString, tracer, { coerceToCNF: false });
+            let result = parser.parse(); // Prefer ENF
+            if (!(result instanceof ENFOrdinal)) {
+                // Convert any CNF/Epsilon/WTower to ENF explicitly
+                if (typeof ENFOrdinal === 'undefined') {
+                    throw new Error('ENFOrdinal not available for ENF evaluation.');
+                }
+                result = ENFOrdinal.fromCNF(result);
+            }
+            return {
+                enfString: (typeof result.toDisplayString === 'function') ? result.toDisplayString({ format: 'ENF' }) : result.toString(),
+                ordinalObject: result
+            };
+        } else {
+            const parser = new OrdinalParser(expressionString, tracer);
+            const ordinalResult = parser.parse(); // CNF by default
+            return {
+                cnfString: (typeof ordinalResult.toDisplayString === 'function')
+                    ? ordinalResult.toDisplayString({ format: 'CNF' })
+                    : ordinalResult.toStringCNF(),
+                ordinalObject: ordinalResult
+            };
+        }
     } catch (e) {
         if (e.message.startsWith("Operation budget exceeded")) {
             return { error: `Error: Computation too complex (budget of ${tracer.getBudget()} operations exceeded at ${tracer.getCount()}).` };

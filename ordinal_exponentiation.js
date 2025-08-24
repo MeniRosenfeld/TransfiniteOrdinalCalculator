@@ -156,15 +156,7 @@ function powerOrdinals(base, exponent) {
     return baseENF.power(exponentENF);
 }
 
-// Public API for power on prototypes
-CNFOrdinal.prototype.power = function (otherOrdinal) {
-    return powerOrdinals(this, otherOrdinal);
-};
-EpsilonOrdinal.prototype.power = function (otherOrdinal) {
-    return powerOrdinals(this, otherOrdinal);
-};
-if (typeof WTowerOrdinal !== 'undefined') {
-    WTowerOrdinal.prototype.power = function (otherOrdinal) {
-        return powerOrdinals(this, otherOrdinal);
-    };
-}
+// Public API for power on prototypes (central registry)
+CNFOrdinal.prototype.power = function (otherOrdinal) { return powerOrdinals(this, otherOrdinal); };
+EpsilonOrdinal.prototype.power = function (otherOrdinal) { return powerOrdinals(this, otherOrdinal); };
+if (typeof WTowerOrdinal !== 'undefined') { WTowerOrdinal.prototype.power = function (otherOrdinal) { return powerOrdinals(this, otherOrdinal); }; }

@@ -230,8 +230,35 @@ class ENFTerm {
         let parts = [];
         for (const factor of this.epsilonFactors) {
             const baseStr = factor.base.toString();
-            // Only wrap base in parentheses if it's not a simple case
-            const needsBaseParen = !(baseStr === "0" || factor.base.isFinite() || factor.base.isSingleFactorTerm());
+            // Decide if epsilon index needs parentheses
+            let needsBaseParen = true;
+            if (baseStr === "0" || factor.base.isFinite()) {
+                needsBaseParen = false;
+            } else if (factor.base.terms && factor.base.terms.length === 1) {
+                const t = factor.base.terms[0];
+                const isPureFinite = t.isFinite && t.isFinite();
+                const hasOmega = t.omegaExponent && typeof t.omegaExponent.isZero === 'function' && !t.omegaExponent.isZero();
+                const hasEpsilon = Array.isArray(t.epsilonFactors) && t.epsilonFactors.length > 0;
+                const coeffIsOne = (t.coefficient === undefined || t.coefficient === 1n);
+
+                // Atomic cases allowed without parentheses:
+                // 1) e_k  (single epsilon factor with exp = 1, no ω, coeff=1)
+                let isAtomicEpsilon = false;
+                if (hasEpsilon && t.epsilonFactors.length === 1) {
+                    const ef = t.epsilonFactors[0];
+                    const expIsOne = typeof ef.exp?.isOne === 'function' ? ef.exp.isOne() : false;
+                    isAtomicEpsilon = expIsOne && (!hasOmega) && coeffIsOne;
+                }
+
+                // 2) ω^k  (no epsilon factors, some ω-exponent, coeff=1)
+                const isAtomicOmega = !hasEpsilon && hasOmega && coeffIsOne;
+
+                if (isPureFinite || isAtomicEpsilon || isAtomicOmega) {
+                    needsBaseParen = false;
+                } else {
+                    needsBaseParen = true;
+                }
+            }
             const displayBase = needsBaseParen ? `e_(${baseStr})` : `e_${baseStr}`;
             const exp = factor.exp;
             if (exp.isOne()) {
@@ -768,6 +795,20 @@ class ENFOrdinal {
         return result;
     }
 }
+
+// Attach OOP surface helpers to ENF as well
+ENFOrdinal.prototype._ordinalBrand = Symbol.for('TransfiniteOrdinal.OrdinalBrand');
+ENFOrdinal.prototype.toDisplayString = function (options = undefined) {
+    const format = options && options.format ? options.format : 'ENF';
+    if (format === 'CNF') {
+        try {
+            return this.toCNFOrdinal().toStringCNF();
+        } catch (_) { /* fall through */ }
+    }
+    return this.toString();
+};
+ENFOrdinal.prototype.toENFOrdinal = function () { return this.clone(); };
+ENFOrdinal.prototype.toCNFOrdinal = ENFOrdinal.prototype.toCNFOrdinal;
 
 // Helper: convert CNF/Epsilon/WTower to ENF
 ENFOrdinal.fromCNF = function (ord) {
