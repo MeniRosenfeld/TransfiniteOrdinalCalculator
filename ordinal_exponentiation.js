@@ -146,6 +146,28 @@ function cnfHasEpsilonStructure(cnf) {
  * General ordinal exponentiation dispatcher.
  */
 function powerOrdinals(base, exponent) {
+    // Special-case: e_k ^ (e_k^^n) -> EpsilonTowerOrdinal(k, n+1)
+    try {
+        if (typeof EpsilonTowerOrdinal !== 'undefined') {
+            // Detect exponent as EpsilonTowerOrdinal
+            if (exponent instanceof EpsilonTowerOrdinal) {
+                // Detect base is exactly e_k where k equals exponent.k
+                let baseIsEpsilonWithSameK = false;
+                if (base instanceof EpsilonOrdinal) {
+                    baseIsEpsilonWithSameK = base.index.equals(exponent.k);
+                } else if (base instanceof CNFOrdinal) {
+                    // CNF representing epsilon e_k is w^(e_k) with coeff 1
+                    if (!base.isFinite() && base.terms.length === 1 && base.terms[0].coefficient === 1n && base.terms[0].exponent instanceof EpsilonOrdinal) {
+                        baseIsEpsilonWithSameK = base.terms[0].exponent.index.equals(exponent.k);
+                    }
+                }
+                if (baseIsEpsilonWithSameK) {
+                    return new EpsilonTowerOrdinal(exponent.k.clone ? exponent.k.clone() : exponent.k, exponent.height + 1);
+                }
+            }
+        }
+    } catch (_) { /* fall through to normal dispatch */ }
+
     // Prefer CNF path when both operands are CNF and do not involve epsilon structure
     if (base instanceof CNFOrdinal && exponent instanceof CNFOrdinal && !cnfHasEpsilonStructure(base) && !cnfHasEpsilonStructure(exponent)) {
         return base.powerCNF(exponent);

@@ -36,13 +36,7 @@
                 <button id="calculateButton">Calculate</button>
                 <button id="shareUrlButton" class="utility-button">Share Link</button>
             </div>
-            <div class="output-format-selector" style="margin-top: 10px; text-align: center;">
-                <label style="margin-right: 5px;">Output Format:</label>
-                <input type="radio" id="formatCNF" name="outputFormat" value="CNF">
-                <label for="formatCNF" style="margin-right: 15px;">CNF</label>
-                <input type="radio" id="formatENF" name="outputFormat" value="ENF" checked>
-                <label for="formatENF">ENF</label>
-            </div>
+            <!-- Output format selector removed: display uses native string per ordinal type -->
         </div>
 
         <!-- New Mapped Value Display Area -->
@@ -68,7 +62,7 @@
             </div>
 
             <div class="result-section linear-result-section">
-                <h3>Linear String Representation (CNF):</h3>
+                <h3>Linear String Representation:</h3>
                 <div id="linearResultArea" class="linear-display">
                     <span id="ordinalResultText" class="value placeholder-text">Result will appear here.</span>
                 </div>

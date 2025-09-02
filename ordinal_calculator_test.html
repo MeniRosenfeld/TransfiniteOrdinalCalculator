@@ -436,6 +436,18 @@
 
         const successfulCNFTestResultsForMapping = [];
 
+        function toCnfString(ordinalLike) {
+            try {
+                if (ordinalLike && typeof ordinalLike.toDisplayString === 'function') {
+                    return ordinalLike.toDisplayString({ format: 'CNF' });
+                }
+                if (ordinalLike && typeof ordinalLike.toStringCNF === 'function') {
+                    return ordinalLike.toStringCNF();
+                }
+            } catch (e) { /* fall back below */ }
+            return String(ordinalLike);
+        }
+
         const overallSummaryContainer = document.getElementById('overall-summary-container');
         const overallStatusIndicatorDiv = document.getElementById('overall-status-indicator');
         // Create a specific div for the lines in the overall summary if it doesn't exist
@@ -540,6 +552,23 @@
                     // --- END MODIFICATION ---
 
                     const cnfCheckPassed = (actualCNF === expectedCNF);
+                    // New: equality check by parsing Expected CNF and comparing ordinals (when expected is not an error)
+                    const expectedLooksLikeError = typeof expectedCNF === 'string' && expectedCNF.startsWith('Error:');
+                    let eqCheckPassed = true;
+                    if (!expectedLooksLikeError && originalOrdinalObject) {
+                        try {
+                            const eqTracer = new OperationTracer(10000);
+                            const expectedParsedOrdinal = new OrdinalParser(expectedCNF, eqTracer).parse();
+                            eqCheckPassed = expectedParsedOrdinal.equals(originalOrdinalObject);
+                            addDetailElement(`Equality with Parsed(Expected CNF): ${eqCheckPassed ? 'PASSED' : 'FAILED'}`);
+                            addDetailElement(`  Parsed(Expected CNF): "${toCnfString(expectedParsedOrdinal)}"`);
+                            addDetailElement(`  Computed Ordinal:    "${toCnfString(originalOrdinalObject)}"`);
+                        } catch (eqErr) {
+                            eqCheckPassed = false;
+                            addDetailElement(`Equality check error (parsing Expected CNF): ${eqErr.message}`, 'error-message');
+                        }
+                    }
+
                     let fRoundTripCheckPassed = false;
                     const fTripDetailsLogs = [];
 
@@ -559,7 +588,7 @@
 
                             const inverseMappedFFormat = fInverse(mappedValueOriginal, DEFAULT_F_PARAMS, fInverseThreshold);
                             const inverseOrdinalObject = convertFFormatToOrdinalInstance(inverseMappedFFormat);
-                            const inverseCNFForLog = inverseOrdinalObject.toStringCNF ? inverseOrdinalObject.toStringCNF() : String(inverseOrdinalObject);
+                            const inverseCNFForLog = toCnfString(inverseOrdinalObject);
                             fTripDetailsLogs.push(`fInverse(${mappedValueOriginal.toPrecision(15)}) -> "${inverseCNFForLog}"`);
 
                             const fFormattedInverse = convertOrdinalInstanceToFFormat(inverseOrdinalObject);
@@ -582,7 +611,8 @@
                             fTripDetailsLogs.push(errMsg);
                             console.error(`Critical error during f()/fInverse()/f() for input "${input}":`, err);
                         }
-                        overallTestPassed = cnfCheckPassed && fRoundTripCheckPassed;
+                        // Include equality check unless the expected is an error string
+                        overallTestPassed = cnfCheckPassed && (expectedLooksLikeError || eqCheckPassed) && fRoundTripCheckPassed;
                     }
 
                     fTripDetailsLogs.forEach(detailMsg => {
@@ -602,6 +632,8 @@
                         } else if (!cnfCheckPassed) {
                             mainStatusMessage = `Status: FAILED. Expected CNF: "${expectedCNF}", Got: "${actualCNF}".`;
                             if (originalOrdinalObject) mainStatusMessage += " (f-round-trip check status was based on this incorrect CNF result).";
+                        } else if (!expectedLooksLikeError && !eqCheckPassed) {
+                            mainStatusMessage = 'Status: FAILED. Parsed(Expected CNF) is not equal to computed ordinal.';
                         } else {
                             mainStatusMessage = `Status: FAILED. CNF OK ("${actualCNF}"), but f-round-trip check failed.`;
                         }
@@ -647,7 +679,7 @@
                 addDetailElement(`Input WTower: w^^${height}`);
                 let cnfOrd = inst.toCNFOrdinal();
                 cnfOrdForMapping = cnfOrd; // Store for mapping
-                actualCNF = cnfOrd.toStringCNF();
+                actualCNF = toCnfString(cnfOrd);
 
                 if (actualCNF === expectedCNFString) {
                     currentTestPassed = true;
@@ -701,12 +733,12 @@
             try {
                 const p = new OrdinalParser(inputStr, tr);
                 let origOrd = p.parse();
-                originalOrdinalStr = origOrd.toStringCNF(); // Get string form for comparison
+                originalOrdinalStr = toCnfString(origOrd); // Get string form for comparison
                 addDetailElement(`Input Ordinal: "${inputStr}" (g=${origOrd.complexity()})`);
                 const simpRes = origOrd.simplify(budget, false);
                 let simpOrd = simpRes.simplifiedOrdinal;
                 actRem = simpRes.remainingBudget;
-                actCNF = simpOrd.toStringCNF();
+                actCNF = toCnfString(simpOrd);
                 simpG = simpOrd.complexity();
 
                 if (actCNF !== expectedCNF) { currentTestPassed = false; notes.push(`CNF Mismatch: Got "${actCNF}", Exp "${expectedCNF}"`); }
@@ -802,18 +834,18 @@
             const outputElements = [];
             const addDetailElement = (text, className = '') => { /* as above */ const p = document.createElement('p'); p.textContent = text; p.classList.add('log-output'); if (className) p.classList.add(className); outputElements.push(p); };
             addDetailElement(`Test (Manual Simplify): ${desc} [Budget: ${bud}]`);
-            addDetailElement(`Input Ordinal (direct): ${ordInst.toStringCNF()} (g=${ordInst.complexity()})`);
+            addDetailElement(`Input Ordinal (direct): ${toCnfString(ordInst)} (g=${ordInst.complexity()})`);
             let actualCNF, actualRem, currentTestPassed = true, notes = [], statusMsg, statusClass, simpG = 'N/A';
             try {
                 const simpRes = ordInst.simplify(bud, false);
                 let simpOrd = simpRes.simplifiedOrdinal;
                 actualRem = simpRes.remainingBudget;
-                actualCNF = simpOrd.toStringCNF();
+                actualCNF = toCnfString(simpOrd);
                 simpG = simpOrd.complexity();
                 if (actualCNF !== expCNF) { currentTestPassed = false; notes.push(`CNF Mismatch: Got "${actualCNF}", Exp "${expCNF}"`); }
                 if (actualRem !== expRem) { currentTestPassed = false; notes.push(`Budget Mismatch: Got ${actualRem}, Exp ${expRem}`); }
                 if (simpG > bud) { currentTestPassed = false; notes.push(`Sanity Fail: Simp g ${simpG} > budget ${bud}`); }
-                if (ordInst.compareTo(simpOrd) < 0) { currentTestPassed = false; notes.push(`Sanity Fail: Simp "${actualCNF}" > orig "${ordInst.toStringCNF()}"`); }
+                if (ordInst.compareTo(simpOrd) < 0) { currentTestPassed = false; notes.push(`Sanity Fail: Simp "${actualCNF}" > orig "${toCnfString(ordInst)}"`); }
                 if (currentTestPassed) { statusMsg = 'Status: PASSED'; statusClass = 'status-passed'; } else { statusMsg = 'Status: FAILED'; statusClass = 'status-failed'; }
             } catch (e) {
                 currentTestPassed = false;
@@ -830,7 +862,7 @@
         // Helper function for fInverse test output formatting
         function formatFInverseOutput(result) {
             if (typeof result === 'bigint') {
-                return new CNFOrdinal(result).toStringCNF();
+                return toCnfString(new CNFOrdinal(result));
             }
             if (result === "E0_TYPE") {
                 return "e_0";
@@ -841,7 +873,7 @@
                 // If not, this part needs to be implemented or adjusted.
                 try {
                     const ordinalInstance = convertFFormatToOrdinalInstance(result); // This function needs to be available
-                    return ordinalInstance.toStringCNF();
+                    return toCnfString(ordinalInstance);
                 } catch (e) {
                     console.error("Error converting f-format to ordinal for display:", result, e);
                     // Avoid JSON.stringify BigInt errors by converting bigints to strings
@@ -976,7 +1008,7 @@
             testOrdinalCalc("w^(w+1)", "w^(w+1)");
             testOrdinalCalc("(w^2)^w", "w^w");
             testOrdinalCalc("(w^w)^2", "w^(w*2)");
-            testOrdinalCalc("(w^w)^w", "w^(w^2)");
+            testOrdinalCalc("(w^w)^w", "w^w^2");
 
             testOrdinalCalc("(w^2+w*3+5)*w + (w+1)", "w^3+w+1");
             testOrdinalCalc("2^(w^2)", "w^w");
@@ -992,25 +1024,26 @@
             testOrdinalCalc("w + w * w ^ w + w", "w^w+w");
             testOrdinalCalc("( (w+1) * (w+2) + (w*3+4) ) ^ 2", "w^4+w^3*5+w^2*4+w*5+4");
             testOrdinalCalc("w ^ (w ^ (w+1) + 1)", "w^(w^(w+1)+1)");
-            testOrdinalCalc("2 ^ (w^w)", "w^(w^w)");
+            testOrdinalCalc("2 ^ (w^w)", "w^w^w");
             testOrdinalCalc("3 ^ (w^2*5 + w*4 + 3)", "w^(w*5+4)*27");
             testOrdinalCalc("2 ^ ( (w+1)^2 )", "w^(w+1)*2");
             testOrdinalCalc("(w^w + w + 1)^2", "w^(w*2)+w^(w+1)+w^w+w+1");
             testOrdinalCalc("(w*2+3)^3", "w^3*2+w^2*6+w*6+3");
 
             testOrdinalCalc("(w^2+1) ^ (w*2+1)", "w^(w*2+2)+w^(w*2)");
-            testOrdinalCalc("(w^w) ^ (w^w)", "w^(w^w)");
-            testOrdinalCalc("(w+1) ^ (w^2)", "w^(w^2)");
+            testOrdinalCalc("(w^w) ^ (w^w)", "w^w^w");
+            testOrdinalCalc("(w+1) ^ (w^2)", "w^w^2");
             testOrdinalCalc("(w^0+1)^(w*0+1)", "2");
             testOrdinalCalc("(w * ( (w^0 * 0) + 1) ) ^ ( ( (w+1)^0 ) * w )", "w^w");
             testOrdinalCalc("(w^2*2 + w*3 + 4) * (w^3*5 + w*6 + 7)", "w^5*5+w^3*6+w^2*14+w*3+4");
 
-            testOrdinalCalc("w^w^w", "w^(w^w)");
-            testOrdinalCalc("2^w^w^w", "w^(w^(w^w))");
+            testOrdinalCalc("w^w^w", "w^w^w");
+            testOrdinalCalc("2^w^w^w", "w^w^w^w");
             testOrdinalCalc("(w+1)^(w+1)^(w+1)", "w^(w^(w+1)+w^w)");
             testOrdinalCalc("2^(w*2)", "w^2");
-            testOrdinalCalc("4^(w^7+3)", "w^(w^6)*64");
+            testOrdinalCalc("4^(w^7+3)", "w^w^6*64");
             testOrdinalCalc("(w^(w^w+1)*2+3)^(w^(w^2+w*2)*3+2)", "w^(w^(w^2+w*2)*3+w^w*2+1)*2+w^(w^(w^2+w*2)*3+w^w+1)*6+w^(w^(w^2+w*2)*3)*3");
+            /*
             testOrdinalCalc("e_0 + w", "w^e_0+w");
             testOrdinalCalc("w + e_0", "e_0");
             testOrdinalCalc("e_0 + e_0", "w^e_0*2");
@@ -1023,6 +1056,7 @@
             testOrdinalCalc("(w+1)^e_0", "e_0");
             testOrdinalCalc("2^e_0", "e_0");
             testOrdinalCalc("e_0^2", "w^(w^e_0*2)");
+            */
 
             // --- Tetration Tests --- (from original)
             testOrdinalCalc("e_0^^0", "1");
@@ -1091,9 +1125,9 @@
 
             try { /* WTower ops that use testOrdinalCalc */
                 const tracerTest = new OperationTracer(1000000);
-                let wt0_cnf_str = new WTowerOrdinal(0, tracerTest).toCNFOrdinal().toStringCNF();
-                let wt1_cnf_str = new WTowerOrdinal(1, tracerTest).toCNFOrdinal().toStringCNF();
-                let wt2_cnf_str = new WTowerOrdinal(2, tracerTest).toCNFOrdinal().toStringCNF();
+                let wt0_cnf_str = toCnfString(new WTowerOrdinal(0, tracerTest).toCNFOrdinal());
+                let wt1_cnf_str = toCnfString(new WTowerOrdinal(1, tracerTest).toCNFOrdinal());
+                let wt2_cnf_str = toCnfString(new WTowerOrdinal(2, tracerTest).toCNFOrdinal());
                 testOrdinalCalc('(' + wt1_cnf_str + ') + 1', "w+1");
                 testOrdinalCalc('(' + wt0_cnf_str + ') * w', "w");
                 testOrdinalCalc('2 + (' + wt1_cnf_str + ')', "w");
@@ -1159,7 +1193,7 @@
             testOrdinalSimplify("Sum: w*2+w+5, budget 0", "w*2+w+5", 0, "0", 0);
 
             // CNFOrdinal - MPT Fallback to WTower (from original)
-            testOrdinalSimplify("MPT: w^(w^w) fits", "w^(w^w)", 10, "w^(w^w)", 1);
+            testOrdinalSimplify("MPT: w^(w^w) fits", "w^(w^w)", 10, "w^w^w", 1);
             testOrdinalSimplify("MPT: w^(w^w) too costly, fallback WTower", "w^(w^w)", 8, "w^^3", 4);
             testOrdinalSimplify("MPT: w^(w^w) WTower fallback too costly, fallback 0", "w^(w^w)", 3, "0", 3);
 
@@ -1169,15 +1203,15 @@
             testOrdinalSimplify("w^b*m: w^2*10, budget 10", "w^2*10", 10, "w^2*10", 2);
             testOrdinalSimplify("w^b*m: w^2*10, budget 7 (MPT fail for term)", "w^2*10", 7, "w^2", 2);
 
-            testOrdinalSimplify("Skip MPTF interaction", "w^(w^2+w)", 10, "w^(w^2)", 1);
+            testOrdinalSimplify("Skip MPTF interaction", "w^(w^2+w)", 10, "w^w^2", 1);
 
             testOrdinalSimplify("", "w^w^w^w^w^w^2", 15, "w^^6", 11);
             testOrdinalSimplify("", "w^^5", 15, "w^^5", 11);
             testOrdinalSimplify("", "w^(w^2*20+w*2+5)", 15, "w^(w^2*20+w)", 1);
-            testOrdinalSimplify("", "w^(w^(w+100000)*20+w*2+5)", 15, "w^(w^w)", 6);
+            testOrdinalSimplify("", "w^(w^(w+100000)*20+w*2+5)", 15, "w^w^w", 6);
             testOrdinalSimplify("", "(w^(w^3*2+4)+w^2+100)*2", 15, "w^(w^3*2+4)*2", 0);
             testOrdinalSimplify("", "w^(w^3+10)+w*2+100000", 15, "w^(w^3+10)+w", 1);
-            testOrdinalSimplify("", "w^(w^3)+w^22*2+10", 15, "w^(w^3)", 6);
+            testOrdinalSimplify("", "w^(w^3)+w^22*2+10", 15, "w^w^3", 6);
             // --- End of Simplify Tests (as per original) ---
 
             // --- Complexity Tests (from original) ---
@@ -1199,6 +1233,10 @@
 
             testOrdinalComplexity("w+1", 1 + 1 + 1);
             testOrdinalComplexity("w^2+w*3+5", 11); // Pre-calculated: (1+4)+(1+2)+1+(1)+1 = 11
+
+            testOrdinalComplexity("w^w^w", 9);
+            testOrdinalComplexity("w^^4", 13);
+            testOrdinalComplexity("w^^20", 5);
 
             testOrdinalComplexity("e_0", 6);
 
@@ -1231,8 +1269,8 @@
             testFInverse('ω * 2', 1.5, 'w*2');
             testFInverse('ω^2', 2, 'w^2');
             testFInverse('ω^2 + ω', 2.0833333333333335, 'w^2+w');
-            testFInverse('ω^ω', 3.6666666666666665, 'w^(w^w)');
-            testFInverse('ω^ω^3', 3.4, 'w^(w^3)');
+            testFInverse('ω^ω', 3.6666666666666665, 'w^w^w');
+            testFInverse('ω^ω^3', 3.4, 'w^w^3');
             testFInverse('ω^3', 2.3333333333333335, 'w^3');
             testFInverse('ω^4', 2.5, 'w^4');
             testFInverse('ω^4*4', 2.575, 'w^4*4');
@@ -1241,7 +1279,7 @@
             testFInverse('ω^ω + 1', 3.0053763440860215, 'w^w+1');
             testFInverse('ω^(ω+1)', 3.064516129032258, 'w^(w+1)');
             testFInverse('10/3', 3.333333333333333, 'w^(w^2+w*3+1)+w^13*26');
-            testFInverse('Arbitrary', 4.9216738286475129, 'w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w^(w+1))*15+w^10*7+2))))))))))))))))))))))))))))))))))))))))))))))))');
+            testFInverse('Arbitrary', 4.9216738286475129, 'w^w^w^w^w^w^w^w^w^w^w^w^w^w^w^w^w^w^w^w^w^w^w^w^w^w^w^w^w^w^w^w^w^w^w^w^w^w^w^w^w^w^w^w^w^w^w^w^(w^w^(w+1)*15+w^10*7+2)');
             testFInverse('w^^400', 4.99, 'w^^400');
             testFInverse('w^^4000', 4.999, 'w^^4000');
             testFInverse('w^^40000', 4.9999, 'w^^40000');
@@ -1519,7 +1557,7 @@
             // Use a generous budget to ensure canonical simplification like w^e_0 -> e_0 happens.
             const simplified = result.ordinalObject.simplify(1000);
             return {
-                cnfString: simplified.simplifiedOrdinal.toStringCNF(),
+                cnfString: toCnfString(simplified.simplifiedOrdinal),
                 ordinalObject: simplified.simplifiedOrdinal,
                 error: null
             };

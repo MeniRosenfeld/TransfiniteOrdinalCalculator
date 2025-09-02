@@ -12,7 +12,7 @@ const ALLOW_EPSILON_IN_CNF = true;
  * @returns {boolean}
  */
 function isOrdinal(obj) {
-    return obj instanceof CNFOrdinal || obj instanceof EpsilonOrdinal || obj instanceof WTowerOrdinal || (obj && obj._ordinalBrand === ORDINAL_BRAND);
+    return obj instanceof CNFOrdinal || obj instanceof EpsilonOrdinal || obj instanceof WTowerOrdinal || (typeof EpsilonTowerOrdinal !== 'undefined' && obj instanceof EpsilonTowerOrdinal) || (obj && obj._ordinalBrand === ORDINAL_BRAND);
 }
 
 
@@ -78,6 +78,10 @@ class CNFOrdinal {
                     throw new Error('CNFOrdinal: Epsilon-based ordinals are not supported in CNF when ALLOW_EPSILON_IN_CNF=false');
                 }
                 this.terms.push({ exponent: initVal.clone(this._tracer), coefficient: 1n });
+            } else if (typeof ENFOrdinal !== 'undefined' && initVal instanceof ENFOrdinal) {
+                // Accept ENFOrdinal by converting to CNF
+                const cnf = initVal.toCNFOrdinal();
+                this.terms = cnf.terms.map(t => ({ exponent: t.exponent.clone(this._tracer), coefficient: t.coefficient }));
             } else if (initVal instanceof WTowerOrdinal) {
                 // If cloning from a WTower, convert it to CNF first.
                 const cnf = initVal.toCNFOrdinal();
@@ -245,14 +249,11 @@ class CNFOrdinal {
                 expStr = "w";
             } else {
                 const expCNF = exp.toStringCNF();
-                // Parenthesize if the exponent is "complex" (not a simple number or w)
+                // Parenthesize only when necessary. Allow bare chaining for omega power towers.
                 let needsParen = false;
                 if (exp instanceof CNFOrdinal) {
-                    // An exponent needs parentheses if it's not a single term
-                    // that is just a finite number or just 'w'.
-                    if (!exp.isFinite() && !exp.isOmega()) {
-                        needsParen = true;
-                    }
+                    // No parentheses if exponent is finite, w, or a single omega power term (w^a)
+                    needsParen = !(exp.isFinite() || exp.isOmega() || exp.isOmegaPower());
                 } else if (exp instanceof EpsilonOrdinal) {
                     // e.g. e_(w+1) needs parentheses
                     const index = exp.index;
@@ -855,21 +856,17 @@ class WTowerOrdinal {
 
     toCNFOrdinal() {
         if (this._tracer) this._tracer.consume();
-
-        // This should call the global tetrate function, which will be updated later.
-        if (typeof tetrateOrdinals !== "function") {
-            throw new Error("tetrateOrdinals function not available for WTowerOrdinal conversion.");
+        // Iteratively compute ω^^m in CNF to avoid deep recursion in tetrateOrdinals
+        const tracer = this._tracer || null;
+        if (this.height === 0) return CNFOrdinal.ONEStatic().clone(tracer);
+        if (this.height === 1) return CNFOrdinal.OMEGAStatic().clone(tracer);
+        let tower = CNFOrdinal.OMEGAStatic().clone(tracer); // ω^^1
+        for (let h = 2; h <= this.height; h++) {
+            if (this._tracer) this._tracer.consume();
+            const baseOmega = CNFOrdinal.OMEGAStatic().clone(tracer);
+            tower = baseOmega.power(tower);
         }
-        const res = tetrateOrdinals(CNFOrdinal.OMEGAStatic().clone(this._tracer), CNFOrdinal.fromInt(this.height, this._tracer));
-        // Ensure we always return a CNFOrdinal for toCNFOrdinal()
-        if (res instanceof CNFOrdinal) return res;
-        if (typeof ENFOrdinal !== 'undefined' && res instanceof ENFOrdinal) return res.toCNFOrdinal();
-        if (res instanceof EpsilonOrdinal) return new CNFOrdinal(res, this._tracer);
-        // Fallback: try to wrap if it's a basic number/bigint
-        if (typeof res === 'number' || typeof res === 'bigint') return new CNFOrdinal(res, this._tracer);
-        // As a last resort, attempt to call toCNFOrdinal() if available
-        if (res && typeof res.toCNFOrdinal === 'function') return res.toCNFOrdinal();
-        return res; // Let caller fail loudly if unexpected
+        return tower;
     }
 
     isZero() { return false; }
@@ -878,6 +875,7 @@ class WTowerOrdinal {
     getLimitPart() { return this.isFinite() ? CNFOrdinal.ZEROStatic().clone(this._tracer) : this.toCNFOrdinal(); }
 
     toStringCNF() {
+        // Always display as tetration notation regardless of height
         return `w^^${this.height}`;
     }
 
@@ -918,17 +916,8 @@ class WTowerOrdinal {
 
 WTowerOrdinal.prototype._ordinalBrand = ORDINAL_BRAND;
 WTowerOrdinal.prototype.toDisplayString = function (options = undefined) {
-    const format = options && options.format ? options.format : 'CNF';
-    if (format === 'ENF' && typeof ENFOrdinal !== 'undefined') {
-        try {
-            return this.toENFOrdinal().toString();
-        } catch (_) { /* fall through */ }
-    }
-    try {
-        return this.toCNFOrdinal().toStringCNF();
-    } catch (_) {
-        return this.toStringCNF();
-    }
+    // Always use native tower notation for display
+    return this.toStringCNF();
 };
 WTowerOrdinal.prototype.toENFOrdinal = function () {
     if (typeof ENFOrdinal === 'undefined') {
@@ -936,6 +925,97 @@ WTowerOrdinal.prototype.toENFOrdinal = function () {
     }
     return ENFOrdinal.fromCNF(this.toCNFOrdinal());
 };
+
+/**
+ * Represents an epsilon tower e_k^^n where k is an ordinal index and n is a non-negative integer height.
+ */
+class EpsilonTowerOrdinal {
+    constructor(indexK, height, operationTracer = null) {
+        // Accept CNFOrdinal index or EpsilonOrdinal as k (an ordinal index). If ENFOrdinal provided, convert to CNF.
+        if (!(indexK instanceof CNFOrdinal) && !(indexK instanceof EpsilonOrdinal) && !(typeof ENFOrdinal !== 'undefined' && indexK instanceof ENFOrdinal)) {
+            throw new Error(`EpsilonTowerOrdinal index k must be an Ordinal index (CNF/Epsilon/ENF). Got: ${indexK && indexK.constructor ? indexK.constructor.name : indexK}`);
+        }
+        if (typeof ENFOrdinal !== 'undefined' && indexK instanceof ENFOrdinal) {
+            indexK = indexK.toCNFOrdinal();
+        }
+        if (typeof height !== 'number' || !Number.isInteger(height) || height < 0) {
+            throw new Error(`EpsilonTowerOrdinal height must be a non-negative integer, got ${height}`);
+        }
+        this.k = indexK; // Ordinal index for epsilon base e_k
+        this.height = height; // finite integer n
+        this._tracer = operationTracer;
+    }
+
+    isZero() { return false; }
+    isFinite() { return this.height === 0; }
+    getFinitePart() { return 0n; }
+    getLimitPart() { return this.isFinite() ? CNFOrdinal.ZEROStatic().clone(this._tracer) : this.toCNFOrdinal(); }
+
+    toStringCNF() {
+        // Always display as E^^n where E is e_k string
+        const baseEpsilon = new EpsilonOrdinal(this.k, this._tracer);
+        const baseStr = baseEpsilon.toStringCNF();
+        return `${baseStr}^^${this.height}`;
+    }
+
+    toDisplayString(options = undefined) { return this.toStringCNF(); }
+
+    equals(other) {
+        if (other instanceof EpsilonTowerOrdinal) {
+            return this.height === other.height && this.k.equals(other.k);
+        }
+        // Fallback: compare via CNF/ENF normalization
+        try {
+            return this.toCNFOrdinal().equals(other);
+        } catch (_) { return false; }
+    }
+
+    clone(tracer = null) {
+        const effectiveTracer = tracer !== null ? tracer : this._tracer;
+        return new EpsilonTowerOrdinal(this.k.clone(effectiveTracer), this.height, effectiveTracer);
+    }
+
+    complexity() {
+        if (this._tracer) this._tracer.consume();
+        // Mirror WTower complexity convention: g(e_k^^m) = g(m)+3
+        return this.height.toString().length + 3;
+    }
+
+    toENFOrdinal() {
+        if (typeof ENFOrdinal === 'undefined') {
+            throw new Error('ENFOrdinal is not available to convert EpsilonTower to ENF');
+        }
+        // Build iteratively: res = 1; repeat n times: res = e_k ^ res
+        if (this._tracer) this._tracer.consume();
+        const baseIndexENF = (this.k instanceof ENFOrdinal) ? this.k.clone(this._tracer) : ENFOrdinal.fromCNF(this.k);
+        if (!baseIndexENF) throw new Error('Failed to convert epsilon index to ENF');
+        const e_k = new ENFOrdinal([new ENFTerm([{ base: baseIndexENF, exp: ENFOrdinal.one() }], CNFOrdinal.ZEROStatic(), 1n)]);
+        let res = ENFOrdinal.one();
+        for (let i = 0; i < this.height; i++) {
+            if (this._tracer) this._tracer.consume();
+            res = e_k.power(res);
+        }
+        return res;
+    }
+
+    toCNFOrdinal() {
+        // Convert via ENF pathway
+        return this.toENFOrdinal().toCNFOrdinal();
+    }
+
+    simplify(complexityBudget) {
+        const cost = this.complexity();
+        if (cost <= complexityBudget) {
+            return { simplifiedOrdinal: this.clone(), remainingBudget: complexityBudget - cost };
+        }
+        const zero = CNFOrdinal.ZEROStatic();
+        const g0 = zero.complexity();
+        return { simplifiedOrdinal: zero.clone(this._tracer), remainingBudget: Math.max(0, complexityBudget - g0) };
+    }
+}
+
+EpsilonTowerOrdinal.prototype._ordinalBrand = ORDINAL_BRAND;
+EpsilonTowerOrdinal.prototype.toDisplayString = function (options = undefined) { return this.toStringCNF(); };
 
 class OperationTracer {
     constructor(budget) {

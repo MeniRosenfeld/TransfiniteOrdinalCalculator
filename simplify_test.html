@@ -370,6 +370,18 @@
 
         const successfulCNFTestResultsForMapping = [];
 
+        function toCnfString(ordinalLike) {
+            try {
+                if (ordinalLike && typeof ordinalLike.toDisplayString === 'function') {
+                    return ordinalLike.toDisplayString({ format: 'CNF' });
+                }
+                if (ordinalLike && typeof ordinalLike.toStringCNF === 'function') {
+                    return ordinalLike.toStringCNF();
+                }
+            } catch (e) { /* fall back below */ }
+            return String(ordinalLike);
+        }
+
         const overallSummaryContainer = document.getElementById('overall-summary-container');
         const overallStatusIndicatorDiv = document.getElementById('overall-status-indicator');
         // Create a specific div for the lines in the overall summary if it doesn't exist
@@ -493,7 +505,7 @@
 
                             const inverseMappedFFormat = fInverse(mappedValueOriginal, DEFAULT_F_PARAMS, fInverseThreshold);
                             const inverseOrdinalObject = convertFFormatToOrdinalInstance(inverseMappedFFormat);
-                            const inverseCNFForLog = inverseOrdinalObject.toStringCNF ? inverseOrdinalObject.toStringCNF() : String(inverseOrdinalObject);
+                            const inverseCNFForLog = toCnfString(inverseOrdinalObject);
                             fTripDetailsLogs.push(`fInverse(${mappedValueOriginal.toPrecision(15)}) -> "${inverseCNFForLog}"`);
 
                             const fFormattedInverse = convertOrdinalInstanceToFFormat(inverseOrdinalObject);
@@ -581,7 +593,7 @@
                 addDetailElement(`Input WTower: w^^${height}`);
                 let cnfOrd = inst.toCNFOrdinal();
                 cnfOrdForMapping = cnfOrd; // Store for mapping
-                actualCNF = cnfOrd.toStringCNF();
+                actualCNF = toCnfString(cnfOrd);
 
                 if (actualCNF === expectedCNFString) {
                     currentTestPassed = true;
@@ -635,12 +647,12 @@
             try {
                 const p = new OrdinalParser(inputStr, tr);
                 let origOrd = p.parse();
-                originalOrdinalStr = origOrd.toStringCNF(); // Get string form for comparison
+                originalOrdinalStr = toCnfString(origOrd); // Get string form for comparison
                 addDetailElement(`Input Ordinal: "${inputStr}" (g=${origOrd.complexity()})`);
                 const simpRes = origOrd.simplify(budget, false);
                 let simpOrd = simpRes.simplifiedOrdinal;
                 actRem = simpRes.remainingBudget;
-                actCNF = simpOrd.toStringCNF();
+                actCNF = toCnfString(simpOrd);
                 simpG = simpOrd.complexity();
 
                 if (actCNF !== expectedCNF) { currentTestPassed = false; notes.push(`CNF Mismatch: Got "${actCNF}", Exp "${expectedCNF}"`); }
@@ -736,18 +748,18 @@
             const outputElements = [];
             const addDetailElement = (text, className = '') => { /* as above */ const p = document.createElement('p'); p.textContent = text; p.classList.add('log-output'); if (className) p.classList.add(className); outputElements.push(p); };
             addDetailElement(`Test (Manual Simplify): ${desc} [Budget: ${bud}]`);
-            addDetailElement(`Input Ordinal (direct): ${ordInst.toStringCNF()} (g=${ordInst.complexity()})`);
+            addDetailElement(`Input Ordinal (direct): ${toCnfString(ordInst)} (g=${ordInst.complexity()})`);
             let actualCNF, actualRem, currentTestPassed = true, notes = [], statusMsg, statusClass, simpG = 'N/A';
             try {
                 const simpRes = ordInst.simplify(bud, false);
                 let simpOrd = simpRes.simplifiedOrdinal;
                 actualRem = simpRes.remainingBudget;
-                actualCNF = simpOrd.toStringCNF();
+                actualCNF = toCnfString(simpOrd);
                 simpG = simpOrd.complexity();
                 if (actualCNF !== expCNF) { currentTestPassed = false; notes.push(`CNF Mismatch: Got "${actualCNF}", Exp "${expCNF}"`); }
                 if (actualRem !== expRem) { currentTestPassed = false; notes.push(`Budget Mismatch: Got ${actualRem}, Exp ${expRem}`); }
                 if (simpG > bud) { currentTestPassed = false; notes.push(`Sanity Fail: Simp g ${simpG} > budget ${bud}`); }
-                if (ordInst.compareTo(simpOrd) < 0) { currentTestPassed = false; notes.push(`Sanity Fail: Simp "${actualCNF}" > orig "${ordInst.toStringCNF()}"`); }
+                if (ordInst.compareTo(simpOrd) < 0) { currentTestPassed = false; notes.push(`Sanity Fail: Simp \"${actualCNF}\" > orig \"${toCnfString(ordInst)}\"`); }
                 if (currentTestPassed) { statusMsg = 'Status: PASSED'; statusClass = 'status-passed'; } else { statusMsg = 'Status: FAILED'; statusClass = 'status-failed'; }
             } catch (e) {
                 currentTestPassed = false;
@@ -764,7 +776,7 @@
         // Helper function for fInverse test output formatting
         function formatFInverseOutput(result) {
             if (typeof result === 'bigint') {
-                return new CNFOrdinal(result).toStringCNF();
+                return toCnfString(new CNFOrdinal(result));
             }
             if (result === "E0_TYPE") {
                 return "e_0";
@@ -775,7 +787,7 @@
                 // If not, this part needs to be implemented or adjusted.
                 try {
                     const ordinalInstance = convertFFormatToOrdinalInstance(result); // This function needs to be available
-                    return ordinalInstance.toStringCNF();
+                    return toCnfString(ordinalInstance);
                 } catch (e) {
                     console.error("Error converting f-format to ordinal for display:", result, e);
                     return "ErrorInConversion: " + JSON.stringify(result);
@@ -1213,7 +1225,7 @@
             // Use a generous budget to ensure canonical simplification like w^e_0 -> e_0 happens.
             const simplified = result.ordinalObject.simplify(1000);
             return {
-                cnfString: simplified.simplifiedOrdinal.toStringCNF(),
+                cnfString: toCnfString(simplified.simplifiedOrdinal),
                 ordinalObject: simplified.simplifiedOrdinal,
                 error: null
             };

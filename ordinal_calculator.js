@@ -36,9 +36,17 @@ function calculateOrdinalCNF(expressionString, maxOperations = DEFAULT_OPERATION
     try {
         if (targetFormat === 'ENF') {
             const parser = new OrdinalParser(expressionString, tracer, { coerceToCNF: false });
-            let result = parser.parse(); // Prefer ENF
+            let result = parser.parse();
+            // If the result is a WTowerOrdinal or EpsilonTowerOrdinal, preserve natively to avoid expansive conversions
+            if ((typeof WTowerOrdinal !== 'undefined' && result instanceof WTowerOrdinal) ||
+                (typeof EpsilonTowerOrdinal !== 'undefined' && result instanceof EpsilonTowerOrdinal)) {
+                const nativeStr = (typeof result.toDisplayString === 'function') ? result.toDisplayString() : result.toString();
+                return {
+                    enfString: nativeStr,
+                    ordinalObject: result
+                };
+            }
             if (!(result instanceof ENFOrdinal)) {
-                // Convert any CNF/Epsilon/WTower to ENF explicitly
                 if (typeof ENFOrdinal === 'undefined') {
                     throw new Error('ENFOrdinal not available for ENF evaluation.');
                 }

@@ -26,7 +26,7 @@ function renderOrdinalGraphical(ordinal) {
     }
 
     if (ordinal instanceof WTowerOrdinal) {
-        return `<span class="ordinal-w-tower">ω<sup class="ordinal-tet-op">↑↑</sup><span class="ordinal-w-tower-height">${ordinal.height}</span></span>`;
+        return `<span class="ordinal-w-tower">ω<span class="ordinal-tet-op">↑↑</span><span class="ordinal-w-tower-height">${ordinal.height}</span></span>`;
     }
 
     // ENFOrdinal support: render ENF terms as products of epsilon factors, ω^k, and m; sum across terms
@@ -87,6 +87,18 @@ function renderOrdinalGraphical(ordinal) {
         return termHtml.join('<span class="ordinal-op">+</span>');
     }
 
+    // WTowerOrdinal support: always render as ω↑↑n (tetration) regardless of height
+    if (typeof WTowerOrdinal !== 'undefined' && ordinal instanceof WTowerOrdinal) {
+        const h = ordinal.height;
+        return `<span class="ordinal-w-tower">ω<span class="ordinal-tet-op">↑↑</span><span class="ordinal-w-tower-height">${h}</span></span>`;
+    }
+
+    // EpsilonTowerOrdinal: render as e_k ↑↑ n with epsilon base rendered using existing epsilon renderer (using k as index ordinal directly)
+    if (typeof EpsilonTowerOrdinal !== 'undefined' && ordinal instanceof EpsilonTowerOrdinal) {
+        const baseHTML = renderOrdinalGraphical(new EpsilonOrdinal(ordinal.k));
+        return `<span class="ordinal-eps-tower">${baseHTML}<span class="ordinal-tet-op">↑↑</span><span class="ordinal-eps-tower-height">${ordinal.height}</span></span>`;
+    }
+
     if (ordinal instanceof CNFOrdinal) {
         if (ordinal.isZero()) {
             return '<span class="ordinal-finite">0</span>';
@@ -118,4 +130,19 @@ function renderOrdinalGraphical(ordinal) {
 
     console.error("renderOrdinalGraphical expects a CNFOrdinal, EpsilonOrdinal, or WTowerOrdinal object.", ordinal);
     return '<span class="ordinal-error">Error</span>';
+}
+
+// New helper: Render from a string representation to ensure consistency with chosen textualization
+function renderOrdinalGraphicalFromString(ordinalString) {
+    try {
+        // Expand small towers in the string policy-wise if needed (already expanded by toStringCNF for small heights)
+        // Then parse and delegate to the object renderer
+        const tr = new OperationTracer(100000);
+        const parsed = new OrdinalParser(ordinalString, tr, { coerceToCNF: false }).parse();
+        // If parsed is ENF/CNF/Epsilon/WTower, render as object
+        return renderOrdinalGraphical(parsed);
+    } catch (e) {
+        console.error('renderOrdinalGraphicalFromString: failed to parse/render string:', ordinalString, e);
+        return `<span class="ordinal-error">Error</span>`;
+    }
 }

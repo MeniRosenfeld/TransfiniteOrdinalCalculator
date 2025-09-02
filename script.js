@@ -10,6 +10,17 @@
 // Its definition in ordinal_mapping.js will be used.
 
 document.addEventListener('DOMContentLoaded', () => {
+    // Pretty-print floating numbers by rounding to 13 decimals and trimming trailing zeros
+    function formatFloat13(n) {
+        if (typeof n !== 'number' || !isFinite(n)) return String(n);
+        const rounded = Math.round(n * 1e13) / 1e13;
+        let s = rounded.toFixed(13);
+        // Trim trailing zeros after the last non-zero decimal digit
+        s = s.replace(/(\.\d*?[1-9])0+$/, '$1');
+        // If all decimals are zeros, drop the decimal part entirely
+        s = s.replace(/\.0+$/, '');
+        return s;
+    }
     const ordinalInputElement = document.getElementById('ordinalInput');
     const calculateButton = document.getElementById('calculateButton');
     const shareUrlButton = document.getElementById('shareUrlButton');
@@ -177,8 +188,8 @@ document.addEventListener('DOMContentLoaded', () => {
             // const tempTracer = new OperationTracer(10000000); // REMOVE THIS LINE
 
             // Pass the budget number directly
-            const outputFormatWanted = document.querySelector('input[name="outputFormat"]:checked').value;
-            resultFromCalc = calculateOrdinalCNF(inputString, 10000000, { format: outputFormatWanted });
+            // Always compute; result object contains an ordinal. We will display native string.
+            resultFromCalc = calculateOrdinalCNF(inputString, 10000000, { format: 'ENF' });
 
             if (resultFromCalc.error) {
                 throw new Error(resultFromCalc.error);
@@ -219,30 +230,29 @@ document.addEventListener('DOMContentLoaded', () => {
             // --- End Simplification Step ---
 
             const displayOrdinalObject = simplifiedOrdinalObject; // Use simplified for display
-            const outputFormat = document.querySelector('input[name="outputFormat"]:checked').value;
+            // Native string display per type
             const displayString = (typeof displayOrdinalObject.toDisplayString === 'function')
-                ? displayOrdinalObject.toDisplayString({ format: outputFormat })
-                : (outputFormat === 'ENF'
-                    ? (typeof ENFOrdinal !== 'undefined' ? ENFOrdinal.fromCNF(displayOrdinalObject).toString() : displayOrdinalObject.toString())
-                    : displayOrdinalObject.toStringCNF());
+                ? displayOrdinalObject.toDisplayString({ format: 'ENF' })
+                : (displayOrdinalObject && typeof displayOrdinalObject.toString === 'function'
+                    ? displayOrdinalObject.toString()
+                    : String(displayOrdinalObject));
             const linearResultHeader = document.querySelector('.linear-result-section h3');
 
             // --- Output Format Selection ---
-            if (outputFormat === 'ENF') {
-                linearResultTextElement.textContent = displayString;
-                if (linearResultHeader) linearResultHeader.textContent = "Linear String Representation (ENF):";
-            } else {
-                linearResultTextElement.textContent = displayString;
-                if (linearResultHeader) linearResultHeader.textContent = "Linear String Representation (CNF):";
-            }
+            linearResultTextElement.textContent = displayString;
+            if (linearResultHeader) linearResultHeader.textContent = "Linear String Representation:";
             // --- End Output Format Selection ---
 
             // Update linear and graphical results with the (potentially) simplified ordinal
             //linearResultTextElement.textContent = displayCnfString; // This is now handled above
             linearResultTextElement.classList.remove('placeholder-text');
 
-            // Graphical renderer now supports ENFOrdinal directly
-            graphicalResultArea.innerHTML = renderOrdinalGraphical(displayOrdinalObject);
+            // Render graphical view from the same string to keep representations consistent
+            if (typeof renderOrdinalGraphicalFromString === 'function') {
+                graphicalResultArea.innerHTML = renderOrdinalGraphicalFromString(displayString);
+            } else {
+                graphicalResultArea.innerHTML = renderOrdinalGraphical(displayOrdinalObject);
+            }
             graphicalResultArea.querySelector('.placeholder-text')?.remove();
 
             // Update simplification message display (target element will change in HTML)
@@ -257,7 +267,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.log("[fCalc] originalOrdinalResultObject type:", originalOrdinalResultObject.constructor.name);
                 try {
                     console.log("[fCalc] Calling convertOrdinalInstanceToFFormat with:", originalOrdinalResultObject);
-                    const fFormattedOrdinal = convertOrdinalInstanceToFFormat(originalOrdinalResultObject);
+                    // For WTower use native; otherwise convert to CNF for mapping
+                    const mappingOrdinal = (typeof WTowerOrdinal !== 'undefined' && originalOrdinalResultObject instanceof WTowerOrdinal)
+                        ? originalOrdinalResultObject
+                        : (typeof originalOrdinalResultObject.toCNFOrdinal === 'function'
+                            ? originalOrdinalResultObject.toCNFOrdinal()
+                            : originalOrdinalResultObject);
+                    const fFormattedOrdinal = convertOrdinalInstanceToFFormat(mappingOrdinal);
                     console.log("[fCalc] convertOrdinalInstanceToFFormat returned:", fFormattedOrdinal);
 
                     console.log("[fCalc] Calling f with:", fFormattedOrdinal, "and params:", DEFAULT_F_PARAMS);
@@ -265,7 +281,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     console.log("[fCalc] f returned mappedValue:", mappedValue, "(type:", typeof mappedValue, ")");
 
                     if (typeof mappedValue === 'number' && !isNaN(mappedValue)) {
-                        mappedValueTextElement.textContent = mappedValue.toString();
+                        const str = formatFloat13(mappedValue);
+                        mappedValueTextElement.textContent = str;
                         if (mappedValueSliderElement) {
                             mappedValueSliderElement.value = mappedValue;
                         }
@@ -279,10 +296,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     mappedValueTextElement.classList.remove('placeholder-text');
                 } catch (mapErr) {
                     console.error("[fCalc] Error calculating mapped value f(α):", mapErr.message, mapErr.stack);
-                    mappedValueTextElement.textContent = "f(α) Error!"; // More explicit error
-                    mappedValueTextElement.classList.add('placeholder-text');
-                    if (mappedValueSliderElement) {
-                        mappedValueSliderElement.value = 0;
+                    // For non-critical errors, leave any text we might have set; otherwise show a friendly message
+                    if (!mappedValueTextElement.textContent || mappedValueTextElement.textContent === placeholderText) {
+                        mappedValueTextElement.textContent = "f(α) unavailable";
+                        mappedValueTextElement.classList.add('placeholder-text');
+                        if (mappedValueSliderElement) {
+                            mappedValueSliderElement.value = 0;
+                        }
                     }
                 }
             }
@@ -349,7 +369,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (textToCopy && textToCopy !== placeholderText && linearResultTextElement.classList.contains('placeholder-text') === false) { // Check it's not placeholder
                 if (navigator.clipboard && navigator.clipboard.writeText) {
                     navigator.clipboard.writeText(textToCopy).then(() => {
-                        alert('CNF text copied to clipboard!');
+                        alert('Text copied to clipboard!');
                     }).catch(err => {
                         console.error('Failed to copy text: ', err);
                         prompt("Copy to clipboard failed. Please copy manually:", textToCopy);
@@ -568,8 +588,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 const ordinalInstanceFromInverse = convertFFormatToOrdinalInstance(ordinalRepFromInverse, new OperationTracer(10000)); // Use a fresh tracer
                 console.log("[fInverseCalc] convertFFormatToOrdinalInstance returned:", ordinalInstanceFromInverse);
 
-                linearResultTextElement.textContent = ordinalInstanceFromInverse.toStringCNF();
-                graphicalResultArea.innerHTML = renderOrdinalGraphical(ordinalInstanceFromInverse);
+                const sliderDisplayString = (typeof ordinalInstanceFromInverse.toDisplayString === 'function')
+                    ? ordinalInstanceFromInverse.toDisplayString({ format: 'ENF' })
+                    : (ordinalInstanceFromInverse && typeof ordinalInstanceFromInverse.toString === 'function'
+                        ? ordinalInstanceFromInverse.toString()
+                        : String(ordinalInstanceFromInverse));
+                linearResultTextElement.textContent = sliderDisplayString;
+                if (typeof renderOrdinalGraphicalFromString === 'function') {
+                    const textForInverse = (typeof ordinalInstanceFromInverse.toDisplayString === 'function')
+                        ? ordinalInstanceFromInverse.toDisplayString({ format: 'ENF' })
+                        : (ordinalInstanceFromInverse && typeof ordinalInstanceFromInverse.toString === 'function'
+                            ? ordinalInstanceFromInverse.toString()
+                            : String(ordinalInstanceFromInverse));
+                    graphicalResultArea.innerHTML = renderOrdinalGraphicalFromString(textForInverse);
+                } else {
+                    graphicalResultArea.innerHTML = renderOrdinalGraphical(ordinalInstanceFromInverse);
+                }
                 linearResultTextElement.classList.remove('placeholder-text');
                 graphicalResultArea.querySelector('.placeholder-text')?.remove();
 
@@ -578,11 +612,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.log("[fInverseCalc] Recalculating f for verification. Calling f with:", fFormattedOrdinalFromInverse, "and params:", DEFAULT_F_PARAMS);
                 const mappedValueVerify = f(fFormattedOrdinalFromInverse, DEFAULT_F_PARAMS);
                 console.log("[fInverseCalc] f returned for verification:", mappedValueVerify);
-                mappedValueTextElement.textContent = typeof mappedValueVerify === 'number' && !isNaN(mappedValueVerify) ? mappedValueVerify.toString() : "N/A";
+                mappedValueTextElement.textContent = typeof mappedValueVerify === 'number' && !isNaN(mappedValueVerify) ? formatFloat13(mappedValueVerify) : "N/A";
                 mappedValueTextElement.classList.remove('placeholder-text');
 
                 // Update the main input box with the linear string representation
-                const linearStringForInput = ordinalInstanceFromInverse.toStringCNF();
+                const linearStringForInput = sliderDisplayString;
                 if (ordinalInputElement && typeof linearStringForInput === 'string') {
                     ordinalInputElement.value = linearStringForInput;
                 }

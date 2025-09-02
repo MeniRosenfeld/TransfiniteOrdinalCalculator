@@ -19,15 +19,16 @@ This web application provides a user-friendly interface to parse expressions rep
 *   **Multiple Ordinal Types:** Internally represents and operates on:
     *   `CNFOrdinal`: For ordinals in Cantor Normal Form (primarily < ε₀; CNF epsilon support is being phased out behind a flag).
     *   `EpsilonNaughtOrdinal`: For the ordinal ε₀.
-    *   `WTowerOrdinal`: For ordinals of the form ω↑↑n (ω tetrated to a finite height n), like ω, ω^ω, ω^(ω^ω), etc. These are converted to `CNFOrdinal` for most operations.
+    *   `WTowerOrdinal`: For ordinals of the form ω↑↑n (ω tetrated to a finite height n), like ω, ω^ω, ω^(ω^ω), etc. For display these are preserved natively; for most operations they can be converted to `CNFOrdinal` on demand.
+    *   `EpsilonTowerOrdinal`: For ordinals of the form e_k↑↑n (ε-tetration with fixed index k and finite height n). For display these are preserved natively; operationally they convert to ENF/CNF on demand.
     *   `ENFOrdinal`/`ENFTerm`: Epsilon Normal Form used whenever epsilon structure is present.
 *   **Calculates Ordinal Forms:**
-    *   Implements the standard rules for ordinal addition, multiplication, exponentiation, and tetration.
+    *   Implements the standard rules for ordinal addition, multiplication, exponentiation, and tetration (see below for extended tetration rules).
     *   Produces accurate CNF for ordinals less than ε₀.
     *   Handles operations involving ε₀ according to defined rules (e.g., `α + ε₀ = ε₀` for α < ε₀, `k^^ε₀ = ω` for finite k>1, `α^^ε₀ = ε₀` for infinite α).
 *   **Dual Display:**
-    *   **Graphical Representation:** Renders the result using symbols like ω, ε₀, ω↑↑n, and true superscripts for exponents, with nested superscripts sized appropriately.
-    *   **Linear String Representation (default ENF):** Uses a polymorphic API across ordinal types. Prefer `ordinal.toDisplayString({ format: 'CNF'|'ENF' })` over type-specific string methods. The main UI now defaults to ENF; users can switch to CNF via the radio selector.
+    *   **Graphical Representation:** Renders using ω, ε₀, ω↑↑n (inline arrows), and true superscripts for exponents. For small towers (n < 10), ω↑↑n is expanded as an explicit power tower with nested superscripts; for n ≥ 10, the compact ω↑↑n form is used. The renderer now supports rendering directly from a chosen string via `renderOrdinalGraphicalFromString(text)` to ensure consistency with the textual representation.
+    *   **Linear String Representation (native):** The UI shows each ordinal using its type’s native `toDisplayString`/`toString` (no format selector). Towers preserve native notation: `WTowerOrdinal` uses `w^^n`, `EpsilonTowerOrdinal` uses `e_k^^n`. Parentheses are added only when necessary (e.g., composite exponents), and power chains like `w^w^w^w` are not parenthesized.
 *   **Result Simplification:**
     *   Automatically simplifies very complex results based on a structural complexity budget (`g(α)`) to enhance readability.
     *   If simplification occurs, an indicator (e.g., `(Displayed complexity: G_simp / G_orig)`) is shown alongside the graphical result.
@@ -106,15 +107,21 @@ This web application provides a user-friendly interface to parse expressions rep
     *   `CNFOrdinal` (Cantor Normal Form), `EpsilonOrdinal` (ε-indexed), `WTowerOrdinal` (ω↑↑n), and `ENFOrdinal` (Epsilon Normal Form).
     *   Addition and multiplication default to CNF when both operands are epsilon-free; if either operand has epsilon structure, the operation is performed in ENF to respect rank order.
     *   Exponentiation uses ENF by default. It falls back to CNF only when both operands are CNF and epsilon-free.
-    *   Tetration is implemented on CNF; epsilon-base special cases throw explicit legacy-compatible error messages (e.g., `Error: Operation e_0 ^^ CNFOrdinal (2) is unsupported when CNFOrdinal is not 0 or 1.`).
+    *   Tetration supports all base/exponent pairs:
+        - 0^^n: 1 if n is even, 0 if n is odd; 0^^(infinite) is undefined.
+        - 1^^k: 1 for any k.
+        - Finite m≥2: finite-height uses iterative recursion; infinite height yields ω.
+        - ω^^n: returns `WTowerOrdinal` when n>10; otherwise uses recursion. Infinite height yields ε₀.
+        - e_k^^n: returns `EpsilonTowerOrdinal` when n>10; otherwise recursion. Infinite height yields e_(k+1).
+        - General infinite base a and finite n: recursion. For infinite height: if a is CNF epsilon‑free (< ε₀), result is ε₀; if a ≥ ε₀, result is e_(k+1) where k is the largest epsilon index occurring in a.
 
 *   **Central operation registry**
     *   `ordinal_ops.js` defines `ordinalAdd`, `ordinalMultiply`, `ordinalPower`, `ordinalTetrate`. It currently delegates to existing dispatchers and provides a single place to evolve multi-dispatch logic.
 
 *   **Calculator API (format-aware)**
-    *   `calculateOrdinalCNF(expressionString, maxOperations, options?)` accepts `{ format?: 'CNF' | 'ENF' }`.
-      - `format: 'ENF'` parses with `{ coerceToCNF: false }`, evaluates using ENF, and returns `{ enfString, ordinalObject }` where `ordinalObject` is an `ENFOrdinal`.
-      - `format: 'CNF'` (default) returns `{ cnfString, ordinalObject }` with a `CNFOrdinal`.
+    *   `calculateOrdinalCNF(expressionString, maxOperations, options?)` still accepts `{ format?: 'CNF' | 'ENF' }`, but the main UI always displays the native string regardless of this option.
+      - `format: 'ENF'` parses with `{ coerceToCNF: false }`, evaluates using ENF, and returns `{ enfString, ordinalObject }` (preserving `WTowerOrdinal` and `EpsilonTowerOrdinal` natively when produced).
+      - `format: 'CNF'` returns `{ cnfString, ordinalObject }`.
 
 *   **ENF rank-based exponentiation**
     *   Basic ordinals: 1, ω, and each ε_a.
@@ -134,7 +141,8 @@ This web application provides a user-friendly interface to parse expressions rep
     *   ENF term ordering: epsilon factors (rank-first, base then exponent), then ω-exponent (CNF), then finite coefficient.
 
 *   **Stability and conversion**
-    *   `WTowerOrdinal.toCNFOrdinal()` always returns a `CNFOrdinal` (converting if needed).
+    *   `WTowerOrdinal.toCNFOrdinal()` is iterative (no deep recursion). The evaluator preserves `WTowerOrdinal` natively when tetration with base ω and finite height is requested. Display uses native tower strings.
+    *   `EpsilonTowerOrdinal`: constructed from index k (CNF/Epsilon/ENF accepted) and finite height n; `toENFOrdinal()` computes the recursive tower (e_k^^n) and `toCNFOrdinal()` routes via ENF. The calculator preserves `EpsilonTowerOrdinal` natively for display.
     *   Conversions avoid recursion loops: use `ENFOrdinal.fromCNF` for CNF→ENF; `ENFOrdinal.toCNFOrdinal` builds CNF structurally.
 *   **Parser:** Recursive descent parser that handles numbers, `w`, `e_0`, operators `+`, `*`, `^`, `^^` (with correct precedence and associativity), and parentheses. Use `{ coerceToCNF: false }` when you intend to keep ENF.
 *   **Polymorphic display API:** All ordinal types carry an internal brand and implement `toDisplayString({ format })`. Use this for rendering strings (CNF/ENF) instead of calling `toStringCNF()` directly.
@@ -151,10 +159,10 @@ This web application provides a user-friendly interface to parse expressions rep
     *   Returns an ordinal `α'` such that `α' ≤ α` and `g(α') ≤ budget`.
     *   Aims to find the largest such `α'`.
     *   Uses heuristics like checking the Main Power Tower (MPT) of exponents and potentially replacing complex terms with `WTowerOrdinal` approximations (e.g., `w^^k`) if they fit the budget.
-*   **Graphical Rendering:** Dynamically generates HTML with `<sup>` tags and specific classes for ω, ε₀, ω↑↑n, operators, and coefficients, styled with CSS.
+*   **Graphical Rendering:** Dynamically generates HTML with `<sup>` tags and specific classes for ω, ε₀, and ω↑↑n (arrows inline and slightly larger). For small towers, emits explicit nested superscripts; for large towers, shows `ω↑↑n`. A helper `renderOrdinalGraphicalFromString(text)` is available to render from a canonical string.
 *   **Image Copying:** Utilizes the `html2canvas` library.
 *   **Mapping Functions:**
-    *   `ordinal_mapping.js`: Defines the `f(α)` ordinal-to-real mapping function. It now includes the `FParams` class to manage mapping parameters (e.g., `scaleAdd`, `scaleMult`, `scaleExp`, `scaleTet`) and precomputed expressions based on them. It defines `DEFAULT_F_PARAMS` (using current development values) and `OLD_F_PARAMS` (using legacy values of 1 for all scales).
+    *   `ordinal_mapping.js`: Defines `f(α)` and includes `FParams` for parameters (`scaleAdd`, `scaleMult`, `scaleExp`, `scaleTet`, `scaleEpsilon`). The mapping supports `WTowerOrdinal` natively via a closed-form rule (`{type:'w_tower', height}`), so `f(w^^n)` is O(1). Display of `f(α)` is rounded to 13 decimals and trailing zeros are trimmed for readability.
     *   `ordinal_mapping_inverse.js`: Defines the `fInverse(x, params)` real-to-ordinal inverse mapping function, which now accepts an `FParams` object. It's used for the interactive slider exploration and for internal testing.
     *   Test files like `ordinal_calculator_test.html` and `haskell_comparison_test.html` are also included.
 

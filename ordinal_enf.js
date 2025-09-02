@@ -385,17 +385,17 @@ class ENFOrdinal {
         return ENFOrdinal.fromCNF(leadingTerm.omegaExponent.clone());
     }
 
-    predecessor() {
-        if (this.isZero()) return ENFOrdinal.zero();
-
-        const lastTerm = this.terms[this.terms.length - 1];
-        if (!lastTerm.isFinite()) {
+    leftPredecessor() {
+        if (this.isZero()) {
+            throw new Error("leftPredecessor is undefined for 0");
+        }
+        if (!this.isFinite()) {
+            // Infinite ordinals are unchanged under left-predecessor notion
             return this.clone();
         }
-
+        // Finite case: subtract 1
         const newTerms = this.terms.map(t => t.clone());
         const newLastTerm = newTerms[newTerms.length - 1];
-
         if (newLastTerm.coefficient > 1n) {
             newLastTerm.coefficient -= 1n;
         } else {
@@ -432,7 +432,7 @@ class ENFOrdinal {
                     }
                     if (matchedIndex >= 0) {
                         const factor = newTerm.epsilonFactors[matchedIndex];
-                        factor.exp = factor.exp.predecessor();
+                        factor.exp = factor.exp.leftPredecessor();
                         if (factor.exp.isZero()) {
                             newTerm.epsilonFactors.splice(matchedIndex, 1);
                         }
@@ -781,7 +781,7 @@ class ENFOrdinal {
             let newEpsilonIndex;
 
             if (term.epsilonFactors.length > 0) {
-                const pred = termAsOrd.predecessor();
+                const pred = termAsOrd.leftPredecessor();
                 newEpsilonIndex = pred;
             } else {
                 const omegaExp = term.omegaExponent;
@@ -818,6 +818,9 @@ ENFOrdinal.fromCNF = function (ord) {
         return new ENFOrdinal([new ENFTerm([{ base: baseENF, exp: ENFOrdinal.one() }], CNFOrdinal.ZEROStatic(), 1n)]);
     }
     if (!(ord instanceof CNFOrdinal)) {
+        if (typeof EpsilonTowerOrdinal !== 'undefined' && ord instanceof EpsilonTowerOrdinal) {
+            return ENFOrdinal.fromCNF(ord.toCNFOrdinal());
+        }
         if (typeof WTowerOrdinal !== 'undefined' && ord instanceof WTowerOrdinal) {
             return ENFOrdinal.fromCNF(ord.toCNFOrdinal());
         }
@@ -839,3 +842,8 @@ ENFOrdinal.fromCNF = function (ord) {
     }
     return new ENFOrdinal(terms);
 };
+
+// Ensure tetration is available on ENF regardless of script load order
+if (typeof tetrateOrdinals === 'function') {
+    ENFOrdinal.prototype.tetrate = function (otherOrdinal) { return tetrateOrdinals(this, otherOrdinal); };
+}

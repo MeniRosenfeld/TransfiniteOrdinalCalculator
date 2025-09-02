@@ -267,6 +267,18 @@ input[type="text"] {
     margin-right: 0.05em;
 }
 
+.graphical-display .ordinal-w-tower .ordinal-tet-op {
+    font-size: 1.3em;
+    line-height: 1;
+    vertical-align: baseline;
+    margin: 0 0.00em;
+}
+
+.graphical-display .ordinal-w-tower .ordinal-w-tower-height {
+    font-family: 'Consolas', 'Courier New', monospace;
+    margin-left: 0.05em;
+}
+
 
 .graphical-display .coefficient {
     font-family: 'Consolas', 'Courier New', monospace;

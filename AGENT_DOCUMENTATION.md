@@ -15,8 +15,12 @@ The primary goal is to parse ordinal expressions from strings, perform arithmeti
 
 -   `index.html`: The main application entry point and user interface.
 -   `script.js`: Handles UI logic, event listeners, and orchestrates calls between the UI and the ordinal logic.
--   `ordinal_types.js`: Defines `CNFOrdinal`, `EpsilonOrdinal`, `WTowerOrdinal`, and `OperationTracer`. All ordinal classes are branded with a shared symbol and expose `toDisplayString({ format })`, `toCNFOrdinal()`, and `toENFOrdinal()`.
--   `ordinal_enf.js`: Defines the `ENFOrdinal` and `ENFTerm` classes; core ENF arithmetic and rank-based exponentiation.
+-   `ordinal_types.js`: Defines `CNFOrdinal`, `EpsilonOrdinal`, `WTowerOrdinal`, and `OperationTracer`. All ordinal classes are branded with a shared symbol and expose `toDisplayString({ format })`, `toCNFOrdinal()`, and `toENFOrdinal()`. Updates:
+    -   `WTowerOrdinal.toCNFOrdinal()` is iterative (no deep recursion). The evaluator preserves `WTowerOrdinal` natively for display; for n>10 it is produced directly.
+    -   `WTowerOrdinal.toStringCNF()` always uses `w^^n` (native tower notation) for display.
+    -   `EpsilonTowerOrdinal` (new): represents `e_k^^n` with fields `k` (ordinal index: CNF/Epsilon/ENF accepted) and `height` (finite integer). `toDisplayString()` returns `e_k^^n`; `toENFOrdinal()` computes the recursive tower; `toCNFOrdinal()` routes via ENF.
+    -   `CNFOrdinal.toStringCNF()` reduces superfluous parentheses for exponents: no parentheses when exponent is finite, `w`, or a single omega power term (`w^a`).
+-   `ordinal_enf.js`: Defines the `ENFOrdinal` and `ENFTerm` classes; core ENF arithmetic and rank-based exponentiation. `ENFOrdinal.fromCNF` now accepts `WTowerOrdinal` and `EpsilonTowerOrdinal` by converting them to CNF first.
 -   `ordinal_parser.js`: `OrdinalParser(input, tracer, options?)`, where `options.coerceToCNF` (default true) controls whether ENF results are coerced to CNF at parse time.
     -   For ENF-first evaluation, pass `{ coerceToCNF: false }` to keep parsed results in ENF space.
 -   `ordinal_enf_test.html`: ENF test suite; uses `{ coerceToCNF: false }` when parsing expected ENF strings.
@@ -25,7 +29,7 @@ The primary goal is to parse ordinal expressions from strings, perform arithmeti
 -   `ordinal_ops.js`: Central operation registry exposing `ordinalAdd`, `ordinalMultiply`, `ordinalPower`, `ordinalTetrate`. Currently delegates to existing dispatchers as a non-breaking indirection layer.
 -   `ordinal_comparison.js`, `ordinal_auxiliary_ops.js` (helpers: `exponentPredecessor`, `divideByOmega`, `findLargestEpsilonIndexLessThan`).
 -   `ordinal_mapping.js`, `ordinal_mapping_inverse.js` for f/fInverse.
-    -   Display uses `toDisplayString({ format })` consistently; avoid mixing type-specific string calls in UI.
+    -   Display uses `toDisplayString({ format })` consistently; avoid mixing type-specific string calls in UI. The calculator preserves native towers in ENF mode (`WTowerOrdinal`, `EpsilonTowerOrdinal`) and never forces CNF for numbers ≥ ε₀.
 
 ## 3. Core Data Structures & Concepts
 
@@ -64,10 +68,10 @@ The primary goal is to parse ordinal expressions from strings, perform arithmeti
 
 ### Graphical renderer
 
--   `ordinal_graphical_renderer.js` now supports `ENFOrdinal` directly:
+-   `ordinal_graphical_renderer.js` now supports `ENFOrdinal` directly and tower policies:
     -   Renders epsilon factors (ε with subscripted ENF base, exponent shown when ≠ 1), ω^k (k as CNF ordinal), and finite coefficient.
     -   Terms are joined by `+`, factors within a term by a centered dot.
-    -   ω is rendered using a single `.omega` CSS class for consistent LaTeX-like appearance in and out of superscripts.
+    -   ω is rendered using a single `.omega` CSS class. Towers: for n<10, expand as nested superscripts; for n≥10, render `ω↑↑n` inline (arrows slightly larger). New helper `renderOrdinalGraphicalFromString(text)` renders from a canonical string chosen by the caller to keep text/graphics consistent.
 
 -   **Purpose:** A crucial utility to prevent infinitely long or excessively complex computations. It is a simple counter with a budget.
 -   **Mechanism:** Key computational steps (e.g., a recursive call, a loop iteration) must call `tracer.consume()`. If the internal counter exceeds the budget, it throws an error, halting the operation.
@@ -123,7 +127,7 @@ This section documents guidelines based on bugs and misunderstandings encountere
 -   **Dispatch:**
     - Addition/multiplication: prefer CNF when both operands are epsilon-free; otherwise use ENF.
     - Exponentiation: prefer ENF; fall back to CNF only for pure-CNF, epsilon-free operands.
-    - Tetration: CNF; explicit error strings for epsilon-base cases.
+    - Tetration: CNF; explicit error strings for epsilon-base cases. For base ω and finite heights (n≥2), return `WTowerOrdinal` directly.
     - Note: CNF epsilon support in construction/equality is guarded behind a feature flag and will be disabled when tests/UI migrate fully to ENF for ε-structure.
 -   **Comparison:**
     - CNF comparer converts ENF input to CNF (not vice versa) to avoid recursion in mapping and tests.
@@ -137,7 +141,7 @@ This section documents guidelines based on bugs and misunderstandings encountere
 
 -   **The Bug:** `e_0^2` was incorrectly rendered as `e_0^(2)`.
 -   **The Cause:** The `toString()` logic was too aggressive in adding parentheses around exponents.
--   **The Rule:** In an expression `a^b`, the exponent `b` should only be enclosed in parentheses if it is a sum of multiple terms (e.g., `w+1`) or a product of multiple factors (e.g., `e_0*w`). An exponent is exempt from parentheses only when it is represented by a single `ENFTerm` which itself contains only a single factor (e.g., `2`, `w`, `w^2`, `e_0`, `e_1^e_0`).
+-   **The Rule:** In an expression `a^b`, add parentheses around `b` only when necessary to disambiguate. For CNF exponents, no parentheses when `b` is finite, `w`, or a single omega power term (`w^a`) — allowing chains like `w^w^w^w`.
 
 By consulting this document, future agents should be better equipped to understand the project's architecture and avoid these common pitfalls. AI agents MUST read this document before making changes.
 

@@ -48,28 +48,14 @@ CNFOrdinal.prototype.tetrateCNF = function (heightCNF) {
     // This check should come before the general recursive rule for finite heights.
     // It applies only if the base is exactly omega.
     if (base.equals(CNFOrdinal.OMEGAStatic()) && height.isFinite()) {
-        const n = height.getFinitePart(); // n is a BigInt
-        if (n > 10n) { // Check if n > 10
-            // WTowerOrdinal expects height as a Number.
-            // We should ensure n is within Number.MAX_SAFE_INTEGER range for WTowerOrdinal height if it has such limits.
-            // For now, assuming n will be reasonably small if it comes from user input or typical calculations.
-            // If Number(n) could lose precision for very large n, a check or different WTowerOrdinal handling would be needed.
-            try {
-                const n_num = Number(n);
-                if (n_num > Number.MAX_SAFE_INTEGER) {
-                    console.warn(`WTowerOrdinal height ${n.toString()}n exceeds MAX_SAFE_INTEGER. Precision loss may occur or lead to issues if WTowerOrdinal expects standard Numbers for height.`);
-                    // Decide if to proceed with potentially imprecise Number(n) or throw/fallback to CNF.
-                    // For now, proceed, but this is a potential issue for extremely large n.
-                }
-                if (this._tracer) this._tracer.consume(); // For creating WTowerOrdinal
-                return new WTowerOrdinal(n_num, this._tracer);
-            } catch (e) {
-                console.error("Error converting height to Number for WTowerOrdinal:", e);
-                // Fallback to standard calculation if conversion fails, though it shouldn't for BigInts unless they are astronomically large.
-            }
+        const n = height.getFinitePart(); // BigInt
+        // Always return a WTowerOrdinal for finite n>10
+        if (n > 10n) {
+            const n_num = Number(n);
+            if (this._tracer) this._tracer.consume();
+            return new WTowerOrdinal(n_num, this._tracer);
         }
-        // If base is omega, height is finite, but height <= 10, it will fall through to Rule 5.
-        // Heights 0 and 1 are already handled above.
+        // For n==0,1: handled by earlier rules
     }
 
     // Rule 5: β is finite m > 1 (α is CNFOrdinal >= 2)
@@ -79,12 +65,17 @@ CNFOrdinal.prototype.tetrateCNF = function (heightCNF) {
         if (m < 2n) throw new Error("Finite height < 2 should have been handled.");
 
         // Recursive calculation: base tetrated to (m-1)
-        const mMinus1 = new CNFOrdinal(m - 1n, this._tracer);
-        if (this._tracer) this._tracer.consume(); // for the recursive tetrate call
-        const tetratedHeightPart = base.tetrate(mMinus1); // Call general dispatcher
-
-        if (this._tracer) this._tracer.consume(); // for the power call
-        return base.power(tetratedHeightPart); // Call general dispatcher
+        // Finite recursion replaced by iterative loop to avoid deep recursion
+        let result = CNFOrdinal.ONEStatic().clone(this._tracer);
+        let current = CNFOrdinal.ONEStatic().clone(this._tracer); // placeholder
+        // Start from height 2: α^^2 = α^α
+        result = base.clone();
+        for (let k = 2n; k <= m; k++) {
+            if (this._tracer) this._tracer.consume();
+            current = result; // α^^(k-1)
+            result = base.power(current);
+        }
+        return result;
     }
 
     // Rule 6: β is infinite (height_inf), α = k (finite base >= 2)
@@ -115,55 +106,143 @@ CNFOrdinal.prototype.tetrateCNF = function (heightCNF) {
  * General ordinal tetration dispatcher.
  */
 function tetrateOrdinals(base, height) {
-    if (base._tracer) base._tracer.consume();
+    if (base && base._tracer) base._tracer.consume();
 
-    // Guard: explicit rules for epsilon-base unsupported cases to match legacy expectations
+    // Helpers
+    const toCNF = (ord) => {
+        if (ord instanceof CNFOrdinal) return ord;
+        if (typeof ENFOrdinal !== 'undefined' && ord instanceof ENFOrdinal) return ord.toCNFOrdinal();
+        if (ord instanceof EpsilonOrdinal) return new CNFOrdinal(ord, ord._tracer || null);
+        if (typeof WTowerOrdinal !== 'undefined' && ord instanceof WTowerOrdinal) return ord.toCNFOrdinal();
+        if (typeof EpsilonTowerOrdinal !== 'undefined' && ord instanceof EpsilonTowerOrdinal) return ord.toCNFOrdinal();
+        if (typeof ord === 'string') {
+            const tr = new OperationTracer(100000);
+            return new OrdinalParser(ord, tr).parse();
+        }
+        return new CNFOrdinal(ord, ord && ord._tracer);
+    };
+    const cnfHasEps = (cnf) => {
+        // Prefer global helper if available
+        if (typeof cnfHasEpsilonStructure === 'function') return cnfHasEpsilonStructure(cnf);
+        for (const t of cnf.terms) if (t.exponent instanceof EpsilonOrdinal) return true;
+        return false;
+    };
+    const power = (a, b) => powerOrdinals(a, b);
+
+    // 0 ^^ n: even→1, odd→0; 0 ^^ (infinite) undefined
+    if (base instanceof CNFOrdinal && base.isZero()) {
+        const hCNF = toCNF(height);
+        if (hCNF.isFinite()) {
+            const n = hCNF.getFinitePart();
+            if (n === 0n) return CNFOrdinal.ONEStatic().clone(base._tracer || null);
+            return (n % 2n === 0n) ? CNFOrdinal.ONEStatic().clone(base._tracer || null) : CNFOrdinal.ZEROStatic().clone(base._tracer || null);
+        }
+        throw new Error(`Operation 0 ^^ ${hCNF.toStringCNF()} is undefined when CNFOrdinal is infinite.`);
+    }
+
+    // 1 ^^ k = 1
+    if (base instanceof CNFOrdinal && base.equals(CNFOrdinal.ONEStatic())) {
+        return CNFOrdinal.ONEStatic().clone(base._tracer || null);
+    }
+
+    // Finite base m≥2
+    if (base instanceof CNFOrdinal && base.isFinite()) {
+        const hCNF = toCNF(height);
+        if (hCNF.isFinite()) {
+            let n = hCNF.getFinitePart();
+            if (n === 0n) return CNFOrdinal.ONEStatic().clone(base._tracer || null);
+            let res = base.clone(); // m^^1
+            for (let k = 2n; k <= n; k++) res = power(base, res);
+            return res;
+        }
+        // m ^^ b = w for m>1
+        return CNFOrdinal.OMEGAStatic().clone(base._tracer || null);
+    }
+
+    // Base is epsilon e_k OR any base ≥ e_0 represented in ENF
     if (base instanceof EpsilonOrdinal) {
-        // Height must be 0 or 1 only; others unsupported
-        if (height instanceof CNFOrdinal) {
-            if (height.isZero()) return CNFOrdinal.ONEStatic().clone(base._tracer || null);
-            if (height.equals(CNFOrdinal.ONEStatic())) return new CNFOrdinal(base, base._tracer || null);
-            throw new Error(`Operation e_0 ^^ CNFOrdinal (${height.toStringCNF()}) is unsupported when CNFOrdinal is not 0 or 1.`);
+        const hCNF = toCNF(height);
+        if (hCNF.isFinite()) {
+            const n = hCNF.getFinitePart();
+            if (n === 0n) return CNFOrdinal.ONEStatic().clone(base._tracer || null);
+            if (n > 10n) return new EpsilonTowerOrdinal(base.index.clone ? base.index.clone(base._tracer || null) : base.index, Number(n), base._tracer || null);
+            // recursive for n ≤ 10: res = 1; repeat n times: res = e_k^res
+            let res = CNFOrdinal.ONEStatic().clone(base._tracer || null);
+            for (let i = 0; i < Number(n); i++) res = power(base, res);
+            return res;
         }
-        if (height instanceof EpsilonOrdinal) {
-            throw new Error(`Operation e_0 ^^ e_0 is unsupported.`);
+        // Infinite height: base ≥ e_0 ⇒ next rank e_(k+1)
+        if (typeof ENFOrdinal !== 'undefined') {
+            const k_enf = ENFOrdinal.fromCNF(base.index);
+            const k_plus_one_enf = k_enf.add(ENFOrdinal.one());
+            const k_plus_one_cnf = k_plus_one_enf.toCNFOrdinal();
+            return new EpsilonOrdinal(k_plus_one_cnf, base._tracer || null);
         }
-        if (typeof WTowerOrdinal !== 'undefined' && height instanceof WTowerOrdinal) {
-            // WTower height is >1 by definition if it's a tower; treat as unsupported
-            throw new Error(`Operation e_0 ^^ ${height.toStringCNF()} is unsupported.`);
-        }
+        // Fallback
+        return EpsilonOrdinal.E_ZEROStatic().clone(base._tracer || null);
     }
 
-    // Special-case message for 0 ^^ e_0
-    if (base instanceof CNFOrdinal && base.isZero() && height instanceof EpsilonOrdinal) {
-        throw new Error(`Operation 0 ^^ e_0 is undefined.`);
+    if (typeof ENFOrdinal !== 'undefined' && base instanceof ENFOrdinal) {
+        const hCNF = toCNF(height);
+        if (hCNF.isFinite()) {
+            // Use CNF recursion for finite heights
+            return toCNF(base).tetrateCNF(hCNF);
+        }
+        // Infinite height: find largest epsilon index in ENF base
+        let maxIdx = null;
+        for (const term of base.terms) {
+            if (!term.epsilonFactors) continue;
+            for (const f of term.epsilonFactors) {
+                const idx = f.base;
+                if (maxIdx === null || idx.compareTo(maxIdx) > 0) maxIdx = idx.clone();
+            }
+        }
+        if (maxIdx) {
+            const idxPlusOne = maxIdx.add(ENFOrdinal.one());
+            const idxPlusOneCNF = idxPlusOne.toCNFOrdinal();
+            return new EpsilonOrdinal(idxPlusOneCNF, base._tracer || null);
+        }
+        // No epsilon factors -> treat as < e_0
+        return EpsilonOrdinal.E_ZEROStatic().clone(base._tracer || null);
     }
 
-    // Convert all operands to CNFOrdinal to unify logic first.
-    let baseCNF;
-    if (base instanceof CNFOrdinal) baseCNF = base;
-    else if (typeof ENFOrdinal !== 'undefined' && base instanceof ENFOrdinal) baseCNF = base.toCNFOrdinal();
-    else if (base instanceof EpsilonOrdinal) baseCNF = new CNFOrdinal(base, base._tracer || null);
-    else if (typeof WTowerOrdinal !== 'undefined' && base instanceof WTowerOrdinal) baseCNF = base.toCNFOrdinal();
-    else if (typeof base === 'string') {
-        const tr = new OperationTracer(100000);
-        baseCNF = new OrdinalParser(base, tr).parse();
-    } else baseCNF = new CNFOrdinal(base, base._tracer);
+    // General case for other bases
+    const aCNF = toCNF(base);
+    const hCNF = toCNF(height);
 
-    let heightCNF;
-    if (height instanceof CNFOrdinal) heightCNF = height;
-    else if (typeof ENFOrdinal !== 'undefined' && height instanceof ENFOrdinal) heightCNF = height.toCNFOrdinal();
-    else if (height instanceof EpsilonOrdinal) heightCNF = new CNFOrdinal(height, height._tracer || null);
-    else if (typeof WTowerOrdinal !== 'undefined' && height instanceof WTowerOrdinal) heightCNF = height.toCNFOrdinal();
-    else if (typeof height === 'string') {
-        const tr = new OperationTracer(100000);
-        heightCNF = new OrdinalParser(height, tr).parse();
-    } else heightCNF = new CNFOrdinal(height, height._tracer);
+    if (hCNF.isFinite()) {
+        // Finite height recursion handled by CNF method (includes ω threshold >10)
+        return aCNF.tetrateCNF(hCNF);
+    }
 
-    return baseCNF.tetrateCNF(heightCNF);
+    // Infinite height:
+    // If base has epsilon structure (≥ e_0), return e_(k+1) where k is the largest epsilon index appearing in a;
+    // otherwise (< e_0) return e_0.
+    if (typeof ENFOrdinal !== 'undefined') {
+        const aENF = (base instanceof ENFOrdinal) ? base.clone() : ENFOrdinal.fromCNF(aCNF);
+        let maxIdx = null;
+        for (const term of aENF.terms) {
+            if (!term.epsilonFactors) continue;
+            for (const f of term.epsilonFactors) {
+                const idx = f.base; // ENFOrdinal
+                if (maxIdx === null || idx.compareTo(maxIdx) > 0) maxIdx = idx.clone();
+            }
+        }
+        if (maxIdx !== null) {
+            const idxPlusOne = maxIdx.add(ENFOrdinal.one());
+            const idxPlusOneCNF = idxPlusOne.toCNFOrdinal();
+            return new EpsilonOrdinal(idxPlusOneCNF, aCNF._tracer || null);
+        }
+        // No epsilon factors found → base < e_0
+        return EpsilonOrdinal.E_ZEROStatic().clone(aCNF._tracer || null);
+    }
+    return EpsilonOrdinal.E_ZEROStatic().clone(aCNF._tracer || null);
 }
 
 // Public API for tetration on prototypes (central registry)
 CNFOrdinal.prototype.tetrate = function (otherOrdinal) { return tetrateOrdinals(this, otherOrdinal); };
 EpsilonOrdinal.prototype.tetrate = function (otherOrdinal) { return tetrateOrdinals(this, otherOrdinal); };
 if (typeof WTowerOrdinal !== 'undefined') { WTowerOrdinal.prototype.tetrate = function (otherOrdinal) { return tetrateOrdinals(this, otherOrdinal); }; }
+if (typeof ENFOrdinal !== 'undefined') { ENFOrdinal.prototype.tetrate = function (otherOrdinal) { return tetrateOrdinals(this, otherOrdinal); }; }
+if (typeof EpsilonTowerOrdinal !== 'undefined') { EpsilonTowerOrdinal.prototype.tetrate = function (otherOrdinal) { return tetrateOrdinals(this, otherOrdinal); }; }
+if (typeof EpsilonTowerOrdinal !== 'undefined') { EpsilonTowerOrdinal.prototype.tetrate = function (otherOrdinal) { return tetrateOrdinals(this, otherOrdinal); }; }
