@@ -168,11 +168,8 @@ function powerOrdinals(base, exponent) {
         }
     } catch (_) { /* fall through to normal dispatch */ }
 
-    // Prefer CNF path when both operands are CNF and do not involve epsilon structure
-    if (base instanceof CNFOrdinal && exponent instanceof CNFOrdinal && !cnfHasEpsilonStructure(base) && !cnfHasEpsilonStructure(exponent)) {
-        return base.powerCNF(exponent);
-    }
-    // Otherwise, use ENF rank-aware power
+    // Always use ENF rank-aware power for mathematical correctness
+    // The legacy CNF-only path had bugs in finite^infinite cases like 2^(w^w*w)
     const baseENF = convertToENF(base);
     const exponentENF = convertToENF(exponent);
     return baseENF.power(exponentENF);

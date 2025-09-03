@@ -113,6 +113,93 @@
             padding: 8px 12px;
             cursor: pointer;
         }
+
+        /* Collapsible sections styling */
+        .test-kind-section {
+            margin: 30px 0;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        details>summary {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            list-style: none;
+        }
+
+        details>summary::-webkit-details-marker {
+            display: none;
+        }
+
+        details>summary::before {
+            content: '▶';
+            font-size: 1.3em;
+            margin-right: 8px;
+            display: inline-block;
+            transition: transform 0.2s ease-in-out;
+        }
+
+        details[open]>summary::before {
+            content: '▼';
+        }
+
+        details>summary>h2 {
+            margin: 0 10px 0 0;
+            padding-bottom: 0;
+            border-bottom: none;
+            font-size: 1.1em;
+        }
+
+        .kind-summary {
+            font-weight: bold;
+            margin-bottom: 0;
+            padding: 5px 10px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            border: 1px solid #e0e0e0;
+            flex-grow: 1;
+            font-size: 0.9em;
+        }
+
+        .failed-tests-preview {
+            padding: 10px;
+            background-color: #fff3f3;
+            border: 1px solid #ffcdd2;
+            border-radius: 4px;
+            overflow: visible !important;
+            display: none;
+        }
+
+        .passed-tests-container {
+            padding: 10px;
+            border-radius: 4px;
+            overflow: visible !important;
+        }
+
+        .test-results-output {
+            margin-top: 15px;
+            overflow: visible !important;
+        }
+
+        /* Visibility control: show results only when section is open, show preview only when closed */
+        details .test-results-output {
+            display: none;
+        }
+
+        details[open] .test-results-output {
+            display: block;
+        }
+
+        details+.failed-tests-preview {
+            display: block;
+        }
+
+        details[open]+.failed-tests-preview {
+            display: none;
+        }
     </style>
 </head>
 
@@ -120,12 +207,101 @@
     <h1>ENF Ordinal Test Suite</h1>
     <a href="index.html" style="display: block; margin-bottom: 20px;">Back to Calculator</a>
 
-    <div id="test-summary">
-        <h2>Test Summary</h2>
-        <div id="overall-status-indicator">Running tests...</div>
+    <div id="overall-summary-container">
+        <h2>Overall Test Summary</h2>
+        <div id="overall-status-indicator" class="status-overall-pending">Overall Status: Running tests...</div>
+        <div id="overall-summary-details"></div>
     </div>
 
-    <div id="test-details-container"></div>
+    <div id="test-details-container">
+        <details id="details-BASIC" class="test-kind-section">
+            <summary>
+                <h2>Basic & Complex Comparisons</h2>
+                <div id="basic-summary" class="kind-summary">Running...</div>
+            </summary>
+            <div id="basic-results-output" class="test-results-output">
+                <div class="passed-tests-container"></div>
+            </div>
+        </details>
+        <div id="basic-failed-preview" class="failed-tests-preview"></div>
+
+        <details id="details-ADDITION" class="test-kind-section">
+            <summary>
+                <h2>Addition Tests</h2>
+                <div id="addition-summary" class="kind-summary">Running...</div>
+            </summary>
+            <div id="addition-results-output" class="test-results-output">
+                <div class="passed-tests-container"></div>
+            </div>
+        </details>
+        <div id="addition-failed-preview" class="failed-tests-preview"></div>
+
+        <details id="details-MULTIPLICATION" class="test-kind-section">
+            <summary>
+                <h2>Multiplication Tests</h2>
+                <div id="multiplication-summary" class="kind-summary">Running...</div>
+            </summary>
+            <div id="multiplication-results-output" class="test-results-output">
+                <div class="passed-tests-container"></div>
+            </div>
+        </details>
+        <div id="multiplication-failed-preview" class="failed-tests-preview"></div>
+
+        <details id="details-EXPONENTIATION" class="test-kind-section">
+            <summary>
+                <h2>Exponentiation Tests</h2>
+                <div id="exponentiation-summary" class="kind-summary">Running...</div>
+            </summary>
+            <div id="exponentiation-results-output" class="test-results-output">
+                <div class="passed-tests-container"></div>
+            </div>
+        </details>
+        <div id="exponentiation-failed-preview" class="failed-tests-preview"></div>
+
+        <details id="details-EPSILON_TOWER" class="test-kind-section">
+            <summary>
+                <h2>Epsilon Tower Tests</h2>
+                <div id="epsilon-tower-summary" class="kind-summary">Running...</div>
+            </summary>
+            <div id="epsilon-tower-results-output" class="test-results-output">
+                <div class="passed-tests-container"></div>
+            </div>
+        </details>
+        <div id="epsilon-tower-failed-preview" class="failed-tests-preview"></div>
+
+        <details id="details-TETRATION" class="test-kind-section">
+            <summary>
+                <h2>Tetration Rules Tests</h2>
+                <div id="tetration-summary" class="kind-summary">Running...</div>
+            </summary>
+            <div id="tetration-results-output" class="test-results-output">
+                <div class="passed-tests-container"></div>
+            </div>
+        </details>
+        <div id="tetration-failed-preview" class="failed-tests-preview"></div>
+
+        <details id="details-RANDOM" class="test-kind-section">
+            <summary>
+                <h2>Randomized Checks</h2>
+                <div id="random-summary" class="kind-summary">Running...</div>
+            </summary>
+            <div id="random-results-output" class="test-results-output">
+                <div class="passed-tests-container"></div>
+            </div>
+        </details>
+        <div id="random-failed-preview" class="failed-tests-preview"></div>
+
+        <details id="details-ENF_CALC" class="test-kind-section">
+            <summary>
+                <h2>ENF Calculation Tests</h2>
+                <div id="enf-calc-summary" class="kind-summary">Running...</div>
+            </summary>
+            <div id="enf-calc-results-output" class="test-results-output">
+                <div class="passed-tests-container"></div>
+            </div>
+        </details>
+        <div id="enf-calc-failed-preview" class="failed-tests-preview"></div>
+    </div>
     <div id="addition-table-container"></div>
     <div id="multiplication-table-container"></div>
     <div id="exponentiation-table-container"></div>
@@ -146,6 +322,141 @@
     <script src="ordinal_enf_expected_results.js"></script>
 
     <script>
+        // Aggregated stats per section
+        const testStats = {
+            BASIC: { total: 0, passed: 0, failed: 0, containerId: 'basic-results-output', previewId: 'basic-failed-preview', summaryId: 'basic-summary', results: [] },
+            ADDITION: { total: 0, passed: 0, failed: 0, containerId: 'addition-results-output', previewId: 'addition-failed-preview', summaryId: 'addition-summary', results: [] },
+            MULTIPLICATION: { total: 0, passed: 0, failed: 0, containerId: 'multiplication-results-output', previewId: 'multiplication-failed-preview', summaryId: 'multiplication-summary', results: [] },
+            EXPONENTIATION: { total: 0, passed: 0, failed: 0, containerId: 'exponentiation-results-output', previewId: 'exponentiation-failed-preview', summaryId: 'exponentiation-summary', results: [] },
+            EPSILON_TOWER: { total: 0, passed: 0, failed: 0, containerId: 'epsilon-tower-results-output', previewId: 'epsilon-tower-failed-preview', summaryId: 'epsilon-tower-summary', results: [] },
+            TETRATION: { total: 0, passed: 0, failed: 0, containerId: 'tetration-results-output', previewId: 'tetration-failed-preview', summaryId: 'tetration-summary', results: [] },
+            RANDOM: { total: 0, passed: 0, failed: 0, containerId: 'random-results-output', previewId: 'random-failed-preview', summaryId: 'random-summary', results: [] },
+            ENF_CALC: { total: 0, passed: 0, failed: 0, containerId: 'enf-calc-results-output', previewId: 'enf-calc-failed-preview', summaryId: 'enf-calc-summary', results: [] }
+        };
+        let CURRENT_KIND = 'BASIC';
+        let __renderScheduled = false;
+        function scheduleRender() {
+            if (__renderScheduled) return;
+            __renderScheduled = true;
+            setTimeout(() => {
+                __renderScheduled = false;
+                try { renderAllKindResults(); } catch (_) { }
+                try { updateOverallPageSummary(); } catch (_) { }
+            }, 0);
+        }
+
+        function recordTestResult(kindKey, passed, containerNode) {
+            const stats = testStats[kindKey];
+            if (!stats) { console.warn('[ENF TEST] Unknown kindKey in recordTestResult:', kindKey); return; }
+            stats.total++;
+            if (passed) stats.passed++; else stats.failed++;
+            stats.results.push({ passed, node: containerNode });
+            console.log(`[DEBUG] Recorded test for ${kindKey}: passed=${passed}, total results now=${stats.results.length}`);
+            scheduleRender();
+        }
+
+        function updateKindSummary(kindKey) {
+            const stats = testStats[kindKey];
+            const summaryDiv = document.getElementById(stats.summaryId);
+            if (!summaryDiv) return;
+            summaryDiv.textContent = `${kindKey} Tests: ${stats.total} run, ${stats.passed} passed, ${stats.failed} failed.`;
+            summaryDiv.className = 'kind-summary ' + (stats.failed > 0 ? 'status-failed' : 'status-passed');
+        }
+
+        function renderSingleKindOutput(kindKey) {
+            const stats = testStats[kindKey];
+            if (!stats) return;
+            const detailsElement = document.getElementById('details-' + kindKey);
+            const previewContainer = document.getElementById(stats.previewId);
+            const mainResultsOutputContainer = document.getElementById(stats.containerId);
+            const allTestsContainerWhenOpen = mainResultsOutputContainer ? mainResultsOutputContainer.querySelector('.passed-tests-container') : null;
+
+            console.log(`[DEBUG] renderSingleKindOutput(${kindKey}): stats.results.length=${stats.results.length}, isExpanded=${detailsElement?.open}`);
+            if (!detailsElement || !previewContainer || !allTestsContainerWhenOpen) {
+                console.warn(`[DEBUG] Missing elements for ${kindKey}: details=${!!detailsElement}, preview=${!!previewContainer}, container=${!!allTestsContainerWhenOpen}`);
+                return;
+            }
+
+            previewContainer.innerHTML = '';
+            allTestsContainerWhenOpen.innerHTML = '';
+
+            const isExpanded = detailsElement.open;
+            const failed = stats.results.filter(r => !r.passed);
+            const passed = stats.results.filter(r => r.passed);
+
+            if (isExpanded) {
+                previewContainer.style.display = 'none';
+                if (stats.results.length === 0) {
+                    const p = document.createElement('p'); p.textContent = `No ${kindKey} tests recorded.`; allTestsContainerWhenOpen.appendChild(p);
+                } else {
+                    let htmlContent = '';
+                    if (failed.length > 0) {
+                        htmlContent += `<h4 class="status-failed">Failed ${kindKey} Tests:</h4>`;
+                        failed.forEach(res => {
+                            if (res.node) htmlContent += `<div class="test-case status-failed">${res.node.innerHTML}</div>`;
+                        });
+                    }
+                    if (passed.length > 0) {
+                        htmlContent += `<h4 class="status-passed">Passed ${kindKey} Tests:</h4>`;
+                        passed.forEach(res => {
+                            if (res.node) htmlContent += `<div class="test-case status-passed">${res.node.innerHTML}</div>`;
+                        });
+                    }
+                    console.log(`[DEBUG] Setting innerHTML for ${kindKey} expanded view, length=${htmlContent.length}`);
+                    allTestsContainerWhenOpen.innerHTML = htmlContent;
+                }
+            } else {
+                if (failed.length > 0) {
+                    previewContainer.style.display = 'block';
+                    let htmlContent = `<h4 class="status-failed">Failed ${kindKey} Tests (${failed.length} of ${stats.results.length} total):</h4>`;
+                    failed.forEach(res => {
+                        if (res.node) htmlContent += `<div class="test-case status-failed">${res.node.innerHTML}</div>`;
+                    });
+                    htmlContent += `<p style="font-style: italic;">(Expand to see all ${stats.results.length} tests)</p>`;
+                    previewContainer.innerHTML = htmlContent;
+                } else if (stats.results.length > 0) {
+                    previewContainer.style.display = 'block';
+                    previewContainer.innerHTML = `
+                        <p class="status-passed">All ${stats.results.length} ${kindKey} tests passed.</p>
+                        <p style="font-style: italic;">(Expand to see details)</p>`;
+                } else {
+                    previewContainer.style.display = 'block';
+                    previewContainer.innerHTML = `<p>No ${kindKey} tests recorded.</p>`;
+                }
+            }
+        }
+
+        function renderAllKindResults() {
+            for (const key in testStats) {
+                updateKindSummary(key);
+                renderSingleKindOutput(key);
+            }
+        }
+
+        function updateOverallPageSummary() {
+            const overallStatusIndicator = document.getElementById('overall-status-indicator');
+            const overallSummaryDetails = document.getElementById('overall-summary-details');
+            overallSummaryDetails.innerHTML = '';
+            let overallPass = true; let totalRun = 0;
+            let grandTotal = 0; let grandPassed = 0; let grandFailed = 0;
+            for (const key in testStats) {
+                const stats = testStats[key];
+                const num = stats.total;
+                grandTotal += num;
+                grandPassed += stats.passed;
+                grandFailed += stats.failed;
+
+                if (num > 0) {
+                    const line = document.createElement('div'); line.className = 'summary-line';
+                    line.textContent = `${key}: ${stats.total} run, ${stats.passed} passed, ${stats.failed} failed.`;
+                    if (stats.failed > 0) overallPass = false;
+                    overallSummaryDetails.appendChild(line);
+                }
+            }
+            if (grandTotal === 0) { overallStatusIndicator.textContent = 'No tests were run.'; overallStatusIndicator.className = 'status-overall-pending'; return; }
+            if (overallPass) { overallStatusIndicator.textContent = 'ALL TESTS PASSED!'; overallStatusIndicator.className = 'status-overall-pass'; }
+            else { overallStatusIndicator.textContent = `FAILURES DETECTED! (${grandPassed} / ${grandTotal} passed)`; overallStatusIndicator.className = 'status-overall-fail'; }
+        }
         const testResults = [];
         let totalTests = 0;
         let passedTests = 0;
@@ -184,9 +495,7 @@
                     expectedOrderP.className = 'log-output status-failed';
                     expectedOrderP.textContent = `Expected Sorted: ${expectedOrder.join(', ')}`;
                     container.appendChild(expectedOrderP);
-                    testResults.push(false);
                 } else {
-                    testResults.push(true);
                     passedTests++;
                 }
 
@@ -195,11 +504,10 @@
                 status.textContent = `Status: CRITICAL ERROR - ${e.message}`;
                 status.className = 'status-failed';
                 container.appendChild(status);
-                testResults.push(false);
                 console.error(`Error in test "${testName}":`, e);
             }
-
-            document.getElementById('test-details-container').appendChild(container);
+            const finalPassed = container.querySelector('.status-failed') === null;
+            try { recordTestResult(CURRENT_KIND, finalPassed, container); } catch (_) { document.getElementById('test-details-container').appendChild(container); }
         }
 
         function runAdditionTest(testName, ordA, ordB, expectedString) {
@@ -235,9 +543,7 @@
                     expectedP.className = 'log-output status-failed';
                     expectedP.textContent = `Expected: ${expectedString}`;
                     container.appendChild(expectedP);
-                    testResults.push(false);
                 } else {
-                    testResults.push(true);
                     passedTests++;
                 }
 
@@ -246,11 +552,10 @@
                 status.textContent = `Status: CRITICAL ERROR - ${e.message}`;
                 status.className = 'status-failed';
                 container.appendChild(status);
-                testResults.push(false);
                 console.error(`Error in test "${testName}":`, e);
             }
-
-            document.getElementById('test-details-container').appendChild(container);
+            const finalPassed = container.querySelector('.status-failed') === null;
+            try { recordTestResult(CURRENT_KIND, finalPassed, container); } catch (_) { document.getElementById('test-details-container').appendChild(container); }
         }
 
         function runEqualityTest(testName, actualOrdinal, expectedOrdinal) {
@@ -278,22 +583,158 @@
                 expectedP.textContent = `Expected: ${expectedOrdinal.toString()}`;
                 container.appendChild(expectedP);
 
-                if (passed) {
-                    testResults.push(true);
-                    passedTests++;
-                } else {
-                    testResults.push(false);
-                }
+                if (passed) { passedTests++; }
             } catch (e) {
                 const status = document.createElement('p');
                 status.textContent = `Status: CRITICAL ERROR - ${e.message}`;
                 status.className = 'status-failed';
                 container.appendChild(status);
-                testResults.push(false);
                 console.error(`Error in equality test "${testName}":`, e);
             }
+            const finalPassed = container.querySelector('.status-failed') === null;
+            try { recordTestResult(CURRENT_KIND, finalPassed, container); } catch (_) { document.getElementById('test-details-container').appendChild(container); }
+        }
 
-            document.getElementById('test-details-container').appendChild(container);
+        function runENFCalculationTest(testName, inputString, expectedString) {
+            totalTests++;
+            const container = document.createElement('div');
+            container.className = 'test-case';
+            const title = document.createElement('h3');
+            title.textContent = `Test: ${testName}`;
+            container.appendChild(title);
+
+            const inputP = document.createElement('p');
+            inputP.className = 'log-output';
+            inputP.textContent = `Input: "${inputString}"`;
+            container.appendChild(inputP);
+
+            const expectError = expectedString.startsWith('Error:');
+            let passed = false;
+
+            try {
+                // Parse and calculate using ENF format
+                const result = calculateOrdinalCNF(inputString, 10000000, { format: 'ENF' });
+
+                if (result.error) {
+                    // Got an error - check if we expected one
+                    if (expectError) {
+                        const actualError = result.error.startsWith('Error:') ? result.error : `Error: ${result.error}`;
+                        passed = actualError === expectedString;
+
+                        const actualP = document.createElement('p');
+                        actualP.className = 'log-output';
+                        actualP.textContent = `Actual:   "${actualError}"`;
+                        container.appendChild(actualP);
+
+                        if (!passed) {
+                            const expectedP = document.createElement('p');
+                            expectedP.className = 'log-output status-failed';
+                            expectedP.textContent = `Expected: "${expectedString}"`;
+                            container.appendChild(expectedP);
+                        }
+                    } else {
+                        // Got unexpected error
+                        passed = false;
+                        const actualP = document.createElement('p');
+                        actualP.className = 'log-output status-failed';
+                        actualP.textContent = `Unexpected Error: "${result.error}"`;
+                        container.appendChild(actualP);
+
+                        const expectedP = document.createElement('p');
+                        expectedP.className = 'log-output status-failed';
+                        expectedP.textContent = `Expected: "${expectedString}"`;
+                        container.appendChild(expectedP);
+                    }
+                } else {
+                    // Got a successful result - check if we expected success
+                    if (expectError) {
+                        // Expected error but got success
+                        passed = false;
+                        const actualString = result.ordinalObject.toDisplayString
+                            ? result.ordinalObject.toDisplayString({ format: 'ENF' })
+                            : result.ordinalObject.toString();
+
+                        const actualP = document.createElement('p');
+                        actualP.className = 'log-output status-failed';
+                        actualP.textContent = `Unexpected Success: "${actualString}"`;
+                        container.appendChild(actualP);
+
+                        const expectedP = document.createElement('p');
+                        expectedP.className = 'log-output status-failed';
+                        expectedP.textContent = `Expected: "${expectedString}"`;
+                        container.appendChild(expectedP);
+                    } else {
+                        // Expected success and got success
+                        const actualString = result.ordinalObject.toDisplayString
+                            ? result.ordinalObject.toDisplayString({ format: 'ENF' })
+                            : result.ordinalObject.toString();
+
+                        const stringCheckPassed = actualString === expectedString;
+
+                        const actualP = document.createElement('p');
+                        actualP.className = 'log-output';
+                        actualP.textContent = `Actual:   "${actualString}"`;
+                        container.appendChild(actualP);
+
+                        if (!stringCheckPassed) {
+                            const expectedP = document.createElement('p');
+                            expectedP.className = 'log-output status-failed';
+                            expectedP.textContent = `Expected: "${expectedString}"`;
+                            container.appendChild(expectedP);
+                        }
+
+                        // Round-trip test: parse the result string and check ordinal equality
+                        let roundTripPassed = false;
+                        let roundTripError = '';
+                        try {
+                            const roundTripResult = calculateOrdinalCNF(actualString, 10000000, { format: 'ENF' });
+                            if (roundTripResult.error) {
+                                roundTripError = `Round-trip parse error: ${roundTripResult.error}`;
+                            } else {
+                                const B = result.ordinalObject;  // Original ordinal
+                                const D = roundTripResult.ordinalObject;  // Re-parsed ordinal
+                                roundTripPassed = B.equals(D);
+                                if (!roundTripPassed) {
+                                    roundTripError = `Round-trip inequality: B="${B.toString()}" ≠ D="${D.toString()}"`;
+                                }
+                            }
+                        } catch (e) {
+                            roundTripError = `Round-trip exception: ${e.message}`;
+                        }
+
+                        const roundTripP = document.createElement('p');
+                        roundTripP.className = 'log-output';
+                        if (roundTripPassed) {
+                            roundTripP.textContent = `Round-trip: PASSED (B = parse(string(B)))`;
+                        } else {
+                            roundTripP.textContent = `Round-trip: FAILED (${roundTripError})`;
+                            roundTripP.classList.add('status-failed');
+                        }
+                        container.appendChild(roundTripP);
+
+                        passed = stringCheckPassed && roundTripPassed;
+                    }
+                }
+
+                const status = document.createElement('p');
+                status.textContent = `Status: ${passed ? 'PASSED' : 'FAILED'}`;
+                status.className = passed ? 'status-passed' : 'status-failed';
+                container.appendChild(status);
+
+                if (passed) {
+                    passedTests++;
+                }
+
+            } catch (e) {
+                const status = document.createElement('p');
+                status.textContent = `Status: CRITICAL ERROR - ${e.message}`;
+                status.className = 'status-failed';
+                container.appendChild(status);
+                console.error(`Error in ENF calculation test "${testName}":`, e);
+            }
+
+            const finalPassed = container.querySelector('.status-failed') === null;
+            try { recordTestResult(CURRENT_KIND, finalPassed, container); } catch (_) { document.getElementById('test-details-container').appendChild(container); }
         }
 
         function runComprehensiveAdditionTest(ordinals) {
@@ -355,10 +796,7 @@
                 container.appendChild(summaryP);
 
                 if (allPassed) {
-                    testResults.push(true);
                     passedTests++;
-                } else {
-                    testResults.push(false);
                 }
 
             } catch (e) {
@@ -370,7 +808,7 @@
                 console.error('Error in comprehensive addition test:', e);
             }
 
-            document.getElementById('test-details-container').appendChild(container);
+            try { recordTestResult(CURRENT_KIND, container.querySelector('.status-failed') === null, container); } catch (_) { document.getElementById('test-details-container').appendChild(container); }
         }
 
         function runAdditionMonotonicityTest(ordinals) {
@@ -467,7 +905,7 @@
                 console.error('Error in addition monotonicity test:', e);
             }
 
-            document.getElementById('test-details-container').appendChild(container);
+            try { recordTestResult(CURRENT_KIND, container.querySelector('.status-failed') === null, container); } catch (_) { document.getElementById('test-details-container').appendChild(container); }
         }
 
         function runMultiplicationMonotonicityTest(ordinals) {
@@ -564,7 +1002,7 @@
                 console.error('Error in multiplication monotonicity test:', e);
             }
 
-            document.getElementById('test-details-container').appendChild(container);
+            try { recordTestResult(CURRENT_KIND, container.querySelector('.status-failed') === null, container); } catch (_) { document.getElementById('test-details-container').appendChild(container); }
         }
 
         function runExponentiationMonotonicityTest(ordinals) {
@@ -627,12 +1065,10 @@
                 if (violations === 0) {
                     status.textContent = 'Status: PASSED';
                     status.className = 'status-passed';
-                    testResults.push(true);
                     passedTests++;
                 } else {
                     status.textContent = `Status: FAILED (${violations} monotonicity violations)`;
                     status.className = 'status-failed';
-                    testResults.push(false);
 
                     for (let i = 0; i < Math.min(5, violationMessages.length); i++) {
                         const violation = document.createElement('p');
@@ -654,11 +1090,10 @@
                 status.textContent = `Status: CRITICAL ERROR - ${e.message}`;
                 status.className = 'status-failed';
                 container.appendChild(status);
-                testResults.push(false);
                 console.error('Error in exponentiation monotonicity test:', e);
             }
 
-            document.getElementById('test-details-container').appendChild(container);
+            try { recordTestResult(CURRENT_KIND, container.querySelector('.status-failed') === null, container); } catch (_) { document.getElementById('test-details-container').appendChild(container); }
         }
 
         function runComprehensiveMultiplicationTest(ordinals) {
@@ -731,7 +1166,7 @@
                 console.error('Error in comprehensive multiplication test:', e);
             }
 
-            document.getElementById('test-details-container').appendChild(container);
+            try { recordTestResult(CURRENT_KIND, container.querySelector('.status-failed') === null, container); } catch (_) { document.getElementById('test-details-container').appendChild(container); }
         }
 
         function runRandomTripleAssociativityAdditionTest(ordinals, sampleCount = 100) {
@@ -831,7 +1266,7 @@
                 console.error('Error in associativity test (addition):', e);
             }
 
-            document.getElementById('test-details-container').appendChild(container);
+            try { recordTestResult(CURRENT_KIND, container.querySelector('.status-failed') === null, container); } catch (_) { document.getElementById('test-details-container').appendChild(container); }
         }
 
         function runRandomTripleAlgebraRulesTest(ordinals, sampleCount = 100) {
@@ -963,7 +1398,7 @@
                 console.error('Error in algebraic laws test:', e);
             }
 
-            document.getElementById('test-details-container').appendChild(container);
+            try { recordTestResult(CURRENT_KIND, container.querySelector('.status-failed') === null, container); } catch (_) { document.getElementById('test-details-container').appendChild(container); }
         }
 
         function runComprehensiveExponentiationTest(ordinals) {
@@ -1044,7 +1479,7 @@
                 console.error('Error in comprehensive exponentiation test:', e);
             }
 
-            document.getElementById('test-details-container').appendChild(container);
+            try { recordTestResult(CURRENT_KIND, container.querySelector('.status-failed') === null, container); } catch (_) { document.getElementById('test-details-container').appendChild(container); }
         }
 
         function defineTests() {
@@ -1130,6 +1565,7 @@
             );
 
             // --- Addition Tests ---
+            CURRENT_KIND = 'ADDITION';
             runAdditionTest("w + 1", ord_w, ord_one, "w+1");
             runAdditionTest("1 + w", ord_one, ord_w, "w");
             runAdditionTest("w*2 + w*3", ord_w_times_2, new ENFOrdinal([new ENFTerm([], CNFOrdinal.ONE, 3n)]), "w*5");
@@ -1139,6 +1575,7 @@
             runAdditionTest("w^w + e_0", ord_w_w, ord_e0, "e_0");
 
             // --- Targeted Regression: w^(e_1^(w+1)) should be e_1^e_1^(w+1) ---
+            CURRENT_KIND = 'EXPONENTIATION';
             try {
                 const exp_w_plus_1 = new OrdinalParser("w+1", tracer).parse();
                 const e1_pow_w_plus_1 = new ENFOrdinal([new ENFTerm([{ base: e1_base, exp: ENFOrdinal.fromCNF(exp_w_plus_1) }])]);
@@ -1155,7 +1592,7 @@
                 container.className = 'test-case';
                 const t = document.createElement('h3'); t.textContent = 'Regression Probe: division in power'; container.appendChild(t);
                 container.appendChild(probe);
-                document.getElementById('test-details-container').appendChild(container);
+                try { recordTestResult(CURRENT_KIND, true, container); } catch (_) { document.getElementById('test-details-container').appendChild(container); }
 
                 runEqualityTest("Regression: w^(e_1^(w+1))", actual, expected);
             } catch (e) {
@@ -1168,10 +1605,11 @@
                 p.className = 'log-output status-failed';
                 p.textContent = e.message;
                 container.appendChild(p);
-                document.getElementById('test-details-container').appendChild(container);
+                try { recordTestResult(CURRENT_KIND, false, container); } catch (_) { document.getElementById('test-details-container').appendChild(container); }
             }
 
             // --- EpsilonTowerOrdinal Tests ---
+            CURRENT_KIND = 'EPSILON_TOWER';
             try {
                 const k0_cnf = CNFOrdinal.ZEROStatic().clone(tracer);
                 const epsTower0 = new EpsilonTowerOrdinal(k0_cnf, 0, tracer);
@@ -1206,7 +1644,7 @@
                     const status = document.createElement('p'); status.textContent = `Status: ${ok ? 'PASSED' : 'FAILED'}`; status.className = ok ? 'status-passed' : 'status-failed'; container.appendChild(status);
                     if (ok) { passedTests++; } else { /* count in total only */ }
                     totalTests++;
-                    document.getElementById('test-details-container').appendChild(container);
+                    try { recordTestResult(CURRENT_KIND, ok, container); } catch (_) { document.getElementById('test-details-container').appendChild(container); }
                 })();
 
                 // Special-case power: e_0^(e_0^^n) = e_0^^(n+1)
@@ -1225,7 +1663,7 @@
                 p.className = 'log-output status-failed';
                 p.textContent = e.message;
                 container.appendChild(p);
-                document.getElementById('test-details-container').appendChild(container);
+                try { recordTestResult(CURRENT_KIND, false, container); } catch (_) { document.getElementById('test-details-container').appendChild(container); }
             }
 
             // --- EpsilonTowerOrdinal (complex k and arithmetic via ENF conversion) ---
@@ -1272,7 +1710,7 @@
                     const status = document.createElement('p'); status.textContent = `Status: ${ok ? 'PASSED' : 'FAILED'}`; status.className = ok ? 'status-passed' : 'status-failed'; container.appendChild(status);
                     if (ok) { passedTests++; } else { /* count only */ }
                     totalTests++;
-                    document.getElementById('test-details-container').appendChild(container);
+                    try { recordTestResult(CURRENT_KIND, ok, container); } catch (_) { document.getElementById('test-details-container').appendChild(container); }
                 })();
 
                 // k = e_0 (so base is e_{e_0})
@@ -1291,10 +1729,11 @@
                 p.className = 'log-output status-failed';
                 p.textContent = e.message;
                 container.appendChild(p);
-                document.getElementById('test-details-container').appendChild(container);
+                try { recordTestResult(CURRENT_KIND, false, container); } catch (_) { document.getElementById('test-details-container').appendChild(container); }
             }
 
             // --- Extended tetration rules tests ---
+            CURRENT_KIND = 'TETRATION';
             try {
                 // 0^^n parity (finite n)
                 const zero = CNFOrdinal.ZEROStatic().clone(tracer);
@@ -1314,7 +1753,7 @@
                     let passed = false; try { zero.tetrate(CNFOrdinal.OMEGAStatic().clone(tracer)); } catch (_) { passed = true; }
                     const status = document.createElement('p'); status.textContent = `Status: ${passed ? 'PASSED' : 'FAILED'}`; status.className = passed ? 'status-passed' : 'status-failed'; container.appendChild(status);
                     if (passed) passedTests++; totalTests++;
-                    document.getElementById('test-details-container').appendChild(container);
+                    try { recordTestResult(CURRENT_KIND, passed, container); } catch (_) { document.getElementById('test-details-container').appendChild(container); }
                 })();
 
                 // 1^^k = 1 (finite and infinite)
@@ -1332,7 +1771,7 @@
                     const ok = (typeof WTowerOrdinal !== 'undefined') && (res instanceof WTowerOrdinal) && res.height === 11;
                     const status = document.createElement('p'); status.textContent = `Status: ${ok ? 'PASSED' : 'FAILED'}`; status.className = ok ? 'status-passed' : 'status-failed'; container.appendChild(status);
                     if (ok) passedTests++; totalTests++;
-                    document.getElementById('test-details-container').appendChild(container);
+                    try { recordTestResult(CURRENT_KIND, ok, container); } catch (_) { document.getElementById('test-details-container').appendChild(container); }
                 })();
 
                 // e_k^^n threshold (n>10 -> EpsilonTower)
@@ -1348,7 +1787,7 @@
                     }
                     const status = document.createElement('p'); status.textContent = `Status: ${ok ? 'PASSED' : 'FAILED'}`; status.className = ok ? 'status-passed' : 'status-failed'; container.appendChild(status);
                     if (ok) passedTests++; totalTests++;
-                    document.getElementById('test-details-container').appendChild(container);
+                    try { recordTestResult(CURRENT_KIND, ok, container); } catch (_) { document.getElementById('test-details-container').appendChild(container); }
                 })();
 
                 // Finite height with base > e_0 but not pure epsilon: (e_0+1)^^3 computed recursively
@@ -1361,7 +1800,7 @@
                     if (!passed) { const pErr = document.createElement('p'); pErr.className = 'log-output'; pErr.textContent = `Error: ${errMsg}`; container.appendChild(pErr); }
                     const status = document.createElement('p'); status.textContent = `Status: ${passed ? 'PASSED' : 'FAILED'}`; status.className = passed ? 'status-passed' : 'status-failed'; container.appendChild(status);
                     if (passed) passedTests++; totalTests++;
-                    document.getElementById('test-details-container').appendChild(container);
+                    try { recordTestResult(CURRENT_KIND, passed, container); } catch (_) { document.getElementById('test-details-container').appendChild(container); }
                 })();
 
                 // EpsilonTower for e_5^^12
@@ -1378,7 +1817,7 @@
                     const pStr = document.createElement('p'); pStr.className = 'log-output'; pStr.textContent = `Got: ${s || '[non-string]'}`; container.appendChild(pStr);
                     const status = document.createElement('p'); status.textContent = `Status: ${ok ? 'PASSED' : 'FAILED'}`; status.className = ok ? 'status-passed' : 'status-failed'; container.appendChild(status);
                     if (ok) passedTests++; totalTests++;
-                    document.getElementById('test-details-container').appendChild(container);
+                    try { recordTestResult(CURRENT_KIND, ok, container); } catch (_) { document.getElementById('test-details-container').appendChild(container); }
                 })();
 
                 // a (not w or e_k) ^^ 2 = a^a
@@ -1391,7 +1830,7 @@
                     const ok = left.equals(right);
                     const status = document.createElement('p'); status.textContent = `Status: ${ok ? 'PASSED' : 'FAILED'}`; status.className = ok ? 'status-passed' : 'status-failed'; container.appendChild(status);
                     if (ok) passedTests++; totalTests++;
-                    document.getElementById('test-details-container').appendChild(container);
+                    try { recordTestResult(CURRENT_KIND, ok, container); } catch (_) { document.getElementById('test-details-container').appendChild(container); }
                 })();
 
                 // a (CNF infinite epsilon-free) ^^ infinite = e_0
@@ -1422,7 +1861,7 @@
                     const pExp = document.createElement('p'); pExp.className = 'log-output'; pExp.textContent = `Expected: ${expectedStr}`; container.appendChild(pExp);
                     const status = document.createElement('p'); status.textContent = `Status: ${ok ? 'PASSED' : 'FAILED'}`; status.className = ok ? 'status-passed' : 'status-failed'; container.appendChild(status);
                     if (ok) passedTests++; totalTests++;
-                    document.getElementById('test-details-container').appendChild(container);
+                    try { recordTestResult(CURRENT_KIND, ok, container); } catch (_) { document.getElementById('test-details-container').appendChild(container); }
                 })();
 
             } catch (e) {
@@ -1430,7 +1869,7 @@
                 container.className = 'test-case';
                 const title = document.createElement('h3'); title.textContent = 'Extended tetration setup error'; container.appendChild(title);
                 const p = document.createElement('p'); p.className = 'log-output status-failed'; p.textContent = e.message; container.appendChild(p);
-                document.getElementById('test-details-container').appendChild(container);
+                try { recordTestResult(CURRENT_KIND, false, container); } catch (_) { document.getElementById('test-details-container').appendChild(container); }
             }
 
             // --- All Ordinals for Tables ---
@@ -1444,18 +1883,49 @@
             ].sort((a, b) => a.compareTo(b));
 
             // Run comprehensive tests against expected results
+            CURRENT_KIND = 'ADDITION';
             runComprehensiveAdditionTest(allOrdinals);
+            CURRENT_KIND = 'MULTIPLICATION';
             runComprehensiveMultiplicationTest(allOrdinals);
+            CURRENT_KIND = 'EXPONENTIATION';
             runComprehensiveExponentiationTest(allOrdinals);
 
             // Run monotonicity sanity tests
+            CURRENT_KIND = 'ADDITION';
             runAdditionMonotonicityTest(allOrdinals);
+            CURRENT_KIND = 'MULTIPLICATION';
             runMultiplicationMonotonicityTest(allOrdinals);
+            CURRENT_KIND = 'EXPONENTIATION';
             runExponentiationMonotonicityTest(allOrdinals);
 
             // Random triple associativity tests
+            CURRENT_KIND = 'RANDOM';
             runRandomTripleAssociativityAdditionTest(allOrdinals, 100);
             runRandomTripleAlgebraRulesTest(allOrdinals, 100);
+
+            // --- ENF Calculation Tests ---
+            CURRENT_KIND = 'ENF_CALC';
+            runENFCalculationTest("Basic finite", "5", "5");
+            runENFCalculationTest("Basic omega", "w", "w");
+            runENFCalculationTest("Omega plus one", "w+1", "w+1");
+            runENFCalculationTest("Omega squared", "w^2", "w^2");
+            runENFCalculationTest("Epsilon zero", "e_0", "e_0");
+            runENFCalculationTest("Complex expression", "w^2*3+w*5+7", "w^2*3+w*5+7");
+            runENFCalculationTest("Omega tetration", "w^^3", "w^w^w");
+            runENFCalculationTest("Epsilon tetration", "e_w^^2", "e_w^e_w");
+            runENFCalculationTest("Infinite tetration 1", "w^^(w^2)", "e_0");
+            runENFCalculationTest("Infinite tetration 2", "e_0^^w", "e_1");
+            runENFCalculationTest("Infinite tetration 3", "e_3^^e_6", "e_4");
+            runENFCalculationTest("Omega tower", "w^^12", "w^^12");
+            runENFCalculationTest("Epsilon tower", "e_4^^20", "e_4^^20");
+            runENFCalculationTest("Debug: w^w*w", "w^w*w", "w^(w+1)");
+            runENFCalculationTest("Debug: 2^(w^2)", "2^(w^2)", "w^w");
+            runENFCalculationTest("Debug: 2^(w^3)", "2^(w^3)", "w^w^2");
+            runENFCalculationTest("Exp test 1 (fixed)", "2^(w^w*w)", "w^w^(w+1)");
+            runENFCalculationTest("Exp test 2", "2^(e_1^e_1*e_1)", "e_1^e_1^(e_1+1)");
+            runENFCalculationTest("Invalid tetration", "0^^e_8", "Error: Operation 0 ^^ e_8 is undefined.");
+            runENFCalculationTest("Parentheses check 1", "(e_w)^w", "e_w^w");
+            runENFCalculationTest("Parentheses check 2", "e_(w^w)", "e_(w^w)");
 
             // Generate Tables
             generateAdditionTable(allOrdinals);
@@ -1567,7 +2037,7 @@
             if (!container) {
                 container = document.createElement('div');
                 container.id = 'ordinal-index-legend-container';
-                const summary = document.getElementById('test-summary');
+                const summary = document.getElementById('overall-summary-container');
                 summary.parentNode.insertBefore(container, summary.nextSibling);
             }
             container.innerHTML = '<h2>Ordinal Index Legend</h2>';
@@ -1799,19 +2269,29 @@
             });
         }
 
-        function finalizeSummary() {
-            const summaryDiv = document.getElementById('overall-status-indicator');
-            summaryDiv.textContent = `Overall Status: ${passedTests} / ${totalTests} passed.`;
-            if (passedTests === totalTests && totalTests > 0) {
-                summaryDiv.className = 'status-overall-pass';
-            } else {
-                summaryDiv.className = 'status-overall-fail';
-            }
-        }
+        function finalizeSummary() { /* replaced by updateOverallPageSummary */ }
 
         document.addEventListener('DOMContentLoaded', () => {
             defineTests();
-            finalizeSummary();
+            renderAllKindResults();
+            updateOverallPageSummary();
+
+            // Add toggle listeners with debug logging
+            document.querySelectorAll('details.test-kind-section').forEach(detailsElement => {
+                detailsElement.addEventListener('toggle', () => {
+                    const kindKey = detailsElement.id.replace('details-', '');
+                    console.log(`[DEBUG] Toggle event for ${kindKey}, now open=${detailsElement.open}`);
+                    renderSingleKindOutput(kindKey);
+                    updateKindSummary(kindKey);
+                    updateOverallPageSummary();
+                });
+            });
+
+            // Force initial render of all sections to ensure they work
+            setTimeout(() => {
+                console.log('[DEBUG] Force-rendering all sections after initial load');
+                renderAllKindResults();
+            }, 100);
         });
 
     </script>

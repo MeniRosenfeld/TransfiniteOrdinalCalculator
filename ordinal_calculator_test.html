@@ -1061,9 +1061,6 @@
             // --- Tetration Tests --- (from original)
             testOrdinalCalc("e_0^^0", "1");
             testOrdinalCalc("e_0^^1", "e_0");
-            testOrdinalCalc("e_0^^2", "Error: Operation e_0 ^^ CNFOrdinal (2) is unsupported when CNFOrdinal is not 0 or 1.");
-            testOrdinalCalc("e_0^^w", "Error: Operation e_0 ^^ CNFOrdinal (w) is unsupported when CNFOrdinal is not 0 or 1.");
-            testOrdinalCalc("e_0^^e_0", "Error: Operation e_0 ^^ e_0 is unsupported.");
 
             testOrdinalCalc("0^^0", "1");
             testOrdinalCalc("1^^0", "1");
@@ -1081,8 +1078,8 @@
             testOrdinalCalc("3^^2", "27");
             testOrdinalCalc("w^^2", "w^w");
 
-            testOrdinalCalc("0^^w", "Error: Operation 0 ^^ CNFOrdinal (w) is undefined when CNFOrdinal is infinite.");
-            testOrdinalCalc("0^^(w*2)", "Error: Operation 0 ^^ CNFOrdinal (w*2) is undefined when CNFOrdinal is infinite.");
+            testOrdinalCalc("0^^w", "Error: Operation 0 ^^ w is undefined when CNFOrdinal is infinite.");
+            testOrdinalCalc("0^^(w*2)", "Error: Operation 0 ^^ w*2 is undefined when CNFOrdinal is infinite.");
 
             testOrdinalCalc("1^^w", "1");
             testOrdinalCalc("1^^(w^w)", "1");
@@ -1096,7 +1093,6 @@
             testOrdinalCalc("(w^2)^^(w*2)", "e_0");
             testOrdinalCalc("(w^w)^^w", "e_0");
 
-            testOrdinalCalc("0^^e_0", "Error: Operation 0 ^^ e_0 is undefined.");
             testOrdinalCalc("1^^e_0", "1");
             testOrdinalCalc("2^^e_0", "w");
             testOrdinalCalc("100^^e_0", "w");

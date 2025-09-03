@@ -231,32 +231,32 @@ class ENFTerm {
         for (const factor of this.epsilonFactors) {
             const baseStr = factor.base.toString();
             // Decide if epsilon index needs parentheses
+            // Rule: omit parentheses only for: finite numbers, w, or e_d
             let needsBaseParen = true;
-            if (baseStr === "0" || factor.base.isFinite()) {
+            if (factor.base.isFinite()) {
+                // Finite numbers: no parentheses
                 needsBaseParen = false;
             } else if (factor.base.terms && factor.base.terms.length === 1) {
                 const t = factor.base.terms[0];
-                const isPureFinite = t.isFinite && t.isFinite();
-                const hasOmega = t.omegaExponent && typeof t.omegaExponent.isZero === 'function' && !t.omegaExponent.isZero();
                 const hasEpsilon = Array.isArray(t.epsilonFactors) && t.epsilonFactors.length > 0;
+                const hasOmega = t.omegaExponent && typeof t.omegaExponent.isZero === 'function' && !t.omegaExponent.isZero();
                 const coeffIsOne = (t.coefficient === undefined || t.coefficient === 1n);
 
-                // Atomic cases allowed without parentheses:
-                // 1) e_k  (single epsilon factor with exp = 1, no ω, coeff=1)
-                let isAtomicEpsilon = false;
                 if (hasEpsilon && t.epsilonFactors.length === 1) {
+                    // e_d case: single epsilon factor with exp = 1, no ω, coeff=1
                     const ef = t.epsilonFactors[0];
                     const expIsOne = typeof ef.exp?.isOne === 'function' ? ef.exp.isOne() : false;
-                    isAtomicEpsilon = expIsOne && (!hasOmega) && coeffIsOne;
-                }
-
-                // 2) ω^k  (no epsilon factors, some ω-exponent, coeff=1)
-                const isAtomicOmega = !hasEpsilon && hasOmega && coeffIsOne;
-
-                if (isPureFinite || isAtomicEpsilon || isAtomicOmega) {
-                    needsBaseParen = false;
-                } else {
-                    needsBaseParen = true;
+                    const isAtomicEpsilon = expIsOne && (!hasOmega) && coeffIsOne;
+                    if (isAtomicEpsilon) {
+                        needsBaseParen = false;
+                    }
+                } else if (!hasEpsilon && hasOmega && coeffIsOne) {
+                    // Check if this is exactly "w" (omega with exponent 1)
+                    const isExactlyOmega = t.omegaExponent instanceof CNFOrdinal && t.omegaExponent.equals(CNFOrdinal.ONEStatic());
+                    if (isExactlyOmega) {
+                        needsBaseParen = false; // w: no parentheses
+                    }
+                    // Note: w^k where k≠1 requires parentheses (like w^w, w^2, etc.)
                 }
             }
             const displayBase = needsBaseParen ? `e_(${baseStr})` : `e_${baseStr}`;
@@ -418,7 +418,12 @@ class ENFOrdinal {
             if (dividing && termOrd.getRank().compareTo(k) >= 0) {
                 const newTerm = term.clone();
                 if (k.isOmega()) {
-                    newTerm.omegaExponent = newTerm.omegaExponent.exponentPredecessor();
+                    // Use left-subtraction: for infinite ordinals, left-predecessor = identity
+                    // For finite ordinals, left-predecessor subtracts 1
+                    if (newTerm.omegaExponent.isFinite()) {
+                        newTerm.omegaExponent = newTerm.omegaExponent.exponentPredecessor();
+                    }
+                    // For infinite omega exponents, left-predecessor is identity (no change needed)
                 } else { // k is an epsilon number
                     // Match epsilon factor whose basic ordinal equals k (i.e., e_(base) == k)
                     let matchedIndex = -1;

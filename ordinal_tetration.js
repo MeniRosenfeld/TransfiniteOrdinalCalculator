@@ -137,7 +137,11 @@ function tetrateOrdinals(base, height) {
             if (n === 0n) return CNFOrdinal.ONEStatic().clone(base._tracer || null);
             return (n % 2n === 0n) ? CNFOrdinal.ONEStatic().clone(base._tracer || null) : CNFOrdinal.ZEROStatic().clone(base._tracer || null);
         }
-        throw new Error(`Operation 0 ^^ ${hCNF.toStringCNF()} is undefined when CNFOrdinal is infinite.`);
+        // Use native string representation for height, not forced CNF
+        const heightStr = (typeof height.toDisplayString === 'function')
+            ? height.toDisplayString({ format: 'ENF' })
+            : (height.toString ? height.toString() : String(height));
+        throw new Error(`Operation 0 ^^ ${heightStr} is undefined.`);
     }
 
     // 1 ^^ k = 1

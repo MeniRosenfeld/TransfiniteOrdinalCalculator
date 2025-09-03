@@ -143,6 +143,19 @@ This section documents guidelines based on bugs and misunderstandings encountere
 -   **The Cause:** The `toString()` logic was too aggressive in adding parentheses around exponents.
 -   **The Rule:** In an expression `a^b`, add parentheses around `b` only when necessary to disambiguate. For CNF exponents, no parentheses when `b` is finite, `w`, or a single omega power term (`w^a`) — allowing chains like `w^w^w^w`.
 
+### **Guideline 8: Left vs Right Arithmetic in Ordinal Operations**
+
+-   **The Bug:** `2^(w^w*w)` gave `w^w^w` instead of the correct `w^w^(w+1)`.
+-   **The Cause:** The ω division case in `ENFOrdinal.ordinalDivision()` was using right-subtraction (`exponentPredecessor()`) instead of left-subtraction.
+-   **Mathematical Foundation:** 
+    -   **Addition is not commutative:** `1 + ω = ω` but `ω + 1 = ω + 1`
+    -   **Left-subtraction is valid:** If `a ≥ b`, then `∃!c: b + c = a`. For infinite ordinals, `a - 1 = a`.
+    -   **Right-subtraction is invalid:** No general `c` such that `c + b = a`
+    -   **Left-division is valid:** `∃! q,r: b·q + r = a` with `r < b`
+    -   **Right-division is invalid:** No general `q,r` such that `q·b + r = a`
+-   **The Fix:** Modified `ordinalDivision()` to use left-subtraction for ω case: infinite omega exponents remain unchanged (identity), finite ones use `exponentPredecessor()`.
+-   **The Rule:** Always use left-arithmetic operations in ordinal division. The epsilon cases were already correct (using `leftPredecessor()`), but the ω case needed fixing.
+
 By consulting this document, future agents should be better equipped to understand the project's architecture and avoid these common pitfalls. AI agents MUST read this document before making changes.
 
 ## 6. Migration Notes (OOP scaffolding)
