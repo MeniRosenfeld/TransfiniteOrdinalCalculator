@@ -1072,6 +1072,99 @@ function getTowerInfo(exponent, tracer) {
     return { mptOrdinalForG: mptG, numOmegas: depth };
 }
 
+/**
+ * Represents an epsilon tunnel ordinal: e__n
+ * Defined recursively: e__0 = 0, e__(n+1) = e_(e__n)
+ * Used for large depths n > 10 to avoid deep recursion.
+ */
+class EpsilonTunnelOrdinal {
+    constructor(depth, operationTracer = null) {
+        if (typeof depth !== 'number' || depth < 0 || !Number.isInteger(depth)) {
+            throw new Error("EpsilonTunnelOrdinal depth must be a non-negative integer.");
+        }
+        this.depth = depth;
+        this._tracer = operationTracer;
+        this._ordinalBrand = ORDINAL_BRAND;
+    }
+
+    toString() {
+        return `e__${this.depth}`;
+    }
+
+    toDisplayString(options) {
+        return this.toString();
+    }
+
+    isZero() {
+        return this.depth === 0;
+    }
+
+    isFinite() {
+        return this.depth === 0;
+    }
+
+    clone(newTracer = null) {
+        return new EpsilonTunnelOrdinal(this.depth, newTracer || this._tracer);
+    }
+
+    equals(other) {
+        if (!(other instanceof EpsilonTunnelOrdinal)) {
+            // Convert to EpsilonOrdinal and compare
+            try {
+                const thisAsEpsilon = this.toEpsilonOrdinal();
+                return thisAsEpsilon.equals(other);
+            } catch (_) {
+                return false;
+            }
+        }
+        return this.depth === other.depth;
+    }
+
+    compareTo(other) {
+        if (other instanceof EpsilonTunnelOrdinal) {
+            return this.depth - other.depth;
+        }
+        // Convert to EpsilonOrdinal and compare
+        const thisAsEpsilon = this.toEpsilonOrdinal();
+        return thisAsEpsilon.compareTo(other);
+    }
+
+    /**
+     * Converts to EpsilonOrdinal using recursive definition
+     * e__0 = 0, e__(n+1) = e_(e__n)
+     */
+    toEpsilonOrdinal() {
+        if (this._tracer) this._tracer.consume();
+
+        if (this.depth === 0) {
+            return CNFOrdinal.ZEROStatic().clone(this._tracer);
+        }
+
+        // Recursive: e__(n+1) = e_(e__n)
+        let result = CNFOrdinal.ZEROStatic().clone(this._tracer); // e__0 = 0
+        for (let i = 1; i <= this.depth; i++) {
+            if (this._tracer) this._tracer.consume();
+            result = new EpsilonOrdinal(result, this._tracer);
+        }
+        return result;
+    }
+
+    toCNFOrdinal() {
+        return this.toEpsilonOrdinal();
+    }
+
+    complexity() {
+        // Similar to other tower types: depth + base complexity
+        return this.depth + 3;
+    }
+
+    // Arithmetic operations: convert to EpsilonOrdinal for general operations
+    add(other) { return this.toEpsilonOrdinal().add(other); }
+    multiply(other) { return this.toEpsilonOrdinal().multiply(other); }
+    power(other) { return this.toEpsilonOrdinal().power(other); }
+    tetrate(other) { return this.toEpsilonOrdinal().tetrate(other); }
+}
+
 // Initialize static singletons after all classes are defined.
 CNFOrdinal.ZEROStatic();
 CNFOrdinal.ONEStatic();

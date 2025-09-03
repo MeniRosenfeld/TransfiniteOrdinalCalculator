@@ -1927,6 +1927,14 @@
             runENFCalculationTest("Parentheses check 1", "(e_w)^w", "e_w^w");
             runENFCalculationTest("Parentheses check 2", "e_(w^w)", "e_(w^w)");
 
+            // Epsilon Tunnel tests
+            runENFCalculationTest("Tunnel: e__0", "e__0", "0");
+            runENFCalculationTest("Tunnel: e__1", "e__1", "e_0");
+            runENFCalculationTest("Tunnel: e__2", "e__2", "e_e_0");
+            runENFCalculationTest("Tunnel: e__3", "e__3", "e_e_e_0");
+            runENFCalculationTest("Tunnel: e__12", "e__12", "e__12");
+            runENFCalculationTest("Tunnel epsilon: e_(e__15)", "e_(e__15)", "e__16");
+
             // Generate Tables
             generateAdditionTable(allOrdinals);
             generateMultiplicationTable(allOrdinals);

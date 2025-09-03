@@ -16,11 +16,11 @@ class OrdinalParser {
 
     _tokenize(str) {
         // Updated Regex:
-        // Catches 'e_' as a special operator for epsilon numbers.
-        // No longer hardcodes 'e_0'.
-        const regex = /\s*(?:(\d+)|(w)|(e_)|(\^\^)|([+*^()])|(\S))\s*/g;
+        // Catches 'e__' for epsilon tunnel and 'e_' for epsilon numbers.
+        const regex = /\s*(?:(\d+)|(w)|(e__)|(e_)|(\^\^)|([+*^()])|(\S))\s*/g;
         // \d+ : numbers
         // w   : omega
+        // e__ : epsilon tunnel operator
         // e_  : epsilon operator
         // \^\^ : tetration
         // [+*^()] : other operators and parens
@@ -33,14 +33,16 @@ class OrdinalParser {
                 tokens.push({ type: 'NUMBER', value: BigInt(match[1]) });
             } else if (match[2]) { // Omega 'w'
                 tokens.push({ type: 'OMEGA' });
-            } else if (match[3]) { // Epsilon 'e_'
+            } else if (match[3]) { // Epsilon Tunnel 'e__'
+                tokens.push({ type: 'EPSILON_TUNNEL' });
+            } else if (match[4]) { // Epsilon 'e_'
                 tokens.push({ type: 'EPSILON' });
-            } else if (match[4]) { // Tetration '^^'
+            } else if (match[5]) { // Tetration '^^'
                 tokens.push({ type: 'OPERATOR', value: '^^' });
-            } else if (match[5]) { // Operator (+, *, ^) or Parenthesis
-                tokens.push({ type: 'OPERATOR', value: match[5] });
-            } else if (match[6]) { // Unexpected character
-                throw new Error(`Unexpected character in input: "${match[6]}"`);
+            } else if (match[6]) { // Operator (+, *, ^) or Parenthesis
+                tokens.push({ type: 'OPERATOR', value: match[6] });
+            } else if (match[7]) { // Unexpected character
+                throw new Error(`Unexpected character in input: "${match[7]}"`);
             }
         }
         return tokens;
@@ -97,11 +99,45 @@ class OrdinalParser {
         } else if (token.type === 'OMEGA') {
             this._consume('OMEGA');
             return CNFOrdinal.OMEGAStatic().clone(this.tracer);
+        } else if (token.type === 'EPSILON_TUNNEL') {
+            this._consume('EPSILON_TUNNEL');
+            // After 'e__', we must parse a finite number for the depth
+            const depthToken = this._peek();
+            if (!depthToken || depthToken.type !== 'NUMBER') {
+                throw new Error("Expected finite number after 'e__' for tunnel depth.");
+            }
+            const depth = Number(this._consume('NUMBER').value);
+            if (depth < 0) {
+                throw new Error("Epsilon tunnel depth must be non-negative.");
+            }
+
+            // Apply threshold rule: n <= 10 -> recursive EpsilonOrdinal, n > 10 -> EpsilonTunnelOrdinal
+            if (depth <= 10) {
+                // Recursive definition: e__0 = 0, e__(n+1) = e_(e__n)
+                if (depth === 0) {
+                    return CNFOrdinal.ZEROStatic().clone(this.tracer);
+                }
+                let result = CNFOrdinal.ZEROStatic().clone(this.tracer); // e__0 = 0
+                for (let i = 1; i <= depth; i++) {
+                    if (this.tracer) this.tracer.consume();
+                    result = new EpsilonOrdinal(result, this.tracer);
+                }
+                return result;
+            } else {
+                // Large depth: return EpsilonTunnelOrdinal
+                return new EpsilonTunnelOrdinal(depth, this.tracer);
+            }
         } else if (token.type === 'EPSILON') {
             this._consume('EPSILON');
             // After 'e_', we must parse the index, which is an atom itself.
             // This allows for e_0, e_w, e_(w+1), etc.
             const index = this._parseAtom();
+
+            // Special case: if index is EpsilonTunnelOrdinal, increment depth
+            if (typeof EpsilonTunnelOrdinal !== 'undefined' && index instanceof EpsilonTunnelOrdinal) {
+                return new EpsilonTunnelOrdinal(index.depth + 1, this.tracer);
+            }
+
             return new EpsilonOrdinal(index, this.tracer);
         } else if (token.type === 'OPERATOR' && token.value === '(') {
             this._consume('(');

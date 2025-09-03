@@ -829,6 +829,9 @@ ENFOrdinal.fromCNF = function (ord) {
         if (typeof WTowerOrdinal !== 'undefined' && ord instanceof WTowerOrdinal) {
             return ENFOrdinal.fromCNF(ord.toCNFOrdinal());
         }
+        if (typeof EpsilonTunnelOrdinal !== 'undefined' && ord instanceof EpsilonTunnelOrdinal) {
+            return ENFOrdinal.fromCNF(ord.toEpsilonOrdinal());
+        }
         throw new Error("ENFOrdinal.fromCNF: unsupported type");
     }
 
