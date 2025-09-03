@@ -841,6 +841,38 @@ EpsilonOrdinal.prototype.toENFOrdinal = function () {
     }
     return ENFOrdinal.fromCNF(this);
 };
+EpsilonOrdinal.prototype.simplify = function (complexityBudget, skipMyOwnMPTFCheck = false) {
+    // Check if this epsilon ordinal fits within budget
+    const myComplexity = this.complexity();
+    if (myComplexity <= complexityBudget) {
+        return {
+            simplifiedOrdinal: this.clone(),
+            remainingBudget: complexityBudget - myComplexity
+        };
+    }
+
+    // If it doesn't fit, try to simplify the index
+    if (this.index && typeof this.index.simplify === 'function') {
+        const indexSimplified = this.index.simplify(complexityBudget - 6); // Reserve 6 for epsilon structure
+        if (indexSimplified.remainingBudget >= 0) {
+            const simplifiedEpsilon = new EpsilonOrdinal(indexSimplified.simplifiedOrdinal, this._tracer);
+            const newComplexity = simplifiedEpsilon.complexity();
+            if (newComplexity <= complexityBudget) {
+                return {
+                    simplifiedOrdinal: simplifiedEpsilon,
+                    remainingBudget: complexityBudget - newComplexity
+                };
+            }
+        }
+    }
+
+    // Fallback to 0 if nothing fits
+    const zero = CNFOrdinal.ZEROStatic().clone(this._tracer);
+    return {
+        simplifiedOrdinal: zero,
+        remainingBudget: complexityBudget
+    };
+};
 
 /**
  * Represents an ordinal of the form ω^^n (omega tetrated to n).
@@ -924,6 +956,23 @@ WTowerOrdinal.prototype.toENFOrdinal = function () {
         throw new Error('ENFOrdinal is not available to convert WTower to ENF');
     }
     return ENFOrdinal.fromCNF(this.toCNFOrdinal());
+};
+WTowerOrdinal.prototype.simplify = function (complexityBudget, skipMyOwnMPTFCheck = false) {
+    // Check if this tower fits within budget
+    const myComplexity = this.complexity();
+    if (myComplexity <= complexityBudget) {
+        return {
+            simplifiedOrdinal: this.clone(),
+            remainingBudget: complexityBudget - myComplexity
+        };
+    }
+
+    // If tower doesn't fit, fallback to 0
+    const zero = CNFOrdinal.ZEROStatic().clone(this._tracer);
+    return {
+        simplifiedOrdinal: zero,
+        remainingBudget: complexityBudget
+    };
 };
 
 /**
@@ -1016,6 +1065,23 @@ class EpsilonTowerOrdinal {
 
 EpsilonTowerOrdinal.prototype._ordinalBrand = ORDINAL_BRAND;
 EpsilonTowerOrdinal.prototype.toDisplayString = function (options = undefined) { return this.toStringCNF(); };
+EpsilonTowerOrdinal.prototype.simplify = function (complexityBudget, skipMyOwnMPTFCheck = false) {
+    // Check if this tower fits within budget
+    const myComplexity = this.complexity();
+    if (myComplexity <= complexityBudget) {
+        return {
+            simplifiedOrdinal: this.clone(),
+            remainingBudget: complexityBudget - myComplexity
+        };
+    }
+
+    // If tower doesn't fit, fallback to 0
+    const zero = CNFOrdinal.ZEROStatic().clone(this._tracer);
+    return {
+        simplifiedOrdinal: zero,
+        remainingBudget: complexityBudget
+    };
+};
 
 class OperationTracer {
     constructor(budget) {
@@ -1163,6 +1229,24 @@ class EpsilonTunnelOrdinal {
     multiply(other) { return this.toEpsilonOrdinal().multiply(other); }
     power(other) { return this.toEpsilonOrdinal().power(other); }
     tetrate(other) { return this.toEpsilonOrdinal().tetrate(other); }
+
+    simplify(complexityBudget, skipMyOwnMPTFCheck = false) {
+        // Check if this tunnel fits within budget
+        const myComplexity = this.complexity();
+        if (myComplexity <= complexityBudget) {
+            return {
+                simplifiedOrdinal: this.clone(),
+                remainingBudget: complexityBudget - myComplexity
+            };
+        }
+
+        // If tunnel doesn't fit, fallback to 0
+        const zero = CNFOrdinal.ZEROStatic().clone(this._tracer);
+        return {
+            simplifiedOrdinal: zero,
+            remainingBudget: complexityBudget
+        };
+    }
 }
 
 // Initialize static singletons after all classes are defined.

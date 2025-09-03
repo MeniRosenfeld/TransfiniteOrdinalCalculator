@@ -612,8 +612,8 @@
             let passed = false;
 
             try {
-                // Parse and calculate using ENF format
-                const result = calculateOrdinalCNF(inputString, 10000000, { format: 'ENF' });
+                // Parse and calculate using modern native approach
+                const result = calculateOrdinal(inputString, 10000000);
 
                 if (result.error) {
                     // Got an error - check if we expected one
@@ -687,7 +687,7 @@
                         let roundTripPassed = false;
                         let roundTripError = '';
                         try {
-                            const roundTripResult = calculateOrdinalCNF(actualString, 10000000, { format: 'ENF' });
+                            const roundTripResult = calculateOrdinal(actualString, 10000000);
                             if (roundTripResult.error) {
                                 roundTripError = `Round-trip parse error: ${roundTripResult.error}`;
                             } else {

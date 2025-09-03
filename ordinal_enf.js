@@ -777,6 +777,39 @@ class ENFOrdinal {
         }
     }
 
+    complexity() {
+        // Basic complexity estimation for ENF ordinals
+        if (this.isZero()) return 0;
+        if (this.isFinite()) return this.terms[0].coefficient.toString().length;
+
+        let totalComplexity = 0;
+        for (const term of this.terms) {
+            let termComplexity = 1; // Base cost for the term
+
+            // Add complexity for epsilon factors
+            for (const factor of term.epsilonFactors) {
+                termComplexity += factor.base.complexity() + factor.exp.complexity() + 3;
+            }
+
+            // Add complexity for omega exponent
+            if (!term.omegaExponent.isZero()) {
+                termComplexity += term.omegaExponent.complexity() + 2;
+            }
+
+            // Add complexity for coefficient
+            if (term.coefficient > 1n) {
+                termComplexity += term.coefficient.toString().length;
+            }
+
+            totalComplexity += termComplexity;
+        }
+
+        // Add cost for term connections (+ operators)
+        totalComplexity += Math.max(0, this.terms.length - 1);
+
+        return totalComplexity;
+    }
+
     static expOmega(delta) {
         if (delta.isZero()) return ENFOrdinal.one();
 
@@ -814,6 +847,23 @@ ENFOrdinal.prototype.toDisplayString = function (options = undefined) {
 };
 ENFOrdinal.prototype.toENFOrdinal = function () { return this.clone(); };
 ENFOrdinal.prototype.toCNFOrdinal = ENFOrdinal.prototype.toCNFOrdinal;
+ENFOrdinal.prototype.simplify = function (complexityBudget, skipMyOwnMPTFCheck = false) {
+    // Check if this ENF ordinal fits within budget
+    const myComplexity = this.complexity();
+    if (myComplexity <= complexityBudget) {
+        return {
+            simplifiedOrdinal: this.clone(),
+            remainingBudget: complexityBudget - myComplexity
+        };
+    }
+
+    // If it doesn't fit, fallback to 0
+    const zero = ENFOrdinal.zero();
+    return {
+        simplifiedOrdinal: zero,
+        remainingBudget: complexityBudget
+    };
+};
 
 // Helper: convert CNF/Epsilon/WTower to ENF
 ENFOrdinal.fromCNF = function (ord) {

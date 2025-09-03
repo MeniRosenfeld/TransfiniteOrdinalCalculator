@@ -14,15 +14,15 @@ const DEFAULT_OPERATION_BUDGET = 1000000; // Default limit for operations
 /**
  * Parses an ordinal expression string, evaluates it, and returns a representation
  * and the ordinal object.
- * - By default returns CNF string and CNFOrdinal object.
- * - When options.format === 'ENF', returns ENF string and ENFOrdinal object.
+ * - By default returns native string and native ordinal object (ENF/Tower types).
+ * - When options.format === 'CNF', forces CNF representation for legacy compatibility.
  *
  * @param {string} expressionString The string to parse (e.g., "(w+1)*w^2").
  * @param {number} [maxOperations=DEFAULT_OPERATION_BUDGET]
  * @param {{ format?: 'CNF'|'ENF' }} [options]
- * @returns {object} { cnfString?, enfString?, ordinalObject } or { error }
+ * @returns {object} { nativeString?, cnfString?, enfString?, ordinalObject } or { error }
  */
-function calculateOrdinalCNF(expressionString, maxOperations = DEFAULT_OPERATION_BUDGET, options = undefined) {
+function calculateOrdinal(expressionString, maxOperations = DEFAULT_OPERATION_BUDGET, options = undefined) {
     if (typeof expressionString !== 'string') {
         return { error: "Error: Input expression must be a string." };
     }
@@ -31,48 +31,95 @@ function calculateOrdinalCNF(expressionString, maxOperations = DEFAULT_OPERATION
     }
 
     const tracer = new OperationTracer(maxOperations);
-    const targetFormat = options && options.format ? options.format : 'CNF';
+    const targetFormat = options && options.format ? options.format : 'ENF'; // Default to ENF/native
 
     try {
-        if (targetFormat === 'ENF') {
-            const parser = new OrdinalParser(expressionString, tracer, { coerceToCNF: false });
-            let result = parser.parse();
-            // If the result is a WTowerOrdinal, EpsilonTowerOrdinal, or EpsilonTunnelOrdinal, preserve natively to avoid expansive conversions
-            if ((typeof WTowerOrdinal !== 'undefined' && result instanceof WTowerOrdinal) ||
-                (typeof EpsilonTowerOrdinal !== 'undefined' && result instanceof EpsilonTowerOrdinal) ||
-                (typeof EpsilonTunnelOrdinal !== 'undefined' && result instanceof EpsilonTunnelOrdinal)) {
-                const nativeStr = (typeof result.toDisplayString === 'function') ? result.toDisplayString() : result.toString();
-                return {
-                    enfString: nativeStr,
-                    ordinalObject: result
-                };
-            }
-            if (!(result instanceof ENFOrdinal)) {
-                if (typeof ENFOrdinal === 'undefined') {
-                    throw new Error('ENFOrdinal not available for ENF evaluation.');
-                }
-                result = ENFOrdinal.fromCNF(result);
-            }
+        // Always use native/ENF parsing (no CNF coercion)
+        const parser = new OrdinalParser(expressionString, tracer, { coerceToCNF: false });
+        let result = parser.parse();
+
+        // Preserve native tower/tunnel types without conversion
+        if ((typeof WTowerOrdinal !== 'undefined' && result instanceof WTowerOrdinal) ||
+            (typeof EpsilonTowerOrdinal !== 'undefined' && result instanceof EpsilonTowerOrdinal) ||
+            (typeof EpsilonTunnelOrdinal !== 'undefined' && result instanceof EpsilonTunnelOrdinal)) {
+            const nativeStr = (typeof result.toDisplayString === 'function') ? result.toDisplayString() : result.toString();
             return {
-                enfString: (typeof result.toDisplayString === 'function') ? result.toDisplayString({ format: 'ENF' }) : result.toString(),
+                nativeString: nativeStr,
                 ordinalObject: result
             };
-        } else {
-            const parser = new OrdinalParser(expressionString, tracer);
-            const ordinalResult = parser.parse(); // CNF by default
+        }
+
+        // Handle ENFOrdinal and EpsilonOrdinal natively
+        if (result instanceof ENFOrdinal || result instanceof EpsilonOrdinal) {
+            const nativeStr = (typeof result.toDisplayString === 'function')
+                ? result.toDisplayString({ format: 'ENF' })
+                : result.toString();
             return {
-                cnfString: (typeof ordinalResult.toDisplayString === 'function')
-                    ? ordinalResult.toDisplayString({ format: 'CNF' })
-                    : ordinalResult.toStringCNF(),
-                ordinalObject: ordinalResult
+                nativeString: nativeStr,
+                ordinalObject: result
             };
         }
+
+        // CNFOrdinal: handle based on target format
+        if (result instanceof CNFOrdinal) {
+            if (targetFormat === 'CNF') {
+                // Legacy CNF format explicitly requested
+                return {
+                    cnfString: (typeof result.toDisplayString === 'function')
+                        ? result.toDisplayString({ format: 'CNF' })
+                        : result.toStringCNF(),
+                    ordinalObject: result
+                };
+            } else {
+                // Convert to ENF for modern representation (unless has epsilon structure)
+                if (typeof cnfHasEpsilonStructure === 'function' && cnfHasEpsilonStructure(result)) {
+                    // Keep as CNF if it has epsilon structure
+                    return {
+                        nativeString: result.toStringCNF(),
+                        ordinalObject: result
+                    };
+                } else {
+                    // Convert simple CNF to ENF
+                    if (typeof ENFOrdinal === 'undefined') {
+                        throw new Error('ENFOrdinal not available for ENF evaluation.');
+                    }
+                    const enfResult = ENFOrdinal.fromCNF(result);
+                    return {
+                        nativeString: enfResult.toString(),
+                        ordinalObject: enfResult
+                    };
+                }
+            }
+        }
+
+        // Fallback for unknown types
+        const nativeStr = (typeof result.toDisplayString === 'function')
+            ? result.toDisplayString()
+            : result.toString();
+        return {
+            nativeString: nativeStr,
+            ordinalObject: result
+        };
     } catch (e) {
         if (e.message.startsWith("Operation budget exceeded")) {
             return { error: `Error: Computation too complex (budget of ${tracer.getBudget()} operations exceeded at ${tracer.getCount()}).` };
         }
         return { error: `Error: ${e.message}` };
     }
+}
+
+// Legacy compatibility wrapper
+function calculateOrdinalCNF(expressionString, maxOperations = DEFAULT_OPERATION_BUDGET, options = undefined) {
+    // Force CNF format for legacy compatibility
+    const legacyOptions = { ...options, format: 'CNF' };
+    const result = calculateOrdinal(expressionString, maxOperations, legacyOptions);
+
+    // Map new result format to legacy format
+    if (result.error) return result;
+    if (result.cnfString) return { cnfString: result.cnfString, ordinalObject: result.ordinalObject };
+    if (result.nativeString) return { cnfString: result.nativeString, ordinalObject: result.ordinalObject };
+
+    return result;
 }
 
 // Example Usage (can be commented out or moved to a test file)

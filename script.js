@@ -187,16 +187,16 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             // const tempTracer = new OperationTracer(10000000); // REMOVE THIS LINE
 
-            // Pass the budget number directly
-            // Always compute; result object contains an ordinal. We will display native string.
-            resultFromCalc = calculateOrdinalCNF(inputString, 10000000, { format: 'ENF' });
+            // Use modern native/ENF calculation
+            resultFromCalc = calculateOrdinal(inputString, 10000000);
 
             if (resultFromCalc.error) {
                 throw new Error(resultFromCalc.error);
             }
 
             const originalOrdinalResultObject = resultFromCalc.ordinalObject;
-            // const cnfString = resultFromCalc.cnfString; // Original CNF string, not used directly for display anymore
+            // Use native string representation from modern calculator
+            const nativeString = resultFromCalc.nativeString || resultFromCalc.cnfString || resultFromCalc.enfString;
 
             // --- Simplification Step ---
             const complexityBudget = 1000; // Hardcoded budget
@@ -231,7 +231,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const displayOrdinalObject = simplifiedOrdinalObject; // Use simplified for display
             // Native string display per type
-            const displayString = (typeof displayOrdinalObject.toDisplayString === 'function')
+            const displayString = nativeString || (typeof displayOrdinalObject.toDisplayString === 'function')
                 ? displayOrdinalObject.toDisplayString({ format: 'ENF' })
                 : (displayOrdinalObject && typeof displayOrdinalObject.toString === 'function'
                     ? displayOrdinalObject.toString()

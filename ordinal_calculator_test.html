@@ -678,7 +678,7 @@
                 let inst = new WTowerOrdinal(height, tracer);
                 addDetailElement(`Input WTower: w^^${height}`);
                 let cnfOrd = inst.toCNFOrdinal();
-                cnfOrdForMapping = cnfOrd; // Store for mapping
+                cnfOrdForMapping = inst; // Store original WTower for mapping (not CNF expansion)
                 actualCNF = toCnfString(cnfOrd);
 
                 if (actualCNF === expectedCNFString) {
@@ -1078,8 +1078,8 @@
             testOrdinalCalc("3^^2", "27");
             testOrdinalCalc("w^^2", "w^w");
 
-            testOrdinalCalc("0^^w", "Error: Operation 0 ^^ w is undefined when CNFOrdinal is infinite.");
-            testOrdinalCalc("0^^(w*2)", "Error: Operation 0 ^^ w*2 is undefined when CNFOrdinal is infinite.");
+            testOrdinalCalc("0^^w", "Error: Operation 0 ^^ w is undefined.");
+            testOrdinalCalc("0^^(w*2)", "Error: Operation 0 ^^ w*2 is undefined.");
 
             testOrdinalCalc("1^^w", "1");
             testOrdinalCalc("1^^(w^w)", "1");
@@ -1546,7 +1546,7 @@
         // --- Test Runner ---
 
         function calculateAndSimplify(expr) {
-            const result = calculateOrdinalCNF(expr);
+            const result = calculateOrdinalCNF(expr); // Use legacy CNF calculator to ensure CNF objects
             if (result.error) {
                 return result;
             }
