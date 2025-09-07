@@ -68,6 +68,11 @@ function createComparisonRules(conversionEngine) {
             (a, b) => a === b,
             (a, b) => 0),
 
+        // EpsilonZero equality (new architecture basic type)
+        new Rule("EpsilonZero equality",
+            (a, b) => (typeof EpsilonZero !== 'undefined') && (a instanceof EpsilonZero) && (b instanceof EpsilonZero),
+            (a, b) => 0),
+
         new Rule("Zero comparisons",
             (a, b) => a.isZero() || b.isZero(),
             (a, b) => {

@@ -365,13 +365,24 @@ function convertFFormatToOrdinalInstance(ord_representation, tracer) {
     }
 
     if (ord_representation === "E0_TYPE") { // Legacy fallback
-        return EpsilonOrdinal.E_ZEROStatic().clone(effectiveTracer);
+        return new EpsilonZero(effectiveTracer);
     }
 
     if (typeof ord_representation === 'object' && ord_representation !== null) {
         if (ord_representation.type === 'epsilon') {
-            const index_ord = convertFFormatToOrdinalInstance(ord_representation.index, effectiveTracer);
-            return new EpsilonOrdinal(index_ord, effectiveTracer);
+            // New architecture currently only supports ε₀ as a dedicated type
+            const index_rep = ord_representation.index;
+            if (typeof index_rep === 'bigint' && index_rep === 0n) {
+                return new EpsilonZero(effectiveTracer);
+            }
+            // If index is represented as an object equal to 0, accept too
+            if (typeof index_rep === 'object' && index_rep !== null) {
+                const idxConv = convertFFormatToOrdinalInstance(index_rep, effectiveTracer);
+                if (idxConv instanceof CNFOrdinal && idxConv.isFinite() && idxConv.getFiniteBigInt() === 0n) {
+                    return new EpsilonZero(effectiveTracer);
+                }
+            }
+            throw new Error("Only epsilon-zero (e_0) is supported by the current architecture");
         }
 
         if (ord_representation.type === 'w_tower') { // NEW case for w_tower

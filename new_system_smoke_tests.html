@@ -81,6 +81,8 @@
                 <th>Actual</th>
                 <th>F representation</th>
                 <th>f(α)</th>
+                <th>f⁻¹(f(α))</th>
+                <th>Round-trip</th>
                 <th>Status</th>
                 <th>Error</th>
             </tr>
@@ -107,6 +109,7 @@
     <script src="operations/Operations.js"></script>
     <script src="SimpleParser.js"></script>
     <script src="ordinal_mapping.js"></script>
+    <script src="ordinal_mapping_inverse.js"></script>
 
     <script>
         // Ensure the rule-based operations system is initialized before running tests
@@ -151,6 +154,8 @@
             let error = '';
             let fReprStr = '';
             let fValStr = '';
+            let invStr = '';
+            let rtOk = '';
             try {
                 const ord = parser.parse();
                 actual = ord.toString();
@@ -161,13 +166,25 @@
                 if (fRepr !== null && typeof f === 'function') {
                     const val = f(fRepr, (typeof DEFAULT_F_PARAMS !== 'undefined') ? DEFAULT_F_PARAMS : undefined);
                     fValStr = (typeof val === 'number' && isFinite(val)) ? val.toPrecision(12).replace(/\.0+$/, '') : String(val);
+
+                    // Round-trip via fInverse
+                    if (typeof fInverse === 'function' && typeof convertFFormatToOrdinalInstance === 'function' && typeof OPERATIONS !== 'undefined' && OPERATIONS.initialized) {
+                        const invRep = fInverse(val, (typeof DEFAULT_F_PARAMS !== 'undefined') ? DEFAULT_F_PARAMS : undefined);
+                        const invOrd = convertFFormatToOrdinalInstance(invRep, new OperationTracer(20000));
+                        invStr = (invOrd && typeof invOrd.toString === 'function') ? invOrd.toString() : String(invOrd);
+                        try {
+                            rtOk = (invOrd.equals && ord.equals) ? (invOrd.equals(ord) && ord.equals(invOrd)) : (OPERATIONS.compare(invOrd, ord) === 0);
+                        } catch (cmpErr) {
+                            rtOk = false;
+                        }
+                    }
                 }
             } catch (e) {
                 error = e && e.message ? e.message : String(e);
             }
 
             const pass = !error && actual === expected;
-            return { idx, input, expected, actual, fReprStr, fValStr, pass, error };
+            return { idx, input, expected, actual, fReprStr, fValStr, invStr, rtOk, pass, error };
         }
 
         function renderRow(result) {
@@ -179,6 +196,8 @@
                 `<span class="mono">${result.actual}</span>`,
                 `<span class="mono">${result.fReprStr}</span>`,
                 `<span class="mono">${result.fValStr}</span>`,
+                `<span class="mono">${result.invStr}</span>`,
+                result.rtOk === '' ? '' : (result.rtOk ? '<span class="pass">OK</span>' : '<span class="fail">Mismatch</span>'),
                 result.pass ? '<span class="pass">PASS</span>' : '<span class="fail">FAIL</span>',
                 result.error ? `<span class="mono">${result.error}</span>` : ''
             ];
