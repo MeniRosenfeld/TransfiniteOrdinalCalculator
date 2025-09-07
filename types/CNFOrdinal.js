@@ -33,21 +33,12 @@ class CNFOrdinal extends OrdinalBase {
                     exponent: t.exponent.clone(this._tracer),
                     coefficient: t.coefficient
                 }));
-            } else if (initVal instanceof EpsilonOrdinal) {
-                // Legacy epsilon support in CNF
-                if (!ALLOW_EPSILON_IN_CNF) {
-                    throw new Error('CNFOrdinal: Epsilon-based ordinals are not supported when ALLOW_EPSILON_IN_CNF=false');
-                }
-                this.terms.push({ exponent: initVal.clone(this._tracer), coefficient: 1n });
             } else if (typeof ENFOrdinal !== 'undefined' && initVal instanceof ENFOrdinal) {
                 const cnf = initVal.toCNFOrdinal();
                 this.terms = cnf.terms.map(t => ({ exponent: t.exponent.clone(this._tracer), coefficient: t.coefficient }));
             } else if (initVal instanceof WTowerOrdinal) {
                 const cnf = initVal.toCNFOrdinal();
                 this.terms = cnf.terms;
-            } else if (typeof EpsilonTunnelOrdinal !== 'undefined' && initVal instanceof EpsilonTunnelOrdinal) {
-                const cnf = initVal.toCNFOrdinal();
-                this.terms = cnf.terms.map(t => ({ exponent: t.exponent.clone(this._tracer), coefficient: t.coefficient }));
             } else {
                 throw new Error(`Invalid Ordinal type for CNFOrdinal cloning: ${initVal.constructor.name}`);
             }
@@ -67,14 +58,6 @@ class CNFOrdinal extends OrdinalBase {
     }
 
     isLessThanEpsilon0() {
-        // CNF ordinals are < ε₀ unless they contain epsilon structure
-        if (typeof cnfHasEpsilonStructure === 'function') {
-            return !cnfHasEpsilonStructure(this);
-        }
-        // Fallback: check for epsilon exponents
-        for (const t of this.terms) {
-            if (t.exponent instanceof EpsilonOrdinal) return false;
-        }
         return true;
     }
 
@@ -86,6 +69,64 @@ class CNFOrdinal extends OrdinalBase {
 
     isBasic() {
         return this.isOmega();
+    }
+
+    isOne() {
+        return this.isFinite() && this.getFinitePart() === 1n;
+    }
+
+    getFiniteBigInt() {
+        if (!this.isFinite()) {
+            throw new Error('CNFOrdinal is not finite');
+        }
+        return this.getFinitePart();
+    }
+
+    nextRank() {
+        if (this.isFinite()) {
+            const n = this.getFinitePart();
+            if (n === 0n) return new FiniteOrdinal(1n, this._tracer);
+            return new OmegaOrdinal(this._tracer);
+        }
+        // CNF ordinals here are < ε₀ and infinite
+        return new EpsilonZero(this._tracer);
+    }
+
+    // === EXPONENT/OMEGA HELPERS (needed for CNF exponentiation) ===
+    exponentPredecessor() {
+        if (this.isZero()) {
+            return CNFOrdinal.ZEROStatic().clone(this._tracer);
+        }
+        if (this.isFinite()) {
+            const n = this.getFinitePart();
+            if (n <= 1n) return CNFOrdinal.ZEROStatic().clone(this._tracer);
+            return new CNFOrdinal(n - 1n, this._tracer);
+        }
+
+        const lastIdx = this.terms.length - 1;
+        const lastTerm = this.terms[lastIdx];
+        if (lastTerm.exponent.isZero()) {
+            const newTerms = this.terms.map(t => ({ exponent: t.exponent.clone(this._tracer), coefficient: t.coefficient }));
+            if (lastTerm.coefficient > 1n) {
+                newTerms[lastIdx].coefficient -= 1n;
+            } else {
+                newTerms.pop();
+            }
+            return new CNFOrdinal(newTerms, this._tracer);
+        }
+        return this.clone();
+    }
+
+    divideByOmega() {
+        if (this.isZero() || this.isFinite()) {
+            return CNFOrdinal.ZEROStatic().clone(this._tracer);
+        }
+        const newTerms = [];
+        for (const term of this.terms) {
+            const newExponent = term.exponent.exponentPredecessor();
+            newTerms.push({ exponent: newExponent, coefficient: term.coefficient });
+        }
+        return new CNFOrdinal(newTerms, this._tracer);
     }
 
     complexity() {
@@ -141,6 +182,18 @@ class CNFOrdinal extends OrdinalBase {
         return this.toStringCNF();
     }
 
+    toGraphicalHTML() {
+        if (this.isZero()) {
+            return RenderingComponents.renderFinite(0);
+        }
+
+        const termHTMLs = this.terms.map(term =>
+            RenderingComponents.renderCNFTerm(term.exponent, term.coefficient)
+        );
+
+        return RenderingComponents.joinTerms(termHTMLs);
+    }
+
     toStringCNF() {
         if (this.isZero()) return "0";
 
@@ -159,11 +212,6 @@ class CNFOrdinal extends OrdinalBase {
                 let needsParen = false;
                 if (exp instanceof CNFOrdinal) {
                     needsParen = !(exp.isFinite() || exp.isOmega() || exp.isOmegaPower());
-                } else if (exp instanceof EpsilonOrdinal) {
-                    const index = exp.index;
-                    if (index instanceof CNFOrdinal && index.terms.length > 1) {
-                        needsParen = true;
-                    }
                 }
 
                 if (needsParen) {
@@ -181,6 +229,33 @@ class CNFOrdinal extends OrdinalBase {
     clone(newTracer = null) {
         const effectiveTracer = newTracer !== null ? newTracer : this._tracer;
         return new CNFOrdinal(this, effectiveTracer);
+    }
+
+    toFFormat() {
+        if (this.isZero()) return 0n;
+        if (this.isFinite()) return this.getFinitePart();
+
+        const terms = this.terms;
+        if (terms.length === 1 && terms[0].coefficient === 1n && !terms[0].exponent.isZero()) {
+            const k_rep_for_f = terms[0].exponent.toFFormat();
+            return { type: 'pow', k: k_rep_for_f };
+        }
+        const firstTerm = terms[0];
+        const beta_rep_for_f = firstTerm.exponent.toFFormat();
+        const c_from_ordinal = firstTerm.coefficient;
+        let c_num_for_f = Number(c_from_ordinal);
+        if (c_from_ordinal > BigInt(Number.MAX_SAFE_INTEGER) || c_from_ordinal < BigInt(Number.MIN_SAFE_INTEGER)) {
+            // Outside safe range; Number() still yields a number (possibly Infinity), which f() already handles
+        }
+        let delta_rep_for_f;
+        if (terms.length === 1) {
+            delta_rep_for_f = 0n;
+        } else {
+            const remainderTerms = terms.slice(1).map(t => ({ exponent: t.exponent.clone(this._tracer), coefficient: t.coefficient }));
+            const remainderOrdinal = new CNFOrdinal(remainderTerms, this._tracer);
+            delta_rep_for_f = remainderOrdinal.toFFormat();
+        }
+        return { type: 'sum', beta: beta_rep_for_f, c: c_num_for_f, delta: delta_rep_for_f };
     }
 
     // === CONVERSION SYSTEM ===

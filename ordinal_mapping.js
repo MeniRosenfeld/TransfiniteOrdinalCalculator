@@ -78,62 +78,16 @@ const ORDINAL_ONE = 1n;
  * @returns {object|BigInt|string} The representation for f().
  */
 function convertOrdinalInstanceToFFormat(ordInstance) {
-    if (!ordInstance || !ordInstance.constructor || !ordInstance.constructor.name) {
-        console.error("[ConvertInternal] ordInstance is null, undefined, or has no constructor/name:", ordInstance);
+    if (!ordInstance || typeof ordInstance.toFFormat !== 'function') {
+        console.error("[ConvertInternal] ordInstance missing toFFormat():", ordInstance);
         return ORDINAL_ZERO;
     }
-
-    console.log("[ConvertInternal] ordInstance.constructor.name is:", ordInstance.constructor.name);
-
-    if (ordInstance instanceof WTowerOrdinal) {
-        return { type: 'w_tower', height: ordInstance.height };
+    try {
+        return ordInstance.toFFormat();
+    } catch (e) {
+        console.error("[ConvertInternal] toFFormat() threw:", e);
+        return ORDINAL_ZERO;
     }
-
-    if (ordInstance instanceof EpsilonOrdinal) {
-        return { type: 'epsilon', index: convertOrdinalInstanceToFFormat(ordInstance.index) };
-    }
-
-    if (ordInstance instanceof CNFOrdinal) {
-        console.log("[ConvertInternal] Matched CNFOrdinal via constructor.name.");
-        if (ordInstance.isZero()) {
-            return ORDINAL_ZERO;
-        }
-        if (ordInstance.isFinite()) {
-            return ordInstance.getFinitePart();
-        }
-        const terms = ordInstance.terms;
-        if (terms.length === 1 && terms[0].coefficient === 1n && !terms[0].exponent.isZero()) {
-            const k_rep_for_f = convertOrdinalInstanceToFFormat(terms[0].exponent);
-            return { type: 'pow', k: k_rep_for_f };
-        }
-        const firstTerm = terms[0];
-        const beta_rep_for_f = convertOrdinalInstanceToFFormat(firstTerm.exponent);
-        const c_from_ordinal = firstTerm.coefficient;
-        let c_num_for_f = Number(c_from_ordinal);
-        if (c_from_ordinal > BigInt(Number.MAX_SAFE_INTEGER) || c_from_ordinal < BigInt(Number.MIN_SAFE_INTEGER)) {
-            if (Number.isFinite(c_num_for_f)) {
-                console.warn(`Coefficient ${c_from_ordinal.toString()} was outside JS Number safe integer range for f() mapping. Converted to ${c_num_for_f}.`);
-            } else {
-                console.warn(`Coefficient ${c_from_ordinal.toString()} converted to ${c_num_for_f} for f() mapping.`);
-            }
-        }
-        let delta_rep_for_f;
-        if (terms.length === 1) {
-            delta_rep_for_f = ORDINAL_ZERO;
-        } else {
-            const remainderTracer = ordInstance._tracer;
-            const remainderTerms = terms.slice(1).map(t => ({
-                exponent: t.exponent.clone(remainderTracer),
-                coefficient: t.coefficient
-            }));
-            const remainderOrdinal = new CNFOrdinal(remainderTerms, remainderTracer);
-            delta_rep_for_f = convertOrdinalInstanceToFFormat(remainderOrdinal);
-        }
-        return { type: 'sum', beta: beta_rep_for_f, c: c_num_for_f, delta: delta_rep_for_f };
-    }
-
-    console.error("[ConvertInternalFinal] Did not match any known constructor name. ordInstance.constructor.name was:", ordInstance.constructor.name, "Instance:", ordInstance);
-    return ORDINAL_ZERO;
 }
 
 function isFiniteOrdinal(ordinalRep) {
@@ -352,15 +306,10 @@ function f(alphaRep, params = DEFAULT_F_PARAMS) {
                 }
             } else { // Rule 2b: k_rep >= ω (k_rep is an object representation)
                 if (kRep.type === 'epsilon') {
-                    return f(kRep, params); // w^e_k = e_k, so f(w^e_k) = f(e_k)
+                    return f(kRep, params); // ω^ε_k = ε_k
                 }
-
-                const k_ord = convertFFormatToOrdinalInstance(kRep);
-                if (k_ord.compareTo(EpsilonOrdinal.E_ZEROStatic()) > 0) {
-                    return f_omega_k_greater_than_e0(kRep, params);
-                } else {
-                    return f_omega_k_less_than_e0(kRep, params);
-                }
+                // For the current scope (≤ ε₀), treat other k as < ε₀
+                return f_omega_k_less_than_e0(kRep, params);
             }
         } else if (type === 'sum') { // Rule 3: α = ω^beta_rep * cNum + delta_rep
             const { beta: betaRep, c: cNum, delta: deltaRep } = args; // cNum is Number(original_BigInt_coeff)

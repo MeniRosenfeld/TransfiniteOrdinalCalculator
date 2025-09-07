@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Conversion Debug Matrix</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 16px;
+        }
+
+        table {
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            border: 1px solid #ccc;
+            padding: 6px 10px;
+            text-align: center;
+        }
+
+        th {
+            background: #f7f7f7;
+        }
+
+        .yes {
+            background: #e6ffed;
+            color: #027a48;
+        }
+
+        .no {
+            background: #ffefef;
+            color: #b42318;
+        }
+
+        .id {
+            background: #eef5ff;
+            color: #1d4ed8;
+        }
+
+        .err {
+            background: #fff7e6;
+            color: #8a2d0b;
+        }
+
+        .mono {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+        }
+
+        #diag {
+            margin-top: 16px;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+
+<body>
+    <h2>Conversion Debug Matrix</h2>
+    <p>This page lists all registered types and shows whether conversion is possible from each source (rows) to each
+        target (columns).</p>
+
+    <div id="matrix"></div>
+    <div id="diag" class="mono"></div>
+
+    <!-- Load new architecture (minimum required) -->
+    <script src="OperationTracer.js"></script>
+    <script src="types/OrdinalBase.js"></script>
+    <script src="types/FiniteOrdinal.js"></script>
+    <script src="types/OmegaOrdinal.js"></script>
+    <script src="types/CNFOrdinal.js"></script>
+    <script src="types/WTowerOrdinal.js"></script>
+    <script src="types/EpsilonZero.js"></script>
+    <script src="conversions/ConversionRegistry.js"></script>
+    <script src="conversions/ConversionEngine.js"></script>
+    <script src="operations/RuleEngine.js"></script>
+    <script src="operations/AdditionRules.js"></script>
+    <script src="operations/Comparison.js"></script>
+    <script src="operations/Operations.js"></script>
+
+    <script>
+        (function () {
+            const out = document.getElementById('matrix');
+            const diag = document.getElementById('diag');
+
+            function renderMatrix() {
+                try {
+                    OPERATIONS.initialize();
+                    const types = OPERATIONS.registry.getTypeNames();
+                    const engine = OPERATIONS.conversionEngine;
+                    let html = '<table><thead><tr><th>Source \\ Target</th>';
+                    for (const t of types) html += `<th>${t}</th>`;
+                    html += '</tr></thead><tbody>';
+
+                    for (const src of types) {
+                        html += `<tr><th>${src}</th>`;
+                        const TypeClass = OPERATIONS.registry.getTypeClass(src);
+                        let instance;
+                        try {
+                            if (src === 'Finite') instance = new FiniteOrdinal(1);
+                            else if (src === 'Omega') instance = new OmegaOrdinal();
+                            else if (src === 'CNF') instance = new CNFOrdinal(0);
+                            else if (src === 'WTower') instance = new WTowerOrdinal(2);
+                            else if (src === 'EpsilonZero') instance = new EpsilonZero();
+                            else instance = new TypeClass();
+                        } catch (e) {
+                            instance = null;
+                        }
+
+                        for (const dst of types) {
+                            let cls = 'no';
+                            let txt = 'no';
+                            try {
+                                if (!instance) {
+                                    cls = 'err';
+                                    txt = 'err';
+                                } else {
+                                    const can = engine.canConvert(instance, dst);
+                                    if (can) {
+                                        const before = instance.toStringWithType ? instance.toStringWithType() : String(instance);
+                                        let afterStr = '';
+                                        try {
+                                            const converted = engine.convert(instance, dst);
+                                            afterStr = converted && converted.toStringWithType ? converted.toStringWithType() : String(converted);
+                                            cls = 'yes';
+                                            txt = `${before} → ${afterStr}`;
+                                        } catch (convErr) {
+                                            cls = 'err';
+                                            txt = `${before} → err`;
+                                        }
+                                    } else {
+                                        cls = 'no';
+                                        txt = 'no';
+                                    }
+                                }
+                            } catch (err) {
+                                cls = 'err';
+                                txt = 'err';
+                            }
+                            html += `<td class="${cls}">${txt}</td>`;
+                        }
+                        html += '</tr>';
+                    }
+                    html += '</tbody></table>';
+                    out.innerHTML = html;
+
+                    const diagInfo = OPERATIONS.getDiagnostics();
+                    diag.textContent = JSON.stringify(diagInfo, null, 2);
+                } catch (e) {
+                    out.textContent = 'Initialization error: ' + e.message;
+                }
+            }
+
+            renderMatrix();
+        })();
+    </script>
+</body>
+
+</html>

@@ -28,6 +28,14 @@ class FiniteOrdinal extends OrdinalBase {
     isLessThanEpsilon0() { return true; }
     isOmega() { return false; }
     isBasic() { return false; }
+    isOne() { return this.value === 1n; }
+
+    getFiniteBigInt() { return this.value; }
+
+    nextRank() {
+        if (this.isZero()) return new FiniteOrdinal(1n, this._tracer);
+        return new OmegaOrdinal(this._tracer);
+    }
 
     complexity() {
         return this.value.toString().length;
@@ -37,7 +45,15 @@ class FiniteOrdinal extends OrdinalBase {
         return this.value.toString();
     }
 
+    toGraphicalHTML() {
+        return RenderingComponents.renderFinite(this.value);
+    }
+
     // equals() and compareTo() are inherited from OrdinalBase and use rule-based system
+
+    toFFormat() {
+        return this.value;
+    }
 
     clone(newTracer = null) {
         return new FiniteOrdinal(this.value, newTracer || this._tracer);
@@ -65,27 +81,20 @@ class FiniteOrdinal extends OrdinalBase {
     static getTypeName() { return 'Finite'; }
 
     static getDirectConversions() {
-        return ['CNF', 'ENF']; // Can convert directly to CNF or ENF
+        return ['CNF'];
     }
 
     convertTo(targetTypeName) {
         switch (targetTypeName) {
             case 'CNF':
-                if (typeof CNFOrdinal !== 'undefined') {
-                    return new CNFOrdinal(this.value, this._tracer);
-                }
-                throw new Error(`CNFOrdinal type not available`);
-
-            case 'ENF':
-                if (typeof ENFOrdinal !== 'undefined') {
-                    return ENFOrdinal.fromInt(this.value);
-                }
-                throw new Error(`ENFOrdinal type not available`);
-
+                // Finite n as CNF is just n (ω^0 * n)
+                return new CNFOrdinal(this.value, this._tracer);
             default:
                 throw new Error(`FiniteOrdinal cannot convert directly to ${targetTypeName}`);
         }
     }
+
+    // Note: No binary operations here. All binary ops are handled by the rule engine.
 
     // === UTILITY METHODS ===
 

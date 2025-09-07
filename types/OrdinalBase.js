@@ -24,6 +24,21 @@ class OrdinalBase {
     isFinite() { throw new Error(`${this.constructor.name} must implement isFinite()`); }
 
     /**
+     * Returns BigInt value if finite, otherwise throws.
+     */
+    getFiniteBigInt() { throw new Error(`${this.constructor.name} must implement getFiniteBigInt()`); }
+
+    /**
+     * Returns the first ordinal larger than this from the list [1, ω, ε₀].
+     */
+    nextRank() { throw new Error(`${this.constructor.name} must implement nextRank()`); }
+
+    /**
+     * Returns true if this ordinal equals 1.
+     */
+    isOne() { throw new Error(`${this.constructor.name} must implement isOne()`); }
+
+    /**
      * Returns true if this ordinal is less than ε₀.
      */
     isLessThanEpsilon0() { throw new Error(`${this.constructor.name} must implement isLessThanEpsilon0()`); }
@@ -56,57 +71,76 @@ class OrdinalBase {
     }
 
     /**
+     * Converts this ordinal into the f(·) mapping's plain-object representation.
+     * Each concrete ordinal type must implement this.
+     */
+    toFFormat() {
+        throw new Error(`${this.constructor.name} must implement toFFormat()`);
+    }
+
+    /**
+     * Returns a string that includes the runtime type and the ordinal string.
+     * Example: [OmegaOrdinal: w]
+     */
+    toStringWithType() {
+        const typeName = (this && this.constructor && this.constructor.name)
+            ? this.constructor.name
+            : (this.constructor && this.constructor.getTypeName
+                ? this.constructor.getTypeName()
+                : 'UnknownType');
+        return `[${typeName}: ${this.toString()}]`;
+    }
+
+    /**
  * Returns true if this ordinal equals another ordinal.
- * Implemented via rule-based comparison system.
+ * Uses legacy comparison for compatibility during migration.
  */
     equals(other) {
-        if (typeof OPERATIONS !== 'undefined' && OPERATIONS.initialized) {
+        if (typeof OPERATIONS !== 'undefined') {
             return OPERATIONS.compare(this, other) === 0;
         }
-        // Fallback for during initialization
-        throw new Error(`Comparison system not initialized`);
+        throw new Error('Comparison engine not available');
     }
 
     /**
      * Compares this ordinal with another. Returns -1, 0, or 1.
-     * Implemented via rule-based comparison system.
+     * Must be implemented by subclasses.
      */
     compareTo(other) {
-        if (typeof OPERATIONS !== 'undefined' && OPERATIONS.initialized) {
+        if (typeof OPERATIONS !== 'undefined') {
             return OPERATIONS.compare(this, other);
         }
-        // Fallback for during initialization
-        throw new Error(`Comparison system not initialized`);
+        throw new Error('Comparison engine not available');
     }
 
-    // === ARITHMETIC OPERATIONS (delegate to rule engines) ===
+    // === ARITHMETIC OPERATIONS (use legacy dispatchers during migration) ===
 
     add(other) {
-        if (typeof OPERATIONS !== 'undefined' && OPERATIONS.initialized) {
+        if (typeof OPERATIONS !== 'undefined') {
             return OPERATIONS.add(this, other);
         }
-        throw new Error(`Operations system not initialized`);
+        throw new Error('Addition engine not available');
     }
 
     multiply(other) {
-        if (typeof OPERATIONS !== 'undefined' && OPERATIONS.initialized) {
+        if (typeof OPERATIONS !== 'undefined') {
             return OPERATIONS.multiply(this, other);
         }
-        throw new Error(`Operations system not initialized`);
+        throw new Error('Multiplication engine not available');
     }
 
     power(other) {
-        if (typeof OPERATIONS !== 'undefined' && OPERATIONS.initialized) {
+        if (typeof OPERATIONS !== 'undefined') {
             return OPERATIONS.power(this, other);
         }
-        throw new Error(`Operations system not initialized`);
+        throw new Error('Exponentiation engine not available');
     }
 
     tetrate(other) {
-        if (typeof OPERATIONS !== 'undefined' && OPERATIONS.initialized) {
+        if (typeof OPERATIONS !== 'undefined') {
             return OPERATIONS.tetrate(this, other);
         }
-        throw new Error(`Operations system not initialized`);
+        throw new Error('Tetration engine not available');
     }
 
     /**

@@ -123,8 +123,8 @@ function addENF(a, b) {
 
 function addFinite(a, b) {
     // Simple finite addition
-    const aVal = a.getFiniteValue();
-    const bVal = b.getFiniteValue();
+    const aVal = a.getFiniteBigInt();
+    const bVal = b.getFiniteBigInt();
     return new FiniteOrdinal(aVal + bVal);
 }
 
@@ -149,10 +149,15 @@ function createAdditionRules(conversionEngine) {
             (a, b) => a.isFinite() && b.isFinite(),
             (a, b) => addFinite(a, b)),
 
+        // Finite + infinite => infinite (left finite)
+        new Rule("Finite + infinite = infinite",
+            (a, b) => a.isFinite() && !b.isFinite(),
+            (a, b) => b.clone()),
+
         // Convert to CNF for <ε₀ ordinals
         new Rule("Convert to CNF for <ε₀",
-            (a, b) => conversionEngine.canConvert(a, 'CNF') && conversionEngine.canConvert(b, 'CNF') &&
-                a.isLessThanEpsilon0() && b.isLessThanEpsilon0(),
+            (a, b) => a.isLessThanEpsilon0() && b.isLessThanEpsilon0() &&
+                conversionEngine.canConvert(a, 'CNF') && conversionEngine.canConvert(b, 'CNF'),
             (a, b) => {
                 const aCNF = conversionEngine.convert(a, 'CNF');
                 const bCNF = conversionEngine.convert(b, 'CNF');

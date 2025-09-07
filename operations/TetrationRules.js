@@ -1,0 +1,81 @@
+// TetrationRules.js
+// Rule definitions for ordinal tetration (a ^^ b)
+
+function tetrateFinite(base, heightFinite) {
+    const h = heightFinite.getFiniteBigInt();
+    if (h === 0n) return new FiniteOrdinal(1n);
+    if (h === 1n) return base.clone();
+    let result = base.clone();
+    // Build right-associative tower: a^(a^(...)) of height h
+    for (let i = 2n; i <= h; i++) {
+        result = base.power(result);
+    }
+    return result;
+}
+
+function createTetrationRules(conversionEngine) {
+    return [
+        // a ^^ 0 = 1
+        new Rule('a^^0 = 1',
+            (a, b) => b.isZero(),
+            (a, b) => new FiniteOrdinal(1n)),
+
+        // a ^^ 1 = a
+        new Rule('a^^1 = a',
+            (a, b) => b.isOne(),
+            (a, b) => a.clone()),
+
+        // 1 ^^ a = 1
+        new Rule('1^^a = 1',
+            (a, b) => a.isOne(),
+            (a, b) => new FiniteOrdinal(1n)),
+
+        // 0 ^^ finite = 1 if even, 0 if odd
+        new Rule('0^^finite parity',
+            (a, b) => a.isZero() && b.isFinite(),
+            (a, b) => {
+                const n = b.getFiniteBigInt();
+                if (n % 2n === 0n) return new FiniteOrdinal(1n);
+                return new FiniteOrdinal(0n);
+            }),
+
+        // 0 ^^ infinite is undefined
+        new Rule('0^^infinite undefined',
+            (a, b) => a.isZero() && !b.isFinite(),
+            (a, b) => { throw new Error('Operation 0 ^^ infinite is undefined.'); }),
+
+        // finite ^^ finite = repeated exponentiation
+        new Rule('finite^^finite',
+            (a, b) => a.isFinite() && b.isFinite(),
+            (a, b) => tetrateFinite(a, b)),
+
+        // w ^^ finite: if height>10 -> WTower, else repeated exponentiation
+        new Rule('omega^^finite',
+            (a, b) => a.isOmega() && b.isFinite(),
+            (a, b) => {
+                const h = b.getFiniteBigInt();
+                if (h > 10n) return new WTowerOrdinal(h);
+                return tetrateFinite(a, b);
+            }),
+
+        // a ^^ finite (general) = repeated exponentiation
+        new Rule('general^^finite',
+            (a, b) => b.isFinite(),
+            (a, b) => tetrateFinite(a, b)),
+
+        // a ^^ infinite = a.nextRank()
+        new Rule('a^^infinite = nextRank',
+            (a, b) => !b.isFinite(),
+            (a, b) => a.nextRank())
+    ];
+}
+
+// Export for use in other modules
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = createTetrationRules;
+} else {
+    // Browser global
+    window.createTetrationRules = createTetrationRules;
+}
+
+

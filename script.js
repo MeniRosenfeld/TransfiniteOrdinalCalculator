@@ -187,16 +187,16 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             // const tempTracer = new OperationTracer(10000000); // REMOVE THIS LINE
 
-            // Use modern native/ENF calculation
-            resultFromCalc = calculateOrdinal(inputString, 10000000);
+            // Use new simple calculator (finite ordinals + addition only)
+            resultFromCalc = calculateSimple(inputString, 10000000);
 
             if (resultFromCalc.error) {
                 throw new Error(resultFromCalc.error);
             }
 
-            const originalOrdinalResultObject = resultFromCalc.ordinalObject;
-            // Use native string representation from modern calculator
-            const nativeString = resultFromCalc.nativeString || resultFromCalc.cnfString || resultFromCalc.enfString;
+            const originalOrdinalResultObject = resultFromCalc.result;
+            // Use simple result string
+            const nativeString = resultFromCalc.resultString;
 
             // --- Simplification Step ---
             const complexityBudget = 1000; // Hardcoded budget
@@ -247,11 +247,13 @@ document.addEventListener('DOMContentLoaded', () => {
             //linearResultTextElement.textContent = displayCnfString; // This is now handled above
             linearResultTextElement.classList.remove('placeholder-text');
 
-            // Render graphical view from the same string to keep representations consistent
-            if (typeof renderOrdinalGraphicalFromString === 'function') {
-                graphicalResultArea.innerHTML = renderOrdinalGraphicalFromString(displayString);
+            // Render graphical view using new simple renderer
+            if (typeof renderOrdinalGraphicalFromStringSimple === 'function') {
+                graphicalResultArea.innerHTML = renderOrdinalGraphicalFromStringSimple(displayString);
+            } else if (typeof renderOrdinalSimple === 'function') {
+                graphicalResultArea.innerHTML = renderOrdinalSimple(displayOrdinalObject);
             } else {
-                graphicalResultArea.innerHTML = renderOrdinalGraphical(displayOrdinalObject);
+                graphicalResultArea.innerHTML = `<span class="ordinal-generic">${displayString}</span>`;
             }
             graphicalResultArea.querySelector('.placeholder-text')?.remove();
 

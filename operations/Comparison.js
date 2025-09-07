@@ -49,8 +49,8 @@ function compareENF(a, b) {
 
 function compareFinite(a, b) {
     // Simple finite comparison
-    const aVal = a.getFiniteValue();
-    const bVal = b.getFiniteValue();
+    const aVal = a.getFiniteBigInt();
+    const bVal = b.getFiniteBigInt();
     if (aVal < bVal) return -1;
     if (aVal > bVal) return 1;
     return 0;
@@ -88,8 +88,8 @@ function createComparisonRules(conversionEngine) {
 
         // Convert to CNF for <ε₀ ordinals
         new Rule("Convert to CNF for <ε₀",
-            (a, b) => conversionEngine.canConvert(a, 'CNF') && conversionEngine.canConvert(b, 'CNF') &&
-                a.isLessThanEpsilon0() && b.isLessThanEpsilon0(),
+            (a, b) => a.isLessThanEpsilon0() && b.isLessThanEpsilon0() &&
+                conversionEngine.canConvert(a, 'CNF') && conversionEngine.canConvert(b, 'CNF'),
             (a, b) => {
                 const aCNF = conversionEngine.convert(a, 'CNF');
                 const bCNF = conversionEngine.convert(b, 'CNF');

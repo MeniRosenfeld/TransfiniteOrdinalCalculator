@@ -53,14 +53,22 @@ class RuleEngine {
 
         // Try each rule in definition order
         for (const rule of this.rules) {
+            let matched = false;
             try {
-                if (rule.condition(a, b)) {
-                    console.log(`[RuleEngine] ${operationName}: Applied rule "${rule.name}" for ${a.constructor.name} ${operationName} ${b.constructor.name}`);
+                matched = !!rule.condition(a, b);
+            } catch (condErr) {
+                console.warn(`[RuleEngine] ${operationName}: Rule "${rule.name}" condition threw error:`, condErr.message);
+                matched = false; // skip this rule
+            }
+
+            if (matched) {
+                console.log(`[RuleEngine] ${operationName}: Applied rule "${rule.name}" for ${a.constructor.name} ${operationName} ${b.constructor.name}`);
+                try {
                     return rule.action(a, b);
+                } catch (actErr) {
+                    // If a matching rule's action throws, propagate immediately
+                    throw actErr;
                 }
-            } catch (e) {
-                console.warn(`[RuleEngine] ${operationName}: Rule "${rule.name}" threw error:`, e.message);
-                // Continue to next rule
             }
         }
 

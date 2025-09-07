@@ -158,6 +158,65 @@ This section documents guidelines based on bugs and misunderstandings encountere
 
 By consulting this document, future agents should be better equipped to understand the project's architecture and avoid these common pitfalls. AI agents MUST read this document before making changes.
 
+## 7. New Modular Framework (types/operations/rendering) — Current Status
+
+### Overview
+
+-   **Goal:** Migrate to a modular, rule-driven architecture with clear separation between ordinal types, operation rules, and rendering.
+-   **Approach:**
+    -   Ordinal classes live under `types/` and expose instance methods that delegate to operation modules (rule engine). For example, `add`, `addTo`, `equalTo`, and `compareTo` on `OrdinalBase` forward to generic rule-based operations.
+    -   Binary operations (equality, comparison, addition, multiplication, exponentiation, tetration) are implemented via generic rules in `operations/`, not inside individual type classes.
+    -   Addition rules will rely on the conversion engine to check convertibility (including zero-length conversions) to CNF/ENF. Finite+infinite cases are phrased as rules using `isFinite` rather than testing for specific constants like ω.
+
+### Modules
+
+-   **Types (`types/`)**
+    -   `types/OrdinalBase.js`: Abstract base with shared helpers and delegation methods for binary ops.
+    -   `types/OmegaOrdinal.js`: ω and related helpers.
+    -   `types/EpsilonZero.js`: ε₀ sentinel/type helpers.
+    -   `types/WTowerOrdinal.js`: ω-towers; preserved natively for display.
+    -   `types/CNFOrdinal.js`: CNF representation and utilities.
+
+-   **Operations (`operations/`)**
+    -   `operations/Comparison.js`: Cross-type ordinal comparison.
+    -   `operations/MultiplicationRules.js`: Rule-based multiplication scaffolding.
+    -   `operations/TetrationRules.js`: Tetration rules; ω-base towers returned as `WTowerOrdinal` when appropriate.
+    -   Planned: `operations/AdditionRules.js`, `operations/ExponentiationRules.js`, and a central `operations/RuleEngine.js` for dispatch.
+
+-   **Rendering**
+    -   `RenderingComponents.js`: Graphical renderer utilities. The graphical representation now omits parentheses entirely; all structure is conveyed by subscripts and superscripts. The code retains switch points (`needsIndexParentheses`, `needsExponentParentheses`) to re-enable parentheses in the future if needed.
+
+-   **UI / Test Pages**
+    -   `index.html`, `ordinal_calculator_test.html`, and other debug pages (e.g., `conversion_debug.html`) continue to serve as manual and automated check points.
+
+### Current Status (in this migration)
+
+-   **Active directories:** `types/`, `operations/` adopted.
+-   **Delegation policy:** Binary ops are being moved into rule modules; `OrdinalBase` provides the delegating surface.
+-   **Graphical policy:** Parentheses are not used in graphical output by default; toggles retained in code.
+-   **Legacy clean-up:** Removed `ordinal_ops.js`, `ordinal_types.js`, `types/BasicCNFOrdinal.js`, and `debug_exp.js`.
+
+### Design Principles
+
+-   **Separation of concerns:** Types define data/shape; operations define behavior via rules; rendering is purely presentational.
+-   **Conversion-first checks:** Rules rely on conversions to CNF/ENF to determine applicability rather than ad-hoc type tests.
+-   **Assumed preconditions in rules:** Rule bodies assume their preconditions, avoiding redundant zero/type checks.
+-   **Immutability and clarity:** Prefer clear data transformations over in-place mutation.
+
+### Roadmap (short-term)
+
+-   Implement `operations/AdditionRules.js` with CNF/ENF-aware cases and isFinite-based finite+infinite handling.
+-   Implement `operations/ExponentiationRules.js` and extend rule engine dispatch.
+-   Expand `types/CNFOrdinal.js` normalization and add explicit conversion helpers used by rules.
+-   Parser bridge: ensure `ordinal_parser.js` constructs new framework types directly where appropriate.
+-   Extend test coverage for comparison, multiplication, tetration, and rendering against new modules.
+
+### Session Changelog (this session)
+
+-   Updated `RenderingComponents.js` to suppress parentheses in all graphical cases while retaining internal switches for future configurability.
+-   Removed legacy `ordinal_ops.js` from the repository root.
+-   Documented the emerging `types/` and `operations/` structure and rule-based delegation model here.
+
 ## 6. Migration Notes (OOP scaffolding)
 
 -   The codebase now includes a non-breaking OOP surface and a central ops registry. Behavior is unchanged.

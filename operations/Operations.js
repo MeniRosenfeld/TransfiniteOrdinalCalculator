@@ -28,9 +28,12 @@ class Operations {
 
         // Register all available ordinal types
         const typeClasses = [
-            // Add type classes here as they're migrated
-            // FiniteOrdinal, CNFOrdinal, ENFOrdinal, etc.
-        ];
+            typeof FiniteOrdinal !== 'undefined' ? FiniteOrdinal : null,
+            typeof OmegaOrdinal !== 'undefined' ? OmegaOrdinal : null,
+            typeof CNFOrdinal !== 'undefined' ? CNFOrdinal : null,
+            typeof WTowerOrdinal !== 'undefined' ? WTowerOrdinal : null,
+            typeof EpsilonZero !== 'undefined' ? EpsilonZero : null
+        ].filter(Boolean);
 
         for (const typeClass of typeClasses) {
             if (typeClass.getTypeName && typeClass.getDirectConversions) {
@@ -44,6 +47,15 @@ class Operations {
         // Load operation rules
         if (typeof createAdditionRules === 'function') {
             this.additionEngine.addRules(createAdditionRules(this.conversionEngine));
+        }
+        if (typeof createMultiplicationRules === 'function') {
+            this.multiplicationEngine.addRules(createMultiplicationRules(this.conversionEngine));
+        }
+        if (typeof createExponentiationRules === 'function') {
+            this.exponentiationEngine.addRules(createExponentiationRules(this.conversionEngine));
+        }
+        if (typeof createTetrationRules === 'function') {
+            this.tetrationEngine.addRules(createTetrationRules(this.conversionEngine));
         }
         if (typeof createComparisonRules === 'function') {
             this.comparisonEngine.addRules(createComparisonRules(this.conversionEngine));
@@ -125,6 +137,9 @@ class Operations {
         return {
             registeredTypes: this.registry.getTypeNames(),
             additionRules: this.additionEngine.getRulesSummary(),
+            multiplicationRules: this.multiplicationEngine.getRulesSummary(),
+            exponentiationRules: this.exponentiationEngine.getRulesSummary(),
+            comparisonRules: this.comparisonEngine.getRulesSummary(),
             // TODO: Add other operation summaries
         };
     }

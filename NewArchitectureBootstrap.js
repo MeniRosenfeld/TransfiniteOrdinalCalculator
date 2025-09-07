@@ -67,10 +67,10 @@ function canConvertOrdinal(ordinal, targetTypeName) {
     return OPERATIONS.canConvert(ordinal, targetTypeName);
 }
 
-// Initialize when DOM is ready
-if (typeof document !== 'undefined') {
+// Auto-initialize disabled during migration to avoid conflicts
+// The new architecture can be manually initialized when ready
+if (false && typeof document !== 'undefined') {
     document.addEventListener('DOMContentLoaded', () => {
-        // Delay to ensure all scripts are loaded
         setTimeout(() => {
             try {
                 initializeNewArchitecture();
