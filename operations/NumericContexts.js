@@ -3,7 +3,11 @@
 const DoubleFloatContext = {
     ZERO: 0.0,
     ONE: 1.0,
-    fromInt: (n) => Number(n.toString()), // Handles both numbers and BigInts safely
+    fromInt: (n) => {
+        if (typeof n === 'bigint') return Number(n);
+        return n;
+    },
+    fromDecimal: (n) => n, // Standard floats are the native type
     add: (a, b) => a + b,
     subtract: (a, b) => a - b,
     multiply: (a, b) => a * b,
@@ -14,6 +18,7 @@ const DoubleFloatContext = {
     min: (a, b) => Math.min(a, b),
     max: (a, b) => Math.max(a, b),
     isNaN: (a) => isNaN(a),
+    floor: (a) => BigInt(Math.floor(a)),
     toNumber: (a) => a,
     isZero: (a) => a === 0.0
 };
@@ -22,6 +27,10 @@ const RationalContext = {
     ZERO: new Rational(0n),
     ONE: new Rational(1n),
     fromInt: (n) => Rational.fromInt(n),
+    fromDecimal: (n) => {
+        const precision = 10000000000000000n; // 10^16
+        return new Rational(BigInt(Math.round(n * Number(precision))), precision);
+    },
     add: (a, b) => a.add(b),
     subtract: (a, b) => a.subtract(b),
     multiply: (a, b) => a.multiply(b),
@@ -37,6 +46,7 @@ const RationalContext = {
     min: (a, b) => a.subtract(b).num < 0n ? a : b,
     max: (a, b) => a.subtract(b).num > 0n ? a : b,
     isNaN: (a) => false, // A valid Rational number can't be NaN
+    floor: (a) => a.num / a.den, // BigInt division naturally floors
     toNumber: (a) => a.toNumber(),
     isZero: (a) => a.num === 0n
 };

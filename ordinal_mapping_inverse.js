@@ -81,28 +81,22 @@ function findRemainderHigher(x, k, m, params, threshold) {
     const fOmegaKMPlus1 = ctx.add(fOmegaK, ctx.multiply(ctx.subtract(fOmegaKPlus1, fOmegaK), fFinite(ctx, ctx.fromInt(BigInt(m)), params.scaleMult)));
 
 
-    if (ctx.compare(x, ctx.add(fOmegaKM, threshold)) <= 0) {
+    if (ctx.compare(x, ctx.add(fOmegaKM, threshold)) <= 0 || ctx.compare(x, ctx.subtract(fOmegaKMPlus1, threshold)) >= 0) {
         return 0n;
     }
 
     const denominator = ctx.subtract(fOmegaKMPlus1, fOmegaKM);
 
-    let fr_untyped = ctx.divide(ctx.multiply(ctx.subtract(x, fOmegaKM), fOmegaK), denominator);
-    if (ctx.isNaN(fr_untyped)) fr_untyped = ctx.ZERO;
-    fr_untyped = ctx.max(ctx.ZERO, ctx.min(fr_untyped, fOmegaK));
+    let fr = ctx.divide(ctx.multiply(ctx.subtract(x, fOmegaKM), fOmegaK), denominator);
+    if (ctx.isNaN(fr) || ctx.compare(fr, fOmegaK) >= 0) fr = ctx.ZERO;
+    fr = ctx.max(fr, ctx.ZERO);
 
-    const fr = ctx.toNumber(fr_untyped);
-
-    if (fr < threshold) {
+    if (ctx.compare(fr, threshold) < 0) {
         return 0n;
     } else {
-        let rAmplification = 1.0;
-        const denominator_num = ctx.toNumber(denominator);
-        if (Math.abs(denominator_num) > 1e-15) { // Only amplify if denom is not excessively small
-            rAmplification = ctx.toNumber(ctx.divide(fOmegaK, denominator));
-        }
+        rAmplification = ctx.divide(fOmegaK, denominator);
 
-        const result = fInverse(fr, params, threshold * Math.max(1, rAmplification));
+        const result = fInverse(fr, params, ctx.multiply(threshold, rAmplification));
         if (result === "E0_TYPE") {
             console.warn(`findRemainderHigher: fInverse returned E0_TYPE for fr=${fr}. This shouldn't be allowed. Returning 0n.`);
             console.warn(`x=${ctx.toNumber(x)}. m=${m}. k=${convertFFormatToOrdinalInstance(k).toStringCNF()}.`);
@@ -117,13 +111,13 @@ function findRemainderHigher(x, k, m, params, threshold) {
 function findJ(x, params, threshold) {
     const ctx = params.ctx;
 
-    if (ctx.compare(x, ctx.add(ctx.ONE, threshold)) <= 0 && ctx.compare(x, ctx.subtract(ctx.ONE, threshold)) >= 0) {
-        return 1n;
-    }
+    // Proximity check for critical points
+    if (ctx.compare(ctx.abs(ctx.subtract(x, ctx.ONE)), threshold) < 0) return 1n;
 
     let j_approx = ctx.divide(ctx.multiply(params.scaleExp, ctx.subtract(x, ctx.ONE)), ctx.subtract(params.precomputed[3], x));
+    if (ctx.isNaN(j_approx) || ctx.compare(j_approx, ctx.ZERO) < 0) j_approx = ctx.ZERO;
 
-    const calcJ = BigInt(Math.max(1, 1 + Math.floor(ctx.toNumber(j_approx))));
+    const calcJ = ctx.floor(j_approx) + 1n;
 
     const f_j_plus_1_check = ctx.add(ctx.ONE, ctx.divide(
         ctx.multiply(params.precomputed[1], ctx.fromInt(calcJ)),
@@ -158,7 +152,7 @@ function findM(x, j_base, params, threshold) {
     const A = ctx.add(ctx.ONE, ctx.divide(ctx.multiply(params.precomputed[1], j_base_minus_1_num), ctx.add(params.scaleExp, j_base_minus_1_num)));
     const B = ctx.add(ctx.ONE, ctx.divide(ctx.multiply(params.precomputed[1], j_base_num), ctx.add(params.scaleExp, j_base_num)));
 
-    if (ctx.compare(ctx.subtract(x, A), threshold) < 0) {
+    if (ctx.compare(ctx.subtract(x, A), threshold) < 0 || ctx.compare(x, ctx.subtract(B, threshold)) >= 0) {
         return 1n;
     }
 
@@ -166,10 +160,9 @@ function findM(x, j_base, params, threshold) {
     if (ctx.isNaN(target_f_m_minus_1)) target_f_m_minus_1 = ctx.ZERO;
     target_f_m_minus_1 = ctx.max(ctx.ZERO, ctx.min(target_f_m_minus_1, ctx.ONE));
 
-
     let m_approx = ctx.divide(ctx.multiply(params.scaleMult, target_f_m_minus_1), ctx.subtract(ctx.ONE, target_f_m_minus_1));
-    if (ctx.isNaN(m_approx)) m_approx = ctx.ZERO;
-    const calcM = BigInt(Math.max(1, 1 + Math.floor(ctx.toNumber(m_approx))));
+    if (ctx.isNaN(m_approx) || ctx.compare(m_approx, ctx.ZERO) < 0) m_approx = ctx.ZERO;
+    const calcM = ctx.floor(m_approx) + 1n;
 
     const f_m_check = fFinite(ctx, ctx.fromInt(calcM), params.scaleMult);
 
@@ -197,26 +190,24 @@ function findOmegaPowerOrdinal(x, params, threshold, depth) {
     const x_minus_fOmegaJM = ctx.subtract(x, fOmegaJM_val);
 
     let ratio = ctx.divide(x_minus_fOmegaJM, ctx.subtract(fOmegaJMPlus1_val, fOmegaJM_val));
-    if (ctx.isNaN(ratio)) ratio = ctx.ZERO;
+    if (ctx.isNaN(ratio) || ctx.compare(x, ctx.add(fOmegaJM_val, threshold)) < 0 || ctx.compare(x, ctx.subtract(fOmegaJMPlus1_val, threshold)) > 0) ratio = ctx.ZERO;
     fk = ctx.multiply(ratio, fOmegaJ_val);
 
 
-    const fk_num = ctx.toNumber(fk);
-    if (fk_num < 0) fk = ctx.ZERO;
-    if (fk_num > ctx.toNumber(params.precomputed[5])) fk = params.precomputed[5];
+    //if (fk_num > ctx.toNumber(params.precomputed[5])) fk = params.precomputed[5];
 
     let k_rem_ordinal_representation;
-    if (ctx.compare(fk, threshold) < 0) {
+    //if (ctx.compare(fk, threshold) < 0) {
+    //    k_rem_ordinal_representation = 0n;
+    //} else {
+    const denom = ctx.subtract(fOmegaJMPlus1_val, fOmegaJM_val);
+    if (ctx.isZero(denom)) {
         k_rem_ordinal_representation = 0n;
     } else {
-        const denom = ctx.subtract(fOmegaJMPlus1_val, fOmegaJM_val);
-        if (ctx.isZero(denom)) {
-            k_rem_ordinal_representation = 0n;
-        } else {
-            const kAmplificationFactor = ctx.divide(fOmegaJ_val, denom);
-            k_rem_ordinal_representation = fInverse(fk, params, ctx.multiply(threshold, kAmplificationFactor), depth + 1);
-        }
+        const kAmplificationFactor = ctx.divide(fOmegaJ_val, denom);
+        k_rem_ordinal_representation = fInverse(fk, params, ctx.multiply(threshold, kAmplificationFactor), depth + 1);
     }
+    //}
 
     if (m === 1n && k_rem_ordinal_representation === 0n) {
         return { type: 'pow', k: j };
@@ -232,13 +223,12 @@ function findOmegaPowerOrdinal(x, params, threshold, depth) {
 
 function findHigherPowerOrdinal(x, params, threshold, depth) {
     const ctx = params.ctx;
-    const fk_num = ctx.toNumber(ctx.divide(ctx.subtract(ctx.multiply(params.precomputed[8], x), params.precomputed[6]), ctx.add(x, params.precomputed[7])));
-    const fk = ctx.fromInt(fk_num);
-    const kAmplification = Math.max(1, ctx.toNumber(ctx.square(ctx.subtract(params.precomputed[8], fk))) / ctx.toNumber(params.precomputed[9]));
-    const k = fInverse(fk_num, params, threshold * kAmplification, depth + 1);
+    const fk = ctx.divide(ctx.subtract(ctx.multiply(params.precomputed[8], x), params.precomputed[6]), ctx.add(x, params.precomputed[7]));
+    const kAmplification = ctx.divide(ctx.square(ctx.subtract(params.precomputed[8], fk)), params.precomputed[9]);
+    const k = fInverse(fk, params, ctx.multiply(threshold, kAmplification), depth + 1);
 
     if (k === "E0_TYPE" || k.type == 'epsilon') {
-        return "E0_TYPE";
+        return k;
     }
 
     const m = findCoefficientHigher(x, k, params, threshold);
@@ -262,22 +252,20 @@ function findHigherPowerOrdinal(x, params, threshold, depth) {
     };
 }
 
-function fInverse(x_num, params = DEFAULT_F_PARAMS, threshold = 1e-14, depth = 0) {
+function fInverse(x, params = DEFAULT_F_PARAMS, threshold = 1e-14, depth = 0) {
     const ctx = params.ctx;
-    const x = ctx.fromInt(x_num);
-    const thresholdCtx = ctx.fromInt(threshold);
 
-    if (x_num < -threshold || x_num > ctx.toNumber(params.precomputed[5]) + threshold) { // Allow x to be slightly over 5 due to float precision
-        throw new Error(`Input value ${x_num} is outside the valid range [0,5]`);
+    if (ctx.compare(x, ctx.fromInt(-ctx.toNumber(threshold))) < 0 || ctx.compare(x, ctx.add(params.precomputed[5], threshold)) > 0) {
+        throw new Error(`Input value ${ctx.toNumber(x)} is outside the valid range [0,5]`);
     }
 
     // Handle specific values and ranges
-    if (Math.abs(x_num) <= threshold) return 0n;
+    if (ctx.compare(ctx.abs(x), threshold) < 0) return 0n;
 
     // Check for specific points using the high-precision threshold first
-    if (Math.abs(x_num - ctx.toNumber(params.precomputed[5])) <= threshold) return { type: 'epsilon', index: 0n }; // Epsilon_0
-    if (Math.abs(x_num - 1.0) <= threshold) return { type: 'pow', k: 1n };  // f(ω) = 1
-    if (Math.abs(x_num - ctx.toNumber(params.precomputed[3])) <= threshold) return { type: 'pow', k: { type: 'pow', k: 1n } }; // f(ω^ω) = 3
+    if (ctx.compare(ctx.abs(ctx.subtract(x, params.precomputed[5])), threshold) < 0) return { type: 'epsilon', index: 0n }; // Epsilon_0
+    if (ctx.compare(ctx.abs(ctx.subtract(x, ctx.ONE)), threshold) < 0) return { type: 'pow', k: 1n };  // f(ω) = 1
+    if (ctx.compare(ctx.abs(ctx.subtract(x, params.precomputed[3])), threshold) < 0) return { type: 'pow', k: { type: 'pow', k: 1n } }; // f(ω^ω) = 3
 
 
     // Now check for ranges
@@ -285,10 +273,10 @@ function fInverse(x_num, params = DEFAULT_F_PARAMS, threshold = 1e-14, depth = 0
         const denominator = ctx.subtract(params.precomputed[5], x);
         let height_approx = ctx.divide(ctx.add(params.precomputed[4], ctx.multiply(ctx.subtract(params.scaleTet, ctx.ONE), ctx.subtract(x, ctx.ONE))), denominator);
         if (ctx.isNaN(height_approx)) height_approx = ctx.ZERO;
-        const height = Math.floor(ctx.toNumber(height_approx));
+        const height = Number(ctx.floor(height_approx));
 
         if (height >= 1) {
-            const next_x = ctx.add(x, thresholdCtx);
+            const next_x = ctx.add(x, threshold);
             const next_denom = ctx.subtract(params.precomputed[5], next_x);
             let nextHeight_approx = ctx.divide(ctx.add(params.precomputed[4], ctx.multiply(ctx.subtract(params.scaleTet, ctx.ONE), ctx.subtract(next_x, ctx.ONE))), next_denom);
             if (ctx.isNaN(nextHeight_approx)) nextHeight_approx = ctx.ZERO;
@@ -300,14 +288,14 @@ function fInverse(x_num, params = DEFAULT_F_PARAMS, threshold = 1e-14, depth = 0
                 return { type: 'w_tower', height: height };
             }
         } else {
-            console.warn(`fInverse: Calculated w_tower height is < 1 (height=${height}, x=${x_num}). Fallback might be needed or check x range.`);
+            console.warn(`fInverse: Calculated w_tower height is < 1 (height=${height}, x=${ctx.toNumber(x)}). Fallback might be needed or check x range.`);
             return "E0_TYPE";
         }
     }
 
 
     if (ctx.compare(x, ctx.ONE) < 0) {
-        return findFiniteOrdinal(ctx, x, thresholdCtx, params.scaleAdd);
+        return findFiniteOrdinal(ctx, x, threshold, params.scaleAdd);
     } else if (ctx.compare(x, params.precomputed[3]) < 0) { // Covers (1, 3) - f(ω) to f(ω^ω)
         return findOmegaPowerOrdinal(x, params, threshold, depth);
     } else { // Covers [3, 5) - f(ω^ω) up to (but not including) f(ε₀)

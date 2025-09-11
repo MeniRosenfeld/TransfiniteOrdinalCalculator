@@ -72,7 +72,7 @@
             }
 
             // --- CONFIGURATION ---
-            const inputValue = 4.921673828647513; // Hardcoded input value (e.g., f(w+1))
+            const inputValue = 2.581; // Hardcoded input value (e.g., f(w+1))
             // ---------------------
 
             document.getElementById('input-value').textContent = inputValue;
@@ -86,7 +86,7 @@
                 // Use the OLD_F_PARAMS as requested
                 const fParams = OLD_F_PARAMS;
 
-                const resultRep = fInverse(inputValue, fParams, 1e-13);
+                const resultRep = fInverse(inputValue, fParams, 1e-14);
                 const ordinalResult = convertFFormatToOrdinalInstance(resultRep);
 
                 const endTime = performance.now();
