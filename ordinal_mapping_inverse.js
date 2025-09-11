@@ -44,14 +44,11 @@ function findCoefficientHigher(x, k, params, threshold) {
 
     const fOmegaKPlus1_minus_fOmegaK = ctx.subtract(fOmegaKPlus1, fOmegaK);
 
-    let target_f_m_minus_1 = ctx.divide(ctx.subtract(x, fOmegaK), fOmegaKPlus1_minus_fOmegaK);
-    if (ctx.compare(fOmegaKPlus1_minus_fOmegaK, threshold) < 0) target_f_m_minus_1 = ctx.ZERO;
-    target_f_m_minus_1 = ctx.max(ctx.ZERO, ctx.min(target_f_m_minus_1, ctx.ONE));
-
-
-    if (ctx.compare(x, ctx.add(fOmegaK, threshold)) < 0) {
+    if (ctx.compare(x, ctx.add(fOmegaK, threshold)) < 0 || ctx.compare(x, ctx.subtract(fOmegaKPlus1, threshold)) > 0) {
         return 1n;
     }
+
+    let target_f_m_minus_1 = ctx.divide(ctx.subtract(x, fOmegaK), fOmegaKPlus1_minus_fOmegaK);
 
     let m_minus_1_approx = ctx.divide(
         ctx.multiply(params.scaleMult, target_f_m_minus_1),
@@ -256,7 +253,8 @@ function fInverse(x, params = DEFAULT_F_PARAMS, threshold = 1e-14, depth = 0) {
     const ctx = params.ctx;
 
     if (ctx.compare(x, ctx.fromInt(-ctx.toNumber(threshold))) < 0 || ctx.compare(x, ctx.add(params.precomputed[5], threshold)) > 0) {
-        throw new Error(`Input value ${ctx.toNumber(x)} is outside the valid range [0,5]`);
+        const upperBound = ctx.toNumber(params.precomputed[5]);
+        throw new Error(`Input value ${ctx.toNumber(x)} is outside the valid range [0,${upperBound}]`);
     }
 
     // Handle specific values and ranges

@@ -269,13 +269,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.log("[fCalc] originalOrdinalResultObject type:", originalOrdinalResultObject.constructor.name);
                 try {
                     console.log("[fCalc] Calling convertOrdinalInstanceToFFormat with:", originalOrdinalResultObject);
-                    // For WTower use native; otherwise convert to CNF for mapping
-                    const mappingOrdinal = (typeof WTowerOrdinal !== 'undefined' && originalOrdinalResultObject instanceof WTowerOrdinal)
-                        ? originalOrdinalResultObject
-                        : (typeof originalOrdinalResultObject.toCNFOrdinal === 'function'
-                            ? originalOrdinalResultObject.toCNFOrdinal()
-                            : originalOrdinalResultObject);
-                    const fFormattedOrdinal = convertOrdinalInstanceToFFormat(mappingOrdinal);
+                    // The mapping logic is now handled by the toFFormat method on each ordinal type.
+                    // We can now directly convert the result object.
+                    const fFormattedOrdinal = convertOrdinalInstanceToFFormat(originalOrdinalResultObject);
                     console.log("[fCalc] convertOrdinalInstanceToFFormat returned:", fFormattedOrdinal);
 
                     console.log("[fCalc] Calling f with:", fFormattedOrdinal, "and params:", DEFAULT_F_PARAMS);
@@ -596,15 +592,17 @@ document.addEventListener('DOMContentLoaded', () => {
                         ? ordinalInstanceFromInverse.toString()
                         : String(ordinalInstanceFromInverse));
                 linearResultTextElement.textContent = sliderDisplayString;
-                if (typeof renderOrdinalGraphicalFromString === 'function') {
+                if (typeof renderOrdinalGraphicalFromStringSimple === 'function') {
                     const textForInverse = (typeof ordinalInstanceFromInverse.toDisplayString === 'function')
                         ? ordinalInstanceFromInverse.toDisplayString({ format: 'ENF' })
                         : (ordinalInstanceFromInverse && typeof ordinalInstanceFromInverse.toString === 'function'
                             ? ordinalInstanceFromInverse.toString()
                             : String(ordinalInstanceFromInverse));
-                    graphicalResultArea.innerHTML = renderOrdinalGraphicalFromString(textForInverse);
+                    graphicalResultArea.innerHTML = renderOrdinalGraphicalFromStringSimple(textForInverse);
+                } else if (typeof renderOrdinalSimple === 'function') {
+                    graphicalResultArea.innerHTML = renderOrdinalSimple(ordinalInstanceFromInverse);
                 } else {
-                    graphicalResultArea.innerHTML = renderOrdinalGraphical(ordinalInstanceFromInverse);
+                    graphicalResultArea.innerHTML = `<span class="ordinal-generic">${sliderDisplayString}</span>`;
                 }
                 linearResultTextElement.classList.remove('placeholder-text');
                 graphicalResultArea.querySelector('.placeholder-text')?.remove();
