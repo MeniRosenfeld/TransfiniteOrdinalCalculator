@@ -30,6 +30,10 @@ class FiniteOrdinal extends OrdinalBase {
     isBasic() { return false; }
     isOne() { return this.value === 1n; }
 
+    isLimit() {
+        return false;
+    }
+
     getFiniteBigInt() { return this.value; }
 
     nextRank() {
@@ -38,6 +42,7 @@ class FiniteOrdinal extends OrdinalBase {
     }
 
     complexity() {
+        if (this.value === 0n) return 0;
         return this.value.toString().length;
     }
 
@@ -60,6 +65,7 @@ class FiniteOrdinal extends OrdinalBase {
     }
 
     simplify(complexityBudget, skipMyOwnMPTFCheck = false) {
+        if (this._tracer) this._tracer.consume();
         const myComplexity = this.complexity();
         if (myComplexity <= complexityBudget) {
             return {
@@ -68,12 +74,16 @@ class FiniteOrdinal extends OrdinalBase {
             };
         }
 
-        // If even this finite number doesn't fit, fallback to 0
         const zero = new FiniteOrdinal(0, this._tracer);
-        return {
-            simplifiedOrdinal: zero,
-            remainingBudget: complexityBudget
-        };
+        const zeroComplexity = zero.complexity();
+        if (zeroComplexity <= complexityBudget) {
+            return {
+                simplifiedOrdinal: zero,
+                remainingBudget: complexityBudget - zeroComplexity
+            };
+        }
+
+        return { simplifiedOrdinal: zero, remainingBudget: 0 };
     }
 
     // === CONVERSION SYSTEM ===

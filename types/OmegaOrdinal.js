@@ -19,15 +19,17 @@ class OmegaOrdinal extends OrdinalBase {
     isBasic() { return true; }
     isOne() { return false; }
 
+    isLimit() {
+        return true;
+    }
+
     getFiniteBigInt() { throw new Error('OmegaOrdinal is not finite'); }
 
     nextRank() {
         return new EpsilonZero(this._tracer);
     }
 
-    complexity() {
-        return 1; // Omega has minimal complexity
-    }
+    complexity() { return 1; }
 
     toString() {
         return "w";
@@ -47,6 +49,7 @@ class OmegaOrdinal extends OrdinalBase {
     }
 
     simplify(complexityBudget, skipMyOwnMPTFCheck = false) {
+        if (this._tracer) this._tracer.consume();
         const myComplexity = this.complexity();
         if (myComplexity <= complexityBudget) {
             return {
@@ -55,12 +58,16 @@ class OmegaOrdinal extends OrdinalBase {
             };
         }
 
-        // If omega doesn't fit, fallback to 0
         const zero = new FiniteOrdinal(0, this._tracer);
-        return {
-            simplifiedOrdinal: zero,
-            remainingBudget: complexityBudget
-        };
+        const zeroComplexity = zero.complexity();
+        if (zeroComplexity <= complexityBudget) {
+            return {
+                simplifiedOrdinal: zero,
+                remainingBudget: complexityBudget - zeroComplexity
+            };
+        }
+
+        return { simplifiedOrdinal: zero, remainingBudget: 0 };
     }
 
     // === CONVERSION SYSTEM ===

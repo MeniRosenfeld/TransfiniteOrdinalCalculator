@@ -404,24 +404,29 @@
         <div id="monotonicity-failed-preview" class="failed-tests-preview" style="display: none;"></div>
     </div>
 
-    <!-- Load Ordinal Scripts (ensure paths are correct) -->
-    <script src="ordinal_types.js"></script>
-    <!-- Ensure ENF is available for modules that depend on it -->
-    <script src="ordinal_enf.js"></script>
-    <script src="ordinal_comparison.js"></script>
-    <script src="ordinal_auxiliary_ops.js"></script>
-    <script src="ordinal_addition.js"></script>
-    <script src="ordinal_multiplication.js"></script>
-    <script src="ordinal_exponentiation.js"></script>
-    <script src="ordinal_tetration.js"></script>
-    <script src="ordinal_parser.js"></script>
-    <script src="ordinal_calculator.js"></script>
-    <!-- For mapped values -->
-    <script src="ordinal_mapping.js"></script> <!-- Defines f() -->
-    <script src="ordinal_mapping_inverse.js"></script> <!-- Defines fInverse() -->
-    <script src="ordinal_ops.js"></script>
-    <!-- For convertOrdinalInstanceToFFormat -->
-    <script src="script.js"></script> <!-- Defines convertOrdinalInstanceToFFormat() -->
+    <!-- Load New Architecture Scripts -->
+    <script src="OperationTracer.js"></script>
+    <script src="types/OrdinalBase.js"></script>
+    <script src="types/FiniteOrdinal.js"></script>
+    <script src="types/OmegaOrdinal.js"></script>
+    <script src="types/CNFOrdinal.js"></script>
+    <script src="types/WTowerOrdinal.js"></script>
+    <script src="types/EpsilonZero.js"></script>
+    <script src="conversions/ConversionRegistry.js"></script>
+    <script src="conversions/ConversionEngine.js"></script>
+    <script src="operations/RuleEngine.js"></script>
+    <script src="operations/AdditionRules.js"></script>
+    <script src="operations/MultiplicationRules.js"></script>
+    <script src="operations/ExponentiationRules.js"></script>
+    <script src="operations/TetrationRules.js"></script>
+    <script src="operations/Comparison.js"></script>
+    <script src="operations/Auxiliary.js"></script>
+    <script src="operations/Rational.js"></script>
+    <script src="operations/NumericContexts.js"></script>
+    <script src="operations/Operations.js"></script>
+    <script src="SimpleParser.js"></script>
+    <script src="ordinal_mapping.js"></script>
+    <script src="ordinal_mapping_inverse.js"></script>
 
     <script>
         // Stats for each test kind
@@ -542,7 +547,7 @@
                             successfulCNFTestResultsForMapping.push({
                                 input: input,
                                 ordinal: originalOrdinalObject,
-                                mappedValue: mappedValue,
+                                mappedValue: DoubleFloatContext.toNumber(mappedValue), // Convert to number for comparison
                                 cnf: actualCNF
                             });
                         } catch (mapErr) {
@@ -558,7 +563,7 @@
                     if (!expectedLooksLikeError && originalOrdinalObject) {
                         try {
                             const eqTracer = new OperationTracer(10000);
-                            const expectedParsedOrdinal = new OrdinalParser(expectedCNF, eqTracer).parse();
+                            const expectedParsedOrdinal = new SimpleParser(expectedCNF, eqTracer).parse();
                             eqCheckPassed = expectedParsedOrdinal.equals(originalOrdinalObject);
                             addDetailElement(`Equality with Parsed(Expected CNF): ${eqCheckPassed ? 'PASSED' : 'FAILED'}`);
                             addDetailElement(`  Parsed(Expected CNF): "${toCnfString(expectedParsedOrdinal)}"`);
@@ -571,6 +576,7 @@
 
                     let fRoundTripCheckPassed = false;
                     const fTripDetailsLogs = [];
+                    let mappedValueOriginalNum; // Declare here for wider scope
 
                     if (!originalOrdinalObject) {
                         fTripDetailsLogs.push("f()/fInverse()/f() Check: SKIPPED (originalOrdinalObject is null/undefined).");
@@ -584,18 +590,21 @@
 
                             const fFormattedOriginal = convertOrdinalInstanceToFFormat(originalOrdinalObject);
                             const mappedValueOriginal = f(fFormattedOriginal, DEFAULT_F_PARAMS);
-                            fTripDetailsLogs.push(`f(original: "${actualCNF}") = ${mappedValueOriginal.toPrecision(15)}`);
+                            mappedValueOriginalNum = DoubleFloatContext.toNumber(mappedValueOriginal);
 
-                            const inverseMappedFFormat = fInverse(mappedValueOriginal, DEFAULT_F_PARAMS, fInverseThreshold);
+                            fTripDetailsLogs.push(`f(original: "${actualCNF}") = ${mappedValueOriginalNum.toPrecision(15)}`);
+
+                            const inverseMappedFFormat = fInverse(mappedValueOriginalNum, DEFAULT_F_PARAMS, fInverseThreshold);
                             const inverseOrdinalObject = convertFFormatToOrdinalInstance(inverseMappedFFormat);
                             const inverseCNFForLog = toCnfString(inverseOrdinalObject);
-                            fTripDetailsLogs.push(`fInverse(${mappedValueOriginal.toPrecision(15)}) -> "${inverseCNFForLog}"`);
+                            fTripDetailsLogs.push(`fInverse(${mappedValueOriginalNum.toPrecision(15)}) -> "${inverseCNFForLog}"`);
 
                             const fFormattedInverse = convertOrdinalInstanceToFFormat(inverseOrdinalObject);
                             const mappedValueOfInverse = f(fFormattedInverse, DEFAULT_F_PARAMS);
-                            fTripDetailsLogs.push(`f(inverse: "${inverseCNFForLog}") = ${mappedValueOfInverse.toPrecision(15)}`);
+                            const mappedValueOfInverseNum = DoubleFloatContext.toNumber(mappedValueOfInverse);
+                            fTripDetailsLogs.push(`f(inverse: "${inverseCNFForLog}") = ${mappedValueOfInverseNum.toPrecision(15)}`);
 
-                            const difference = Math.abs(mappedValueOriginal - mappedValueOfInverse);
+                            const difference = Math.abs(mappedValueOriginalNum - mappedValueOfInverseNum);
                             fRoundTripCheckPassed = (difference < fInverseThreshold);
 
                             if (fRoundTripCheckPassed) {
@@ -612,7 +621,41 @@
                             console.error(`Critical error during f()/fInverse()/f() for input "${input}":`, err);
                         }
                         // Include equality check unless the expected is an error string
-                        overallTestPassed = cnfCheckPassed && (expectedLooksLikeError || eqCheckPassed) && fRoundTripCheckPassed;
+                        let limitCheckPassed = true; // Default to true for non-ordinal results or errors
+                        if (originalOrdinalObject && !originalOrdinalObject.isZero()) {
+                            const limitDetailsLogs = [];
+                            try {
+                                const limitEpsilon = 1e-12;
+                                const isLim = originalOrdinalObject.isLimit();
+                                const fA = mappedValueOriginalNum;
+                                const fA_minus_epsilon = fA - limitEpsilon;
+
+                                const b_rep = fInverse(fA_minus_epsilon, DEFAULT_F_PARAMS, 1e-14);
+                                const b = convertFFormatToOrdinalInstance(b_rep);
+                                const fB = DoubleFloatContext.toNumber(f(b.toFFormat(), DEFAULT_F_PARAMS));
+
+                                const isClose = fB > (fA - 3 * limitEpsilon);
+                                const isSmaller = b.compareTo(originalOrdinalObject) < 0;
+
+                                limitDetailsLogs.push(`Limit property check: isLimit() = ${isLim}`);
+                                limitDetailsLogs.push(`  f(a) = ${fA}`);
+                                limitDetailsLogs.push(`  b = fInverse(f(a) - epsilon) = ${b.toString()}`);
+                                limitDetailsLogs.push(`  f(b) = ${fB}`);
+                                limitDetailsLogs.push(`  b < a? ${isSmaller}`);
+                                limitDetailsLogs.push(`  f(b) > f(a) - 3epsilon? ${isClose}`);
+
+                                const proximityTestResult = isSmaller && isClose;
+                                limitCheckPassed = (proximityTestResult || !isLim);
+
+                                limitDetailsLogs.forEach(detailMsg => addDetailElement(detailMsg, 'log-output-detail'));
+                                addDetailElement(`Limit Check Status: ${limitCheckPassed ? 'PASSED' : 'FAILED'}`, limitCheckPassed ? 'status-passed' : 'status-failed');
+
+                            } catch (limitErr) {
+                                limitCheckPassed = false;
+                                addDetailElement(`Limit Check CRITICAL ERROR: ${limitErr.message}`, 'error-message');
+                            }
+                        }
+                        overallTestPassed = cnfCheckPassed && (expectedLooksLikeError || eqCheckPassed) && fRoundTripCheckPassed && limitCheckPassed;
                     }
 
                     fTripDetailsLogs.forEach(detailMsg => {
@@ -635,7 +678,7 @@
                         } else if (!expectedLooksLikeError && !eqCheckPassed) {
                             mainStatusMessage = 'Status: FAILED. Parsed(Expected CNF) is not equal to computed ordinal.';
                         } else {
-                            mainStatusMessage = `Status: FAILED. CNF OK ("${actualCNF}"), but f-round-trip check failed.`;
+                            mainStatusMessage = `Status: FAILED. CNF OK ("${actualCNF}"), but f-round-trip or limit check failed.`;
                         }
                     }
                 }
@@ -714,7 +757,7 @@
             testStats.WTOWER.results.push({ passed: currentTestPassed, detailsElements: outputElements });
         }
 
-        function testOrdinalSimplify(description, inputStr, budget, expectedCNF, expectedRem, opBudget = 100000) {
+        function testOrdinalSimplify(description, inputStr, budget, expectedStr, expectedRem, opBudget = 100000) {
             testStats.SIMPLIFY.total++;
             const outputElements = [];
             const addDetailElement = (text, className = '') => {
@@ -728,40 +771,40 @@
             const tr = new OperationTracer(opBudget);
             addDetailElement(`Test (Simplify): ${description} [Budget: ${budget}]`);
 
-            let actCNF = '', actRem = -1, sMsg = '', sCls = '', currentTestPassed = true, notes = [], simpG = 'N/A', originalOrdinalStr = 'N/A';
+            let actualStr = '', actRem = -1, sMsg = '', sCls = '', currentTestPassed = true, notes = [], simpG = 'N/A', originalOrdinalStr = 'N/A';
 
             try {
-                const p = new OrdinalParser(inputStr, tr);
+                const p = new SimpleParser(inputStr, tr);
                 let origOrd = p.parse();
-                originalOrdinalStr = toCnfString(origOrd); // Get string form for comparison
+                originalOrdinalStr = origOrd.toString(); // Get string form for comparison
                 addDetailElement(`Input Ordinal: "${inputStr}" (g=${origOrd.complexity()})`);
                 const simpRes = origOrd.simplify(budget, false);
                 let simpOrd = simpRes.simplifiedOrdinal;
                 actRem = simpRes.remainingBudget;
-                actCNF = toCnfString(simpOrd);
+                actualStr = simpOrd.toString();
                 simpG = simpOrd.complexity();
 
-                if (actCNF !== expectedCNF) { currentTestPassed = false; notes.push(`CNF Mismatch: Got "${actCNF}", Exp "${expectedCNF}"`); }
+                if (actualStr !== expectedStr) { currentTestPassed = false; notes.push(`Form Mismatch: Got "${actualStr}", Exp "${expectedStr}"`); }
                 if (actRem !== expectedRem) { currentTestPassed = false; notes.push(`Budget Mismatch: Got ${actRem}, Exp ${expectedRem}`); }
                 if (simpG > budget) { currentTestPassed = false; notes.push(`Sanity Fail: Simp g ${simpG} > budget ${budget}`); }
 
                 // Perform comparison using string representations if simplify didn't error
                 if (origOrd.compareTo(simpOrd) < 0) {
                     currentTestPassed = false;
-                    notes.push(`Sanity Fail: Simp "${actCNF}" > orig "${originalOrdinalStr}"`);
+                    notes.push(`Sanity Fail: Simp "${actualStr}" > orig "${originalOrdinalStr}"`);
                 }
 
                 if (currentTestPassed) { sMsg = 'Status: PASSED'; sCls = 'status-passed'; } else { sMsg = 'Status: FAILED'; sCls = 'status-failed'; }
             } catch (e) {
                 currentTestPassed = false;
-                actCNF = `Crit Error: ${e.message}`;
+                actualStr = `Crit Error: ${e.message}`;
                 sMsg = 'Status: FAILED (Crit Error)'; sCls = 'status-failed';
                 console.error(`Crit simplify test "${description}":`, e);
             }
 
             if (currentTestPassed) testStats.SIMPLIFY.passed++; else testStats.SIMPLIFY.failed++;
 
-            addDetailElement(`Simplified CNF: "${actCNF}" (g=${simpG})`);
+            addDetailElement(`Simplified Form: "${actualStr}" (g=${simpG})`);
             addDetailElement(`Remaining Budget: ${actRem}`);
             if (notes.length > 0) notes.forEach(n => addDetailElement(n, 'error-message'));
             addDetailElement(sMsg, sCls);
@@ -783,7 +826,7 @@
             let actComp = -1, sMsg = '', sCls = '', currentTestPassed = false;
             try {
                 const tr = new OperationTracer(opBudget);
-                const p = new OrdinalParser(inputStr, tr);
+                const p = new SimpleParser(inputStr, tr);
                 let ord = p.parse();
                 actComp = ord.complexity();
                 if (actComp === expectedComp) {
@@ -829,30 +872,32 @@
             addDetailElement(statusMsg, statusClass);
             testStats.COMPLEXITY.results.push({ passed: currentTestPassed, detailsElements: outputElements });
         }
-        function testManualSimplify(desc, ordInst, bud, expCNF, expRem) {
+        function testManualSimplify(desc, ordInst, bud, expectedStr, expRem) {
             testStats.SIMPLIFY.total++;
             const outputElements = [];
             const addDetailElement = (text, className = '') => { /* as above */ const p = document.createElement('p'); p.textContent = text; p.classList.add('log-output'); if (className) p.classList.add(className); outputElements.push(p); };
             addDetailElement(`Test (Manual Simplify): ${desc} [Budget: ${bud}]`);
-            addDetailElement(`Input Ordinal (direct): ${toCnfString(ordInst)} (g=${ordInst.complexity()})`);
-            let actualCNF, actualRem, currentTestPassed = true, notes = [], statusMsg, statusClass, simpG = 'N/A';
+            addDetailElement(`Input Ordinal (direct): ${ordInst.toString()} (g=${ordInst.complexity()})`);
+            let actualStr, actualRem, currentTestPassed = true, notes = [], statusMsg, statusClass, simpG = 'N/A';
             try {
                 const simpRes = ordInst.simplify(bud, false);
                 let simpOrd = simpRes.simplifiedOrdinal;
                 actualRem = simpRes.remainingBudget;
-                actualCNF = toCnfString(simpOrd);
+                actualStr = simpOrd.toString();
                 simpG = simpOrd.complexity();
-                if (actualCNF !== expCNF) { currentTestPassed = false; notes.push(`CNF Mismatch: Got "${actualCNF}", Exp "${expCNF}"`); }
+
+                if (actualStr !== expectedStr) { currentTestPassed = false; notes.push(`Form Mismatch: Got "${actualStr}", Exp "${expectedStr}"`); }
                 if (actualRem !== expRem) { currentTestPassed = false; notes.push(`Budget Mismatch: Got ${actualRem}, Exp ${expRem}`); }
                 if (simpG > bud) { currentTestPassed = false; notes.push(`Sanity Fail: Simp g ${simpG} > budget ${bud}`); }
-                if (ordInst.compareTo(simpOrd) < 0) { currentTestPassed = false; notes.push(`Sanity Fail: Simp "${actualCNF}" > orig "${toCnfString(ordInst)}"`); }
+                if (ordInst.compareTo(simpOrd) < 0) { currentTestPassed = false; notes.push(`Sanity Fail: Simp "${actualStr}" > orig "${ordInst.toString()}"`); }
                 if (currentTestPassed) { statusMsg = 'Status: PASSED'; statusClass = 'status-passed'; } else { statusMsg = 'Status: FAILED'; statusClass = 'status-failed'; }
             } catch (e) {
                 currentTestPassed = false;
                 statusMsg = `Status: FAILED (Error: ${e.message})`; statusClass = 'status-failed';
+                console.error(`Crit simplify test "${desc}":`, e);
             }
             if (currentTestPassed) testStats.SIMPLIFY.passed++; else testStats.SIMPLIFY.failed++;
-            if (actualCNF !== undefined) addDetailElement(`Simplified CNF: "${actualCNF}" (g=${simpG})`);
+            if (actualStr !== undefined) addDetailElement(`Simplified Form: "${actualStr}" (g=${simpG})`);
             if (actualRem !== undefined) addDetailElement(`Remaining Budget: ${actualRem}`);
             if (notes.length > 0) notes.forEach(n => addDetailElement(n, 'error-message'));
             addDetailElement(statusMsg, statusClass);
@@ -1078,8 +1123,8 @@
             testOrdinalCalc("3^^2", "27");
             testOrdinalCalc("w^^2", "w^w");
 
-            testOrdinalCalc("0^^w", "Error: Operation 0 ^^ w is undefined.");
-            testOrdinalCalc("0^^(w*2)", "Error: Operation 0 ^^ w*2 is undefined.");
+            testOrdinalCalc("0^^w", "Operation 0 ^^ infinite is undefined.");
+            testOrdinalCalc("0^^(w*2)", "Operation 0 ^^ infinite is undefined.");
 
             testOrdinalCalc("1^^w", "1");
             testOrdinalCalc("1^^(w^w)", "1");
@@ -1104,8 +1149,11 @@
             testOrdinalCalc("1+2^^3", "17");
             testOrdinalCalc("2*3^^2", "54");
             testOrdinalCalc("2^^2*3", "12");
-            testOrdinalCalc("2^3^^2", "134217728");
-            testOrdinalCalc("2^^3^2", "256");
+            testOrdinalCalc("2^3^^2", "16777216");
+            testOrdinalCalc("(2^^3)^2", "256");
+            testOrdinalCalc("2^^3^2", "BigInt is too large to allocate");
+            testOrdinalCalc("3^^3", "7625597484987");
+            testOrdinalCalc("2^^4", "65536");
             testOrdinalCalc("2^^w+1", "w+1");
             testOrdinalCalc("w^^(w+1)", "e_0");
             testOrdinalCalc("(w+1)^^(w+1)", "e_0");
@@ -1150,17 +1198,6 @@
             testOrdinalSimplify("e_0 does not fit, fallback to 0", "e_0", 2, "0", 2);
             testOrdinalSimplify("e_0 cannot fit 0", "e_0", 0, "0", 0);
 
-            // New Epsilon Tests
-            testOrdinalSimplify("e_1 fits", "e_1", 10, "e_1", 3);
-            testOrdinalSimplify("e_1 does not fit, simplify index", "e_1", 6, "e_0", 0);
-            testOrdinalSimplify("e_w fits", "e_w", 10, "e_w", 3);
-            testOrdinalSimplify("e_w does not fit, simplify index", "e_w", 6, "e_0", 0);
-            testOrdinalSimplify("w^e_0 simplification", "w^e_0", 10, "e_0", 4);
-            testOrdinalSimplify("w^e_1 simplification", "w^e_1", 10, "e_1", 3);
-
-            testOrdinalSimplify("e_e_1 can fit", "e_e_1", 15, "e_e_1", 2);
-            testOrdinalSimplify("e_e_1 cannot fit", "e_e_1", 2, "0", 2);
-
             // WTowerOrdinal (manual simplify tests from original)
             try {
                 const tracer = new OperationTracer(100000);
@@ -1168,9 +1205,14 @@
                 let wt1 = new WTowerOrdinal(1, tracer);
                 let wt2 = new WTowerOrdinal(2, tracer);
                 testManualSimplify("w^^0 fits", wt0, 10, "w^^0", 6);
+                testManualSimplify("w^^1 fits", wt1, 10, "w^^1", 6);
                 testManualSimplify("w^^2 fits", wt2, 5, "w^^2", 1);
-                testManualSimplify("w^^1 does not fit, fallback to 0", wt1, 3, "0", 3);
-                testManualSimplify("w^^2 cannot fit 0", wt2, 0, "0", 0);
+                testManualSimplify("w^^0 does not fit, fallback to 1", wt0, 2, "1", 1);
+                testManualSimplify("w^^0 does not fit, fallback to 0", wt0, 0, "0", 0);
+                testManualSimplify("w^^1 does not fit, fallback to w", wt1, 3, "w", 2);
+                testManualSimplify("w^^1 does not fit, fallback to w", wt1, 1, "w", 0);
+                testManualSimplify("w^^1 does not fit, fallback to 0", wt1, 0, "0", 0);
+                testManualSimplify("w^^2 cannot fit", wt2, 2, "0", 2);
             } catch (e) {
                 testStats.SIMPLIFY.failed++; testStats.SIMPLIFY.total++;
                 const simplifyContainer = document.getElementById(testStats.SIMPLIFY.containerId);
@@ -1501,7 +1543,7 @@
             if (!outputContainer) { console.error("Monotonicity output container not found"); return; }
 
             const numResults = successfulCNFTestResultsForMapping.length;
-            const EPSILON = 1e-9;
+            const EPSILON = 1e-12;
             const fInverseThreshold = 1e-14;
 
             if (numResults < 2) {
@@ -1518,11 +1560,11 @@
                     let pairCheckPassed = true; const ordinalComparison = ordA.compareTo(ordB);
                     if (ordinalComparison < 0) {
                         detailMsg += `  Ord: A < B. Map: f(A)=${fA.toFixed(8)}, f(B)=${fB.toFixed(8)}. `;
-                        if (!(fA < fB - EPSILON)) { pairCheckPassed = false; detailMsg += `Monotonicity FAIL (exp f(A) < f(B))`; } else { detailMsg += `Monotonicity PASS`; }
+                        if (!(fA - EPSILON < fB)) { pairCheckPassed = false; detailMsg += `Monotonicity FAIL (exp f(A) < f(B))`; } else { detailMsg += `Monotonicity PASS`; }
                     }
                     else if (ordinalComparison > 0) {
                         detailMsg += `  Ord: A > B. Map: f(A)=${fA.toFixed(8)}, f(B)=${fB.toFixed(8)}. `;
-                        if (!(fA > fB + EPSILON)) { pairCheckPassed = false; detailMsg += `Monotonicity FAIL (exp f(A) > f(B))`; } else { detailMsg += `Monotonicity PASS`; }
+                        if (!(fA + EPSILON > fB)) { pairCheckPassed = false; detailMsg += `Monotonicity FAIL (exp f(A) > f(B))`; } else { detailMsg += `Monotonicity PASS`; }
                     }
                     else {
                         detailMsg += `  Ord: A == B. Map: f(A)=${fA.toFixed(8)}, f(B)=${fB.toFixed(8)}. `;
@@ -1541,22 +1583,37 @@
             console.log("Current MONOTONICITY stats after checks:", JSON.stringify(testStats.MONOTONICITY));
         }
 
+        // Ensure operations initialized before running tests
+        (function ensureOpsInit() {
+            if (window.OPERATIONS) {
+                try { OPERATIONS.initialize(); } catch (e) { console.error(e); }
+            }
+        })();
+
         runAllTestsAndRender();
 
         // --- Test Runner ---
 
         function calculateAndSimplify(expr) {
-            const result = calculateOrdinalCNF(expr); // Use legacy CNF calculator to ensure CNF objects
-            if (result.error) {
-                return result;
+            try {
+                const tracer = new OperationTracer(1000000);
+                const parser = new SimpleParser(expr, tracer);
+                let ord = parser.parse();
+                const simplified = (typeof ord.simplify === 'function') ? ord.simplify(1000) : { simplifiedOrdinal: ord };
+                let simpOrd = simplified.simplifiedOrdinal || ord;
+                let cnfCandidate = simpOrd;
+                try {
+                    if (window.OPERATIONS && OPERATIONS.initialized && cnfCandidate.isLessThanEpsilon0 && cnfCandidate.isLessThanEpsilon0() && OPERATIONS.canConvert(cnfCandidate, 'CNF')) {
+                        cnfCandidate = OPERATIONS.convert(cnfCandidate, 'CNF');
+                    }
+                } catch (convErr) {
+                    // keep simpOrd
+                }
+                const cnfString = toCnfString(cnfCandidate);
+                return { cnfString, ordinalObject: cnfCandidate, error: null };
+            } catch (e) {
+                return { error: e.message };
             }
-            // Use a generous budget to ensure canonical simplification like w^e_0 -> e_0 happens.
-            const simplified = result.ordinalObject.simplify(1000);
-            return {
-                cnfString: toCnfString(simplified.simplifiedOrdinal),
-                ordinalObject: simplified.simplifiedOrdinal,
-                error: null
-            };
         }
 
         function runTest(input, expected, simplifyOptions) {

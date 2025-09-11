@@ -81,6 +81,18 @@ function createComparisonRules(conversionEngine) {
                 return 1; // anything non-zero > 0
             }),
 
+        // Any <ε₀ ordinal is less than ε₀
+        new Rule("CNF vs EpsilonZero ordering",
+            (a, b) => (typeof EpsilonZero !== 'undefined') && (
+                (a.isLessThanEpsilon0() && (b instanceof EpsilonZero)) ||
+                (b.isLessThanEpsilon0() && (a instanceof EpsilonZero))
+            ),
+            (a, b) => {
+                if (a instanceof EpsilonZero && b.isLessThanEpsilon0()) return 1;
+                if (b instanceof EpsilonZero && a.isLessThanEpsilon0()) return -1;
+                return 0;
+            }),
+
         // Finite vs infinite
         new Rule("Finite vs infinite",
             (a, b) => a.isFinite() !== b.isFinite(),

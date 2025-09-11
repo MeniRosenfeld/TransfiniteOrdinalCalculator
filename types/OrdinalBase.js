@@ -54,6 +54,11 @@ class OrdinalBase {
     isBasic() { throw new Error(`${this.constructor.name} must implement isBasic()`); }
 
     /**
+     * Returns true if this ordinal is a limit ordinal.
+     */
+    isLimit() { throw new Error(`${this.constructor.name} must implement isLimit()`); }
+
+    /**
      * Returns the structural complexity of this ordinal.
      */
     complexity() { throw new Error(`${this.constructor.name} must implement complexity()`); }

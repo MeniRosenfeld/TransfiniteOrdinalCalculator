@@ -75,6 +75,11 @@ class CNFOrdinal extends OrdinalBase {
         return this.isFinite() && this.getFinitePart() === 1n;
     }
 
+    isLimit() {
+        // A CNF ordinal is a limit if it is not zero and has no finite part.
+        return !this.isZero() && this.getFinitePart() === 0n;
+    }
+
     getFiniteBigInt() {
         if (!this.isFinite()) {
             throw new Error('CNFOrdinal is not finite');
@@ -135,47 +140,48 @@ class CNFOrdinal extends OrdinalBase {
         if (this.isZero()) return 0;
 
         if (this.isFinite()) {
-            return this.terms[0].coefficient.toString().length;
+            const n = this.getFinitePart();
+            if (n === 0n) return 0;
+            return n.toString().length;
         }
 
-        // Handle single-term ordinals first
+        // Single-term cases
         if (this.terms.length === 1) {
             const term = this.terms[0];
-            const exponent = term.exponent;
-            const coefficient = term.coefficient;
+            const a = term.exponent;
+            const m = term.coefficient;
 
-            // Check for canonical equivalence to the exponent
-            if (coefficient === 1n) {
-                if (this.equals(exponent)) {
-                    return exponent.complexity();
-                }
+            // ω
+            if (this.isOmega()) return 1;
+
+            // ω*m
+            if (a.equals(CNFOrdinal.ONEStatic())) {
+                // g(ω*m) = g(m)+2; with finite m, g(m) = digits(m) (0 handled earlier)
+                const gM = m.toString().length;
+                return gM + 2;
             }
 
-            // Rule g(ω) = 1
-            if (this.isOmega()) {
-                return 1;
+            // ω^a
+            if (m === 1n) {
+                // g(ω^a) = g(a)+4
+                return a.complexity() + 4;
             }
-            // Rule g(ω*m) = g(m)+2
-            if (exponent.equals(CNFOrdinal.ONEStatic())) {
-                return coefficient.toString().length + 2;
-            }
-            // Rule g(ω^a) = g(a)+4
-            if (coefficient === 1n) {
-                return exponent.complexity() + 4;
-            }
-            // Rule g(ω^a*m) = g(a)+g(m)+5
-            return exponent.complexity() + coefficient.toString().length + 5;
+
+            // ω^a*m
+            // g(ω^a*m) = g(a)+g(m)+5
+            const gA = a.complexity();
+            const gM = m.toString().length;
+            return gA + gM + 5;
         }
 
-        // General sum rule: g(x+y) = g(x)+g(y)+1
-        let totalComplexity = 0;
+        // Sum: g(x+y) = g(x)+g(y)+1 (add 1 per plus)
+        let total = 0;
         for (const term of this.terms) {
-            const singleTermOrdinal = new CNFOrdinal([term], this._tracer);
-            totalComplexity += singleTermOrdinal.complexity();
+            const single = new CNFOrdinal([term], this._tracer);
+            total += single.complexity();
         }
-        totalComplexity += (this.terms.length - 1); // Add 1 for each '+'
-
-        return totalComplexity;
+        total += (this.terms.length - 1);
+        return total;
     }
 
     toString() {
@@ -300,22 +306,237 @@ class CNFOrdinal extends OrdinalBase {
 
     // Implement simplify method (extracted from existing CNFOrdinal.simplify)
     simplify(complexityBudget, skipMyOwnMPTFCheck = false) {
-        // For now, return basic budget-aware simplification
-        // Full CNF simplification logic can be migrated later
-        const myComplexity = this.complexity();
-        if (myComplexity <= complexityBudget) {
-            return {
-                simplifiedOrdinal: this.clone(),
-                remainingBudget: complexityBudget - myComplexity
-            };
+        if (this._tracer) this._tracer.consume(); // For the simplify call itself
+
+        // --- Top-Level MPT Fallback Check (only if not skipping) ---
+        if (!skipMyOwnMPTFCheck) {
+            if (!this.isZero() && !this.isFinite()) { // Only relevant for infinite ordinals
+                const E_this = this.terms[0].exponent; // Consider leading exponent for the MPT structure of 'this'
+
+                const towerInfo_this = getTowerInfo(E_this, this._tracer);
+                let mptStructureOfThis_expPart;
+                if (E_this.isZero()) {
+                    mptStructureOfThis_expPart = CNFOrdinal.ZEROStatic().clone(this._tracer);
+                } else {
+                    mptStructureOfThis_expPart = towerInfo_this.mptOrdinalForG;
+                }
+                // Check complexity of the exponent's tower structure w^(mpt_of_E_this)
+                const mptExpTowerStructureOfThis = new CNFOrdinal([{ exponent: mptStructureOfThis_expPart.clone(this._tracer), coefficient: 1n }], this._tracer);
+                const g_mptExpTowerStructureOfThis = mptExpTowerStructureOfThis.complexity();
+
+                const wTowerHeightForThisApprox = 1n + towerInfo_this.numOmegas;
+
+                // If the MPT structure of the leading exponent itself is too costly
+                if (g_mptExpTowerStructureOfThis > complexityBudget && wTowerHeightForThisApprox >= 0) {
+                    const wTowerApproxOfThis = new WTowerOrdinal(wTowerHeightForThisApprox, this._tracer);
+                    const g_wTowerApproxOfThis = wTowerApproxOfThis.complexity();
+                    if (g_wTowerApproxOfThis <= complexityBudget) {
+                        return { simplifiedOrdinal: wTowerApproxOfThis, remainingBudget: complexityBudget - g_wTowerApproxOfThis };
+                    }
+                }
+            }
         }
 
-        // Fallback to 0 if doesn't fit
-        const zero = CNFOrdinal.ZEROStatic().clone(this._tracer);
-        return {
-            simplifiedOrdinal: zero,
-            remainingBudget: complexityBudget
-        };
+        // Case 1: this is Zero
+        if (this.isZero()) {
+            const costThis = this.complexity();
+            if (costThis <= complexityBudget) {
+                return { simplifiedOrdinal: this.clone(), remainingBudget: complexityBudget - costThis };
+            } else {
+                return { simplifiedOrdinal: this.clone(), remainingBudget: 0 };
+            }
+        }
+
+        // Case 2: this is Finite (but not Zero)
+        if (this.isFinite()) {
+            const costThis = this.complexity();
+            if (costThis <= complexityBudget) {
+                return { simplifiedOrdinal: this.clone(), remainingBudget: complexityBudget - costThis };
+            } else {
+                const zeroOrdinal = CNFOrdinal.ZEROStatic().clone(this._tracer);
+                const costZero = zeroOrdinal.complexity();
+                if (costZero <= complexityBudget) {
+                    return { simplifiedOrdinal: zeroOrdinal, remainingBudget: complexityBudget - costZero };
+                } else {
+                    return { simplifiedOrdinal: zeroOrdinal, remainingBudget: 0 };
+                }
+            }
+        }
+
+        // Case 3: this is an Infinite Ordinal (single term or sum)
+        if (this.terms.length === 1) { // It's an infinite single term like w^a*m or w^a
+            const term = this.terms[0];
+            return this._simplifyCNFSingleTermRule(term.exponent, term.coefficient, complexityBudget, this._tracer, skipMyOwnMPTFCheck, false);
+        } else { // It's an actual sum
+            let simplifiedAccumulator = CNFOrdinal.ZEROStatic().clone(this._tracer);
+            let currentOverallBudget = complexityBudget;
+
+            for (let i = 0; i < this.terms.length; i++) {
+                const term = this.terms[i];
+                const E_i = term.exponent;
+                const C_i = term.coefficient;
+
+                if (this._tracer) this._tracer.consume();
+
+                let operatorCost = simplifiedAccumulator.isZero() ? 0 : 1;
+
+                const budgetForTermSimplification = currentOverallBudget - operatorCost;
+
+                if (budgetForTermSimplification < 0) {
+                    break;
+                }
+
+                const simplifiedTermResult = this._simplifyCNFSingleTermRule(E_i, C_i, budgetForTermSimplification, this._tracer, false, true);
+                const simplifiedTermToAdd = simplifiedTermResult.simplifiedOrdinal;
+                const g_simplifiedTermToAdd = simplifiedTermToAdd.complexity();
+
+                let actualOperatorCost = (!simplifiedAccumulator.isZero() && !simplifiedTermToAdd.isZero()) ? 1 : 0;
+
+                if ((g_simplifiedTermToAdd + actualOperatorCost) <= currentOverallBudget) {
+                    simplifiedAccumulator = simplifiedAccumulator.add(simplifiedTermToAdd);
+                    currentOverallBudget -= (g_simplifiedTermToAdd + actualOperatorCost);
+
+                    const originalTerm_i = new CNFOrdinal([{ exponent: E_i, coefficient: C_i }], this._tracer);
+                    if (!simplifiedTermToAdd.equals(originalTerm_i)) {
+                        break; // Rule 2: Term was reduced, so stop
+                    }
+                } else {
+                    break;
+                }
+            }
+
+            currentOverallBudget = Math.max(0, currentOverallBudget);
+
+            const g_simplifiedAccumulator = simplifiedAccumulator.complexity();
+            let finalSimplifiedOrdinal = simplifiedAccumulator;
+            let finalRemainingBudget = currentOverallBudget;
+
+            let accumulatorIsAcceptable = (g_simplifiedAccumulator <= complexityBudget &&
+                simplifiedAccumulator.compareTo(this) <= 0);
+
+            if (!accumulatorIsAcceptable) {
+                const g_this = this.complexity();
+                if (g_this <= complexityBudget) {
+                    finalSimplifiedOrdinal = this.clone(this._tracer);
+                    finalRemainingBudget = complexityBudget - g_this;
+                } else {
+                    if (!this.isZero() && this.terms.length > 0) {
+                        const leadingTerm = this.terms[0];
+                        const simplifiedLeadingTermResult = this._simplifyCNFSingleTermRule(
+                            leadingTerm.exponent, leadingTerm.coefficient, complexityBudget, this._tracer, true, false
+                        );
+                        const simplifiedLeadingOrd = simplifiedLeadingTermResult.simplifiedOrdinal;
+                        const g_simplifiedLeading = simplifiedLeadingOrd.complexity();
+
+                        if (g_simplifiedLeading <= complexityBudget && simplifiedLeadingOrd.compareTo(this) <= 0) {
+                            finalSimplifiedOrdinal = simplifiedLeadingOrd;
+                            finalRemainingBudget = complexityBudget - g_simplifiedLeading;
+                        } else {
+                            const zeroStatic = CNFOrdinal.ZEROStatic();
+                            const g_zero_final = zeroStatic.complexity();
+                            finalSimplifiedOrdinal = zeroStatic.clone(this._tracer);
+                            finalRemainingBudget = (g_zero_final <= complexityBudget) ? complexityBudget - g_zero_final : 0;
+                        }
+                    } else {
+                        const zeroStatic = CNFOrdinal.ZEROStatic();
+                        const g_zero_final = zeroStatic.complexity();
+                        finalSimplifiedOrdinal = zeroStatic.clone(this._tracer);
+                        finalRemainingBudget = (g_zero_final <= complexityBudget) ? complexityBudget - g_zero_final : 0;
+                    }
+                }
+            }
+            return { simplifiedOrdinal: finalSimplifiedOrdinal, remainingBudget: finalRemainingBudget };
+        }
+    }
+
+    _simplifyCNFSingleTermRule(expB, coeffM, budgetForThisTerm, tracer, skipMPTFCheckForThisTerm = false, isPartOfSumContext = false) {
+        if (tracer) tracer.consume();
+
+        if (expB.isZero()) {
+            const finiteOrdinalTerm = new CNFOrdinal(coeffM, tracer);
+            const g_coeffM_actual = finiteOrdinalTerm.complexity();
+            if (g_coeffM_actual <= budgetForThisTerm) {
+                return { simplifiedOrdinal: finiteOrdinalTerm, remainingBudget: budgetForThisTerm - g_coeffM_actual };
+            }
+            const zeroOrd = CNFOrdinal.ZEROStatic().clone(tracer);
+            const g_zero_finite_fallback = zeroOrd.complexity();
+            return { simplifiedOrdinal: zeroOrd, remainingBudget: (g_zero_finite_fallback <= budgetForThisTerm) ? budgetForThisTerm - g_zero_finite_fallback : 0 };
+        }
+
+        if (!skipMPTFCheckForThisTerm) {
+            if (tracer) tracer.consume();
+            const towerInfo = getTowerInfo(expB, tracer);
+            const mptExponentPart = towerInfo.mptOrdinalForG;
+            const mptExpTowerStructure = new CNFOrdinal([{ exponent: mptExponentPart.clone(tracer), coefficient: 1n }], tracer);
+            const g_mptExpTowerStructure = mptExpTowerStructure.complexity();
+            const wTowerHeightForApproximation = 1n + towerInfo.numOmegas;
+
+            if (g_mptExpTowerStructure > budgetForThisTerm) {
+                const zeroOrd = CNFOrdinal.ZEROStatic().clone(tracer);
+                const g_zero = zeroOrd.complexity();
+                if (isPartOfSumContext) {
+                    return { simplifiedOrdinal: zeroOrd, remainingBudget: (g_zero <= budgetForThisTerm) ? budgetForThisTerm - g_zero : 0 };
+                } else if (wTowerHeightForApproximation >= 0) {
+                    const wTowerApproximation = new WTowerOrdinal(wTowerHeightForApproximation, tracer);
+                    const g_wTowerApproximation = wTowerApproximation.complexity();
+                    if (g_wTowerApproximation <= budgetForThisTerm) {
+                        return { simplifiedOrdinal: wTowerApproximation, remainingBudget: budgetForThisTerm - g_wTowerApproximation };
+                    }
+                    return { simplifiedOrdinal: zeroOrd, remainingBudget: (g_zero <= budgetForThisTerm) ? budgetForThisTerm - g_zero : 0 };
+                }
+            }
+        }
+
+        const originalTermOrdinal = new CNFOrdinal([{ exponent: expB.clone(tracer), coefficient: coeffM }], tracer);
+        const g_originalTermOrdinal = originalTermOrdinal.complexity();
+        if (g_originalTermOrdinal <= budgetForThisTerm) {
+            return { simplifiedOrdinal: originalTermOrdinal, remainingBudget: budgetForThisTerm - g_originalTermOrdinal };
+        }
+
+        const cost_w_op_structure = 4;
+        const budgetFor_expB_simplification = budgetForThisTerm - cost_w_op_structure;
+
+        if (budgetFor_expB_simplification >= 0) {
+            const h_expB_result = expB.simplify(budgetFor_expB_simplification, true);
+            const h_expB = h_expB_result.simplifiedOrdinal;
+
+            let current_simplified_ordinal = new CNFOrdinal([{ exponent: h_expB, coefficient: 1n }], tracer);
+            let g_current_simplified = current_simplified_ordinal.complexity();
+
+            if (g_current_simplified <= budgetForThisTerm) {
+                let remaining_budget_after_exp_part = budgetForThisTerm - g_current_simplified;
+                const expB_was_reduced = !h_expB.equals(expB);
+
+                if (coeffM > 1n && !expB_was_reduced) {
+                    const g_coeffM_val = (new CNFOrdinal(coeffM, tracer)).complexity();
+                    const cost_of_mult_and_coeffM = 1 + g_coeffM_val;
+
+                    if (cost_of_mult_and_coeffM <= remaining_budget_after_exp_part) {
+                        const final_ordinal_with_coeff = new CNFOrdinal([{ exponent: h_expB, coefficient: coeffM }], tracer);
+                        if (final_ordinal_with_coeff.complexity() <= budgetForThisTerm) {
+                            return {
+                                simplifiedOrdinal: final_ordinal_with_coeff,
+                                remainingBudget: budgetForThisTerm - final_ordinal_with_coeff.complexity()
+                            };
+                        }
+                    }
+                }
+                return {
+                    simplifiedOrdinal: current_simplified_ordinal,
+                    remainingBudget: remaining_budget_after_exp_part
+                };
+            }
+        }
+
+        const omegaStatic = CNFOrdinal.OMEGAStatic();
+        const omega_cost_actual = omegaStatic.complexity();
+        if (omega_cost_actual <= budgetForThisTerm) {
+            return { simplifiedOrdinal: omegaStatic.clone(tracer), remainingBudget: budgetForThisTerm - omega_cost_actual };
+        }
+
+        const zeroStatic = CNFOrdinal.ZEROStatic();
+        const zero_cost_actual = zeroStatic.complexity();
+        return { simplifiedOrdinal: zeroStatic.clone(tracer), remainingBudget: (zero_cost_actual <= budgetForThisTerm) ? budgetForThisTerm - zero_cost_actual : 0 };
     }
 
     // === STATIC FACTORY METHODS ===

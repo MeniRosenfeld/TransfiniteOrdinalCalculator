@@ -216,6 +216,12 @@ By consulting this document, future agents should be better equipped to understa
 -   Updated `RenderingComponents.js` to suppress parentheses in all graphical cases while retaining internal switches for future configurability.
 -   Removed legacy `ordinal_ops.js` from the repository root.
 -   Documented the emerging `types/` and `operations/` structure and rule-based delegation model here.
+-   **Implemented `isLimit()` unary function** across all new ordinal types (`Finite`, `Omega`, `WTower`, `EpsilonZero`, `CNFOrdinal`) to correctly identify limit ordinals.
+-   **Refactored f-mapping and f-inverse mapping** to be number-agnostic using a `NumericContext` strategy pattern.
+    -   Created `operations/Rational.js` to handle arbitrary-precision rational number arithmetic.
+    -   Created `operations/NumericContexts.js` to define `DoubleFloatContext` (for legacy behavior) and `RationalContext`. The contexts provide a unified interface for all arithmetic (`add`, `multiply`, `compare`, `abs`, etc.).
+    -   Refactored `ordinal_mapping.js` and `ordinal_mapping_inverse.js` to exclusively use the provided `NumericContext`, removing all hardcoded arithmetic and making the system extensible.
+    -   Removed incorrect logic for ordinals > ε₀ from the f-mapping, which will be correctly reimplemented later.
 
 ## 6. Migration Notes (OOP scaffolding)
 

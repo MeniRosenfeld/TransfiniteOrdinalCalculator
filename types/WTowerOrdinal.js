@@ -26,14 +26,21 @@ class WTowerOrdinal extends OrdinalBase {
     isBasic() { return this.height === 1n; }
     isOne() { return this.height === 0n; }
 
+    isLimit() {
+        return this.height > 0n;
+    }
+
+    getFiniteBigInt() {
+        if (this.height === 0n) return 1n;
+        throw new Error('WTowerOrdinal is not finite');
+    }
+
     complexity() {
         // Rough complexity proportional to height digits
         return 3 + this.height.toString().length; // "w^^h"
     }
 
     toString() {
-        if (this.height === 0n) return '1';
-        if (this.height === 1n) return 'w';
         return `w^^${this.height.toString()}`;
     }
 
@@ -52,7 +59,13 @@ class WTowerOrdinal extends OrdinalBase {
         return { type: 'w_tower', height: asNum };
     }
 
+    // Convenience method used by legacy tests: produce CNF directly
+    toCNFOrdinal() {
+        return this.convertTo('CNF');
+    }
+
     simplify(complexityBudget, skipMyOwnMPTFCheck = false) {
+        if (this._tracer) this._tracer.consume();
         const myComplexity = this.complexity();
         if (myComplexity <= complexityBudget) {
             return {
@@ -60,11 +73,44 @@ class WTowerOrdinal extends OrdinalBase {
                 remainingBudget: complexityBudget - myComplexity
             };
         }
-        // Fallback to 0 if it does not fit
-        return {
-            simplifiedOrdinal: new FiniteOrdinal(0, this._tracer),
-            remainingBudget: complexityBudget
-        };
+
+        // If it doesn't fit, check height.
+        if (this.height >= 3n) {
+            const zero = new FiniteOrdinal(0, this._tracer);
+            const zeroComplexity = zero.complexity();
+            return {
+                simplifiedOrdinal: zero,
+                remainingBudget: (zeroComplexity <= complexityBudget) ? complexityBudget - zeroComplexity : 0
+            };
+        }
+
+        let expandedOrdinal;
+        if (this.height === 2n) {
+            // w^^2 -> w^w
+            expandedOrdinal = this.convertTo('CNF');
+        } else if (this.height === 1n) {
+            // w^^1 -> w
+            expandedOrdinal = new OmegaOrdinal(this._tracer);
+        } else { // this.height === 0n
+            // w^^0 -> 1
+            expandedOrdinal = new FiniteOrdinal(1, this._tracer);
+        }
+
+        const expandedComplexity = expandedOrdinal.complexity();
+        if (expandedComplexity <= complexityBudget) {
+            return {
+                simplifiedOrdinal: expandedOrdinal,
+                remainingBudget: complexityBudget - expandedComplexity
+            };
+        } else {
+            // Expanded form also doesn't fit, fallback to 0.
+            const zero = new FiniteOrdinal(0, this._tracer);
+            const zeroComplexity = zero.complexity();
+            return {
+                simplifiedOrdinal: zero,
+                remainingBudget: (zeroComplexity <= complexityBudget) ? complexityBudget - zeroComplexity : 0
+            };
+        }
     }
 
     // === CONVERSION SYSTEM ===

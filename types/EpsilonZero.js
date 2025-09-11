@@ -15,7 +15,11 @@ class EpsilonZero extends OrdinalBase {
     isBasic() { return true; }
     isOne() { return false; }
 
-    complexity() { return 2; }
+    isLimit() {
+        return true;
+    }
+
+    complexity() { return 6; }
 
     toString() { return 'e_0'; }
 
@@ -28,6 +32,7 @@ class EpsilonZero extends OrdinalBase {
     }
 
     simplify(complexityBudget, skipMyOwnMPTFCheck = false) {
+        if (this._tracer) this._tracer.consume();
         const myComplexity = this.complexity();
         if (myComplexity <= complexityBudget) {
             return {
@@ -35,7 +40,17 @@ class EpsilonZero extends OrdinalBase {
                 remainingBudget: complexityBudget - myComplexity
             };
         }
-        return { simplifiedOrdinal: new FiniteOrdinal(0, this._tracer), remainingBudget: complexityBudget };
+
+        const zero = new FiniteOrdinal(0, this._tracer);
+        const zeroComplexity = zero.complexity();
+        if (zeroComplexity <= complexityBudget) {
+            return {
+                simplifiedOrdinal: zero,
+                remainingBudget: complexityBudget - zeroComplexity
+            };
+        }
+
+        return { simplifiedOrdinal: zero, remainingBudget: 0 };
     }
 
     // === CONVERSION SYSTEM ===
