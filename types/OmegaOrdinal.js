@@ -23,6 +23,22 @@ class OmegaOrdinal extends OrdinalBase {
         return true;
     }
 
+    rank() {
+        return new OmegaOrdinal(this._tracer);
+    }
+
+    log() {
+        return new FiniteOrdinal(1n, this._tracer);
+    }
+
+    logStar() {
+        return new FiniteOrdinal(1n, this._tracer);
+    }
+
+    isTower() {
+        return true;
+    }
+
     getFiniteBigInt() { throw new Error('OmegaOrdinal is not finite'); }
 
     nextRank() {

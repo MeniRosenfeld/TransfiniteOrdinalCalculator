@@ -59,6 +59,26 @@ class OrdinalBase {
     isLimit() { throw new Error(`${this.constructor.name} must implement isLimit()`); }
 
     /**
+     * Returns true if this ordinal can be represented as (a.rank) ^^ n for some finite n.
+     */
+    isTower() { throw new Error(`${this.constructor.name} must implement isTower()`); }
+
+    /**
+     * Returns the rank of this ordinal.
+     */
+    rank() { throw new Error(`${this.constructor.name} must implement rank()`); }
+
+    /**
+     * Returns the log of this ordinal.
+     */
+    log() { throw new Error(`${this.constructor.name} must implement log()`); }
+
+    /**
+     * Returns the logStar of this ordinal.
+     */
+    logStar() { throw new Error(`${this.constructor.name} must implement logStar()`); }
+
+    /**
      * Returns the structural complexity of this ordinal.
      */
     complexity() { throw new Error(`${this.constructor.name} must implement complexity()`); }

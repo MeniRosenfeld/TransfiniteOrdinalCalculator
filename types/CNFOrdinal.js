@@ -80,6 +80,64 @@ class CNFOrdinal extends OrdinalBase {
         return !this.isZero() && this.getFinitePart() === 0n;
     }
 
+    rank() {
+        if (this.isZero()) {
+            return new FiniteOrdinal(0n, this._tracer);
+        }
+        if (this.isFinite()) {
+            return new FiniteOrdinal(1n, this._tracer);
+        }
+        return new OmegaOrdinal(this._tracer);
+    }
+
+    log() {
+        if (this.isFinite()) {
+            return new FiniteOrdinal(0n, this._tracer);
+        }
+        return this.terms[0].exponent.clone(this._tracer);
+    }
+
+    logStar() {
+        if (this.isFinite()) {
+            if (this.isZero()) {
+                return new FiniteOrdinal(-1n, this._tracer);
+            } else {
+                return new FiniteOrdinal(0n, this._tracer);
+            }
+        }
+
+        let count = 0;
+        let current = this;
+        // Iterate until the ordinal becomes finite
+        while (!current.isFinite()) {
+            count++;
+            current = current.log();
+            // Safety break for unexpected cycles or extremely deep chains
+            if (count > 1000) {
+                throw new Error("Exceeded maximum recursion depth for logStar calculation.");
+            }
+        }
+
+        // 'current' is now a finite ordinal. Get its logStar value (-1 for 0, 0 for >0)
+        const finalPart = current.logStar().getFiniteBigInt();
+        return new FiniteOrdinal(BigInt(count) + finalPart, this._tracer);
+    }
+
+    isTower() {
+        if (this.isFinite()) {
+            return this.isZero() || this.isOne();
+        }
+
+        // For infinite ordinals, must be a pure power of omega, like w^k
+        if (this.terms.length !== 1 || this.terms[0].coefficient !== 1n) {
+            return false;
+        }
+
+        // The exponent k must also be a tower.
+        const exponent = this.terms[0].exponent;
+        return exponent.isTower();
+    }
+
     getFiniteBigInt() {
         if (!this.isFinite()) {
             throw new Error('CNFOrdinal is not finite');

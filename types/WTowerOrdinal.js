@@ -30,6 +30,30 @@ class WTowerOrdinal extends OrdinalBase {
         return this.height > 0n;
     }
 
+    rank() {
+        if (this.height === 0n) {
+            return new FiniteOrdinal(1n, this._tracer);
+        } else {
+            return new OmegaOrdinal(this._tracer);
+        }
+    }
+
+    log() {
+        if (this.height === 0n) {
+            return new FiniteOrdinal(0n, this._tracer);
+        } else {
+            return new WTowerOrdinal(this.height - 1n, this._tracer);
+        }
+    }
+
+    logStar() {
+        return new FiniteOrdinal(this.height, this._tracer);
+    }
+
+    isTower() {
+        return true;
+    }
+
     getFiniteBigInt() {
         if (this.height === 0n) return 1n;
         throw new Error('WTowerOrdinal is not finite');

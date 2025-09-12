@@ -34,6 +34,27 @@ class FiniteOrdinal extends OrdinalBase {
         return false;
     }
 
+    rank() {
+        if (this.isZero()) return new FiniteOrdinal(0n, this._tracer);
+        return new FiniteOrdinal(1n, this._tracer);
+    }
+
+    log() {
+        return new FiniteOrdinal(0n, this._tracer);
+    }
+
+    logStar() {
+        if (this.isZero()) {
+            return new FiniteOrdinal(-1n, this._tracer);
+        } else {
+            return new FiniteOrdinal(0n, this._tracer);
+        }
+    }
+
+    isTower() {
+        return this.value === 0n || this.value === 1n;
+    }
+
     getFiniteBigInt() { return this.value; }
 
     nextRank() {

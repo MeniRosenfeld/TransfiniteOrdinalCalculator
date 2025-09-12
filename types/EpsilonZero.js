@@ -19,6 +19,22 @@ class EpsilonZero extends OrdinalBase {
         return true;
     }
 
+    rank() {
+        return new EpsilonZero(this._tracer);
+    }
+
+    log() {
+        return new FiniteOrdinal(1n, this._tracer);
+    }
+
+    logStar() {
+        return new FiniteOrdinal(1n, this._tracer);
+    }
+
+    isTower() {
+        return true;
+    }
+
     complexity() { return 6; }
 
     toString() { return 'e_0'; }

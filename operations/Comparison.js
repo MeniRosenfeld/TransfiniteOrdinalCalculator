@@ -68,18 +68,25 @@ function createComparisonRules(conversionEngine) {
             (a, b) => a === b,
             (a, b) => 0),
 
+        // Both finite
+        new Rule("Both finite",
+            (a, b) => a.isFinite() && b.isFinite(),
+            (a, b) => compareFinite(a, b)),
+
+        // Finite vs infinite
+        new Rule("Finite vs infinite",
+            (a, b) => a.isFinite() !== b.isFinite(),
+            (a, b) => a.isFinite() ? -1 : 1), // finite < infinite
+
         // EpsilonZero equality (new architecture basic type)
         new Rule("EpsilonZero equality",
             (a, b) => (typeof EpsilonZero !== 'undefined') && (a instanceof EpsilonZero) && (b instanceof EpsilonZero),
             (a, b) => 0),
 
-        new Rule("Zero comparisons",
-            (a, b) => a.isZero() || b.isZero(),
-            (a, b) => {
-                if (a.isZero() && b.isZero()) return 0;
-                if (a.isZero()) return -1; // 0 < anything non-zero
-                return 1; // anything non-zero > 0
-            }),
+        new Rule("Omega equality",
+            (a, b) => (a.isOmega() && b.isOmega()),
+            (a, b) => 0),
+
 
         // Any <ε₀ ordinal is less than ε₀
         new Rule("CNF vs EpsilonZero ordering",
@@ -93,15 +100,26 @@ function createComparisonRules(conversionEngine) {
                 return 0;
             }),
 
-        // Finite vs infinite
-        new Rule("Finite vs infinite",
-            (a, b) => a.isFinite() !== b.isFinite(),
-            (a, b) => a.isFinite() ? -1 : 1), // finite < infinite
+        new Rule("Different rank",
+            (a, b) => OPERATIONS.compare(a.rank(), b.rank()) != 0,
+            (a, b) => OPERATIONS.compare(a.rank(), b.rank())
+        ),
 
-        // Both finite
-        new Rule("Both finite",
-            (a, b) => a.isFinite() && b.isFinite(),
-            (a, b) => compareFinite(a, b)),
+        new Rule("Different log*",
+            (a, b) => a.logStar().getFiniteBigInt() != b.logStar().getFiniteBigInt(),
+            (a, b) => a.logStar().getFiniteBigInt() < b.logStar().getFiniteBigInt() ? -1 : 1
+        ),
+
+        new Rule("Tower vs not tower",
+            (a, b) => a.isTower() != b.isTower(),
+            (a, b) => a.isTower() ? -1 : 1
+        ),
+
+        new Rule("Both towers",
+            (a, b) => a.isTower() && b.isTower(),
+            (a, b) => 0
+        ),
+
 
         // Convert to CNF for <ε₀ ordinals
         new Rule("Convert to CNF for <ε₀",
