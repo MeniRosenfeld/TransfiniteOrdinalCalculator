@@ -28,11 +28,11 @@ class OmegaOrdinal extends OrdinalBase {
     }
 
     log() {
-        return new FiniteOrdinal(1n, this._tracer);
+        return new OneOrdinal(this._tracer);
     }
 
     logStar() {
-        return new FiniteOrdinal(1n, this._tracer);
+        return new OneOrdinal(this._tracer);
     }
 
     isTower() {
@@ -74,7 +74,7 @@ class OmegaOrdinal extends OrdinalBase {
             };
         }
 
-        const zero = new FiniteOrdinal(0, this._tracer);
+        const zero = new ZeroOrdinal(this._tracer);
         const zeroComplexity = zero.complexity();
         if (zeroComplexity <= complexityBudget) {
             return {

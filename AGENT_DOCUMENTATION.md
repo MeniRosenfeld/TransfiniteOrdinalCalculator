@@ -52,14 +52,13 @@ The primary goal is to parse ordinal expressions from strings, perform arithmeti
     2.  `omegaExponent`: A `CNFOrdinal` instance. **This exponent must not itself contain any epsilon numbers.**
     3.  `coefficient`: A JavaScript `BigInt`.
 
-### `OperationTracer` (`ordinal_types.js`)
-### Ordinal branding & polymorphic display
+### `OperationTracer` (`OperationTracer.js`)
+### Ordinal branding & stringification
 
--   All ordinal classes carry a shared internal brand (`Symbol.for('TransfiniteOrdinal.OrdinalBrand')`) to enable duck-typed `isOrdinal` checks without a common base class.
--   Use `toDisplayString({ format: 'CNF'|'ENF' })` to render strings, instead of calling `toStringCNF()`/`toString()` directly. This keeps UI/tests decoupled from representation choices.
-    -   ENF string parentheses: epsilon indices avoid superfluous parentheses but disambiguate composite indices. Examples:
-        *   `(e_e_0)^2` → `e_e_0^2`
-        *   `e_(e_0^2)` → `e_(e_0^2)`
+-   All ordinal classes carry a shared internal brand (`Symbol.for('TransfiniteOrdinal.OrdinalBrand')`) to enable duck-typed `isOrdinal` checks.
+-   Stringification policy: all ordinal types must implement `toString()`. The previously used `toStringCNF()` and `toDisplayString()` are deprecated and removed from active use. All UI, tests, and logging now call `toString()` consistently.
+    -   CNF’s former `toStringCNF()` logic has been migrated into `CNFOrdinal.toString()` (including minimal parentheses rules for exponents).
+    -   Renderers that need a string use the caller-provided `toString()` output.
 
 ### Centralized operation registry
 
@@ -213,27 +212,32 @@ By consulting this document, future agents should be better equipped to understa
 
 ### Session Changelog (this session)
 
--   Updated `RenderingComponents.js` to suppress parentheses in all graphical cases while retaining internal switches for future configurability.
--   Removed legacy `ordinal_ops.js` from the repository root.
--   Documented the emerging `types/` and `operations/` structure and rule-based delegation model here.
--   **Implemented `isLimit()` unary function** across all new ordinal types (`Finite`, `Omega`, `WTower`, `EpsilonZero`, `CNFOrdinal`) to correctly identify limit ordinals.
--   **Refactored f-mapping and f-inverse mapping** to be number-agnostic using a `NumericContext` strategy pattern.
-    -   Created `operations/Rational.js` to handle arbitrary-precision rational number arithmetic.
-    -   Created `operations/NumericContexts.js` to define `DoubleFloatContext` (for legacy behavior) and `RationalContext`. The contexts provide a unified interface for all arithmetic (`add`, `multiply`, `compare`, `abs`, etc.).
-    -   Refactored `ordinal_mapping.js` and `ordinal_mapping_inverse.js` to exclusively use the provided `NumericContext`, removing all hardcoded arithmetic and making the system extensible.
-    -   Removed incorrect logic for ordinals > ε₀ from the f-mapping, which will be correctly reimplemented later.
+**New ordinal types**
+-   `types/ZeroOrdinal.js` and `types/OneOrdinal.js`: dedicated types for 0 and 1 with full unary surfaces (`rank`, `log`, `logStar`, `isTower`, etc.). Parser/ops now increasingly use these in place of `FiniteOrdinal(0|1)`.
+-   `types/EpsilonNumber.js` (general `e_k`): unary surfaces implemented; `nextRank()` returns `e_(k+1)`; `log()`/`logStar()` are 1.
+-   `types/ENFFactor.js` and `types/ENFTerm.js`: building blocks for ENF; factor accepts any ordinal base (ω or `EpsilonNumber`) and any ordinal exponent; term is a product of factors times a finite coefficient.
+-   `types/ENFOrdinal.js`: reimplemented as a sum of `ENFTerm`s (descending). Unary surfaces implemented.
+
+**Stringification policy**
+-   Deprecated `toStringCNF()` and `toDisplayString()`; standardized on `toString()` across codebase (UI, tests, mappers).
+-   Migrated CNF string logic into `CNFOrdinal.toString()` (minimal parentheses for exponents).
+
+**Tracer accounting framework**
+-   `OrdinalBase` now consumes 1 operation in its constructor when a tracer is present. All ordinal allocations now count uniformly.
+-   Loop-scale consumption added in core hot paths to make counts roughly track structural size:
+    -   `CNFOrdinal`: constructor (array clones), `divideByOmega()`, `complexity()` (sum path), `simplify()` (sum path).
+    -   Operations: Addition/Multiplication/Exponentiation helpers and rule actions consume once per array loop.
+-   Rules thread tracers into new instances via `a._tracer || b._tracer`, and clones use `clone(tracer)` consistently.
+-   Added `tracer_test.html` to benchmark parse/convert/simplify/toString deltas per expression.
+
+**Operations and optimizations**
+-   Addition: threaded tracer and added loop consumption to CNF/ENF paths.
+-   Multiplication: same; CNF-specific multiply uses loop-scale consumption.
+-   Exponentiation: implemented exponentiation-by-squaring for CNF base with finite exponent (replacing O(m) repeated multiplication by O(log m)).
+-   Comparison: loop-scale consumption for CNF/ENF pairwise term comparisons.
+
+**UI/test cleanup**
+-   `script.js` and `ordinal_calculator_test.html` updated to use `toString()` only.
+-   `ordinal_mapping_inverse.js` no longer calls deprecated `toStringCNF()`.
 
 ## 6. Migration Notes (OOP scaffolding)
-
--   The codebase now includes a non-breaking OOP surface and a central ops registry. Behavior is unchanged.
--   Prefer `toDisplayString({ format })` for output. Avoid assuming CNF-only `toStringCNF()` in new code.
--   When ready to drop CNF epsilon support, flip the `ALLOW_EPSILON_IN_CNF` flag in `ordinal_types.js` and update any remaining CNF ε call sites/tests.
-
-## 5. Maintaining This Document
-
-This is a living document. Future agents working on this project are instructed to update it with any new information that could be beneficial for subsequent sessions. This includes, but is not limited to:
-
--   Newly discovered bugs and their root causes.
--   New guidelines or best practices established during development.
--   Clarifications or additions to the documentation of core data structures.
--   Information about new features or architectural changes.

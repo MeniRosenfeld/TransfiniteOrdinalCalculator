@@ -22,6 +22,7 @@ class CNFOrdinal extends OrdinalBase {
                 this.terms.push({ exponent: CNFOrdinal.ZEROStatic(), coefficient: val });
             }
         } else if (Array.isArray(initVal)) {
+            if (this._tracer) this._tracer.consume(initVal.length || 0);
             this.terms = initVal.map(t => ({
                 exponent: t.exponent.clone(this._tracer),
                 coefficient: t.coefficient
@@ -29,15 +30,18 @@ class CNFOrdinal extends OrdinalBase {
         } else if (typeof initVal === 'object' && initVal.constructor) {
             // Handle various ordinal types
             if (initVal instanceof CNFOrdinal) {
+                if (this._tracer) this._tracer.consume(initVal.terms.length || 0);
                 this.terms = initVal.terms.map(t => ({
                     exponent: t.exponent.clone(this._tracer),
                     coefficient: t.coefficient
                 }));
             } else if (typeof ENFOrdinal !== 'undefined' && initVal instanceof ENFOrdinal) {
                 const cnf = initVal.toCNFOrdinal();
+                if (this._tracer) this._tracer.consume(cnf.terms.length || 0);
                 this.terms = cnf.terms.map(t => ({ exponent: t.exponent.clone(this._tracer), coefficient: t.coefficient }));
             } else if (initVal instanceof WTowerOrdinal) {
                 const cnf = initVal.toCNFOrdinal();
+                if (this._tracer) this._tracer.consume(cnf.terms.length || 0);
                 this.terms = cnf.terms;
             } else {
                 throw new Error(`Invalid Ordinal type for CNFOrdinal cloning: ${initVal.constructor.name}`);
@@ -63,7 +67,7 @@ class CNFOrdinal extends OrdinalBase {
 
     isOmega() {
         return this.terms.length === 1 &&
-            this.terms[0].exponent.equals(CNFOrdinal.ONEStatic()) &&
+            this.terms[0].exponent.isOne() &&
             this.terms[0].coefficient === 1n;
     }
 
@@ -82,17 +86,17 @@ class CNFOrdinal extends OrdinalBase {
 
     rank() {
         if (this.isZero()) {
-            return new FiniteOrdinal(0n, this._tracer);
+            return new ZeroOrdinal(this._tracer);
         }
         if (this.isFinite()) {
-            return new FiniteOrdinal(1n, this._tracer);
+            return new OneOrdinal(this._tracer);
         }
         return new OmegaOrdinal(this._tracer);
     }
 
     log() {
         if (this.isFinite()) {
-            return new FiniteOrdinal(0n, this._tracer);
+            return new ZeroOrdinal(this._tracer);
         }
         return this.terms[0].exponent.clone(this._tracer);
     }
@@ -148,7 +152,7 @@ class CNFOrdinal extends OrdinalBase {
     nextRank() {
         if (this.isFinite()) {
             const n = this.getFinitePart();
-            if (n === 0n) return new FiniteOrdinal(1n, this._tracer);
+            if (n === 0n) return new OneOrdinal(this._tracer);
             return new OmegaOrdinal(this._tracer);
         }
         // CNF ordinals here are < ε₀ and infinite
@@ -158,12 +162,12 @@ class CNFOrdinal extends OrdinalBase {
     // === EXPONENT/OMEGA HELPERS (needed for CNF exponentiation) ===
     exponentPredecessor() {
         if (this.isZero()) {
-            return CNFOrdinal.ZEROStatic().clone(this._tracer);
+            return new ZeroOrdinal(this._tracer);
         }
         if (this.isFinite()) {
             const n = this.getFinitePart();
-            if (n <= 1n) return CNFOrdinal.ZEROStatic().clone(this._tracer);
-            return new CNFOrdinal(n - 1n, this._tracer);
+            if (n <= 1n) return new ZeroOrdinal(this._tracer);
+            return new FiniteOrdinal(n - 1n, this._tracer);
         }
 
         const lastIdx = this.terms.length - 1;
@@ -182,9 +186,10 @@ class CNFOrdinal extends OrdinalBase {
 
     divideByOmega() {
         if (this.isZero() || this.isFinite()) {
-            return CNFOrdinal.ZEROStatic().clone(this._tracer);
+            return new ZeroOrdinal(this._tracer);
         }
         const newTerms = [];
+        if (this._tracer) this._tracer.consume(this.terms.length || 0);
         for (const term of this.terms) {
             const newExponent = term.exponent.exponentPredecessor();
             newTerms.push({ exponent: newExponent, coefficient: term.coefficient });
@@ -213,7 +218,7 @@ class CNFOrdinal extends OrdinalBase {
             if (this.isOmega()) return 1;
 
             // ω*m
-            if (a.equals(CNFOrdinal.ONEStatic())) {
+            if (a.isOne()) {
                 // g(ω*m) = g(m)+2; with finite m, g(m) = digits(m) (0 handled earlier)
                 const gM = m.toString().length;
                 return gM + 2;
@@ -234,16 +239,13 @@ class CNFOrdinal extends OrdinalBase {
 
         // Sum: g(x+y) = g(x)+g(y)+1 (add 1 per plus)
         let total = 0;
+        if (this._tracer) this._tracer.consume(this.terms.length || 0);
         for (const term of this.terms) {
             const single = new CNFOrdinal([term], this._tracer);
             total += single.complexity();
         }
         total += (this.terms.length - 1);
         return total;
-    }
-
-    toString() {
-        return this.toStringCNF();
     }
 
     toGraphicalHTML() {
@@ -258,7 +260,7 @@ class CNFOrdinal extends OrdinalBase {
         return RenderingComponents.joinTerms(termHTMLs);
     }
 
-    toStringCNF() {
+    toString() {
         if (this.isZero()) return "0";
 
         return this.terms.map(term => {
@@ -268,10 +270,10 @@ class CNFOrdinal extends OrdinalBase {
             if (exp.isZero()) return coeff.toString();
 
             let expStr;
-            if (exp.equals(CNFOrdinal.ONEStatic())) {
+            if (exp.isOne()) {
                 expStr = "w";
             } else {
-                const expCNF = exp.toStringCNF();
+                const expCNF = exp.toString();
                 // Parenthesize only when necessary
                 let needsParen = false;
                 if (exp instanceof CNFOrdinal) {
@@ -411,7 +413,7 @@ class CNFOrdinal extends OrdinalBase {
             if (costThis <= complexityBudget) {
                 return { simplifiedOrdinal: this.clone(), remainingBudget: complexityBudget - costThis };
             } else {
-                const zeroOrdinal = CNFOrdinal.ZEROStatic().clone(this._tracer);
+                const zeroOrdinal = new ZeroOrdinal(this._tracer);
                 const costZero = zeroOrdinal.complexity();
                 if (costZero <= complexityBudget) {
                     return { simplifiedOrdinal: zeroOrdinal, remainingBudget: complexityBudget - costZero };
@@ -426,9 +428,10 @@ class CNFOrdinal extends OrdinalBase {
             const term = this.terms[0];
             return this._simplifyCNFSingleTermRule(term.exponent, term.coefficient, complexityBudget, this._tracer, skipMyOwnMPTFCheck, false);
         } else { // It's an actual sum
-            let simplifiedAccumulator = CNFOrdinal.ZEROStatic().clone(this._tracer);
+            let simplifiedAccumulator = new ZeroOrdinal(this._tracer);
             let currentOverallBudget = complexityBudget;
 
+            if (this._tracer) this._tracer.consume(this.terms.length || 0);
             for (let i = 0; i < this.terms.length; i++) {
                 const term = this.terms[i];
                 const E_i = term.exponent;
@@ -490,13 +493,13 @@ class CNFOrdinal extends OrdinalBase {
                             finalSimplifiedOrdinal = simplifiedLeadingOrd;
                             finalRemainingBudget = complexityBudget - g_simplifiedLeading;
                         } else {
-                            const zeroStatic = CNFOrdinal.ZEROStatic();
+                            const zeroStatic = new ZeroOrdinal(this._tracer);
                             const g_zero_final = zeroStatic.complexity();
                             finalSimplifiedOrdinal = zeroStatic.clone(this._tracer);
                             finalRemainingBudget = (g_zero_final <= complexityBudget) ? complexityBudget - g_zero_final : 0;
                         }
                     } else {
-                        const zeroStatic = CNFOrdinal.ZEROStatic();
+                        const zeroStatic = new ZeroOrdinal(this._tracer);
                         const g_zero_final = zeroStatic.complexity();
                         finalSimplifiedOrdinal = zeroStatic.clone(this._tracer);
                         finalRemainingBudget = (g_zero_final <= complexityBudget) ? complexityBudget - g_zero_final : 0;
@@ -516,7 +519,7 @@ class CNFOrdinal extends OrdinalBase {
             if (g_coeffM_actual <= budgetForThisTerm) {
                 return { simplifiedOrdinal: finiteOrdinalTerm, remainingBudget: budgetForThisTerm - g_coeffM_actual };
             }
-            const zeroOrd = CNFOrdinal.ZEROStatic().clone(tracer);
+            const zeroOrd = new ZeroOrdinal(this._tracer);
             const g_zero_finite_fallback = zeroOrd.complexity();
             return { simplifiedOrdinal: zeroOrd, remainingBudget: (g_zero_finite_fallback <= budgetForThisTerm) ? budgetForThisTerm - g_zero_finite_fallback : 0 };
         }
@@ -530,7 +533,7 @@ class CNFOrdinal extends OrdinalBase {
             const wTowerHeightForApproximation = 1n + towerInfo.numOmegas;
 
             if (g_mptExpTowerStructure > budgetForThisTerm) {
-                const zeroOrd = CNFOrdinal.ZEROStatic().clone(tracer);
+                const zeroOrd = new ZeroOrdinal(this._tracer);
                 const g_zero = zeroOrd.complexity();
                 if (isPartOfSumContext) {
                     return { simplifiedOrdinal: zeroOrd, remainingBudget: (g_zero <= budgetForThisTerm) ? budgetForThisTerm - g_zero : 0 };
@@ -592,7 +595,7 @@ class CNFOrdinal extends OrdinalBase {
             return { simplifiedOrdinal: omegaStatic.clone(tracer), remainingBudget: budgetForThisTerm - omega_cost_actual };
         }
 
-        const zeroStatic = CNFOrdinal.ZEROStatic();
+        const zeroStatic = new ZeroOrdinal(this._tracer);
         const zero_cost_actual = zeroStatic.complexity();
         return { simplifiedOrdinal: zeroStatic.clone(tracer), remainingBudget: (zero_cost_actual <= budgetForThisTerm) ? budgetForThisTerm - zero_cost_actual : 0 };
     }

@@ -5,7 +5,8 @@
 function multiplyFinite(a, b) {
     const av = a.getFiniteBigInt();
     const bv = b.getFiniteBigInt();
-    return new FiniteOrdinal(av * bv);
+    const tracer = a._tracer || b._tracer || null;
+    return new FiniteOrdinal(av * bv, tracer);
 }
 
 function buildLimitPart(cnf) {
@@ -13,20 +14,22 @@ function buildLimitPart(cnf) {
     if (cnf.isZero()) return new CNFOrdinal(0);
     const terms = cnf.terms;
     const resultTerms = [];
+    const tracer = cnf._tracer || null;
+    if (tracer) tracer.consume(terms.length || 0);
     for (let i = 0; i < terms.length; i++) {
         const t = terms[i];
         // Skip finite last term (ω^0)
         if (i === terms.length - 1 && t.exponent.isZero()) continue;
-        resultTerms.push({ exponent: t.exponent.clone(), coefficient: t.coefficient });
+        resultTerms.push({ exponent: t.exponent.clone(tracer), coefficient: t.coefficient });
     }
-    return new CNFOrdinal(resultTerms);
+    return new CNFOrdinal(resultTerms, tracer);
 }
 
 function multiplyCNF(a, b) {
     // Implements the legacy CNF * CNF algorithm, using rule-based add for exponents
-    if (a.isZero() || b.isZero()) return CNFOrdinal.ZEROStatic().clone();
-    if (a.isOne()) return b.clone();
-    if (b.isOne()) return a.clone();
+    if (a.isZero() || b.isZero()) return CNFOrdinal.ZEROStatic().clone(a._tracer || b._tracer || null);
+    if (a.isOne()) return b.clone(a._tracer || b._tracer || null);
+    if (b.isOne()) return a.clone(a._tracer || b._tracer || null);
 
     const a1_exp = a.terms[0].exponent;
     const n1_coeff = a.terms[0].coefficient;
@@ -35,8 +38,10 @@ function multiplyCNF(a, b) {
     const m_finite_part = b.getFinitePart();
 
     const newTerms = [];
+    const tracer = a._tracer || b._tracer || null;
 
     // sum over limit part: ω^{a1+bj} * mj
+    if (tracer) tracer.consume(b_limit_part.terms.length || 0);
     for (const term_b of b_limit_part.terms) {
         const bj_exp = term_b.exponent;
         const mj_coeff = term_b.coefficient;
@@ -44,20 +49,21 @@ function multiplyCNF(a, b) {
         const expSum = a1_exp.add(bj_exp);
         const new_exp = (expSum instanceof CNFOrdinal)
             ? expSum
-            : new CNFOrdinal(expSum.getFiniteBigInt());
+            : new CNFOrdinal(expSum.getFiniteBigInt(), tracer);
         newTerms.push({ exponent: new_exp, coefficient: mj_coeff });
     }
 
     if (m_finite_part > 0n) {
         // ω^{a1} * n1 * m
-        newTerms.push({ exponent: a1_exp.clone(), coefficient: n1_coeff * m_finite_part });
+        newTerms.push({ exponent: a1_exp.clone(tracer), coefficient: n1_coeff * m_finite_part });
         // plus the tail of a (i >= 2)
+        if (tracer) tracer.consume(Math.max(0, a.terms.length - 1));
         for (let i = 1; i < a.terms.length; i++) {
-            newTerms.push({ exponent: a.terms[i].exponent.clone(), coefficient: a.terms[i].coefficient });
+            newTerms.push({ exponent: a.terms[i].exponent.clone(tracer), coefficient: a.terms[i].coefficient });
         }
     }
 
-    return new CNFOrdinal(newTerms);
+    return new CNFOrdinal(newTerms, tracer);
 }
 
 function createMultiplicationRules(conversionEngine) {
@@ -65,20 +71,20 @@ function createMultiplicationRules(conversionEngine) {
         // Zero annihilators
         new Rule("Zero left",
             (a, b) => a.isZero(),
-            (a, b) => a.clone()), // 0 * b = 0
+            (a, b) => a.clone(a._tracer || b._tracer || null)), // 0 * b = 0
 
         new Rule("Zero right",
             (a, b) => b.isZero(),
-            (a, b) => b.clone()), // a * 0 = 0
+            (a, b) => b.clone(a._tracer || b._tracer || null)), // a * 0 = 0
 
         // One identities
         new Rule("One left",
             (a, b) => a.isOne(),
-            (a, b) => b.clone()),
+            (a, b) => b.clone(a._tracer || b._tracer || null)),
 
         new Rule("One right",
             (a, b) => b.isOne(),
-            (a, b) => a.clone()),
+            (a, b) => a.clone(a._tracer || b._tracer || null)),
 
         // Finite * finite
         new Rule("Both finite",
@@ -88,16 +94,18 @@ function createMultiplicationRules(conversionEngine) {
         // Finite * infinite = infinite (left finite)
         new Rule("Finite * infinite = infinite",
             (a, b) => a.isFinite(),
-            (a, b) => b.clone()),
+            (a, b) => b.clone(a._tracer || b._tracer || null)),
 
         // Convert to CNF for < ε0 and use CNF multiplication
         new Rule("Convert to CNF for <ε₀",
             (a, b) => a.isLessThanEpsilon0() && b.isLessThanEpsilon0() &&
                 conversionEngine.canConvert(a, 'CNF') && conversionEngine.canConvert(b, 'CNF'),
             (a, b) => {
+                const tracer = a._tracer || b._tracer || null;
                 const aCNF = conversionEngine.convert(a, 'CNF');
                 const bCNF = conversionEngine.convert(b, 'CNF');
-                return multiplyCNF(aCNF, bCNF);
+                const res = multiplyCNF(aCNF, bCNF);
+                return res.clone(tracer);
             })
 
         // ENF fallback can be added later when ENF is migrated

@@ -231,11 +231,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const displayOrdinalObject = simplifiedOrdinalObject; // Use simplified for display
             // Native string display per type
-            const displayString = nativeString || (typeof displayOrdinalObject.toDisplayString === 'function')
-                ? displayOrdinalObject.toDisplayString({ format: 'ENF' })
-                : (displayOrdinalObject && typeof displayOrdinalObject.toString === 'function'
-                    ? displayOrdinalObject.toString()
-                    : String(displayOrdinalObject));
+            const displayString = nativeString || displayOrdinalObject.toString();
             const linearResultHeader = document.querySelector('.linear-result-section h3');
 
             // --- Output Format Selection ---
@@ -586,18 +582,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 const ordinalInstanceFromInverse = convertFFormatToOrdinalInstance(ordinalRepFromInverse, new OperationTracer(10000)); // Use a fresh tracer
                 console.log("[fInverseCalc] convertFFormatToOrdinalInstance returned:", ordinalInstanceFromInverse);
 
-                const sliderDisplayString = (typeof ordinalInstanceFromInverse.toDisplayString === 'function')
-                    ? ordinalInstanceFromInverse.toDisplayString({ format: 'ENF' })
-                    : (ordinalInstanceFromInverse && typeof ordinalInstanceFromInverse.toString === 'function'
-                        ? ordinalInstanceFromInverse.toString()
-                        : String(ordinalInstanceFromInverse));
+                const sliderDisplayString = ordinalInstanceFromInverse.toString();
                 linearResultTextElement.textContent = sliderDisplayString;
                 if (typeof renderOrdinalGraphicalFromStringSimple === 'function') {
-                    const textForInverse = (typeof ordinalInstanceFromInverse.toDisplayString === 'function')
-                        ? ordinalInstanceFromInverse.toDisplayString({ format: 'ENF' })
-                        : (ordinalInstanceFromInverse && typeof ordinalInstanceFromInverse.toString === 'function'
-                            ? ordinalInstanceFromInverse.toString()
-                            : String(ordinalInstanceFromInverse));
+                    const textForInverse = ordinalInstanceFromInverse.toString();
                     graphicalResultArea.innerHTML = renderOrdinalGraphicalFromStringSimple(textForInverse);
                 } else if (typeof renderOrdinalSimple === 'function') {
                     graphicalResultArea.innerHTML = renderOrdinalSimple(ordinalInstanceFromInverse);

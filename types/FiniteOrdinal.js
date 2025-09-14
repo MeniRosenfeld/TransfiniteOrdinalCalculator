@@ -40,14 +40,14 @@ class FiniteOrdinal extends OrdinalBase {
     }
 
     log() {
-        return new FiniteOrdinal(0n, this._tracer);
+        return new ZeroOrdinal(this._tracer);
     }
 
     logStar() {
         if (this.isZero()) {
             return new FiniteOrdinal(-1n, this._tracer);
         } else {
-            return new FiniteOrdinal(0n, this._tracer);
+            return new ZeroOrdinal(this._tracer);
         }
     }
 
@@ -58,7 +58,7 @@ class FiniteOrdinal extends OrdinalBase {
     getFiniteBigInt() { return this.value; }
 
     nextRank() {
-        if (this.isZero()) return new FiniteOrdinal(1n, this._tracer);
+        if (this.isZero()) return new OneOrdinal(this._tracer);
         return new OmegaOrdinal(this._tracer);
     }
 
@@ -95,7 +95,7 @@ class FiniteOrdinal extends OrdinalBase {
             };
         }
 
-        const zero = new FiniteOrdinal(0, this._tracer);
+        const zero = new ZeroOrdinal(this._tracer);
         const zeroComplexity = zero.complexity();
         if (zeroComplexity <= complexityBudget) {
             return {

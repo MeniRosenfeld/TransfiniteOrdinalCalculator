@@ -78,8 +78,8 @@ class EpsilonZero extends OrdinalBase {
     }
 
     nextRank() {
-        // Will be e_1 once general epsilons exist
-        throw new Error('nextRank for EpsilonZero is not implemented yet');
+        // nextRank for e_0 is e_1
+        return new EpsilonNumber(new OneOrdinal(this._tracer), this._tracer);
     }
 }
 

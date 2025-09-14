@@ -96,7 +96,7 @@ function findRemainderHigher(x, k, m, params, threshold) {
         const result = fInverse(fr, params, ctx.multiply(threshold, rAmplification));
         if (result === "E0_TYPE") {
             console.warn(`findRemainderHigher: fInverse returned E0_TYPE for fr=${fr}. This shouldn't be allowed. Returning 0n.`);
-            console.warn(`x=${ctx.toNumber(x)}. m=${m}. k=${convertFFormatToOrdinalInstance(k).toStringCNF()}.`);
+            console.warn(`x=${ctx.toNumber(x)}. m=${m}. k=${convertFFormatToOrdinalInstance(k).toString()}.`);
             return 0n;
         } else {
             return result;
@@ -401,7 +401,7 @@ function convertFFormatToOrdinalInstance(ord_representation, tracer) {
 function DisplayfInverse(x, params = DEFAULT_F_PARAMS, threshold = 1e-14, depth = 0) {
     const result = fInverse(x, params, threshold, depth);
     const ordinal = convertFFormatToOrdinalInstance(result);
-    const CNFString = ordinal.toStringCNF();
+    const CNFString = ordinal.toString();
     return CNFString;
 }
 

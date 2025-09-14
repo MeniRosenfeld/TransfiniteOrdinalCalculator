@@ -4,7 +4,8 @@
 // Comparison-specific implementations
 function compareCNF(a, b) {
     // CNF-specific comparison algorithm (extracted from CNFOrdinal.prototype.compareTo)
-    if (a._tracer) a._tracer.consume();
+    const tracer = a._tracer || b._tracer || null;
+    if (tracer) tracer.consume(1);
 
     // Comparing two CNFOrdinals
     if (a.isZero() && b.isZero()) return 0;
@@ -14,6 +15,7 @@ function compareCNF(a, b) {
     const lenA = a.terms.length;
     const lenB = b.terms.length;
     const minLen = Math.min(lenA, lenB);
+    if (tracer) tracer.consume(minLen);
 
     for (let i = 0; i < minLen; i++) {
         const aTerms = a.terms[i];
@@ -34,11 +36,13 @@ function compareCNF(a, b) {
 
 function compareENF(a, b) {
     // ENF-specific comparison algorithm (extracted from ENFOrdinal.prototype.compareTo)
+    const tracer = a._tracer || b._tracer || null;
     if (a.isZero() && b.isZero()) return 0;
     if (a.isZero()) return -1;
     if (b.isZero()) return 1;
 
     const len = Math.min(a.terms.length, b.terms.length);
+    if (tracer) tracer.consume(len);
     for (let i = 0; i < len; i++) {
         const termCmp = a.terms[i].compareTo(b.terms[i]);
         if (termCmp !== 0) return termCmp;

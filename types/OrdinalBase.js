@@ -9,6 +9,9 @@ class OrdinalBase {
     constructor(operationTracer = null) {
         this._tracer = operationTracer;
         this._ordinalBrand = Symbol.for('TransfiniteOrdinal.OrdinalBrand');
+        if (this._tracer) {
+            this._tracer.consume(1);
+        }
     }
 
     // === REQUIRED UNARY METHODS ===
@@ -62,6 +65,14 @@ class OrdinalBase {
      * Returns true if this ordinal can be represented as (a.rank) ^^ n for some finite n.
      */
     isTower() { throw new Error(`${this.constructor.name} must implement isTower()`); }
+
+    /**
+     * Returns the successor of this ordinal (this + 1).
+     */
+    successor() {
+        // This relies on the global availability of FiniteOrdinal and the rule-based addition system
+        return this.add(new OneOrdinal(this._tracer));
+    }
 
     /**
      * Returns the rank of this ordinal.

@@ -32,7 +32,7 @@ class WTowerOrdinal extends OrdinalBase {
 
     rank() {
         if (this.height === 0n) {
-            return new FiniteOrdinal(1n, this._tracer);
+            return new OneOrdinal(this._tracer);
         } else {
             return new OmegaOrdinal(this._tracer);
         }
@@ -40,7 +40,7 @@ class WTowerOrdinal extends OrdinalBase {
 
     log() {
         if (this.height === 0n) {
-            return new FiniteOrdinal(0n, this._tracer);
+            return new ZeroOrdinal(this._tracer);
         } else {
             return new WTowerOrdinal(this.height - 1n, this._tracer);
         }
@@ -100,7 +100,7 @@ class WTowerOrdinal extends OrdinalBase {
 
         // If it doesn't fit, check height.
         if (this.height >= 3n) {
-            const zero = new FiniteOrdinal(0, this._tracer);
+            const zero = new ZeroOrdinal(this._tracer);
             const zeroComplexity = zero.complexity();
             return {
                 simplifiedOrdinal: zero,
@@ -117,7 +117,7 @@ class WTowerOrdinal extends OrdinalBase {
             expandedOrdinal = new OmegaOrdinal(this._tracer);
         } else { // this.height === 0n
             // w^^0 -> 1
-            expandedOrdinal = new FiniteOrdinal(1, this._tracer);
+            expandedOrdinal = new OneOrdinal(this._tracer);
         }
 
         const expandedComplexity = expandedOrdinal.complexity();
@@ -128,7 +128,7 @@ class WTowerOrdinal extends OrdinalBase {
             };
         } else {
             // Expanded form also doesn't fit, fallback to 0.
-            const zero = new FiniteOrdinal(0, this._tracer);
+            const zero = new ZeroOrdinal(this._tracer);
             const zeroComplexity = zero.complexity();
             return {
                 simplifiedOrdinal: zero,

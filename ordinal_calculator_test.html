@@ -408,10 +408,16 @@
     <script src="OperationTracer.js"></script>
     <script src="types/OrdinalBase.js"></script>
     <script src="types/FiniteOrdinal.js"></script>
+    <script src="types/ZeroOrdinal.js"></script>
+    <script src="types/OneOrdinal.js"></script>
     <script src="types/OmegaOrdinal.js"></script>
     <script src="types/CNFOrdinal.js"></script>
     <script src="types/WTowerOrdinal.js"></script>
     <script src="types/EpsilonZero.js"></script>
+    <script src="types/EpsilonNumber.js"></script>
+    <script src="types/ENFFactor.js"></script>
+    <script src="types/ENFTerm.js"></script>
+    <script src="types/ENFOrdinal.js"></script>
     <script src="conversions/ConversionRegistry.js"></script>
     <script src="conversions/ConversionEngine.js"></script>
     <script src="operations/RuleEngine.js"></script>
@@ -443,11 +449,8 @@
 
         function toCnfString(ordinalLike) {
             try {
-                if (ordinalLike && typeof ordinalLike.toDisplayString === 'function') {
-                    return ordinalLike.toDisplayString({ format: 'CNF' });
-                }
-                if (ordinalLike && typeof ordinalLike.toStringCNF === 'function') {
-                    return ordinalLike.toStringCNF();
+                if (ordinalLike && typeof ordinalLike.toString === 'function') {
+                    return ordinalLike.toString();
                 }
             } catch (e) { /* fall back below */ }
             return String(ordinalLike);
@@ -1088,6 +1091,11 @@
             testOrdinalCalc("2^(w*2)", "w^2");
             testOrdinalCalc("4^(w^7+3)", "w^w^6*64");
             testOrdinalCalc("(w^(w^w+1)*2+3)^(w^(w^2+w*2)*3+2)", "w^(w^(w^2+w*2)*3+w^w*2+1)*2+w^(w^(w^2+w*2)*3+w^w+1)*6+w^(w^(w^2+w*2)*3)*3");
+
+            testOrdinalCalc("w^100", "w^100");
+            testOrdinalCalc("(w+1)^10", "w^10+w^9+w^8+w^7+w^6+w^5+w^4+w^3+w^2+w+1");
+            testOrdinalCalc("(w^(w^2*2+1)+w^2)^(w+5)", "w^(w^3+w^2*10+1)+w^(w^3+w^2*8+3)");
+            testOrdinalCalc("(w^(w^2+4)+3)^(w+10)", "w^(w^3+w^2*10+4)+w^(w^3+w^2*9+4)*3+w^(w^3+w^2*8+4)*3+w^(w^3+w^2*7+4)*3+w^(w^3+w^2*6+4)*3+w^(w^3+w^2*5+4)*3+w^(w^3+w^2*4+4)*3+w^(w^3+w^2*3+4)*3+w^(w^3+w^2*2+4)*3+w^(w^3+w^2+4)*3+w^w^3*3");
             /*
             testOrdinalCalc("e_0 + w", "w^e_0+w");
             testOrdinalCalc("w + e_0", "e_0");
