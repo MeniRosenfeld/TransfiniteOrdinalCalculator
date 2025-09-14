@@ -29,10 +29,14 @@ class Operations {
         // Register all available ordinal types
         const typeClasses = [
             typeof FiniteOrdinal !== 'undefined' ? FiniteOrdinal : null,
+            typeof ZeroOrdinal !== 'undefined' ? ZeroOrdinal : null,
+            typeof OneOrdinal !== 'undefined' ? OneOrdinal : null,
             typeof OmegaOrdinal !== 'undefined' ? OmegaOrdinal : null,
             typeof CNFOrdinal !== 'undefined' ? CNFOrdinal : null,
             typeof WTowerOrdinal !== 'undefined' ? WTowerOrdinal : null,
-            typeof EpsilonZero !== 'undefined' ? EpsilonZero : null
+            typeof EpsilonZero !== 'undefined' ? EpsilonZero : null,
+            typeof EpsilonNumber !== 'undefined' ? EpsilonNumber : null,
+            typeof ENFOrdinal !== 'undefined' ? ENFOrdinal : null
         ].filter(Boolean);
 
         for (const typeClass of typeClasses) {
