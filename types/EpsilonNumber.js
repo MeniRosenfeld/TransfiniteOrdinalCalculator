@@ -94,6 +94,8 @@ class EpsilonNumber extends OrdinalBase {
         return 1n;
     }
 
+    isWellFormed() { return this.k.isLessThanZeta0(); }
+
     // === CONVERSION SYSTEM ===
 
     static getTypeName() { return 'EpsilonNumber'; }
