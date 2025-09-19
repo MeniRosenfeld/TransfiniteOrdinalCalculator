@@ -241,3 +241,27 @@ By consulting this document, future agents should be better equipped to understa
 -   `ordinal_mapping_inverse.js` no longer calls deprecated `toStringCNF()`.
 
 ## 6. Migration Notes (OOP scaffolding)
+
+### Ideas and Plans (from latest examination)
+
+-   ENF migration checkpoints (new architecture):
+    -   Implement `ENFTerm.compareTo(other)` and `ENFTerm.compareStructureTo(other)` consistent with the legacy logic in `ordinal_enf.js`. The new rules in `operations/AdditionRules.js` and `operations/Comparison.js` already rely on these.
+    -   Provide `ENFOrdinal.fromCNF(ord)` in `types/ENFOrdinal.js` (minimal port from legacy) so `CNFOrdinal.convertTo('ENF')` works. Handle inputs: `CNFOrdinal`, `EpsilonOrdinal` (legacy), and towers (`WTowerOrdinal`/`EpsilonTowerOrdinal`) via their `toCNFOrdinal()` when present.
+    -   Either (A) implement `ENFOrdinal.toCNFOrdinal()` and wire `convertTo('CNF')`, or (B) temporarily set `ENFOrdinal.getDirectConversions()` to `[]` to avoid advertising a broken path in the `ConversionRegistry` until CNF export is ready.
+    -   After the above, enable ENF fallbacks for multiplication/exponentiation: add ENF paths in `operations/MultiplicationRules.js` and `operations/ExponentiationRules.js` (initially delegating to `aENF.multiply(bENF)`/`aENF.power(bENF)` as in legacy).
+
+-   Type harmonization notes:
+    -   New arch uses `EpsilonNumber`/`EpsilonZero`; legacy uses `EpsilonOrdinal`. Where legacy references remain (e.g., conversion helpers), add a thin adapter or route through CNF to bridge.
+    -   Ensure `CNFOrdinal.convertTo('ENF')` remains the single entry for CNF→ENF to avoid recursive conversion loops.
+
+-   Tests and pages after move to `tests/`:
+    -   Use relative `../` prefixes from `tests/` for all includes (fixed for: `finverse_debug.html`, `ordinal_calculator_test.html`, `new_system_smoke_tests.html`, `test_new_architecture.html`).
+    -   `random_finverse_f_test.html` only needs mapping contexts: replace the missing `ordinal_types.js` include with `operations/NumericContexts.js` plus `ordinal_mapping.js` and `ordinal_mapping_inverse.js`.
+    -   Legacy-heavy pages (`ordinal_enf_test.html`, `simplify_test.html`, `haskell_comparison_test.html`) reference non-existent bundles (`ordinal_types.js`, `ordinal_comparison.js`, `ordinal_addition.js`, `ordinal_ops.js`). Plan either to migrate them to the new architecture (`types/*`, `operations/*`) or vend the legacy bundles under a `tests/vendor/` namespace.
+
+-   Rule/engine hygiene:
+    -   Keep tracer threading consistent (`a._tracer || b._tracer`) in rule actions; ensure loops consume proportionally.
+    -   Gate CNF paths with `isLessThanEpsilon0()`; otherwise prefer ENF fallback where available to avoid epsilon-in-CNF edge cases.
+
+-   Quick wins to stabilize conversion matrix (`tests/conversion_debug.html`):
+    -   Avoid advertising `ENF → CNF` until implemented (see above). Once `toCNFOrdinal()` is in, re-enable `ENF` direct conversion to `CNF` so the matrix shows a working path.

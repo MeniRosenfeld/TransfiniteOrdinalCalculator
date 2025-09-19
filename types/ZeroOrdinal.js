@@ -21,6 +21,8 @@ class ZeroOrdinal extends OrdinalBase {
     isLimit() { return false; }
     isTower() { return true; }
 
+    isWellFormed() { return true; }
+
     getFiniteBigInt() { return 0n; }
 
     nextRank() {
@@ -50,12 +52,12 @@ class ZeroOrdinal extends OrdinalBase {
     }
 
     log() {
-        // log(0) is typically undefined, but in our system, finite ordinals have log 0.
-        return new ZeroOrdinal(this._tracer);
+        // log(0) is undefined
+        throw new Error('Log of 0 is undefined.');
     }
 
     logStar() {
-        return new FiniteOrdinal(-1n, this._tracer);
+        return -1n;
     }
 
     successor() {
@@ -65,10 +67,10 @@ class ZeroOrdinal extends OrdinalBase {
     // === CONVERSION SYSTEM ===
 
     static getTypeName() { return 'Zero'; }
-    static getDirectConversions() { return ['Finite', 'CNF']; }
+    static getDirectConversions() { return ['Finite', 'WTower']; }
     convertTo(targetTypeName) {
         if (targetTypeName === 'Finite') return new FiniteOrdinal(0n, this._tracer);
-        if (targetTypeName === 'CNF') return new CNFOrdinal(0n, this._tracer);
+        if (targetTypeName === 'WTower') return new WTowerOrdinal(-1n, this._tracer);
         throw new Error(`ZeroOrdinal cannot convert directly to ${targetTypeName}`);
     }
 }

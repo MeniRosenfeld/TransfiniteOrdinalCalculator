@@ -32,12 +32,14 @@ class OmegaOrdinal extends OrdinalBase {
     }
 
     logStar() {
-        return new OneOrdinal(this._tracer);
+        return 1n;
     }
 
     isTower() {
         return true;
     }
+
+    isWellFormed() { return true; }
 
     getFiniteBigInt() { throw new Error('OmegaOrdinal is not finite'); }
 

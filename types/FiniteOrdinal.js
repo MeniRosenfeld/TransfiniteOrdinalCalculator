@@ -34,20 +34,27 @@ class FiniteOrdinal extends OrdinalBase {
         return false;
     }
 
+    isWellFormed() {
+        return (typeof this.value === 'bigint') && this.value >= 0n;
+    }
+
     rank() {
         if (this.isZero()) return new FiniteOrdinal(0n, this._tracer);
         return new FiniteOrdinal(1n, this._tracer);
     }
 
     log() {
+        if (this.isZero()) {
+            throw new Error('Log of 0 is undefined.');
+        }
         return new ZeroOrdinal(this._tracer);
     }
 
     logStar() {
         if (this.isZero()) {
-            return new FiniteOrdinal(-1n, this._tracer);
+            return -1n;
         } else {
-            return new ZeroOrdinal(this._tracer);
+            return 0n;
         }
     }
 

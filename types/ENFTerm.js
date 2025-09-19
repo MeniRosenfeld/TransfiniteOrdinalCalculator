@@ -98,7 +98,7 @@ class ENFTerm extends OrdinalBase {
         }
         // 1 + log(this).logStar()
         const logVal = this.log();
-        const logStarOfLog = logVal.logStar().getFiniteBigInt();
+        const logStarOfLog = logVal.logStar();
         return new FiniteOrdinal(1n + logStarOfLog);
     }
 

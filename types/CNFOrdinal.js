@@ -79,6 +79,28 @@ class CNFOrdinal extends OrdinalBase {
         return this.isFinite() && this.getFinitePart() === 1n;
     }
 
+    isWellFormed() {
+        // Terms must be in strictly decreasing exponent order; coefficients nonnegative integers
+        let prevExp = null;
+        for (let i = 0; i < this.terms.length; i++) {
+            const term = this.terms[i];
+            // Coefficient check
+            if (typeof term.coefficient !== 'bigint' || term.coefficient < 0n) return false;
+            // Exponent must be an ordinal < e0 and well-formed
+            const exp = term.exponent;
+            if (!exp || !exp.isOrdinal || !exp.isOrdinal()) return false;
+            if (!exp.isLessThanEpsilon0 || !exp.isLessThanEpsilon0()) return false;
+            if (typeof exp.isWellFormed === 'function' && !exp.isWellFormed()) return false;
+            // Strictly decreasing
+            if (prevExp !== null) {
+                if (!(prevExp.compareTo && typeof prevExp.compareTo === 'function')) return false;
+                if (prevExp.compareTo(exp) <= 0) return false;
+            }
+            prevExp = exp;
+        }
+        return true;
+    }
+
     isLimit() {
         // A CNF ordinal is a limit if it is not zero and has no finite part.
         return !this.isZero() && this.getFinitePart() === 0n;
@@ -95,6 +117,9 @@ class CNFOrdinal extends OrdinalBase {
     }
 
     log() {
+        if (this.isZero()) {
+            throw new Error('Log of 0 is undefined.');
+        }
         if (this.isFinite()) {
             return new ZeroOrdinal(this._tracer);
         }
@@ -104,9 +129,9 @@ class CNFOrdinal extends OrdinalBase {
     logStar() {
         if (this.isFinite()) {
             if (this.isZero()) {
-                return new FiniteOrdinal(-1n, this._tracer);
+                return -1n;
             } else {
-                return new FiniteOrdinal(0n, this._tracer);
+                return 0n;
             }
         }
 
@@ -123,8 +148,8 @@ class CNFOrdinal extends OrdinalBase {
         }
 
         // 'current' is now a finite ordinal. Get its logStar value (-1 for 0, 0 for >0)
-        const finalPart = current.logStar().getFiniteBigInt();
-        return new FiniteOrdinal(BigInt(count) + finalPart, this._tracer);
+        const finalPart = current.logStar();
+        return BigInt(count) + finalPart;
     }
 
     isTower() {

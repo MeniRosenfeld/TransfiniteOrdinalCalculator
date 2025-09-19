@@ -47,6 +47,13 @@ class OrdinalBase {
     isLessThanEpsilon0() { throw new Error(`${this.constructor.name} must implement isLessThanEpsilon0()`); }
 
     /**
+     * Returns true if this ordinal is less than ζ₀.
+     * For all currently defined ordinal types, this is true.
+     * Specific exceptions can override this in their own classes.
+     */
+    isLessThanZeta0() { return true; }
+
+    /**
      * Returns true if this ordinal equals ω.
      */
     isOmega() { throw new Error(`${this.constructor.name} must implement isOmega()`); }
@@ -65,6 +72,12 @@ class OrdinalBase {
      * Returns true if this ordinal can be represented as (a.rank) ^^ n for some finite n.
      */
     isTower() { throw new Error(`${this.constructor.name} must implement isTower()`); }
+
+    /**
+     * Returns true if the internal structure is valid per the type's definition.
+     * Defaults to true for types that have no additional invariants or are pending implementation.
+     */
+    isWellFormed() { return true; }
 
     /**
      * Returns the successor of this ordinal (this + 1).

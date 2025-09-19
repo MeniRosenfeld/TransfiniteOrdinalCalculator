@@ -1,36 +1,44 @@
 // WTowerOrdinal.js
-// Represents finite-height ω-tower: w^^h where h is a non-negative finite integer
+// Represents finite-height ω-tower: w^^h where h is an integer; h = -1 is semantic zero
 
 class WTowerOrdinal extends OrdinalBase {
     constructor(height = 1, operationTracer = null) {
         super(operationTracer);
         if (typeof height === 'bigint') {
-            if (height < 0n) throw new Error('WTowerOrdinal height must be non-negative');
+            if (height < -1n) throw new Error('WTowerOrdinal height must be at least -1');
             this.height = height;
         } else if (typeof height === 'number') {
-            if (!Number.isInteger(height) || height < 0) throw new Error('WTowerOrdinal height must be non-negative');
+            if (!Number.isInteger(height) || height < -1) throw new Error('WTowerOrdinal height must an integer at least -1');
             this.height = BigInt(height);
         } else if (height instanceof FiniteOrdinal) {
             this.height = height.getFiniteBigInt();
         } else {
-            throw new Error('WTowerOrdinal height must be a non-negative integer');
+            throw new Error('WTowerOrdinal height must be an integer at least -1');
         }
     }
 
     // === REQUIRED UNARY METHODS ===
 
-    isZero() { return false; }
-    isFinite() { return this.height === 0n; }
+    isZero() { return this.height === -1n; }
+    isFinite() { return this.height === -1n || this.height === 0n; }
     isLessThanEpsilon0() { return true; } // finite towers are < ε₀
     isOmega() { return this.height === 1n; }
     isBasic() { return this.height === 1n; }
     isOne() { return this.height === 0n; }
 
     isLimit() {
+        if (this.height === -1n) return false;
         return this.height > 0n;
     }
 
+    isWellFormed() {
+        return (typeof this.height === 'bigint') && this.height >= -1n;
+    }
+
     rank() {
+        if (this.height === -1n) {
+            return new ZeroOrdinal(this._tracer);
+        }
         if (this.height === 0n) {
             return new OneOrdinal(this._tracer);
         } else {
@@ -39,6 +47,9 @@ class WTowerOrdinal extends OrdinalBase {
     }
 
     log() {
+        if (this.height === -1n) {
+            throw new Error('Log of 0 is undefined.');
+        }
         if (this.height === 0n) {
             return new ZeroOrdinal(this._tracer);
         } else {
@@ -47,7 +58,8 @@ class WTowerOrdinal extends OrdinalBase {
     }
 
     logStar() {
-        return new FiniteOrdinal(this.height, this._tracer);
+        if (this.height === -1n) return -1n;
+        return this.height;
     }
 
     isTower() {
@@ -55,6 +67,7 @@ class WTowerOrdinal extends OrdinalBase {
     }
 
     getFiniteBigInt() {
+        if (this.height === -1n) return 0n;
         if (this.height === 0n) return 1n;
         throw new Error('WTowerOrdinal is not finite');
     }
@@ -65,6 +78,7 @@ class WTowerOrdinal extends OrdinalBase {
     }
 
     toString() {
+        if (this.height === -1n) return '0';
         return `w^^${this.height.toString()}`;
     }
 
@@ -77,6 +91,7 @@ class WTowerOrdinal extends OrdinalBase {
     }
 
     toFFormat() {
+        if (this.height === -1n) return 0n;
         // Represent as { type: 'w_tower', height: Number }
         const h = this.height;
         const asNum = Number(h);
@@ -109,7 +124,9 @@ class WTowerOrdinal extends OrdinalBase {
         }
 
         let expandedOrdinal;
-        if (this.height === 2n) {
+        if (this.height === -1n) {
+            expandedOrdinal = new ZeroOrdinal(this._tracer);
+        } else if (this.height === 2n) {
             // w^^2 -> w^w
             expandedOrdinal = this.convertTo('CNF');
         } else if (this.height === 1n) {
@@ -148,7 +165,8 @@ class WTowerOrdinal extends OrdinalBase {
     convertTo(targetTypeName) {
         switch (targetTypeName) {
             case 'CNF': {
-                // height 0 -> 1
+                // height -1 -> 0 ; height 0 -> 1
+                if (this.height === -1n) return CNFOrdinal.ZEROStatic().clone(this._tracer);
                 if (this.height === 0n) return CNFOrdinal.ONEStatic().clone(this._tracer);
                 // Build exponentExp by iterating x_{0}=1, x_{k+1}=ω^{x_k} for k from 0 to height-2
                 let exponentExp = CNFOrdinal.ONEStatic().clone(this._tracer);
@@ -164,6 +182,7 @@ class WTowerOrdinal extends OrdinalBase {
     }
 
     nextRank() {
+        if (this.height === -1n) return new OneOrdinal(this._tracer);
         if (this.height === 0n) return new OmegaOrdinal(this._tracer);
         if (this.height === 1n) return new EpsilonZero(this._tracer);
         return new EpsilonZero(this._tracer);

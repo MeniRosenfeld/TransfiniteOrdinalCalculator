@@ -405,34 +405,34 @@
     </div>
 
     <!-- Load New Architecture Scripts -->
-    <script src="OperationTracer.js"></script>
-    <script src="types/OrdinalBase.js"></script>
-    <script src="types/FiniteOrdinal.js"></script>
-    <script src="types/ZeroOrdinal.js"></script>
-    <script src="types/OneOrdinal.js"></script>
-    <script src="types/OmegaOrdinal.js"></script>
-    <script src="types/CNFOrdinal.js"></script>
-    <script src="types/WTowerOrdinal.js"></script>
-    <script src="types/EpsilonZero.js"></script>
-    <script src="types/EpsilonNumber.js"></script>
-    <script src="types/ENFFactor.js"></script>
-    <script src="types/ENFTerm.js"></script>
-    <script src="types/ENFOrdinal.js"></script>
-    <script src="conversions/ConversionRegistry.js"></script>
-    <script src="conversions/ConversionEngine.js"></script>
-    <script src="operations/RuleEngine.js"></script>
-    <script src="operations/AdditionRules.js"></script>
-    <script src="operations/MultiplicationRules.js"></script>
-    <script src="operations/ExponentiationRules.js"></script>
-    <script src="operations/TetrationRules.js"></script>
-    <script src="operations/Comparison.js"></script>
-    <script src="operations/Auxiliary.js"></script>
-    <script src="operations/Rational.js"></script>
-    <script src="operations/NumericContexts.js"></script>
-    <script src="operations/Operations.js"></script>
-    <script src="SimpleParser.js"></script>
-    <script src="ordinal_mapping.js"></script>
-    <script src="ordinal_mapping_inverse.js"></script>
+    <script src="../OperationTracer.js"></script>
+    <script src="../types/OrdinalBase.js"></script>
+    <script src="../types/FiniteOrdinal.js"></script>
+    <script src="../types/ZeroOrdinal.js"></script>
+    <script src="../types/OneOrdinal.js"></script>
+    <script src="../types/OmegaOrdinal.js"></script>
+    <script src="../types/CNFOrdinal.js"></script>
+    <script src="../types/WTowerOrdinal.js"></script>
+    <script src="../types/EpsilonZero.js"></script>
+    <script src="../types/EpsilonNumber.js"></script>
+    <script src="../types/ENFFactor.js"></script>
+    <script src="../types/ENFTerm.js"></script>
+    <script src="../types/ENFOrdinal.js"></script>
+    <script src="../conversions/ConversionRegistry.js"></script>
+    <script src="../conversions/ConversionEngine.js"></script>
+    <script src="../operations/RuleEngine.js"></script>
+    <script src="../operations/AdditionRules.js"></script>
+    <script src="../operations/MultiplicationRules.js"></script>
+    <script src="../operations/ExponentiationRules.js"></script>
+    <script src="../operations/TetrationRules.js"></script>
+    <script src="../operations/Comparison.js"></script>
+    <script src="../operations/Auxiliary.js"></script>
+    <script src="../operations/Rational.js"></script>
+    <script src="../operations/NumericContexts.js"></script>
+    <script src="../operations/Operations.js"></script>
+    <script src="../SimpleParser.js"></script>
+    <script src="../ordinal_mapping.js"></script>
+    <script src="../ordinal_mapping_inverse.js"></script>
 
     <script>
         // Stats for each test kind
@@ -560,6 +560,17 @@
                     // --- END MODIFICATION ---
 
                     const cnfCheckPassed = (actualCNF === expectedCNF);
+                    // Well-formedness check for the resulting ordinal
+                    let wellFormedCheckPassed = true;
+                    if (originalOrdinalObject && typeof originalOrdinalObject.isWellFormed === 'function') {
+                        try {
+                            wellFormedCheckPassed = !!originalOrdinalObject.isWellFormed();
+                        } catch (wfErr) {
+                            wellFormedCheckPassed = false;
+                            addDetailElement(`Well-formed check error: ${wfErr.message}`, 'error-message');
+                        }
+                        addDetailElement(`Well-formed: ${wellFormedCheckPassed ? 'PASSED' : 'FAILED'}`);
+                    }
                     // New: equality check by parsing Expected CNF and comparing ordinals (when expected is not an error)
                     const expectedLooksLikeError = typeof expectedCNF === 'string' && expectedCNF.startsWith('Error:');
                     let eqCheckPassed = true;
@@ -583,7 +594,7 @@
 
                     if (!originalOrdinalObject) {
                         fTripDetailsLogs.push("f()/fInverse()/f() Check: SKIPPED (originalOrdinalObject is null/undefined).");
-                        overallTestPassed = cnfCheckPassed;
+                        overallTestPassed = cnfCheckPassed && wellFormedCheckPassed;
                     } else {
                         try {
                             if (typeof convertOrdinalInstanceToFFormat !== 'function') throw new Error("convertOrdinalInstanceToFFormat is not defined");
@@ -680,6 +691,8 @@
                             if (originalOrdinalObject) mainStatusMessage += " (f-round-trip check status was based on this incorrect CNF result).";
                         } else if (!expectedLooksLikeError && !eqCheckPassed) {
                             mainStatusMessage = 'Status: FAILED. Parsed(Expected CNF) is not equal to computed ordinal.';
+                        } else if (!wellFormedCheckPassed) {
+                            mainStatusMessage = 'Status: FAILED. Resulting ordinal is not well-formed.';
                         } else {
                             mainStatusMessage = `Status: FAILED. CNF OK ("${actualCNF}"), but f-round-trip or limit check failed.`;
                         }

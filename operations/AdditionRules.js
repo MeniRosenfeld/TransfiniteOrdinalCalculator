@@ -178,7 +178,18 @@ function createAdditionRules(conversionEngine) {
                 const aENF = conversionEngine.convert(a, 'ENF');
                 const bENF = conversionEngine.convert(b, 'ENF');
                 return addENF(aENF, bENF);
-            })
+            }),
+
+        // ZetaZero rules (lowest precedence)
+        // z0 + a is not implemented for a > 0
+        new Rule("z0 + a not implemented",
+            (a, b) => (typeof ZetaZero !== 'undefined') && (a instanceof ZetaZero),
+            () => { throw new Error('Addition with z_0 on the left is not implemented'); }),
+
+        // a + z0 = z0 (here a is known not to be z0 due to previous rule)
+        new Rule("a + z0 = z0",
+            (a, b) => (typeof ZetaZero !== 'undefined') && (b instanceof ZetaZero),
+            (a, b) => b.clone(a._tracer || b._tracer || null))
     ];
 }
 

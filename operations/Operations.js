@@ -36,7 +36,8 @@ class Operations {
             typeof WTowerOrdinal !== 'undefined' ? WTowerOrdinal : null,
             typeof EpsilonZero !== 'undefined' ? EpsilonZero : null,
             typeof EpsilonNumber !== 'undefined' ? EpsilonNumber : null,
-            typeof ENFOrdinal !== 'undefined' ? ENFOrdinal : null
+            typeof ENFOrdinal !== 'undefined' ? ENFOrdinal : null,
+            typeof ZetaZero !== 'undefined' ? ZetaZero : null,
         ].filter(Boolean);
 
         for (const typeClass of typeClasses) {

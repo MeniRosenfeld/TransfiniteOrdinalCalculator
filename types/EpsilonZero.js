@@ -28,12 +28,14 @@ class EpsilonZero extends OrdinalBase {
     }
 
     logStar() {
-        return new FiniteOrdinal(1n, this._tracer);
+        return 1n;
     }
 
     isTower() {
         return true;
     }
+
+    isWellFormed() { return true; }
 
     complexity() { return 6; }
 
@@ -72,9 +74,14 @@ class EpsilonZero extends OrdinalBase {
     // === CONVERSION SYSTEM ===
 
     static getTypeName() { return 'EpsilonZero'; }
-    static getDirectConversions() { return []; }
+    static getDirectConversions() { return ['EpsilonNumber']; }
     convertTo(targetTypeName) {
-        throw new Error(`EpsilonZero cannot convert directly to ${targetTypeName}`);
+        switch (targetTypeName) {
+            case 'EpsilonNumber':
+                return new EpsilonNumber(new ZeroOrdinal(this._tracer), this._tracer);
+            default:
+                throw new Error(`EpsilonZero cannot convert directly to ${targetTypeName}`);
+        }
     }
 
     nextRank() {

@@ -91,15 +91,31 @@ class EpsilonNumber extends OrdinalBase {
     }
 
     logStar() {
-        return new OneOrdinal(this._tracer);
+        return 1n;
     }
 
     // === CONVERSION SYSTEM ===
 
     static getTypeName() { return 'EpsilonNumber'; }
-    static getDirectConversions() { return []; }
+    static getDirectConversions() { return ['ENF']; }
     convertTo(targetTypeName) {
-        throw new Error(`EpsilonNumber cannot convert directly to ${targetTypeName}`);
+        switch (targetTypeName) {
+            case 'ENF':
+                if (typeof ENFOrdinal !== 'undefined') {
+                    // Placeholder conversion: represent e_0 as ENF term with one epsilon factor
+                    // Full implementation can be added later
+                    const baseENF = (this.k && typeof ENFOrdinal !== 'undefined' && ENFOrdinal.fromCNF)
+                        ? ENFOrdinal.fromCNF(this.k)
+                        : null;
+                    if (baseENF) {
+                        const term = new ENFTerm([{ base: baseENF, exp: ENFOrdinal.one() }], CNFOrdinal.ZEROStatic(), 1n);
+                        return new ENFOrdinal([term]);
+                    }
+                }
+                throw new Error('ENF conversion not yet implemented for EpsilonNumber');
+            default:
+                throw new Error(`EpsilonNumber cannot convert directly to ${targetTypeName}`);
+        }
     }
 }
 

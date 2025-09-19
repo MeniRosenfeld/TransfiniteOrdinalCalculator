@@ -15,6 +15,7 @@ function tetrateFinite(base, heightFinite) {
 
 function createTetrationRules(conversionEngine) {
     return [
+
         // a ^^ 0 = 1
         new Rule('a^^0 = 1',
             (a, b) => b.isZero(),
@@ -66,6 +67,17 @@ function createTetrationRules(conversionEngine) {
         // a ^^ infinite = a.nextRank()
         new Rule('a^^infinite = nextRank',
             (a, b) => !b.isFinite(),
+            (a, b) => a.nextRank()),
+
+        // ZetaZero rules (lowest precedence)
+        // z0^^a is not implemented for a > 1
+        new Rule('z0^^a not implemented (a>1)',
+            (a, b) => (typeof ZetaZero !== 'undefined') && (a instanceof ZetaZero),
+            () => { throw new Error('Tetration with z_0 on the left is not implemented'); }),
+
+        // a^^z0 = nextRank
+        new Rule('a^^z0 = nextRank',
+            (a, b) => (typeof ZetaZero !== 'undefined') && (b instanceof ZetaZero),
             (a, b) => a.nextRank())
     ];
 }

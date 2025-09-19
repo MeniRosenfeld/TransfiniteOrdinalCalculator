@@ -21,6 +21,8 @@ class OneOrdinal extends OrdinalBase {
     isLimit() { return false; }
     isTower() { return true; }
 
+    isWellFormed() { return true; }
+
     getFiniteBigInt() { return 1n; }
 
     nextRank() {
@@ -58,7 +60,7 @@ class OneOrdinal extends OrdinalBase {
     }
 
     logStar() {
-        return new ZeroOrdinal(this._tracer);
+        return 0n;
     }
 
     successor() {
@@ -68,10 +70,10 @@ class OneOrdinal extends OrdinalBase {
     // === CONVERSION SYSTEM ===
 
     static getTypeName() { return 'One'; }
-    static getDirectConversions() { return ['Finite', 'CNF']; }
+    static getDirectConversions() { return ['Finite', 'WTower']; }
     convertTo(targetTypeName) {
         if (targetTypeName === 'Finite') return new FiniteOrdinal(1n, this._tracer);
-        if (targetTypeName === 'CNF') return new CNFOrdinal(1n, this._tracer);
+        if (targetTypeName === 'WTower') return new WTowerOrdinal(0n, this._tracer);
         throw new Error(`OneOrdinal cannot convert directly to ${targetTypeName}`);
     }
 }

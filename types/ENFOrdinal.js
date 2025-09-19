@@ -109,11 +109,8 @@ class ENFOrdinal extends OrdinalBase {
 
     // === CONVERSION SYSTEM ===
     static getTypeName() { return 'ENF'; }
-    static getDirectConversions() { return ['CNF']; }
+    static getDirectConversions() { return []; }
     convertTo(targetTypeName) {
-        if (targetTypeName === 'CNF') {
-            throw new Error("ENF to CNF conversion not yet implemented.");
-        }
         throw new Error(`ENFOrdinal cannot convert directly to ${targetTypeName}`);
     }
 }

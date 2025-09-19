@@ -106,7 +106,18 @@ function createMultiplicationRules(conversionEngine) {
                 const bCNF = conversionEngine.convert(b, 'CNF');
                 const res = multiplyCNF(aCNF, bCNF);
                 return res.clone(tracer);
-            })
+            }),
+
+        // ZetaZero rules (lowest precedence)
+        // z0 * a is not implemented for a > 1
+        new Rule("z0 * a not implemented",
+            (a, b) => (typeof ZetaZero !== 'undefined') && (a instanceof ZetaZero),
+            () => { throw new Error('Multiplication with z_0 on the left is not implemented'); }),
+
+        // a * z0 = z0 (here a is known not to be z0 due to previous rule)
+        new Rule("a * z0 = z0",
+            (a, b) => (typeof ZetaZero !== 'undefined') && (b instanceof ZetaZero),
+            (a, b) => b.clone(a._tracer || b._tracer || null))
 
         // ENF fallback can be added later when ENF is migrated
     ];

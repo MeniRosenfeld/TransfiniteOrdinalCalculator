@@ -110,8 +110,8 @@ function createComparisonRules(conversionEngine) {
         ),
 
         new Rule("Different log*",
-            (a, b) => a.logStar().getFiniteBigInt() != b.logStar().getFiniteBigInt(),
-            (a, b) => a.logStar().getFiniteBigInt() < b.logStar().getFiniteBigInt() ? -1 : 1
+            (a, b) => a.logStar() != b.logStar(),
+            (a, b) => a.logStar() < b.logStar() ? -1 : 1
         ),
 
         new Rule("Tower vs not tower",
@@ -142,7 +142,20 @@ function createComparisonRules(conversionEngine) {
                 const aENF = conversionEngine.convert(a, 'ENF');
                 const bENF = conversionEngine.convert(b, 'ENF');
                 return compareENF(aENF, bENF);
-            })
+            }),
+
+        // ZetaZero rules (lowest precedence)
+        new Rule("ZetaZero equality",
+            (a, b) => (typeof ZetaZero !== 'undefined') && (a instanceof ZetaZero) && (b instanceof ZetaZero),
+            (a, b) => 0),
+
+        new Rule("ZetaZero left dominates",
+            (a, b) => (typeof ZetaZero !== 'undefined') && (a instanceof ZetaZero) && !(b instanceof ZetaZero),
+            (a, b) => 1),
+
+        new Rule("ZetaZero right dominates",
+            (a, b) => (typeof ZetaZero !== 'undefined') && (b instanceof ZetaZero) && !(a instanceof ZetaZero),
+            (a, b) => -1)
     ];
 }
 
