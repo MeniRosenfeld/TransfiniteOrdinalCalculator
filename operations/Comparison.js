@@ -35,7 +35,7 @@ function compareCNF(a, b) {
 }
 
 function compareENF(a, b) {
-    // ENF-specific comparison algorithm (extracted from ENFOrdinal.prototype.compareTo)
+    // Lexicographic comparison by terms, using compareTermTo (structure first, then coefficient)
     const tracer = a._tracer || b._tracer || null;
     if (a.isZero() && b.isZero()) return 0;
     if (a.isZero()) return -1;
@@ -44,11 +44,16 @@ function compareENF(a, b) {
     const len = Math.min(a.terms.length, b.terms.length);
     if (tracer) tracer.consume(len);
     for (let i = 0; i < len; i++) {
-        const termCmp = a.terms[i].compareTo(b.terms[i]);
+        const tA = a.terms[i];
+        const tB = b.terms[i];
+        const termCmp = (typeof tA.compareTermTo === 'function') ? tA.compareTermTo(tB) : tA.compareTo(tB);
         if (termCmp !== 0) return termCmp;
     }
 
-    return a.terms.length > b.terms.length ? 1 : a.terms.length < b.terms.length ? -1 : 0;
+    // If all matching terms equal, longer sum is larger
+    if (a.terms.length > b.terms.length) return 1;
+    if (a.terms.length < b.terms.length) return -1;
+    return 0;
 }
 
 function compareFinite(a, b) {
