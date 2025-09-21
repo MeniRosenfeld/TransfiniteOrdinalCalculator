@@ -138,6 +138,63 @@ class ENFOrdinal extends OrdinalBase {
     convertTo(targetTypeName) {
         throw new Error(`ENFOrdinal cannot convert directly to ${targetTypeName}`);
     }
+
+    // === STATIC CONSTRUCTORS ===
+
+    static fromCNF(ord) {
+        if (ord instanceof ENFOrdinal) return ord.clone();
+
+        // Handle new arch basic types
+        if (ord instanceof ZeroOrdinal) return new ENFOrdinal([]);
+        if (ord instanceof OneOrdinal) return new ENFOrdinal([new ENFTerm([], 1n)]);
+        if (ord instanceof FiniteOrdinal) {
+            if (ord.isZero()) return new ENFOrdinal([]);
+            return new ENFOrdinal([new ENFTerm([], ord.getFiniteBigInt())]);
+        }
+        if (ord instanceof OmegaOrdinal) {
+            const one = new OneOrdinal();
+            const omegaFactor = new ENFFactor(new OmegaOrdinal(), one);
+            return new ENFOrdinal([new ENFTerm([omegaFactor], 1n)]);
+        }
+        if (ord instanceof EpsilonZero) {
+            const base = new EpsilonNumber(new ZeroOrdinal());
+            const one = new OneOrdinal();
+            const factor = new ENFFactor(base, one);
+            return new ENFOrdinal([new ENFTerm([factor], 1n)]);
+        }
+        if (ord instanceof EpsilonNumber) {
+            const base = ord;
+            const one = new OneOrdinal();
+            const factor = new ENFFactor(base, one);
+            return new ENFOrdinal([new ENFTerm([factor], 1n)]);
+        }
+
+        if (!(ord instanceof CNFOrdinal)) {
+            // Fallback for types that can convert to CNF
+            if (ord && typeof ord.convertTo === 'function' && OPERATIONS.canConvert(ord, 'CNF')) {
+                ord = OPERATIONS.convert(ord, 'CNF');
+            } else {
+                throw new Error("ENFOrdinal.fromCNF: unsupported type " + (ord ? ord.constructor.name : ord));
+            }
+        }
+
+        if (ord.isZero()) return new ENFOrdinal([]);
+
+        const terms = [];
+        for (const t of ord.terms) {
+            const exp = t.exponent;
+            if (exp.isZero()) {
+                // Finite term
+                terms.push(new ENFTerm([], t.coefficient));
+            } else {
+                // Term of the form ω^k * m
+                const omegaFactor = new ENFFactor(new OmegaOrdinal(), exp);
+                terms.push(new ENFTerm([omegaFactor], t.coefficient));
+            }
+        }
+        // Note: this doesn't merge/simplify, just translates. A normalize step could be added.
+        return new ENFOrdinal(terms);
+    }
 }
 
 // Export for use in other modules

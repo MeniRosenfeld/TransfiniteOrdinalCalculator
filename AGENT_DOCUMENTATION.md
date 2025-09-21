@@ -265,3 +265,23 @@ By consulting this document, future agents should be better equipped to understa
 
 -   Quick wins to stabilize conversion matrix (`tests/conversion_debug.html`):
     -   Avoid advertising `ENF → CNF` until implemented (see above). Once `toCNFOrdinal()` is in, re-enable `ENF` direct conversion to `CNF` so the matrix shows a working path.
+
+
+
+**Current Status Summary:**
+- ✅ Core ENF types implemented (`ENFOrdinal`, `ENFTerm`, `ENFFactor`)
+- ✅ Basic unary properties implemented (`isZero`, `isFinite`, `isLessThanEpsilon0`, `isLessThanZeta0`, `rankTier`, `isWellFormed`, etc.)
+- ✅ `ENFOrdinal.fromCNF` static method implemented
+- ✅ ENF fallback rules added to multiplication and exponentiation (with placeholder logic)
+- ✅ Comparison rules updated with `compareENF` function
+- ✅ Test page scripts updated to new architecture
+- ✅ Major legacy static method calls replaced
+
+**Still Needed for Full ENF Support:**
+- Complete ENF multiplication logic (currently basic placeholder)
+- Complete ENF exponentiation logic (currently throws for infinite exponents)
+- ENF addition logic (already exists in `addENF` but may need refinement)
+- Missing ENFTerm operations like `multiply()` method
+- Proper ENF→CNF conversion (`toCNFOrdinal` method)
+
+The foundation is solid and ready for the next session to complete the operations implementation!

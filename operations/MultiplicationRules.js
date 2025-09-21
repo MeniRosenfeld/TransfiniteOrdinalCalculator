@@ -117,10 +117,45 @@ function createMultiplicationRules(conversionEngine) {
         // a * z0 = z0 (here a is known not to be z0 due to previous rule)
         new Rule("a * z0 = z0",
             (a, b) => (typeof ZetaZero !== 'undefined') && (b instanceof ZetaZero),
-            (a, b) => b.clone(a._tracer || b._tracer || null))
+            (a, b) => b.clone(a._tracer || b._tracer || null)),
 
         // ENF fallback can be added later when ENF is migrated
+        new Rule("Convert to ENF fallback",
+            (a, b) => conversionEngine.canConvert(a, 'ENF') && conversionEngine.canConvert(b, 'ENF'),
+            (a, b) => {
+                const aENF = conversionEngine.convert(a, 'ENF');
+                const bENF = conversionEngine.convert(b, 'ENF');
+                return multiplyENF(aENF, bENF);
+            })
     ];
+}
+
+function multiplyENF(a, b) {
+    const tracer = a._tracer || b._tracer || null;
+    if (a.isZero() || b.isZero()) return new ENFOrdinal([], tracer);
+
+    // a * b where b is finite: (t1 + t2 + ...)*m = (t1*m) + t2 + ...
+    if (b.isFinite()) {
+        if (a.isFinite()) {
+            return new ENFOrdinal([new ENFTerm([], a.getFiniteBigInt() * b.getFiniteBigInt(), tracer)]);
+        }
+        const leadingTermProduct = a.terms[0].clone(tracer);
+        leadingTermProduct.coefficient *= b.getFiniteBigInt();
+        const remainingTerms = a.terms.slice(1).map(t => t.clone(tracer));
+        return new ENFOrdinal([leadingTermProduct, ...remainingTerms], tracer);
+    }
+
+    // a * b where b is infinite: (t1 + ...)*(s1 + ...) = (t1 * s1) + (t1 * s2) + ...
+    // Note: this is distributive and requires addition.
+    let result = new ENFOrdinal([], tracer);
+    for (const termB of b.terms) {
+        // product = a * termB
+        // For infinite termB, a * termB = (a.terms[0] * termB)
+        const productTerm = a.terms[0].multiply(termB);
+        const product = new ENFOrdinal([productTerm], tracer);
+        result = result.add(product);
+    }
+    return result;
 }
 
 // Export for use in other modules

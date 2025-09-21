@@ -55,8 +55,8 @@ class ENFFactor {
             return baseStr;
         }
 
-        // Parenthesize exponent if it's a sum
-        const needsParen = this.exponent.terms.length > 1;
+        // Parenthesize exponent if it's a sum (only for ENFOrdinal)
+        const needsParen = (this.exponent instanceof ENFOrdinal) && this.exponent.terms && this.exponent.terms.length > 1;
         if (needsParen) {
             return `${baseStr}^(${expStr})`;
         } else {

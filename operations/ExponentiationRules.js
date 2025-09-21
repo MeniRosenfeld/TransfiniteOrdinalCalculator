@@ -131,6 +131,44 @@ function powerCNF(a, b) {
     throw new Error('CNF exponentiation: unsupported case');
 }
 
+function powerENF(a, b) {
+    const tracer = a._tracer || b._tracer || null;
+    // Trivial cases
+    if (b.isZero()) return new ENFOrdinal([new ENFTerm([], 1n)], tracer);
+    if (a.isZero()) return new ENFOrdinal([], tracer);
+    if (a.isOne()) return new ENFOrdinal([new ENFTerm([], 1n)], tracer);
+    if (b.isOne()) return a.clone(tracer);
+
+    // Finite exponent -> exponentiation by squaring
+    if (b.isFinite()) {
+        let n = b.getFiniteBigInt();
+        let res = new ENFOrdinal([new ENFTerm([], 1n)], tracer);
+        let temp_a = a;
+        while (n > 0n) {
+            if (n % 2n === 1n) res = res.multiply(temp_a);
+            temp_a = temp_a.multiply(temp_a);
+            n /= 2n;
+        }
+        return res;
+    }
+
+    // Rank-based decomposition
+    const rank_a = a.rank();
+    const rank_b = b.rank();
+
+    // Case A: rank(b) > rank(a)
+    if (OPERATIONS.compare(rank_b, rank_a) > 0) {
+        // ... implementation needed ...
+    }
+    // Case B: rank(b) <= rank(a)
+    else {
+        // ... implementation needed ...
+    }
+
+    // Placeholder for complex cases
+    throw new Error('ENF power for infinite exponents not fully implemented');
+}
+
 function createExponentiationRules(conversionEngine) {
     return [
         // a ^ 0 = 1
@@ -185,9 +223,16 @@ function createExponentiationRules(conversionEngine) {
         // a^z0 = z0 (here a is known not to be z0 due to previous rule)
         new Rule('a^z0 = z0',
             (a, b) => (typeof ZetaZero !== 'undefined') && (b instanceof ZetaZero),
-            (a, b) => b.clone(a._tracer || b._tracer || null))
+            (a, b) => b.clone(a._tracer || b._tracer || null)),
 
         // ENF fallback can be added later
+        new Rule("Convert to ENF fallback",
+            (a, b) => conversionEngine.canConvert(a, 'ENF') && conversionEngine.canConvert(b, 'ENF'),
+            (a, b) => {
+                const aENF = conversionEngine.convert(a, 'ENF');
+                const bENF = conversionEngine.convert(b, 'ENF');
+                return powerENF(aENF, bENF);
+            })
     ];
 }
 
