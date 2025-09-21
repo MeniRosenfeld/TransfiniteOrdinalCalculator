@@ -77,32 +77,33 @@ function createComparisonRules(conversionEngine) {
             (a, b) => a.isFinite() && b.isFinite(),
             (a, b) => compareFinite(a, b)),
 
-        // Finite vs infinite
-        new Rule("Finite vs infinite",
-            (a, b) => a.isFinite() !== b.isFinite(),
-            (a, b) => a.isFinite() ? -1 : 1), // finite < infinite
-
-        // EpsilonZero equality (new architecture basic type)
-        new Rule("EpsilonZero equality",
-            (a, b) => (typeof EpsilonZero !== 'undefined') && (a instanceof EpsilonZero) && (b instanceof EpsilonZero),
-            (a, b) => 0),
-
         new Rule("Omega equality",
             (a, b) => (a.isOmega() && b.isOmega()),
             (a, b) => 0),
 
+        // Different rankTier: lower tier is smaller
+        new Rule("Different rankTier",
+            (a, b) => (typeof a.rankTier === 'function') && (typeof b.rankTier === 'function') && (a.rankTier() !== b.rankTier()),
+            (a, b) => a.rankTier() < b.rankTier() ? -1 : 1
+        ),
 
-        // Any <ε₀ ordinal is less than ε₀
-        new Rule("CNF vs EpsilonZero ordering",
-            (a, b) => (typeof EpsilonZero !== 'undefined') && (
-                (a.isLessThanEpsilon0() && (b instanceof EpsilonZero)) ||
-                (b.isLessThanEpsilon0() && (a instanceof EpsilonZero))
+        // Epsilon index ordering: compare e_k by their indices (EpsilonZero treated as k=0)
+        new Rule("Epsilon index ordering",
+            (a, b) => (
+                ((typeof EpsilonZero !== 'undefined' && (a instanceof EpsilonZero)) || (typeof EpsilonNumber !== 'undefined' && (a instanceof EpsilonNumber))) &&
+                ((typeof EpsilonZero !== 'undefined' && (b instanceof EpsilonZero)) || (typeof EpsilonNumber !== 'undefined' && (b instanceof EpsilonNumber)))
             ),
             (a, b) => {
-                if (a instanceof EpsilonZero && b.isLessThanEpsilon0()) return 1;
-                if (b instanceof EpsilonZero && a.isLessThanEpsilon0()) return -1;
-                return 0;
-            }),
+                const zeroIdx = new ZeroOrdinal(a._tracer || b._tracer || null);
+                const idxA = (typeof EpsilonZero !== 'undefined' && a instanceof EpsilonZero)
+                    ? zeroIdx
+                    : a.k; // EpsilonNumber.k
+                const idxB = (typeof EpsilonZero !== 'undefined' && b instanceof EpsilonZero)
+                    ? zeroIdx
+                    : b.k; // EpsilonNumber.k
+                return OPERATIONS.compare(idxA, idxB);
+            }
+        ),
 
         new Rule("Different rank",
             (a, b) => OPERATIONS.compare(a.rank(), b.rank()) != 0,

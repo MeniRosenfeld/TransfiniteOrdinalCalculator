@@ -15,12 +15,15 @@ class ENFTerm extends OrdinalBase {
         super(operationTracer);
         // Validation for factors can be added here (e.g., ensuring they are sorted)
         this.factors = factors;
+        if (typeof coefficient !== 'bigint' || coefficient <= 0n) {
+            throw new Error('ENFTerm coefficient must be a positive BigInt');
+        }
         this.coefficient = coefficient;
     }
 
     // === REQUIRED UNARY METHODS ===
 
-    isZero() { return this.coefficient === 0n; }
+    isZero() { return false; }
     isFinite() { return this.factors.length === 0; }
     isOne() { return this.isFinite() && this.coefficient === 1n; }
     isOmega() {
@@ -29,7 +32,7 @@ class ENFTerm extends OrdinalBase {
             this.factors[0].base.isOmega() &&
             this.factors[0].exponent.isOne();
     }
-    isBasic() { return this.isOmega() || (this.factors.length === 1 && this.factors[0].exponent.isOne() && this.coefficient === 1n); }
+    isBasic() { return this.isOne() || (this.factors.length === 1 && this.factors[0].exponent.isOne() && this.coefficient === 1n); }
     isLimit() { return !this.isFinite(); }
     isTower() {
         if (this.coefficient !== 1n) return false;
@@ -37,6 +40,48 @@ class ENFTerm extends OrdinalBase {
         if (this.factors.length === 0) return this.isOne(); // Finite 1 is a tower
         const factor = this.factors[0];
         return factor.base.isTower() && factor.exponent.isTower();
+    }
+    isLessThanEpsilon0() {
+        if (this.isFinite()) return true;
+        if (this.factors.length === 1) {
+            const base = this.factors[0].base;
+            if (base && typeof base.isOmega === 'function' && base.isOmega()) return true;
+        }
+        return false;
+    }
+
+    isLessThanZeta0() { return true; }
+
+    isWellFormed() {
+        // Finite term: no factors, coefficient >= 0
+        if (this.isFinite()) {
+            return this.factors.length === 0 && typeof this.coefficient === 'bigint' && this.coefficient >= 0n;
+        }
+
+        // Infinite term: at least one factor, coefficient >= 1
+        if (!Array.isArray(this.factors) || this.factors.length === 0) return false;
+        if (typeof this.coefficient !== 'bigint' || this.coefficient < 1n) return false;
+
+        // Factors must be ENFFactor instances and strictly descending by base
+        for (let i = 0; i < this.factors.length; i++) {
+            const f = this.factors[i];
+            if (!(f instanceof ENFFactor)) return false;
+            // Exponent should be an ordinal and well-formed if available
+            if (!f.exponent || !f.exponent.isOrdinal || !f.exponent.isOrdinal()) return false;
+            if (typeof f.exponent.isWellFormed === 'function' && !f.exponent.isWellFormed()) return false;
+            // Rank(exponent) <= base
+            try {
+                const expRank = f.exponent.rank();
+                if (OPERATIONS.compare(expRank, f.base) > 0) return false;
+            } catch (_) { return false; }
+            // Strictly descending by base
+            if (i + 1 < this.factors.length) {
+                const next = this.factors[i + 1];
+                const baseCmp = OPERATIONS.compare(f.base, next.base);
+                if (!(baseCmp > 0)) return false;
+            }
+        }
+        return true;
     }
 
     getFiniteBigInt() {
@@ -74,32 +119,18 @@ class ENFTerm extends OrdinalBase {
 
     log() {
         if (this.isFinite()) return new ZeroOrdinal(this._tracer);
-
-        const leadingFactor = this.factors[0];
-        const rank = this.rank();
-
-        if (this.factors.length === 1 && this.coefficient === 1n) {
-            // log(a^b) = b
-            if (rank.compareTo(leadingFactor.base) === 0) {
-                return leadingFactor.exponent.clone();
-            }
-        }
-
-        // log((a^b)*c) = b if c is finite
-        // log((a^b)*c) where c is not finite is more complex, for now we assume simple cases.
-        // A term is (f1*f2...)*m. log is log(f1).
-        return leadingFactor.exponent.clone();
+        // For an infinite ENF term, the logarithm is the exponent of the leading factor
+        return this.factors[0].exponent.clone();
     }
 
     logStar() {
-        // This is complex for a single term. Let's start with a basic implementation.
+        // Return BigInt per global contract
         if (this.isFinite()) {
-            return this.isZero() ? new FiniteOrdinal(-1n) : new ZeroOrdinal(this._tracer);
+            return this.isZero() ? -1n : 0n;
         }
-        // 1 + log(this).logStar()
         const logVal = this.log();
-        const logStarOfLog = logVal.logStar();
-        return new FiniteOrdinal(1n + logStarOfLog);
+        const logStarOfLog = logVal.logStar(); // BigInt
+        return 1n + logStarOfLog;
     }
 
     // Dummy implementations for methods that will be more complex
@@ -111,6 +142,56 @@ class ENFTerm extends OrdinalBase {
     }
     toFFormat() { throw new Error("toFFormat not implemented for ENFTerm"); }
     simplify() { return { simplifiedOrdinal: this.clone(), remainingBudget: 0 }; }
+
+    /**
+     * Structural comparison ignoring coefficient.
+     * Returns 1 if this > other, 0 if equal structure, -1 if less.
+     */
+    compareStructureTo(other) {
+        if (!(other instanceof ENFTerm)) throw new Error('compareStructureTo expects ENFTerm');
+        const aFactors = this.factors;
+        const bFactors = other.factors;
+
+        // Finite vs non-finite: any non-finite (has factors) > finite (no factors)
+        const aFinite = (aFactors.length === 0);
+        const bFinite = (bFactors.length === 0);
+        if (aFinite && bFinite) return 0;
+        if (aFinite) return -1;
+        if (bFinite) return 1;
+
+        const minLen = Math.min(aFactors.length, bFactors.length);
+        for (let i = 0; i < minLen; i++) {
+            const af = aFactors[i];
+            const bf = bFactors[i];
+            // Compare bases (both basic)
+            const baseCmp = OPERATIONS.compare(af.base, bf.base);
+            if (baseCmp !== 0) return baseCmp;
+            // Compare exponents (ordinals)
+            const expCmp = OPERATIONS.compare(af.exponent, bf.exponent);
+            if (expCmp !== 0) return expCmp;
+        }
+        // Longer factor list is considered greater
+        if (aFactors.length > bFactors.length) return 1;
+        if (aFactors.length < bFactors.length) return -1;
+        return 0;
+    }
+
+    /**
+     * Full term comparison including coefficient when structures match.
+     */
+    compareTermTo(other) {
+        const structCmp = this.compareStructureTo(other);
+        if (structCmp !== 0) return structCmp;
+        // Same structure; compare coefficients
+        const aCoeff = this.isFinite() ? this.coefficient : this.coefficient;
+        const bCoeff = other.isFinite() ? other.coefficient : other.coefficient;
+        if (aCoeff < bCoeff) return -1;
+        if (aCoeff > bCoeff) return 1;
+        return 0;
+    }
+
+    // Backward-compat alias used by comparison rules
+    compareTo(other) { return this.compareTermTo(other); }
 
     // === CONVERSION SYSTEM ===
     static getTypeName() { return 'ENFTerm'; }

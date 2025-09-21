@@ -54,6 +54,18 @@ class OrdinalBase {
     isLessThanZeta0() { return true; }
 
     /**
+     * Coarse rank tier classification:
+     * 0 if zero; 1 if finite; 2 if < ε₀; 3 if < ζ₀; otherwise 4.
+     */
+    rankTier() {
+        if (this.isZero()) return 0;
+        if (this.isFinite()) return 1;
+        if (this.isLessThanEpsilon0()) return 2;
+        if (this.isLessThanZeta0()) return 3;
+        return 4;
+    }
+
+    /**
      * Returns true if this ordinal equals ω.
      */
     isOmega() { throw new Error(`${this.constructor.name} must implement isOmega()`); }

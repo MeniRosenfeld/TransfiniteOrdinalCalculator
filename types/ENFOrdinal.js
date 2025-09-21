@@ -24,7 +24,10 @@ class ENFOrdinal extends OrdinalBase {
         // An ENF sum is finite iff all its terms are finite
         return this.terms.every(t => t.isFinite());
     }
-    isLessThanEpsilon0() { return false; } // Generally, ENF is for ordinals >= e_0
+    isLessThanEpsilon0() {
+        if (this.isZero()) return true;
+        return this.terms[0].isLessThanEpsilon0();
+    }
     isOmega() {
         return this.terms.length === 1 && this.terms[0].isOmega();
     }
@@ -43,6 +46,28 @@ class ENFOrdinal extends OrdinalBase {
         if (this.isZero()) return false; // Or true for 0? Let's be consistent. Finite 0 is not a tower.
         if (this.terms.length !== 1) return false;
         return this.terms[0].isTower();
+    }
+
+    isLessThanZeta0() { return true; }
+
+    isWellFormed() {
+        // Zero is trivially well-formed
+        if (this.isZero()) return true;
+        // Terms must be ENFTerms, strictly decreasing (by structural order), and individually well-formed
+        for (let i = 0; i < this.terms.length; i++) {
+            const t = this.terms[i];
+            if (!(t instanceof ENFTerm)) return false;
+            if (typeof t.isWellFormed === 'function' && !t.isWellFormed()) return false;
+            if (i + 1 < this.terms.length) {
+                const next = this.terms[i + 1];
+                // 1) Structure must strictly decrease ignoring coefficients
+                // Compare by rank/log: leading factor base comparison, then exponents, then omega exponent
+                if (typeof t.compareStructureTo === 'function' && typeof next.compareStructureTo === 'function') {
+                    if (!(t.compareStructureTo(next) > 0)) return false;
+                }
+            }
+        }
+        return true;
     }
 
     getFiniteBigInt() {
@@ -75,7 +100,7 @@ class ENFOrdinal extends OrdinalBase {
     }
 
     logStar() {
-        if (this.isZero()) return new FiniteOrdinal(-1n, this._tracer);
+        if (this.isZero()) return -1n;
         return this.terms[0].logStar();
     }
 
