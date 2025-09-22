@@ -34,6 +34,8 @@ class Operations {
             typeof OmegaOrdinal !== 'undefined' ? OmegaOrdinal : null,
             typeof CNFOrdinal !== 'undefined' ? CNFOrdinal : null,
             typeof WTowerOrdinal !== 'undefined' ? WTowerOrdinal : null,
+            typeof EpsilonTowerOrdinal !== 'undefined' ? EpsilonTowerOrdinal : null,
+            typeof EpsilonTunnelOrdinal !== 'undefined' ? EpsilonTunnelOrdinal : null,
             typeof EpsilonZero !== 'undefined' ? EpsilonZero : null,
             typeof EpsilonNumber !== 'undefined' ? EpsilonNumber : null,
             typeof ENFOrdinal !== 'undefined' ? ENFOrdinal : null,

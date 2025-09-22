@@ -58,7 +58,6 @@ class WTowerOrdinal extends OrdinalBase {
     }
 
     logStar() {
-        if (this.height === -1n) return -1n;
         return this.height;
     }
 
@@ -198,7 +197,6 @@ class WTowerOrdinal extends OrdinalBase {
     nextRank() {
         if (this.height === -1n) return new OneOrdinal(this._tracer);
         if (this.height === 0n) return new OmegaOrdinal(this._tracer);
-        if (this.height === 1n) return new EpsilonZero(this._tracer);
         return new EpsilonZero(this._tracer);
     }
 }

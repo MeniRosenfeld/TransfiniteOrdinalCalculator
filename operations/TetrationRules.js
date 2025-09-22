@@ -43,7 +43,7 @@ function createTetrationRules(conversionEngine) {
         // 0 ^^ infinite is undefined
         new Rule('0^^infinite undefined',
             (a, b) => a.isZero() && !b.isFinite(),
-            (a, b) => { throw new Error('Operation 0 ^^ infinite is undefined.'); }),
+            (a, b) => { throw new Error(`Operation 0 ^^ ${b.toString()} is undefined.`); }),
 
         // finite ^^ finite = repeated exponentiation
         new Rule('finite^^finite',
@@ -56,6 +56,18 @@ function createTetrationRules(conversionEngine) {
             (a, b) => {
                 const h = b.getFiniteBigInt();
                 if (h > 10n) return new WTowerOrdinal(h);
+                return tetrateFinite(a, b);
+            }),
+
+        // e_k ^^ finite: if height>10 -> EpsilonTower, else repeated exponentiation
+        new Rule('epsilon^^finite',
+            (a, b) => a.isEpsilonNumber() && b.isFinite(),
+            (a, b) => {
+                const h = b.getFiniteBigInt();
+                if (h > 10n) {
+                    const epsilonIndex = a.epsilonIndex();
+                    return new EpsilonTowerOrdinal(epsilonIndex, h);
+                }
                 return tetrateFinite(a, b);
             }),
 

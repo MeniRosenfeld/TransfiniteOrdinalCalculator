@@ -17,9 +17,9 @@ class ENFFactor {
         }
         this.exponent = exponent;
         if (base.isOmega()) {  
-            this.base = new OmegaOrdinal();
+            this.base = new OmegaOrdinal(base._tracer);
         } else if (base.isEpsilonNumber()) {
-            this.base = new EpsilonNumber(base.epsilonIndex());
+            this.base = new EpsilonNumber(base.epsilonIndex(), base._tracer);
         } else {
             throw new Error("ENFFactor base must be omega or an Epsilon Number.");
         }

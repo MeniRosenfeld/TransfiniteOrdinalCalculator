@@ -39,6 +39,18 @@ class OrdinalBase {
     getFinitePart() { throw new Error(`${this.constructor.name} must implement getFinitePart()`); }
     needsParenthesesAsExponent() { throw new Error(`${this.constructor.name} must implement needsParenthesesAsExponent()`); }
 
+    leftPredecessor() {
+        if (this.isZero()) {
+            throw new Error("Cannot take left predecessor of zero");
+        }
+        if (this.isFinite()) {
+            const n = this.getFiniteBigInt();
+            return new FiniteOrdinal(n - 1n, this._tracer);
+        }
+        // For infinite ordinals, left predecessor is itself
+        return this.clone(this._tracer);
+    }
+
     /**
      * Returns the first ordinal larger than this from the list [1, ω, ε₀].
      */
@@ -220,6 +232,33 @@ class OrdinalBase {
             return OPERATIONS.tetrate(this, other);
         }
         throw new Error('Tetration engine not available');
+    }
+
+    tunnel() {
+        // If this is infinite: return z_0
+        if (!this.isFinite()) {
+            return new ZetaZero(this._tracer);
+        }
+        
+        // If this is finite n:
+        const n = this.getFiniteBigInt();
+        
+        // If n=0, return 0
+        if (n === 0n) {
+            return new ZeroOrdinal(this._tracer);
+        }
+        
+        // If 0<n<=10, return an EpsilonNumber e_e_e_...(n times)...0
+        if (n > 0n && n <= 10n) {
+            let result = new ZeroOrdinal(this._tracer);
+            for (let i = 0n; i < n; i++) {
+                result = new EpsilonNumber(result, this._tracer);
+            }
+            return result;
+        }
+        
+        // If n>10, return an EpsilonTunnel object of depth n
+        return new EpsilonTunnelOrdinal(n, this._tracer);
     }
 
     /**

@@ -179,7 +179,8 @@ function powerENF(a, b) {
                 } else {
                     // k is epsilon: ε_t^x
                     const t = k.epsilonIndex();
-                    const factor = new ENFFactor(t, x.clone(tracer));
+                    const epsilonBase = new EpsilonNumber(t, tracer);
+                    const factor = new ENFFactor(epsilonBase, x.clone(tracer));
                     k_pow_x = new ENFOrdinal([new ENFTerm([factor], 1n, tracer)], tracer);
                 }
                 const w_pow_r = powerENF(a, r);
@@ -216,14 +217,16 @@ function powerENF(a, b) {
                     k_pow_x = new ENFOrdinal([new ENFTerm([factor], 1n, tracer)], tracer);
                 } else {
                     const t = k.epsilonIndex();
-                    const factor = new ENFFactor(t, x.clone(tracer));
+                    const epsilonBase = new EpsilonNumber(t, tracer);
+                    const factor = new ENFFactor(epsilonBase, x.clone(tracer));
                     k_pow_x = new ENFOrdinal([new ENFTerm([factor], 1n, tracer)], tracer);
                 }
                 const term_r = powerENF(a, r);
                 return k_pow_x.multiply(term_r);
             }
             // ε_idx^b = ε_idx with exponent b
-            const factor = new ENFFactor(idx, b.clone(tracer));
+            const epsilonBase = new EpsilonNumber(idx, tracer);
+            const factor = new ENFFactor(epsilonBase, b.clone(tracer));
             return new ENFOrdinal([new ENFTerm([factor], 1n, tracer)], tracer);
         }
     }
@@ -245,7 +248,8 @@ function powerENF(a, b) {
         } else {
             // k is epsilon basic: extract its index t
             const t = k.epsilonIndex();
-            const factor = new ENFFactor(t, x.clone(tracer));
+            const epsilonBase = new EpsilonNumber(t, tracer);
+            const factor = new ENFFactor(epsilonBase, x.clone(tracer));
             k_pow_x = new ENFOrdinal([new ENFTerm([factor], 1n, tracer)], tracer);
         }
         const term_r = powerENF(a, r);
@@ -270,7 +274,8 @@ function powerENF(a, b) {
             k_pow_cd = new ENFOrdinal([new ENFTerm([factor], 1n, tracer)], tracer);
         } else {
             const t = k.epsilonIndex();
-            const factor = new ENFFactor(t, cd.clone(tracer));
+            const epsilonBase = new EpsilonNumber(t, tracer);
+            const factor = new ENFFactor(epsilonBase, cd.clone(tracer));
             k_pow_cd = new ENFOrdinal([new ENFTerm([factor], 1n, tracer)], tracer);
         }
         return k_pow_cd.multiply(term_r);
@@ -304,13 +309,18 @@ function createExponentiationRules(conversionEngine) {
             (a, b) => a.isFinite() && b.isFinite(),
             (a, b) => powerFinite(a, b)),
 
-        // Finite ^ infinite -> CNF path (k^β)
-        new Rule('Finite ^ infinite via CNF',
-            (a, b) => a.isFinite() && !b.isFinite(),
+        // w ^ WTower
+        new Rule ('Omega ^ WTower',
+            (a, b) => a.isOmega() && b instanceof WTowerOrdinal,
             (a, b) => {
-                const aCNF = conversionEngine.convert(a, 'CNF');
-                const bCNF = conversionEngine.convert(b, 'CNF');
-                return powerCNF(aCNF, bCNF);
+                return new WTowerOrdinal(b.height + 1n, a._tracer || b._tracer || null);
+            }),
+
+        // e_k ^ EpsilonTower
+        new Rule ('Epsilon ^ EpsilonTower',
+            (a, b) => a.isEpsilonNumber() && b instanceof EpsilonTowerOrdinal && a.epsilonIndex().equals(b.baseIndex),
+            (a, b) => {
+                return new EpsilonTowerOrdinal(a.epsilonIndex(), b.height + 1n, a._tracer || b._tracer || null);
             }),
 
         // Prefer CNF path when both can convert to CNF (no extra type checks needed)

@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ENF Regression Debug</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            line-height: 1.4;
+        }
+        .result {
+            background-color: #f0f0f0;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+        .debug-section {
+            background-color: #fff5f5;
+            padding: 10px;
+            margin: 5px 0;
+            border-left: 3px solid #ff6b6b;
+        }
+        button {
+            padding: 8px 16px;
+            margin: 5px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <h1>ENF Regression Debug: w^(e_1^(w+1)) should be e_1^e_1^(w+1)</h1>
+    
+    <button onclick="runDebugTest()">Run Debug Test</button>
+    <button onclick="clearResults()">Clear Results</button>
+    
+    <div id="results"></div>
+
+    <!-- Load all necessary scripts -->
+    <script src="../OperationTracer.js"></script>
+    <script src="../types/OrdinalBase.js"></script>
+    <script src="../types/ZeroOrdinal.js"></script>
+    <script src="../types/OneOrdinal.js"></script>
+    <script src="../types/FiniteOrdinal.js"></script>
+    <script src="../types/OmegaOrdinal.js"></script>
+    <script src="../types/EpsilonZero.js"></script>
+    <script src="../types/EpsilonNumber.js"></script>
+    <script src="../types/WTowerOrdinal.js"></script>
+    <script src="../types/CNFOrdinal.js"></script>
+    <script src="../types/ZetaZero.js"></script>
+    <script src="../types/ENFFactor.js"></script>
+    <script src="../types/ENFTerm.js"></script>
+    <script src="../types/ENFOrdinal.js"></script>
+    <script src="../operations/Auxiliary.js"></script>
+    <script src="../operations/Comparison.js"></script>
+    <script src="../operations/AdditionRules.js"></script>
+    <script src="../operations/MultiplicationRules.js"></script>
+    <script src="../operations/ExponentiationRules.js"></script>
+    <script src="../operations/TetrationRules.js"></script>
+    <script src="../operations/NumericContexts.js"></script>
+    <script src="../operations/Rational.js"></script>
+    <script src="../operations/RuleEngine.js"></script>
+    <script src="../operations/Operations.js"></script>
+    <script src="../conversions/ConversionRegistry.js"></script>
+    <script src="../conversions/ConversionEngine.js"></script>
+    <script src="../SimpleParser.js"></script>
+
+    <script>
+        let tracer = null;
+
+        // Initialize the system properly
+        (function() {
+            try {
+                if (typeof OperationTracer !== 'undefined') {
+                    tracer = new OperationTracer(10000);
+                    console.log('OperationTracer initialized with budget 10000');
+                }
+                
+                // Wait for DOM to be ready and then initialize OPERATIONS
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', initializeOperations);
+                } else {
+                    initializeOperations();
+                }
+                
+                function initializeOperations() {
+                    if (window.OPERATIONS) {
+                        try { 
+                            OPERATIONS.initialize(); 
+                            console.log('OPERATIONS initialized successfully');
+                        } catch (e) { 
+                            console.error('Failed to initialize OPERATIONS', e); 
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Initialization error:', error);
+            }
+        })();
+
+        function log(message) {
+            const results = document.getElementById('results');
+            const div = document.createElement('div');
+            div.className = 'result';
+            div.innerHTML = message;
+            results.appendChild(div);
+        }
+
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+        }
+
+        // Debug test for the failing regression: w^(e_1^(w+1)) should be e_1^e_1^(w+1)
+        function runDebugTest() {
+            clearResults();
+            
+            // Check if OPERATIONS is initialized
+            if (!window.OPERATIONS || !OPERATIONS.initialized) {
+                log('<strong style="color: red;">Error:</strong> OPERATIONS not initialized. Please wait a moment and try again.');
+                return;
+            }
+            
+            try {
+                log('<h4>Testing Failed Regression: w^(e_1^(w+1)) should be e_1^e_1^(w+1)</h4>');
+                
+                // Set up the ordinals exactly as in the test
+                const enf_one = new ENFOrdinal([new ENFTerm([], 1n, tracer)]);
+                const enf_w = ENFOrdinal.fromCNF(new OmegaOrdinal(tracer));
+                const e1_base = new EpsilonNumber(new OneOrdinal(tracer), tracer);
+                
+                log('<h4>Step 1: Build the components</h4>');
+                log(`<strong>enf_w:</strong> ${enf_w.toString()} (${enf_w.constructor.name})`);
+                log(`<strong>e1_base:</strong> ${e1_base.toString()} (${e1_base.constructor.name})`);
+                
+                // Build w+1
+                const exp_w_plus_1 = new SimpleParser("w+1", tracer).parse();
+                log(`<strong>exp_w_plus_1 (w+1):</strong> ${exp_w_plus_1.toString()} (${exp_w_plus_1.constructor.name})`);
+                
+                // Build e_1^(w+1)
+                const e1_pow_w_plus_1 = new ENFOrdinal([new ENFTerm([new ENFFactor(e1_base, ENFOrdinal.fromCNF(exp_w_plus_1))], 1n, tracer)]);
+                log(`<strong>e1_pow_w_plus_1 (e_1^(w+1)):</strong> ${e1_pow_w_plus_1.toString()} (${e1_pow_w_plus_1.constructor.name})`);
+                
+                // Show structure of e_1^(w+1)
+                log('<h4>Step 2: Structure of e_1^(w+1)</h4>');
+                log(`<strong>Terms count:</strong> ${e1_pow_w_plus_1.terms.length}`);
+                e1_pow_w_plus_1.terms.forEach((term, i) => {
+                    log(`<strong>Term ${i}:</strong> ${term.toString()}`);
+                    log(`  Factors: ${term.factors.length}`);
+                    term.factors.forEach((factor, j) => {
+                        log(`    Factor ${j}: base=${factor.base.toString()}, exp=${factor.exponent.toString()}`);
+                        log(`    Factor ${j} types: base=${factor.base.constructor.name}, exp=${factor.exponent.constructor.name}`);
+                    });
+                    log(`  Coefficient: ${term.coefficient}`);
+                });
+                
+                // Perform the actual calculation: w^(e_1^(w+1))
+                log('<h4>Step 3: Calculate w^(e_1^(w+1))</h4>');
+                const actual = enf_w.power(e1_pow_w_plus_1);
+                log(`<strong>Actual result:</strong> ${actual.toString()} (${actual.constructor.name})`);
+                
+                // Show structure of actual result
+                log(`<strong>Actual terms count:</strong> ${actual.terms.length}`);
+                actual.terms.forEach((term, i) => {
+                    log(`<strong>Actual Term ${i}:</strong> ${term.toString()}`);
+                    log(`  Factors: ${term.factors.length}`);
+                    term.factors.forEach((factor, j) => {
+                        log(`    Factor ${j}: base=${factor.base.toString()}, exp=${factor.exponent.toString()}`);
+                        log(`    Factor ${j} types: base=${factor.base.constructor.name}, exp=${factor.exponent.constructor.name}`);
+                    });
+                    log(`  Coefficient: ${term.coefficient}`);
+                });
+                
+                // Build expected result: e_1^e_1^(w+1)
+                log('<h4>Step 4: Build expected result e_1^e_1^(w+1)</h4>');
+                const expected = new ENFOrdinal([new ENFTerm([new ENFFactor(e1_base, e1_pow_w_plus_1)], 1n, tracer)]);
+                log(`<strong>Expected result:</strong> ${expected.toString()} (${expected.constructor.name})`);
+                
+                // Show structure of expected result
+                log(`<strong>Expected terms count:</strong> ${expected.terms.length}`);
+                expected.terms.forEach((term, i) => {
+                    log(`<strong>Expected Term ${i}:</strong> ${term.toString()}`);
+                    log(`  Factors: ${term.factors.length}`);
+                    term.factors.forEach((factor, j) => {
+                        log(`    Factor ${j}: base=${factor.base.toString()}, exp=${factor.exponent.toString()}`);
+                        log(`    Factor ${j} types: base=${factor.base.constructor.name}, exp=${factor.exponent.constructor.name}`);
+                    });
+                    log(`  Coefficient: ${term.coefficient}`);
+                });
+                
+                // Compare
+                log('<h4>Step 5: Comparison</h4>');
+                log(`<strong>Actual == Expected:</strong> ${actual.equals(expected)}`);
+                log(`<strong>Actual:</strong> ${actual.toString()}`);
+                log(`<strong>Expected:</strong> ${expected.toString()}`);
+                
+                // Debug the power calculation path
+                log('<h4>Step 6: Debug power calculation internals</h4>');
+                log(`<strong>Base (w) rank:</strong> ${enf_w.rank().toString()}`);
+                log(`<strong>Exponent (e_1^(w+1)) rank:</strong> ${e1_pow_w_plus_1.rank().toString()}`);
+                log(`<strong>Base isBasic():</strong> ${enf_w.isBasic()}`);
+                log(`<strong>Base isOmega():</strong> ${enf_w.isOmega()}`);
+                log(`<strong>Exponent isFinite():</strong> ${e1_pow_w_plus_1.isFinite()}`);
+                
+                // Check rank comparison
+                const rank_comparison = OPERATIONS.compare(e1_pow_w_plus_1.rank(), enf_w.rank());
+                log(`<strong>Rank comparison (exp vs base):</strong> ${rank_comparison} (>0 means exp rank > base rank)`);
+                
+            } catch (error) {
+                log(`<strong style="color: red;">Error:</strong> ${error.message}`);
+                log(`<strong style="color: red;">Stack:</strong> ${error.stack}`);
+                console.error('Debug test error:', error);
+            }
+        }
+
+        console.log('Regression debug page ready! Use runDebugTest()');
+    </script>
+</body>
+</html>

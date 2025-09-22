@@ -184,31 +184,6 @@ class CNFOrdinal extends OrdinalBase {
         return new EpsilonZero(this._tracer);
     }
 
-    // === EXPONENT/OMEGA HELPERS (needed for CNF exponentiation) ===
-    exponentPredecessor() {
-        if (this.isZero()) {
-            return new ZeroOrdinal(this._tracer);
-        }
-        if (this.isFinite()) {
-            const n = this.getFinitePart();
-            if (n <= 1n) return new ZeroOrdinal(this._tracer);
-            return new FiniteOrdinal(n - 1n, this._tracer);
-        }
-
-        const lastIdx = this.terms.length - 1;
-        const lastTerm = this.terms[lastIdx];
-        if (lastTerm.exponent.isZero()) {
-            const newTerms = this.terms.map(t => ({ exponent: t.exponent.clone(this._tracer), coefficient: t.coefficient }));
-            if (lastTerm.coefficient > 1n) {
-                newTerms[lastIdx].coefficient -= 1n;
-            } else {
-                newTerms.pop();
-            }
-            return new CNFOrdinal(newTerms, this._tracer);
-        }
-        return this.clone();
-    }
-
     divideByOmega() {
         if (this.isZero() || this.isFinite()) {
             return new ZeroOrdinal(this._tracer);
@@ -216,7 +191,7 @@ class CNFOrdinal extends OrdinalBase {
         const newTerms = [];
         if (this._tracer) this._tracer.consume(this.terms.length || 0);
         for (const term of this.terms) {
-            const newExponent = term.exponent.exponentPredecessor();
+            const newExponent = term.exponent.leftPredecessor();
             newTerms.push({ exponent: newExponent, coefficient: term.coefficient });
         }
         return new CNFOrdinal(newTerms, this._tracer);

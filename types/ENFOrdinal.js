@@ -133,38 +133,48 @@ class ENFOrdinal extends OrdinalBase {
         return new ENFOrdinal(limitTerms, this._tracer);
     }
 
-    ordinalDivision(divisor) {
-        // For ENF ordinal division: find quotient and remainder such that this = divisor * quotient + remainder
-        // This is a simplified implementation for the power function's needs
-        if (divisor.isZero()) throw new Error("Division by zero");
-        if (this.isZero()) return { quotient: new ENFOrdinal([], this._tracer), remainder: new ENFOrdinal([], this._tracer) };
-        
-        // For rank-based decomposition in power: if this = k*x + r, we want x and r
-        // This is a placeholder - full implementation would be complex
-        // For now, assume simple cases where divisor is the rank
-        if (this.isFinite()) {
-            return { 
-                quotient: new ENFOrdinal([], this._tracer), 
-                remainder: this.clone() 
-            };
+    ordinalDivision(k) {
+        // Simplified ordinal division - only works for basic ordinals (ω or ε_k)
+        if (k.isZero() || !k.isBasic()) {
+            throw new Error("Divisor k must be a non-finite basic ordinal (w or e_k).");
         }
-        
-        const leadingTerm = this.terms[0];
-        const divisorRank = divisor.rank();
-        const thisRank = this.rank();
-        
-        if (OPERATIONS.compare(divisorRank, thisRank) === 0) {
-            // Same rank - extract coefficient as quotient
-            const quotient = new ENFOrdinal([new ENFTerm([], leadingTerm.coefficient, this._tracer)], this._tracer);
-            const remainderTerms = this.terms.slice(1).map(t => t.clone());
-            const remainder = new ENFOrdinal(remainderTerms, this._tracer);
-            return { quotient, remainder };
+
+        const quotientTerms = [];
+        const remainderTerms = [];
+
+        for (const term of this.terms) {
+            if (term.factors.length === 0) {
+                // Finite term - goes to remainder
+                remainderTerms.push(term.clone());
+                continue;
+            }
+
+            const leadingFactor = term.factors[0];
+            const comparison = OPERATIONS.compare(leadingFactor.base, k);
+
+            if (comparison > 0) {
+                // term.factors[0].base > k: Add term as is to the quotient
+                quotientTerms.push(term.clone());
+            } else if (comparison === 0) {
+                // term.factors[0].base = k: Add term to quotient with leftPredecessor applied to leading factor's exponent
+                const newTerm = term.clone();
+                const newExp = leadingFactor.exponent.leftPredecessor();
+                if (newExp.isZero()) {
+                    // Remove the leading factor entirely
+                    newTerm.factors.shift();
+                } else {
+                    newTerm.factors[0].exponent = newExp;
+                }
+                quotientTerms.push(newTerm);
+            } else {
+                // term.factors[0].base < k: Add term to remainder
+                remainderTerms.push(term.clone());
+            }
         }
-        
-        // Different ranks - simplified handling
-        return { 
-            quotient: new ENFOrdinal([new ENFTerm([], 1n, this._tracer)], this._tracer), 
-            remainder: this.clone() 
+
+        return {
+            quotient: new ENFOrdinal(quotientTerms, this._tracer),
+            remainder: new ENFOrdinal(remainderTerms, this._tracer)
         };
     }
 
@@ -184,8 +194,9 @@ class ENFOrdinal extends OrdinalBase {
     // Methods that need more complex implementation
     nextRank() {
         if (this.isZero()) {
-            return new EpsilonNumber(new ZeroOrdinal(this._tracer), this._tracer);
+            return new OneOrdinal(this._tracer);
         }
+        // Delegate to the leading term's nextRank
         return this.terms[0].nextRank();
     }
     complexity() {

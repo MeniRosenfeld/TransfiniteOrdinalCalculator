@@ -40,11 +40,7 @@ class EpsilonNumber extends OrdinalBase {
     toString() {
         const kStr = this.k.toString();
         // Parenthesize only when necessary
-        let needsParen = false;
-        if (this.k instanceof CNFOrdinal) {
-            needsParen = !(this.k.isFinite() || this.k.isOmega() || this.k.isOmegaPower());
-        }
-
+        let needsParen = !(this.k.isFinite() || this.k.isOmega() || this.k.isEpsilonNumber());
         if (needsParen) {
             return `e_(${kStr})`;
         } else {

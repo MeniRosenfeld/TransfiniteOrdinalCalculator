@@ -168,7 +168,28 @@ class ENFTerm extends OrdinalBase {
     }
 
     // Dummy implementations for methods that will be more complex
-    nextRank() { throw new Error("nextRank not implemented for ENFTerm"); }
+    nextRank() { 
+        if (this.factors.length === 0) {
+            // Pure finite term - next rank is ω
+            return new OmegaOrdinal(this._tracer);
+        }
+        
+        const leadingFactor = this.factors[0];
+        const leadingBase = leadingFactor.base;
+        
+        if (leadingBase.isOmega()) {
+            // Base is ω, next rank is ε₀
+            return new EpsilonZero(this._tracer);
+        } else if (leadingBase.isEpsilonNumber()) {
+            // Base is ε_k, next rank is ε_(k+1)
+            const k = leadingBase.epsilonIndex();
+            const kPlusOne = k.successor();
+            return new EpsilonNumber(kPlusOne, this._tracer);
+        } else {
+            // For other bases, fall back to the base's nextRank
+            return leadingBase.nextRank();
+        }
+    }
     complexity() {
         let c = this.factors.reduce((sum, f) => sum + f.base.complexity() + f.exponent.complexity() + 2, 0);
         c += this.coefficient.toString().length;

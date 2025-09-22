@@ -158,6 +158,13 @@
             clearResults();
             
             try {
+                ord1 = new SimpleParser("5", tracer).parse(); 
+                ord2 = new OmegaOrdinal(tracer);
+                ord3 = ord1.power(ord2);
+                log(ord1.toString());
+                log(ord2.toString());
+                log(ord3.toString());
+
                 log('<h4>Testing ENF Exponentiation: ω^ω (matching ordinal_enf_test.html)</h4>');
                 
                 // Method 1: Pre-constructed ω^ω (as done in Complex Comparison section)

@@ -153,7 +153,12 @@ function createMultiplicationRules(conversionEngine) {
         // Finite * infinite = infinite (left finite)
         new Rule("Finite * infinite = infinite",
             (a, b) => a.isFinite(),
-            (a, b) => b.clone(a._tracer || b._tracer || null)),
+            (a, b) => {
+                const tracer = a._tracer || b._tracer || null;
+                const n = a.getFiniteBigInt();
+                const k = b.getFinitePart();
+                return b.clone(tracer).add(new FiniteOrdinal((n - 1n) * k, tracer));
+            }),
 
         // ENFTerm * ENFTerm multiplication
         new Rule("ENFTerm * ENFTerm",

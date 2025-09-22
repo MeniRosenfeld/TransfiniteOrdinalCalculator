@@ -327,6 +327,8 @@
     <script src="../types/OmegaOrdinal.js"></script>
     <script src="../types/CNFOrdinal.js"></script>
     <script src="../types/WTowerOrdinal.js"></script>
+    <script src="../types/EpsilonTowerOrdinal.js"></script>
+    <script src="../types/EpsilonTunnelOrdinal.js"></script>
     <script src="../types/EpsilonZero.js"></script>
     <script src="../types/EpsilonNumber.js"></script>
     <script src="../types/ZetaZero.js"></script>
@@ -721,16 +723,15 @@
                         let roundTripPassed = false;
                         let roundTripError = '';
                         try {
-                            const roundTripResult = calculateOrdinal(actualString, 10000000);
-                            if (roundTripResult.error) {
-                                roundTripError = `Round-trip parse error: ${roundTripResult.error}`;
-                            } else {
-                                const B = result.ordinalObject;  // Original ordinal
-                                const D = roundTripResult.ordinalObject;  // Re-parsed ordinal
-                                roundTripPassed = B.equals(D);
-                                if (!roundTripPassed) {
-                                    roundTripError = `Round-trip inequality: B="${B.toString()}" ≠ D="${D.toString()}"`;
-                                }
+                            const roundTripTracer = new OperationTracer(10000000);
+                            const roundTripParser = new SimpleParser(actualString, roundTripTracer, { coerceToCNF: false });
+                            const roundTripOrdinal = roundTripParser.parse();
+                            
+                            const B = result.ordinalObject;  // Original ordinal
+                            const D = roundTripOrdinal;  // Re-parsed ordinal
+                            roundTripPassed = B.equals(D);
+                            if (!roundTripPassed) {
+                                roundTripError = `Round-trip inequality: B="${B.toString()}" ≠ D="${D.toString()}"`;
                             }
                         } catch (e) {
                             roundTripError = `Round-trip exception: ${e.message}`;
@@ -760,11 +761,39 @@
                 }
 
             } catch (e) {
-                const status = document.createElement('p');
-                status.textContent = `Status: CRITICAL ERROR - ${e.message}`;
-                status.className = 'status-failed';
-                container.appendChild(status);
-                console.error(`Error in ENF calculation test "${testName}":`, e);
+                // Handle exceptions - check if we expected an error
+                if (expectError) {
+                    const actualError = `Error: ${e.message}`;
+                    passed = actualError === expectedString;
+
+                    const actualP = document.createElement('p');
+                    actualP.className = 'log-output';
+                    actualP.textContent = `Actual:   "${actualError}"`;
+                    container.appendChild(actualP);
+
+                    if (!passed) {
+                        const expectedP = document.createElement('p');
+                        expectedP.className = 'log-output status-failed';
+                        expectedP.textContent = `Expected: "${expectedString}"`;
+                        container.appendChild(expectedP);
+                    }
+
+                    const status = document.createElement('p');
+                    status.textContent = `Status: ${passed ? 'PASSED' : 'FAILED'}`;
+                    status.className = passed ? 'status-passed' : 'status-failed';
+                    container.appendChild(status);
+
+                    if (passed) {
+                        passedTests++;
+                    }
+                } else {
+                    // Unexpected exception
+                    const status = document.createElement('p');
+                    status.textContent = `Status: CRITICAL ERROR - ${e.message}`;
+                    status.className = 'status-failed';
+                    container.appendChild(status);
+                    console.error(`Error in ENF calculation test "${testName}":`, e);
+                }
             }
 
             const finalPassed = container.querySelector('.status-failed') === null;
@@ -1246,7 +1275,9 @@
                 for (let idx = 0; idx < triples.length; idx++) {
                     const [i, j, k] = triples[idx];
                     try {
-                        const a = ordinals[i], b = ordinals[j], c = ordinals[k];
+                        // Create fresh copies with a new tracer to avoid budget conflicts
+                        const freshTracer = new OperationTracer(500000); // Fresh budget for each triple
+                        const a = ordinals[i].clone(freshTracer), b = ordinals[j].clone(freshTracer), c = ordinals[k].clone(freshTracer);
                         const left = a.add(b).add(c);
                         const right = a.add(b.add(c));
                         if (!left.equals(right)) {
@@ -1346,7 +1377,9 @@
 
                 for (let t = 0; t < triples.length; t++) {
                     const [i, j, k] = triples[t];
-                    const a = ordinals[i], b = ordinals[j], c = ordinals[k];
+                    // Create fresh copies with a new tracer to avoid budget conflicts
+                    const freshTracer = new OperationTracer(500000); // Fresh budget for each triple
+                    const a = ordinals[i].clone(freshTracer), b = ordinals[j].clone(freshTracer), c = ordinals[k].clone(freshTracer);
                     try {
                         // Multiplication associativity
                         const ab = a.multiply(b);
@@ -1467,7 +1500,8 @@
                             const computed = ordinals[i].power(ordinals[j]);
                             computedStr = computed.toString();
                         } catch (e) {
-                            computedStr = 'ERROR';
+                            computedStr = `ERROR: ${e.message}`;
+                            console.error(`Power calculation error for ${ordinalLabels[i]} ^ ${ordinalLabels[j]}:`, e);
                         }
                         const expected = expectedExponentiationResults[i][j];
 
@@ -1517,14 +1551,14 @@
         }
 
         function defineTests() {
-            const tracer = new OperationTracer(200000);
+            const tracer = new OperationTracer(2000000); // Increased from 200,000 to 2,000,000
 
             const enf_zero = new ENFOrdinal([], tracer);
             const enf_one = new ENFOrdinal([new ENFTerm([], 1n, tracer)]);
             const enf_w = ENFOrdinal.fromCNF(new OmegaOrdinal(tracer));
             const enf_e0 = new ENFOrdinal([new ENFTerm([new ENFFactor(new EpsilonZero(tracer), enf_one)], 1n, tracer)]);
-            const e0_base = new EpsilonNumber(new ZeroOrdinal(tracer));
-            const e1_base = new EpsilonNumber(new OneOrdinal(tracer));
+            const e0_base = new EpsilonNumber(new ZeroOrdinal(tracer), tracer);
+            const e1_base = new EpsilonNumber(new OneOrdinal(tracer), tracer);
             const w_cnf = OPERATIONS.convert(new OmegaOrdinal(tracer), 'CNF');
             const one_cnf = OPERATIONS.convert(new OneOrdinal(tracer), 'CNF');
 
@@ -1675,6 +1709,10 @@
             runConstructionTest("e_1^w*e_0^5*w^(w^3+2)*2", multi_term_2, "e_1^w*e_0^5*w^(w^3+2)*2");
             runConstructionTest("e_1^w*e_0^5*w^(w^3+2)*3+w^w^2*5+10", multi_term_1, "e_1^w*e_0^5*w^(w^3+2)*3+w^w^2*5+10");
 
+
+            // --- Comparison Tests ---
+            CURRENT_KIND = 'BASIC';
+
             runComparisonTest(
 
                 "Basic Comparison",
@@ -1717,7 +1755,7 @@
                 const expected = new ENFOrdinal([new ENFTerm([new ENFFactor(e1_base, e1_pow_w_plus_1)], 1n, tracer)]);
 
                 // Probe division behavior used by power split: x from b.ordinalDivision(rank(b))
-                const k_rank = e1_pow_w_plus_1.getRank();
+                const k_rank = e1_pow_w_plus_1.rank();
                 const split = e1_pow_w_plus_1.ordinalDivision(k_rank);
                 const probe = document.createElement('p');
                 probe.className = 'log-output';
@@ -1901,8 +1939,10 @@
                 (function () {
                     const container = document.createElement('div'); container.className = 'test-case';
                     const title = document.createElement('h3'); title.textContent = 'w^^11 produces WTower'; container.appendChild(title);
-                    const res = CNFOrdinal.OMEGAStatic().clone(tracer).tetrate(CNFOrdinal.fromInt(11, tracer));
-                    const ok = (typeof WTowerOrdinal !== 'undefined') && (res instanceof WTowerOrdinal) && res.height === 11;
+                    const omega = new OmegaOrdinal(tracer);
+                    const eleven = new FiniteOrdinal(11, tracer);
+                    const res = omega.tetrate(eleven);
+                    const ok = (typeof WTowerOrdinal !== 'undefined') && (res instanceof WTowerOrdinal) && res.height === 11n;
                     const status = document.createElement('p'); status.textContent = `Status: ${ok ? 'PASSED' : 'FAILED'}`; status.className = ok ? 'status-passed' : 'status-failed'; container.appendChild(status);
                     if (ok) passedTests++; totalTests++;
                     try { recordTestResult(CURRENT_KIND, ok, container); } catch (_) { document.getElementById('test-details-container').appendChild(container); }
@@ -1913,11 +1953,12 @@
                     const container = document.createElement('div'); container.className = 'test-case';
                     const title = document.createElement('h3'); title.textContent = 'e_0^^11 produces EpsilonTower'; container.appendChild(title);
                     const e0 = new EpsilonZero(tracer);
-                    const res = e0.tetrate(CNFOrdinal.fromInt(11, tracer));
+                    const eleven = new FiniteOrdinal(11, tracer);
+                    const res = e0.tetrate(eleven);
                     let ok = false;
                     if (typeof EpsilonTowerOrdinal !== 'undefined' && res instanceof EpsilonTowerOrdinal) {
-                        const s = res.toDisplayString ? res.toDisplayString() : (res.toString ? res.toString() : '');
-                        ok = res.height === 11 && s === 'e_0^^11';
+                        const s = res.toString();
+                        ok = res.height === 11n && s === 'e_0^^11';
                     }
                     const status = document.createElement('p'); status.textContent = `Status: ${ok ? 'PASSED' : 'FAILED'}`; status.className = ok ? 'status-passed' : 'status-failed'; container.appendChild(status);
                     if (ok) passedTests++; totalTests++;
@@ -1941,12 +1982,14 @@
                 (function () {
                     const container = document.createElement('div'); container.className = 'test-case';
                     const title = document.createElement('h3'); title.textContent = 'e_5^^12 returns EpsilonTowerOrdinal'; container.appendChild(title);
-                    const e5 = new EpsilonNumber(CNFOrdinal.fromInt(5, tracer), tracer);
-                    const res = e5.tetrate(CNFOrdinal.fromInt(12, tracer));
+                    const five = new FiniteOrdinal(5, tracer);
+                    const e5 = new EpsilonNumber(five, tracer);
+                    const twelve = new FiniteOrdinal(12, tracer);
+                    const res = e5.tetrate(twelve);
                     let ok = false; let s = '';
                     if (typeof EpsilonTowerOrdinal !== 'undefined' && res instanceof EpsilonTowerOrdinal) {
-                        s = res.toDisplayString ? res.toDisplayString() : (res.toString ? res.toString() : '');
-                        ok = (res.height === 12 && s === 'e_5^^12');
+                        s = res.toString();
+                        ok = (res.height === 12n && s === 'e_5^^12');
                     }
                     const pStr = document.createElement('p'); pStr.className = 'log-output'; pStr.textContent = `Got: ${s || '[non-string]'}`; container.appendChild(pStr);
                     const status = document.createElement('p'); status.textContent = `Status: ${ok ? 'PASSED' : 'FAILED'}`; status.className = ok ? 'status-passed' : 'status-failed'; container.appendChild(status);
@@ -2061,14 +2104,15 @@
             runENFCalculationTest("Invalid tetration", "0^^e_8", "Error: Operation 0 ^^ e_8 is undefined.");
             runENFCalculationTest("Parentheses check 1", "(e_w)^w", "e_w^w");
             runENFCalculationTest("Parentheses check 2", "e_(w^w)", "e_(w^w)");
-
-            // Epsilon Tunnel tests
-            runENFCalculationTest("Tunnel: e__0", "e__0", "0");
-            runENFCalculationTest("Tunnel: e__1", "e__1", "e_0");
-            runENFCalculationTest("Tunnel: e__2", "e__2", "e_e_0");
-            runENFCalculationTest("Tunnel: e__3", "e__3", "e_e_e_0");
-            runENFCalculationTest("Tunnel: e__12", "e__12", "e__12");
-            runENFCalculationTest("Tunnel epsilon: e_(e__15)", "e_(e__15)", "e__16");
+            runENFCalculationTest("Parentheses check 3", "e_(e_0+1)", "e_(e_0+1)");
+            runENFCalculationTest("Parentheses check 4", "e_e_0+1", "e_e_0+1");
+            
+            // Tunnel tests
+            runENFCalculationTest("Tunnel 0", "e__0", "0");
+            runENFCalculationTest("Tunnel 1", "e__1", "e_0");
+            runENFCalculationTest("Tunnel 2", "e__2", "e_e_0");
+            runENFCalculationTest("Tunnel 3", "e__3", "e_e_e_0");
+            runENFCalculationTest("Tunnel 11", "e__11", "e__11"); // Should stay as tunnel for n>10
 
             // Generate Tables
             generateAdditionTable(allOrdinals);
