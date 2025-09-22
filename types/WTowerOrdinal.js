@@ -160,6 +160,7 @@ class WTowerOrdinal extends OrdinalBase {
         if (this.height === 0n) return 1n;
         return 0n; // Infinite towers have no finite part
     }
+    needsParenthesesAsExponent() { return false; }
 
     isEpsilonNumber() { return false; }
 

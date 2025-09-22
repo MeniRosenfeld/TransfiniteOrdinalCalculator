@@ -94,6 +94,13 @@ class ENFTerm extends OrdinalBase {
         return this.isFinite() ? this.coefficient : 0n;
     }
 
+    needsParenthesesAsExponent() {
+        // ENF terms need parentheses when they represent products:
+        // - Multiple factors, OR
+        // - Single factor with non-one coefficient (but not if no factors at all - that's just a finite number)
+        return this.factors.length > 1 || (this.factors.length === 1 && this.coefficient !== 1n);
+    }
+
     toString() {
         const factorStr = this.factors.map(f => f.toString()).join("*");
         if (this.isFinite()) {
@@ -102,11 +109,7 @@ class ENFTerm extends OrdinalBase {
         if (this.coefficient === 1n) {
             return factorStr;
         }
-        // Parenthesize factors if there are more than one
-        const needsParen = this.factors.length > 1;
-        if (needsParen) {
-            return `(${factorStr})*${this.coefficient}`;
-        }
+        // Coefficient is just another factor in the product, no parentheses needed
         return `${factorStr}*${this.coefficient}`;
     }
 

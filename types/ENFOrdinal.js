@@ -86,6 +86,17 @@ class ENFOrdinal extends OrdinalBase {
         return lastTerm.getFinitePart();
     }
 
+    needsParenthesesAsExponent() {
+        // ENF ordinals need parentheses when:
+        // - They have more than one term (sums), OR
+        // - They have a single term which itself needs parentheses
+        if (this.terms.length > 1) return true;
+        if (this.terms.length === 1) {
+            return this.terms[0].needsParenthesesAsExponent();
+        }
+        return false;
+    }
+
     toString() {
         if (this.isZero()) return "0";
         return this.terms.map(t => t.toString()).join("+");
@@ -109,6 +120,52 @@ class ENFOrdinal extends OrdinalBase {
     logStar() {
         if (this.isZero()) return -1n;
         return this.terms[0].logStar();
+    }
+
+    getLimitPart() {
+        // Returns the infinite part (all terms except finite ones)
+        const limitTerms = [];
+        for (const term of this.terms) {
+            if (!term.isFinite()) {
+                limitTerms.push(term.clone());
+            }
+        }
+        return new ENFOrdinal(limitTerms, this._tracer);
+    }
+
+    ordinalDivision(divisor) {
+        // For ENF ordinal division: find quotient and remainder such that this = divisor * quotient + remainder
+        // This is a simplified implementation for the power function's needs
+        if (divisor.isZero()) throw new Error("Division by zero");
+        if (this.isZero()) return { quotient: new ENFOrdinal([], this._tracer), remainder: new ENFOrdinal([], this._tracer) };
+        
+        // For rank-based decomposition in power: if this = k*x + r, we want x and r
+        // This is a placeholder - full implementation would be complex
+        // For now, assume simple cases where divisor is the rank
+        if (this.isFinite()) {
+            return { 
+                quotient: new ENFOrdinal([], this._tracer), 
+                remainder: this.clone() 
+            };
+        }
+        
+        const leadingTerm = this.terms[0];
+        const divisorRank = divisor.rank();
+        const thisRank = this.rank();
+        
+        if (OPERATIONS.compare(divisorRank, thisRank) === 0) {
+            // Same rank - extract coefficient as quotient
+            const quotient = new ENFOrdinal([new ENFTerm([], leadingTerm.coefficient, this._tracer)], this._tracer);
+            const remainderTerms = this.terms.slice(1).map(t => t.clone());
+            const remainder = new ENFOrdinal(remainderTerms, this._tracer);
+            return { quotient, remainder };
+        }
+        
+        // Different ranks - simplified handling
+        return { 
+            quotient: new ENFOrdinal([new ENFTerm([], 1n, this._tracer)], this._tracer), 
+            remainder: this.clone() 
+        };
     }
 
     isEpsilonNumber() {

@@ -26,6 +26,7 @@ class OneOrdinal extends OrdinalBase {
     getFiniteBigInt() { return 1n; }
 
     getFinitePart() { return 1n; }
+    needsParenthesesAsExponent() { return false; }
 
     nextRank() {
         return new OmegaOrdinal(this._tracer);

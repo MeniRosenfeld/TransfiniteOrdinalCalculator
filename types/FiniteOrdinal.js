@@ -65,6 +65,7 @@ class FiniteOrdinal extends OrdinalBase {
     getFiniteBigInt() { return this.value; }
 
     getFinitePart() { return this.value; }
+    needsParenthesesAsExponent() { return false; }
 
     nextRank() {
         if (this.isZero()) return new OneOrdinal(this._tracer);

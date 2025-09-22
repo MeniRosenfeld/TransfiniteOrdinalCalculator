@@ -57,6 +57,7 @@ class ZetaZero extends OrdinalBase {
     isWellFormed() { return true; }
 
     getFinitePart() { return 0n; }
+    needsParenthesesAsExponent() { return false; }
 
     isEpsilonNumber() { return false; }
 

@@ -37,6 +37,7 @@ class OrdinalBase {
      * For infinite ordinals, returns the finite additive part (0n if none).
      */
     getFinitePart() { throw new Error(`${this.constructor.name} must implement getFinitePart()`); }
+    needsParenthesesAsExponent() { throw new Error(`${this.constructor.name} must implement needsParenthesesAsExponent()`); }
 
     /**
      * Returns the first ordinal larger than this from the list [1, ω, ε₀].

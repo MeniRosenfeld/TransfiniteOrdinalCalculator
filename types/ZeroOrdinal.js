@@ -26,6 +26,7 @@ class ZeroOrdinal extends OrdinalBase {
     getFiniteBigInt() { return 0n; }
 
     getFinitePart() { return 0n; }
+    needsParenthesesAsExponent() { return false; }
 
     nextRank() {
         return new OneOrdinal(this._tracer);

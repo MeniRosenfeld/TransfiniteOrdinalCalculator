@@ -97,6 +97,7 @@ class EpsilonNumber extends OrdinalBase {
     isWellFormed() { return this.k.isLessThanZeta0(); }
 
     getFinitePart() { return 0n; }
+    needsParenthesesAsExponent() { return false; }
 
     isEpsilonNumber() { return true; }
 

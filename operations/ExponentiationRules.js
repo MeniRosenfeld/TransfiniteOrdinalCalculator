@@ -133,40 +133,148 @@ function powerCNF(a, b) {
 
 function powerENF(a, b) {
     const tracer = a._tracer || b._tracer || null;
+    if (tracer) tracer.consume();
+    
     // Trivial cases
-    if (b.isZero()) return new ENFOrdinal([new ENFTerm([], 1n)], tracer);
+    if (b.isZero()) return new ENFOrdinal([new ENFTerm([], 1n, tracer)], tracer);
     if (a.isZero()) return new ENFOrdinal([], tracer);
-    if (a.isOne()) return new ENFOrdinal([new ENFTerm([], 1n)], tracer);
+    if (a.isOne()) return new ENFOrdinal([new ENFTerm([], 1n, tracer)], tracer);
     if (b.isOne()) return a.clone(tracer);
 
     // Finite exponent -> exponentiation by squaring
     if (b.isFinite()) {
-        let n = b.getFiniteBigInt();
-        let res = new ENFOrdinal([new ENFTerm([], 1n)], tracer);
-        let temp_a = a;
+        let n = b.getFinitePart();
+        let res = new ENFOrdinal([new ENFTerm([], 1n, tracer)], tracer);
+        let temp_a = a.clone(tracer);
         while (n > 0n) {
+            if (tracer) tracer.consume();
             if (n % 2n === 1n) res = res.multiply(temp_a);
-            temp_a = temp_a.multiply(temp_a);
-            n /= 2n;
+            if (n > 1n) temp_a = temp_a.multiply(temp_a);
+            n = n / 2n;
         }
         return res;
     }
 
-    // Rank-based decomposition
+    // Basic base case: a is omega or some epsilon e_a
+    if (a.isBasic()) {
+        const leading = a.terms[0];
+        if (a.isOmega()) {
+            // Special identity: ω^(ε_k) = ε_k
+            if (b.isBasic() && b.isEpsilonNumber()) {
+                return b.clone(tracer);
+            }
+            
+            // If rank(b) > rank(a)=ω, use rank-based decomposition: b = k*X + r, return k^X * ω^r
+            const rank_b = b.rank();
+            if (OPERATIONS.compare(rank_b, a) > 0) {
+                const k = rank_b;
+                const { quotient: x, remainder: r } = b.ordinalDivision(k);
+                // Build k^x
+                let k_pow_x;
+                if (k.isOmega()) {
+                    // ω^x: create ENFFactor with base=ω and exponent=x
+                    const omegaBase = new OmegaOrdinal(tracer);
+                    const factor = new ENFFactor(omegaBase, x.clone(tracer));
+                    k_pow_x = new ENFOrdinal([new ENFTerm([factor], 1n, tracer)], tracer);
+                } else {
+                    // k is epsilon: ε_t^x
+                    const t = k.epsilonIndex();
+                    const factor = new ENFFactor(t, x.clone(tracer));
+                    k_pow_x = new ENFOrdinal([new ENFTerm([factor], 1n, tracer)], tracer);
+                }
+                const w_pow_r = powerENF(a, r);
+                return k_pow_x.multiply(w_pow_r);
+            }
+            
+            // If exponent splits as d + r with d = ε_k and r finite, use ω^(ε_k+r) = ε_k * ω^r
+            const d = b.getLimitPart();
+            const r = b.getFinitePart();
+            if (!d.isZero() && d.isEpsilonNumber()) {
+                const w_pow_r = r > 0n ? powerENF(a, new ENFOrdinal([new ENFTerm([], r, tracer)], tracer)) : new ENFOrdinal([new ENFTerm([], 1n, tracer)], tracer);
+                return d.multiply(w_pow_r);
+            }
+            
+            // General case: ω^b → ENFFactor with base=ω and exponent=b
+            const omegaBase = new OmegaOrdinal(tracer);
+            const factor = new ENFFactor(omegaBase, b.clone(tracer));
+            return new ENFOrdinal([new ENFTerm([factor], 1n, tracer)], tracer);
+        }
+        
+        if (a.isEpsilonNumber()) {
+            // ε_(idx)^b
+            const idx = a.epsilonIndex();
+            // If exponent outranks base, decompose by rank(b)
+            const rank_b = b.rank();
+            if (OPERATIONS.compare(rank_b, a) > 0) {
+                const k = rank_b;
+                const { quotient: x, remainder: r } = b.ordinalDivision(k);
+                // Build k^x
+                let k_pow_x;
+                if (k.isOmega()) {
+                    const omegaBase = new OmegaOrdinal(tracer);
+                    const factor = new ENFFactor(omegaBase, x.clone(tracer));
+                    k_pow_x = new ENFOrdinal([new ENFTerm([factor], 1n, tracer)], tracer);
+                } else {
+                    const t = k.epsilonIndex();
+                    const factor = new ENFFactor(t, x.clone(tracer));
+                    k_pow_x = new ENFOrdinal([new ENFTerm([factor], 1n, tracer)], tracer);
+                }
+                const term_r = powerENF(a, r);
+                return k_pow_x.multiply(term_r);
+            }
+            // ε_idx^b = ε_idx with exponent b
+            const factor = new ENFFactor(idx, b.clone(tracer));
+            return new ENFOrdinal([new ENFTerm([factor], 1n, tracer)], tracer);
+        }
+    }
+
+    // General rank-based decomposition
     const rank_a = a.rank();
     const rank_b = b.rank();
 
     // Case A: rank(b) > rank(a)
     if (OPERATIONS.compare(rank_b, rank_a) > 0) {
-        // ... implementation needed ...
+        const k = rank_b;
+        const { quotient: x, remainder: r } = b.ordinalDivision(k);
+        // Build k^x directly: if k = ω, create ω^x; if k=ε_t, create ε_t^x
+        let k_pow_x;
+        if (k.isOmega()) {
+            const omegaBase = new OmegaOrdinal(tracer);
+            const factor = new ENFFactor(omegaBase, x.clone(tracer));
+            k_pow_x = new ENFOrdinal([new ENFTerm([factor], 1n, tracer)], tracer);
+        } else {
+            // k is epsilon basic: extract its index t
+            const t = k.epsilonIndex();
+            const factor = new ENFFactor(t, x.clone(tracer));
+            k_pow_x = new ENFOrdinal([new ENFTerm([factor], 1n, tracer)], tracer);
+        }
+        const term_r = powerENF(a, r);
+        return k_pow_x.multiply(term_r);
     }
     // Case B: rank(b) <= rank(a)
     else {
-        // ... implementation needed ...
+        const k = rank_a;
+        const c = a.log();
+        const d = b.getLimitPart();
+        const r = b.getFinitePart();
+        const term_r = r > 0n ? powerENF(a, new ENFOrdinal([new ENFTerm([], r, tracer)], tracer)) : new ENFOrdinal([new ENFTerm([], 1n, tracer)], tracer);
+        if (d.isZero()) {
+            return term_r; // a^0 * a^r = a^r
+        }
+        const cd = c.multiply(d);
+        // Build k^(c*d) directly
+        let k_pow_cd;
+        if (k.isOmega()) {
+            const omegaBase = new OmegaOrdinal(tracer);
+            const factor = new ENFFactor(omegaBase, cd.clone(tracer));
+            k_pow_cd = new ENFOrdinal([new ENFTerm([factor], 1n, tracer)], tracer);
+        } else {
+            const t = k.epsilonIndex();
+            const factor = new ENFFactor(t, cd.clone(tracer));
+            k_pow_cd = new ENFOrdinal([new ENFTerm([factor], 1n, tracer)], tracer);
+        }
+        return k_pow_cd.multiply(term_r);
     }
-
-    // Placeholder for complex cases
-    throw new Error('ENF power for infinite exponents not fully implemented');
 }
 
 function createExponentiationRules(conversionEngine) {

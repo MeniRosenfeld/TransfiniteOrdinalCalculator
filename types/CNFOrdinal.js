@@ -391,6 +391,18 @@ class CNFOrdinal extends OrdinalBase {
         return lastTerm.exponent.isZero() ? lastTerm.coefficient : 0n;
     }
 
+    needsParenthesesAsExponent() {
+        // CNF ordinals need parentheses when:
+        // a. They have more than 1 term (sums)
+        // b. They have a single term with both omega exponent and >1 coefficient (products like w^2*3)
+        if (this.terms.length > 1) return true;
+        if (this.terms.length === 1) {
+            const term = this.terms[0];
+            return !term.exponent.isZero() && term.coefficient > 1n;
+        }
+        return false;
+    }
+
     getLeadingTerm() {
         return this.terms.length > 0 ? this.terms[0] : null;
     }

@@ -44,6 +44,7 @@ class EpsilonZero extends OrdinalBase {
     }
 
     getFinitePart() { return 0n; }
+    needsParenthesesAsExponent() { return false; }
 
     complexity() { return 6; }
 

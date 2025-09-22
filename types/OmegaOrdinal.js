@@ -44,6 +44,7 @@ class OmegaOrdinal extends OrdinalBase {
     getFiniteBigInt() { throw new Error('OmegaOrdinal is not finite'); }
 
     getFinitePart() { return 0n; }
+    needsParenthesesAsExponent() { return false; }
 
     nextRank() {
         return new EpsilonZero(this._tracer);
