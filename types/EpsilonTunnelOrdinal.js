@@ -76,7 +76,7 @@ class EpsilonTunnelOrdinal extends OrdinalBase {
     }
 
     toGraphicalHTML() {
-        return `ε<sub><sub>${this.depth.toString()}</sub></sub>`;
+        return RenderingComponents.renderTunnel(this.depth.toString());
     }
 
     clone(newTracer = null) {

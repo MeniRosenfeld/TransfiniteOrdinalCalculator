@@ -66,6 +66,29 @@ class ENFFactor {
             return `${baseStr}^${expStr}`;
         }
     }
+
+    toGraphicalHTML() {
+        const baseHTML = this.base.toGraphicalHTML ? this.base.toGraphicalHTML() : this.base.toString();
+        
+        if (this.exponent.isOne()) {
+            return baseHTML;
+        }
+
+        const expHTML = this.exponent.toGraphicalHTML ? this.exponent.toGraphicalHTML() : this.exponent.toString();
+        
+        if (this.base.isEpsilonNumber()) {
+            // For epsilon numbers with exponents, we need parentheses around the epsilon to avoid visual ambiguity
+            // Without parentheses, ε_k^b looks like ε_(k^b) instead of (ε_k)^b
+            const baseHTML = this.base.toGraphicalHTML ? this.base.toGraphicalHTML() : this.base.toString();
+            return `${RenderingComponents.wrapParentheses(baseHTML)}<sup class="ordinal-exponent">${expHTML}</sup>`;
+        } else if (this.base.isOmega()) {
+            // For omega, use the omega power renderer
+            return RenderingComponents.renderOmegaPower(expHTML);
+        } else {
+            // Generic base^exponent
+            return `${baseHTML}<sup class="ordinal-exponent">${expHTML}</sup>`;
+        }
+    }
 }
 
 // Export for use in other modules

@@ -36,6 +36,10 @@ class OneOrdinal extends OrdinalBase {
 
     toString() { return "1"; }
 
+    toGraphicalHTML() {
+        return RenderingComponents.renderFinite(1);
+    }
+
     toFFormat() { return 1n; }
 
     clone(newTracer = null) {

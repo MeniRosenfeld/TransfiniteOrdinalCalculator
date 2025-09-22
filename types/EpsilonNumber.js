@@ -48,6 +48,12 @@ class EpsilonNumber extends OrdinalBase {
         }
     }
 
+    toGraphicalHTML() {
+        const indexHTML = this.k.toGraphicalHTML ? this.k.toGraphicalHTML() : this.k.toString();
+        // Graphical representation never needs parentheses - subscript provides implicit grouping
+        return RenderingComponents.renderEpsilon(indexHTML, false);
+    }
+
     toFFormat() {
         return { type: 'epsilon', index: this.k.toFFormat() };
     }

@@ -36,6 +36,10 @@ class ZeroOrdinal extends OrdinalBase {
 
     toString() { return "0"; }
 
+    toGraphicalHTML() {
+        return RenderingComponents.renderFinite(0);
+    }
+
     toFFormat() { return 0n; }
 
     clone(newTracer = null) {

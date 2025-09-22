@@ -102,6 +102,15 @@ class ENFOrdinal extends OrdinalBase {
         return this.terms.map(t => t.toString()).join("+");
     }
 
+    toGraphicalHTML() {
+        if (this.isZero()) {
+            return RenderingComponents.renderFinite(0);
+        }
+        
+        const termHTMLs = this.terms.map(t => t.toGraphicalHTML ? t.toGraphicalHTML() : t.toString());
+        return RenderingComponents.joinTerms(termHTMLs);
+    }
+
     clone(newTracer = null) {
         const newTerms = this.terms.map(t => t.clone(newTracer));
         return new ENFOrdinal(newTerms, newTracer || this._tracer);

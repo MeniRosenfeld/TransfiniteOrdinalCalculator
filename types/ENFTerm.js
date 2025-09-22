@@ -113,6 +113,21 @@ class ENFTerm extends OrdinalBase {
         return `${factorStr}*${this.coefficient}`;
     }
 
+    toGraphicalHTML() {
+        if (this.isFinite()) {
+            return RenderingComponents.renderFinite(this.coefficient);
+        }
+
+        const factorHTMLs = this.factors.map(f => f.toGraphicalHTML ? f.toGraphicalHTML() : f.toString());
+        
+        if (this.coefficient === 1n) {
+            return RenderingComponents.wrapTerm(RenderingComponents.joinFactors(factorHTMLs));
+        } else {
+            factorHTMLs.push(RenderingComponents.renderCoefficient(this.coefficient));
+            return RenderingComponents.wrapTerm(RenderingComponents.joinFactors(factorHTMLs));
+        }
+    }
+
     clone(newTracer = null) {
         const newFactors = this.factors.map(f => f.clone());
         return new ENFTerm(newFactors, this.coefficient, newTracer || this._tracer);

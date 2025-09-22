@@ -27,6 +27,10 @@ class ZetaZero extends OrdinalBase {
 
     toString() { return 'z_0'; }
 
+    toGraphicalHTML() {
+        return '<span class="ordinal-zeta">ζ₀</span>';
+    }
+
     clone(newTracer = null) { return new ZetaZero(newTracer || this._tracer); }
 
     toFFormat() { return { type: 'zeta_zero' }; }

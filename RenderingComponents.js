@@ -62,6 +62,13 @@ class RenderingComponents {
     }
 
     /**
+     * Renders a tunnel notation (ε↓↓n for deeply nested epsilon structures).
+     */
+    static renderTunnel(depth) {
+        return `<span class="ordinal-tunnel">ε<span class="ordinal-tunnel-op">↓↓</span><span class="ordinal-tunnel-depth">${depth}</span></span>`;
+    }
+
+    /**
      * Renders a coefficient multiplier.
      */
     static renderCoefficient(value) {
@@ -104,11 +111,18 @@ class RenderingComponents {
     }
 
     /**
+     * Wraps content in parentheses for grouping clarity.
+     */
+    static wrapParentheses(content) {
+        return `(${content})`;
+    }
+
+    /**
      * Determines if parentheses are needed for an index based on complexity.
      */
     static needsIndexParentheses(ordinal) {
         // Graphical rendering policy: no parentheses needed for indices.
-        // Keep function for future flexibility.
+        // Subscripts provide implicit grouping, making parentheses unnecessary.
         return false;
     }
 
@@ -117,9 +131,16 @@ class RenderingComponents {
      */
     static needsExponentParentheses(ordinal) {
         // Graphical rendering policy: no parentheses needed for exponents.
-        // Keep function for future flexibility.
+        // Superscripts provide implicit grouping, making parentheses unnecessary.
         return false;
     }
+
+    /**
+     * Note: While subscripts and superscripts generally provide implicit grouping,
+     * there are specific cases where parentheses improve readability:
+     * - When epsilon numbers have exponents: (ε_k)^b vs ε_k^b (which looks like ε_(k^b))
+     * These cases are handled specifically in the relevant rendering methods.
+     */
 
     /**
      * Renders a CNF term (ω^a*c).
