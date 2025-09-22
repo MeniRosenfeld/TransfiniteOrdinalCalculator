@@ -1144,8 +1144,8 @@
             testOrdinalCalc("3^^2", "27");
             testOrdinalCalc("w^^2", "w^w");
 
-            testOrdinalCalc("0^^w", "Operation 0 ^^ infinite is undefined.");
-            testOrdinalCalc("0^^(w*2)", "Operation 0 ^^ infinite is undefined.");
+            testOrdinalCalc("0^^w", "Operation 0 ^^ w is undefined.");
+            testOrdinalCalc("0^^(w*2)", "Operation 0 ^^ w*2 is undefined.");
 
             testOrdinalCalc("1^^w", "1");
             testOrdinalCalc("1^^(w^w)", "1");
