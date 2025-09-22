@@ -37,6 +37,14 @@ class EpsilonZero extends OrdinalBase {
 
     isWellFormed() { return true; }
 
+    isEpsilonNumber() { return true; }
+
+    epsilonIndex() {
+        return new ZeroOrdinal(this._tracer);
+    }
+
+    getFinitePart() { return 0n; }
+
     complexity() { return 6; }
 
     toString() { return 'e_0'; }

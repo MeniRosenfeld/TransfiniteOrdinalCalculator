@@ -25,6 +25,8 @@ class OneOrdinal extends OrdinalBase {
 
     getFiniteBigInt() { return 1n; }
 
+    getFinitePart() { return 1n; }
+
     nextRank() {
         return new OmegaOrdinal(this._tracer);
     }
@@ -65,6 +67,12 @@ class OneOrdinal extends OrdinalBase {
 
     successor() {
         return new FiniteOrdinal(2n, this._tracer);
+    }
+
+    isEpsilonNumber() { return false; }
+
+    epsilonIndex() {
+        throw new Error('OneOrdinal is not an epsilon number');
     }
 
     // === CONVERSION SYSTEM ===

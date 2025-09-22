@@ -95,18 +95,10 @@ function createComparisonRules(conversionEngine) {
         // Epsilon index ordering: compare e_k by their indices (EpsilonZero treated as k=0)
         new Rule("Epsilon index ordering",
             (a, b) => (
-                ((typeof EpsilonZero !== 'undefined' && (a instanceof EpsilonZero)) || (typeof EpsilonNumber !== 'undefined' && (a instanceof EpsilonNumber))) &&
-                ((typeof EpsilonZero !== 'undefined' && (b instanceof EpsilonZero)) || (typeof EpsilonNumber !== 'undefined' && (b instanceof EpsilonNumber)))
+                (a.isEpsilonNumber() && b.isEpsilonNumber())
             ),
             (a, b) => {
-                const zeroIdx = new ZeroOrdinal(a._tracer || b._tracer || null);
-                const idxA = (typeof EpsilonZero !== 'undefined' && a instanceof EpsilonZero)
-                    ? zeroIdx
-                    : a.k; // EpsilonNumber.k
-                const idxB = (typeof EpsilonZero !== 'undefined' && b instanceof EpsilonZero)
-                    ? zeroIdx
-                    : b.k; // EpsilonNumber.k
-                return OPERATIONS.compare(idxA, idxB);
+                return OPERATIONS.compare(a.epsilonIndex(), b.epsilonIndex());
             }
         ),
 

@@ -56,6 +56,14 @@ class ZetaZero extends OrdinalBase {
 
     isWellFormed() { return true; }
 
+    getFinitePart() { return 0n; }
+
+    isEpsilonNumber() { return false; }
+
+    epsilonIndex() {
+        throw new Error('ZetaZero is not an epsilon number');
+    }
+
     // === CONVERSION SYSTEM ===
 
     static getTypeName() { return 'ZetaZero'; }

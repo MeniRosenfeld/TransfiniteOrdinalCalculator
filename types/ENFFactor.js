@@ -8,18 +8,22 @@
  */
 class ENFFactor {
     /**
-     * @param {OrdinalBase} base - The base of the factor (must be OmegaOrdinal or EpsilonNumber).
+     * @param {OrdinalBase} base - The base of the factor (must be omega or an Epsilon Number).
      * @param {ENFOrdinal} exponent - The exponent of the factor.
      */
     constructor(base, exponent) {
-        if (!(base instanceof OmegaOrdinal || base instanceof EpsilonNumber)) {
-            throw new Error("ENFFactor base must be an OmegaOrdinal or EpsilonNumber.");
-        }
         if (!exponent || !exponent.isOrdinal()) {
             throw new Error("ENFFactor exponent must be a valid ordinal object.");
         }
-        this.base = base;
         this.exponent = exponent;
+        if (base.isOmega()) {  
+            this.base = new OmegaOrdinal();
+        } else if (base.isEpsilonNumber()) {
+            this.base = new EpsilonNumber(base.epsilonIndex());
+        } else {
+            throw new Error("ENFFactor base must be omega or an Epsilon Number.");
+        }
+
     }
 
     /**

@@ -96,25 +96,27 @@ class EpsilonNumber extends OrdinalBase {
 
     isWellFormed() { return this.k.isLessThanZeta0(); }
 
+    getFinitePart() { return 0n; }
+
+    isEpsilonNumber() { return true; }
+
+    epsilonIndex() {
+        return this.k.clone(this._tracer);
+    }
+
     // === CONVERSION SYSTEM ===
 
     static getTypeName() { return 'EpsilonNumber'; }
-    static getDirectConversions() { return ['ENF']; }
+    static getDirectConversions() { return ['ENFTerm']; }
     convertTo(targetTypeName) {
         switch (targetTypeName) {
-            case 'ENF':
-                if (typeof ENFOrdinal !== 'undefined') {
-                    // Placeholder conversion: represent e_0 as ENF term with one epsilon factor
-                    // Full implementation can be added later
-                    const baseENF = (this.k && typeof ENFOrdinal !== 'undefined' && ENFOrdinal.fromCNF)
-                        ? ENFOrdinal.fromCNF(this.k)
-                        : null;
-                    if (baseENF) {
-                        const term = new ENFTerm([{ base: baseENF, exp: ENFOrdinal.one() }], CNFOrdinal.ZEROStatic(), 1n);
-                        return new ENFOrdinal([term]);
-                    }
+            case 'ENFTerm':
+                if (typeof ENFFactor !== 'undefined' && typeof ENFTerm !== 'undefined') {
+                    // Convert e_k to ENFTerm with single factor: e_k^1 * 1
+                    const factor = new ENFFactor(this, new OneOrdinal(this._tracer));
+                    return new ENFTerm([factor], 1n, this._tracer);
                 }
-                throw new Error('ENF conversion not yet implemented for EpsilonNumber');
+                throw new Error('ENFTerm conversion not available for EpsilonNumber');
             default:
                 throw new Error(`EpsilonNumber cannot convert directly to ${targetTypeName}`);
         }

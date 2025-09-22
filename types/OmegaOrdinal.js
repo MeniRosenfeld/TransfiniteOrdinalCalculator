@@ -43,6 +43,8 @@ class OmegaOrdinal extends OrdinalBase {
 
     getFiniteBigInt() { throw new Error('OmegaOrdinal is not finite'); }
 
+    getFinitePart() { return 0n; }
+
     nextRank() {
         return new EpsilonZero(this._tracer);
     }
@@ -86,6 +88,12 @@ class OmegaOrdinal extends OrdinalBase {
         }
 
         return { simplifiedOrdinal: zero, remainingBudget: 0 };
+    }
+
+    isEpsilonNumber() { return false; }
+
+    epsilonIndex() {
+        throw new Error('OmegaOrdinal is not an epsilon number');
     }
 
     // === CONVERSION SYSTEM ===

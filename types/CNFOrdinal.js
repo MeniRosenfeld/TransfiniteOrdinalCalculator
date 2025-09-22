@@ -349,6 +349,12 @@ class CNFOrdinal extends OrdinalBase {
         return { type: 'sum', beta: beta_rep_for_f, c: c_num_for_f, delta: delta_rep_for_f };
     }
 
+    isEpsilonNumber() { return false; }
+
+    epsilonIndex() {
+        throw new Error('CNFOrdinal is not an epsilon number');
+    }
+
     // === CONVERSION SYSTEM ===
 
     static getTypeName() { return 'CNF'; }

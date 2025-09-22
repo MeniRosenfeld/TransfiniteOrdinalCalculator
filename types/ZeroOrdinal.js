@@ -25,6 +25,8 @@ class ZeroOrdinal extends OrdinalBase {
 
     getFiniteBigInt() { return 0n; }
 
+    getFinitePart() { return 0n; }
+
     nextRank() {
         return new OneOrdinal(this._tracer);
     }
@@ -62,6 +64,12 @@ class ZeroOrdinal extends OrdinalBase {
 
     successor() {
         return new OneOrdinal(this._tracer);
+    }
+
+    isEpsilonNumber() { return false; }
+
+    epsilonIndex() {
+        throw new Error('ZeroOrdinal is not an epsilon number');
     }
 
     // === CONVERSION SYSTEM ===

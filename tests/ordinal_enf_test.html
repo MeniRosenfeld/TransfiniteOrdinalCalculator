@@ -1508,7 +1508,7 @@
             const enf_zero = new ENFOrdinal([], tracer);
             const enf_one = new ENFOrdinal([new ENFTerm([], 1n, tracer)]);
             const enf_w = ENFOrdinal.fromCNF(new OmegaOrdinal(tracer));
-            const enf_e0 = ENFOrdinal.fromCNF(new EpsilonZero(tracer));
+            const enf_e0 = new ENFOrdinal([new ENFTerm([new ENFFactor(new EpsilonZero(tracer), enf_one)], 1n, tracer)]);
             const e0_base = new EpsilonNumber(new ZeroOrdinal(tracer));
             const e1_base = new EpsilonNumber(new OneOrdinal(tracer));
             const w_cnf = OPERATIONS.convert(new OmegaOrdinal(tracer), 'CNF');
@@ -1525,17 +1525,16 @@
             const ord_w_plus_1 = OPERATIONS.add(enf_w, enf_one);
             const ord_w_squared = OPERATIONS.power(enf_w, new FiniteOrdinal(2, tracer));
 
-            // Test cases for basic operations
-            const tests = [
-                // --- BASIC ---
-                { kind: 'BASIC', op: 'equals', a: () => enf_zero, b: () => enf_zero, exp: true },
-                { kind: 'BASIC', op: 'equals', a: () => enf_one, b: () => enf_one, exp: true },
-                // ... all other tests, fully refactored ...
-            ];
+            runComparisonTest(
 
-            // ... existing code ...
+                "Basic Comparison",
 
-            // --- More Complex Test Case ---
+                [ord_w_plus_1, ord_w, ord_five, ord_one, ord_zero, ord_w_times_2, ord_w_squared, ord_e0, ord_e0_plus_1],
+
+                ["0", "1", "5", "w", "w+1", "w*2", "w^2", "e_0", "e_0+1"]
+
+            );
+
             const ord_w_w = new ENFOrdinal([new ENFTerm([new ENFFactor(new OmegaOrdinal(tracer), OPERATIONS.convert(new OneOrdinal(tracer), 'CNF'))], 1n, tracer)]);
             const ord_w_w_plus_1 = new ENFOrdinal([new ENFTerm([new ENFFactor(new OmegaOrdinal(tracer), OPERATIONS.convert(new OneOrdinal(tracer), 'CNF'))], 1n, tracer), new ENFTerm([], 1n, tracer)]);
             const ord_w_w_times_2 = new ENFOrdinal([new ENFTerm([new ENFFactor(new OmegaOrdinal(tracer), OPERATIONS.convert(new OneOrdinal(tracer), 'CNF'))], 2n, tracer)]);
@@ -1592,9 +1591,9 @@
             CURRENT_KIND = 'ADDITION';
             runAdditionTest("w + 1", ord_w, ord_one, "w+1");
             runAdditionTest("1 + w", ord_one, ord_w, "w");
-            runAdditionTest("w*2 + w*3", ord_w_times_2, new ENFOrdinal([new ENFTerm([], CNFOrdinal.ONEStatic(), 3n)]), "w*5");
-            runAdditionTest("(w^2*3 + w*5) + (w*8 + 1)", new ENFOrdinal([new ENFTerm([], CNFOrdinal.fromInt(2), 3n), new ENFTerm([], CNFOrdinal.ONEStatic(), 5n)]), new ENFOrdinal([new ENFTerm([], CNFOrdinal.ONEStatic(), 8n), new ENFTerm([], 1n, tracer)]), "w^2*3+w*13+1");
-            runAdditionTest("(w^2 + 5) + (w+3)", new ENFOrdinal([new ENFTerm([], CNFOrdinal.fromInt(2), 1n), new ENFTerm([], CNFOrdinal.ZEROStatic(), 5n)]), new ENFOrdinal([new ENFTerm([], CNFOrdinal.ONEStatic(), 1n), new ENFTerm([], CNFOrdinal.ZEROStatic(), 3n)]), "w^2+w+3");
+            runAdditionTest("w*2 + w*3", ord_w_times_2, new ENFOrdinal([new ENFTerm([new ENFFactor(new OmegaOrdinal(tracer), OPERATIONS.convert(new OneOrdinal(tracer), 'CNF'))], 3n, tracer)]), "w*5");
+            runAdditionTest("(w^2*3 + w*5) + (w*8 + 1)", new ENFOrdinal([new ENFTerm([new ENFFactor(new OmegaOrdinal(tracer), OPERATIONS.convert(new FiniteOrdinal(2, tracer), 'CNF'))], 3n, tracer), new ENFTerm([new ENFFactor(new OmegaOrdinal(tracer), OPERATIONS.convert(new OneOrdinal(tracer), 'CNF'))], 5n, tracer)]), new ENFOrdinal([new ENFTerm([new ENFFactor(new OmegaOrdinal(tracer), OPERATIONS.convert(new OneOrdinal(tracer), 'CNF'))], 8n, tracer), new ENFTerm([], 1n, tracer)]), "w^2*3+w*13+1");
+            runAdditionTest("(w^2 + 5) + (w+3)", new ENFOrdinal([new ENFTerm([new ENFFactor(new OmegaOrdinal(tracer), OPERATIONS.convert(new FiniteOrdinal(2, tracer), 'CNF'))], 1n, tracer), new ENFTerm([], 5n, tracer)]), new ENFOrdinal([new ENFTerm([new ENFFactor(new OmegaOrdinal(tracer), OPERATIONS.convert(new OneOrdinal(tracer), 'CNF'))], 1n, tracer), new ENFTerm([], 3n, tracer)]), "w^2+w+3");
             runAdditionTest("e_0 + w^w", ord_e0, ord_w_w, "e_0+w^w");
             runAdditionTest("w^w + e_0", ord_w_w, ord_e0, "e_0");
 
@@ -1602,9 +1601,9 @@
             CURRENT_KIND = 'EXPONENTIATION';
             try {
                 const exp_w_plus_1 = new SimpleParser("w+1", tracer).parse();
-                const e1_pow_w_plus_1 = new ENFOrdinal([new ENFTerm([{ base: e1_base, exp: ENFOrdinal.fromCNF(exp_w_plus_1) }])]);
+                const e1_pow_w_plus_1 = new ENFOrdinal([new ENFTerm([new ENFFactor(e1_base, ENFOrdinal.fromCNF(exp_w_plus_1))], 1n, tracer)]);
                 const actual = enf_w.power(e1_pow_w_plus_1);
-                const expected = new ENFOrdinal([new ENFTerm([{ base: e1_base, exp: e1_pow_w_plus_1 }])]);
+                const expected = new ENFOrdinal([new ENFTerm([new ENFFactor(e1_base, e1_pow_w_plus_1)], 1n, tracer)]);
 
                 // Probe division behavior used by power split: x from b.ordinalDivision(rank(b))
                 const k_rank = e1_pow_w_plus_1.getRank();
@@ -1644,7 +1643,7 @@
                 runEqualityTest("EpsTower: e_0^^0 = 1", epsTower0.toENFOrdinal(), enf_one);
 
                 // e_0^^1 = e_0
-                const e0_enf = new ENFOrdinal([new ENFTerm([{ base: enf_zero, exp: enf_one }], CNFOrdinal.ZEROStatic(), 1n)]);
+                const e0_enf = new ENFOrdinal([new ENFTerm([new ENFFactor(e0_base, enf_one)], 1n, tracer)]);
                 runEqualityTest("EpsTower: e_0^^1 = e_0", epsTower1.toENFOrdinal(), e0_enf);
 
                 // e_0^^2 = e_0^e_0
@@ -1818,7 +1817,7 @@
                 (function () {
                     const container = document.createElement('div'); container.className = 'test-case';
                     const title = document.createElement('h3'); title.textContent = '(e_0+1)^^3 is recursive (no error)'; container.appendChild(title);
-                    const a = new ENFOrdinal([new ENFTerm([{ base: enf_zero, exp: enf_one }], CNFOrdinal.ZEROStatic(), 1n), new ENFTerm([], 1n, tracer)]);
+                    const a = new ENFOrdinal([new ENFTerm([new ENFFactor(e0_base, enf_one)], 1n, tracer), new ENFTerm([], 1n, tracer)]);
                     let passed = true; let res; let errMsg = '';
                     try { res = a.tetrate(CNFOrdinal.fromInt(3, tracer)); } catch (e) { passed = false; errMsg = e && e.message ? e.message : String(e); }
                     if (!passed) { const pErr = document.createElement('p'); pErr.className = 'log-output'; pErr.textContent = `Error: ${errMsg}`; container.appendChild(pErr); }

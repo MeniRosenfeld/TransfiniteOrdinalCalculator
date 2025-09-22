@@ -32,6 +32,13 @@ class OrdinalBase {
     getFiniteBigInt() { throw new Error(`${this.constructor.name} must implement getFiniteBigInt()`); }
 
     /**
+     * Returns the finite part of this ordinal as a BigInt.
+     * For finite ordinals, returns the ordinal value.
+     * For infinite ordinals, returns the finite additive part (0n if none).
+     */
+    getFinitePart() { throw new Error(`${this.constructor.name} must implement getFinitePart()`); }
+
+    /**
      * Returns the first ordinal larger than this from the list [1, ω, ε₀].
      */
     nextRank() { throw new Error(`${this.constructor.name} must implement nextRank()`); }
@@ -84,6 +91,16 @@ class OrdinalBase {
      * Returns true if this ordinal can be represented as (a.rank) ^^ n for some finite n.
      */
     isTower() { throw new Error(`${this.constructor.name} must implement isTower()`); }
+
+    /**
+     * Returns true if this ordinal is an epsilon number (e_k for some k).
+     */
+    isEpsilonNumber() { throw new Error(`${this.constructor.name} must implement isEpsilonNumber()`); }
+
+    /**
+     * Returns the index k if this ordinal is e_k, otherwise throws an error.
+     */
+    epsilonIndex() { throw new Error(`${this.constructor.name} must implement epsilonIndex()`); }
 
     /**
      * Returns true if the internal structure is valid per the type's definition.

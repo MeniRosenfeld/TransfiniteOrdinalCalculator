@@ -66,6 +66,65 @@ function multiplyCNF(a, b) {
     return new CNFOrdinal(newTerms, tracer);
 }
 
+function multiplyENFTerms(termA, termB, tracer) {
+    // Multiply two ENFTerms with correct factor absorption
+    // A * B: factors are absorbed by higher-ranked factors on the right
+    
+    const factorsA = termA.factors || [];
+    const factorsB = termB.factors || [];
+    const newFactors = [];
+    
+    // If B is finite, just multiply coefficients and keep A's factors
+    if (factorsB.length === 0) {
+        return new ENFTerm(
+            factorsA.map(f => f.clone()),
+            termA.coefficient * termB.coefficient,
+            tracer
+        );
+    }
+    
+    // Get the leading (highest-ranked) base from B
+    const leadingBaseB = factorsB[0].base;
+    
+    // Keep only factors of A where base >= leading base of B
+    let foundEqualBase = false;
+    for (const factorA of factorsA) {
+        const baseCmp = OPERATIONS.compare(factorA.base, leadingBaseB);
+        
+        if (baseCmp > 0) {
+            // Base of A > leading base of B: keep this factor
+            newFactors.push(factorA.clone());
+        } else if (baseCmp === 0 && !foundEqualBase) {
+            // Base of A = leading base of B: combine exponents
+            const combinedExp = factorA.exponent.add(factorsB[0].exponent);
+            newFactors.push(new ENFFactor(factorA.base, combinedExp));
+            foundEqualBase = true;
+            break;
+        } else {
+            // Base of A < leading base of B: all remaining factors will be absorbed
+            // Since factors are sorted in descending order, we can break here
+            break;
+        }
+    }
+    
+    // If we didn't find an equal base in A, add the leading factor of B
+    if (!foundEqualBase) {
+        newFactors.push(factorsB[0].clone());
+    }
+    
+    // Append all remaining factors of B (after the leading one)
+    for (let i = 1; i < factorsB.length; i++) {
+        newFactors.push(factorsB[i].clone());
+    }
+    
+    // Coefficient: use B's coefficient unless B is finite (then multiply)
+    const newCoeff = (factorsB.length === 0) ? 
+        termA.coefficient * termB.coefficient : 
+        termB.coefficient;
+    
+    return new ENFTerm(newFactors, newCoeff, tracer);
+}
+
 function createMultiplicationRules(conversionEngine) {
     return [
         // Zero annihilators
@@ -95,6 +154,14 @@ function createMultiplicationRules(conversionEngine) {
         new Rule("Finite * infinite = infinite",
             (a, b) => a.isFinite(),
             (a, b) => b.clone(a._tracer || b._tracer || null)),
+
+        // ENFTerm * ENFTerm multiplication
+        new Rule("ENFTerm * ENFTerm",
+            (a, b) => (typeof ENFTerm !== 'undefined') && (a instanceof ENFTerm) && (b instanceof ENFTerm),
+            (a, b) => {
+                const tracer = a._tracer || b._tracer || null;
+                return multiplyENFTerms(a, b, tracer);
+            }),
 
         // Convert to CNF for < ε0 and use CNF multiplication
         new Rule("Convert to CNF for <ε₀",
@@ -140,22 +207,33 @@ function multiplyENF(a, b) {
             return new ENFOrdinal([new ENFTerm([], a.getFiniteBigInt() * b.getFiniteBigInt(), tracer)]);
         }
         const leadingTermProduct = a.terms[0].clone(tracer);
-        leadingTermProduct.coefficient *= b.getFiniteBigInt();
+        leadingTermProduct.coefficient *= b.getFinitePart();
         const remainingTerms = a.terms.slice(1).map(t => t.clone(tracer));
         return new ENFOrdinal([leadingTermProduct, ...remainingTerms], tracer);
     }
 
-    // a * b where b is infinite: (t1 + ...)*(s1 + ...) = (t1 * s1) + (t1 * s2) + ...
-    // Note: this is distributive and requires addition.
-    let result = new ENFOrdinal([], tracer);
+    // a * b where b is infinite: (t1 + t2 + ...)*(s1 + s2 + ...) 
+    // = (t1 * s1) + (t1 * s2) + ... + t2 + t3 + ...
+    // Only the leading term of a gets multiplied; lower-order terms are preserved
+    const resultTerms = [];
+    
+    // Multiply leading term of a by each term of b
     for (const termB of b.terms) {
-        // product = a * termB
-        // For infinite termB, a * termB = (a.terms[0] * termB)
-        const productTerm = a.terms[0].multiply(termB);
-        const product = new ENFOrdinal([productTerm], tracer);
-        result = result.add(product);
+        const productTerm = multiplyENFTerms(a.terms[0], termB, tracer);
+        resultTerms.push(productTerm);
     }
-    return result;
+    
+    // Add the finite part of b if it exists
+    const bFinitePart = b.getFinitePart();
+    if (bFinitePart > 0n) {
+        // Add the lower-order terms of a (unmodified)
+        for (let i = 1; i < a.terms.length; i++) {
+            resultTerms.push(a.terms[i].clone(tracer));
+        }
+    }
+    
+    // Terms are already in decreasing order by construction, so create ENFOrdinal directly
+    return new ENFOrdinal(resultTerms, tracer);
 }
 
 // Export for use in other modules

@@ -37,6 +37,7 @@ class Operations {
             typeof EpsilonZero !== 'undefined' ? EpsilonZero : null,
             typeof EpsilonNumber !== 'undefined' ? EpsilonNumber : null,
             typeof ENFOrdinal !== 'undefined' ? ENFOrdinal : null,
+            typeof ENFTerm !== 'undefined' ? ENFTerm : null,
             typeof ZetaZero !== 'undefined' ? ZetaZero : null,
         ].filter(Boolean);
 

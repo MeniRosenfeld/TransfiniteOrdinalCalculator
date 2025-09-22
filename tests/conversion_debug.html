@@ -117,6 +117,7 @@
                             else if (src === 'EpsilonZero') instance = new EpsilonZero();
                             else if (src === 'EpsilonNumber') instance = new EpsilonNumber(new ZeroOrdinal()); // e_0
                             else if (src === 'ENF') instance = new ENFOrdinal([new ENFTerm([], 5n)]); // finite 5 as ENF
+                            else if (src === 'ENFTerm') instance = new ENFTerm([], 5n);
                             else instance = new TypeClass();
                         } catch (e) {
                             instance = null;

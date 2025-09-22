@@ -79,6 +79,13 @@ class ENFOrdinal extends OrdinalBase {
         return this.terms.reduce((sum, term) => sum + term.getFiniteBigInt(), 0n);
     }
 
+    getFinitePart() {
+        if (this.isZero()) return 0n;
+        // Only the last (smallest) term can have a finite part in ENF
+        const lastTerm = this.terms[this.terms.length - 1];
+        return lastTerm.getFinitePart();
+    }
+
     toString() {
         if (this.isZero()) return "0";
         return this.terms.map(t => t.toString()).join("+");
@@ -102,6 +109,19 @@ class ENFOrdinal extends OrdinalBase {
     logStar() {
         if (this.isZero()) return -1n;
         return this.terms[0].logStar();
+    }
+
+    isEpsilonNumber() {
+        // Must have exactly one term that is itself an epsilon number
+        if (this.terms.length !== 1) return false;
+        return this.terms[0].isEpsilonNumber();
+    }
+
+    epsilonIndex() {
+        if (!this.isEpsilonNumber()) {
+            throw new Error('ENFOrdinal is not an epsilon number');
+        }
+        return this.terms[0].epsilonIndex();
     }
 
     // Methods that need more complex implementation

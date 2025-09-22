@@ -154,6 +154,19 @@ class WTowerOrdinal extends OrdinalBase {
         }
     }
 
+    getFinitePart() {
+        // WTower: height -1 is 0, height 0 is 1, height >= 1 is infinite
+        if (this.height === -1n) return 0n;
+        if (this.height === 0n) return 1n;
+        return 0n; // Infinite towers have no finite part
+    }
+
+    isEpsilonNumber() { return false; }
+
+    epsilonIndex() {
+        throw new Error('WTowerOrdinal is not an epsilon number');
+    }
+
     // === CONVERSION SYSTEM ===
 
     static getTypeName() { return 'WTower'; }

@@ -39,7 +39,7 @@ class ENFTerm extends OrdinalBase {
         if (this.factors.length > 1) return false;
         if (this.factors.length === 0) return this.isOne(); // Finite 1 is a tower
         const factor = this.factors[0];
-        return factor.base.isTower() && factor.exponent.isTower();
+        return factor.base.equalTo(factor.exponent.rank()) && factor.exponent.isTower();
     }
     isLessThanEpsilon0() {
         if (this.isFinite()) return true;
@@ -89,6 +89,11 @@ class ENFTerm extends OrdinalBase {
         return this.coefficient;
     }
 
+    getFinitePart() {
+        // ENFTerm: if finite, return coefficient; if infinite, return 0n
+        return this.isFinite() ? this.coefficient : 0n;
+    }
+
     toString() {
         const factorStr = this.factors.map(f => f.toString()).join("*");
         if (this.isFinite()) {
@@ -131,6 +136,32 @@ class ENFTerm extends OrdinalBase {
         const logVal = this.log();
         const logStarOfLog = logVal.logStar(); // BigInt
         return 1n + logStarOfLog;
+    }
+
+    isEpsilonNumber() {
+        // Must have coefficient of 1 and a single factor with exponent of 1 and base which is not omega
+        if (this.coefficient !== 1n) return false;
+        if (this.factors.length !== 1) return false;
+        
+        const factor = this.factors[0];
+        if (!factor.exponent.isOne()) return false;
+        if (factor.base.isOmega()) return false;
+        
+        return true;
+    }
+
+    epsilonIndex() {
+        if (!this.isEpsilonNumber()) {
+            throw new Error('ENFTerm is not an epsilon number');
+        }
+        
+        const factor = this.factors[0];
+        // If the base is an EpsilonNumber, return its index
+        if (factor.base.isEpsilonNumber()) {
+            return factor.base.epsilonIndex();
+        }
+        
+        throw new Error('Cannot determine epsilon index for this ENFTerm');
     }
 
     // Dummy implementations for methods that will be more complex
@@ -195,9 +226,18 @@ class ENFTerm extends OrdinalBase {
 
     // === CONVERSION SYSTEM ===
     static getTypeName() { return 'ENFTerm'; }
-    static getDirectConversions() { return []; }
+    static getDirectConversions() { return ['ENF']; }
     convertTo(targetTypeName) {
-        throw new Error(`ENFTerm cannot convert directly to ${targetTypeName}`);
+        switch (targetTypeName) {
+            case 'ENF':
+                if (typeof ENFOrdinal !== 'undefined') {
+                    // Convert ENFTerm to ENFOrdinal with single term
+                    return new ENFOrdinal([this], this._tracer);
+                }
+                throw new Error('ENFOrdinal conversion not available for ENFTerm');
+            default:
+                throw new Error(`ENFTerm cannot convert directly to ${targetTypeName}`);
+        }
     }
 }
 

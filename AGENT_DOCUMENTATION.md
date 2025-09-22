@@ -282,6 +282,6 @@ By consulting this document, future agents should be better equipped to understa
 - Complete ENF exponentiation logic (currently throws for infinite exponents)
 - ENF addition logic (already exists in `addENF` but may need refinement)
 - Missing ENFTerm operations like `multiply()` method
-- Proper ENF→CNF conversion (`toCNFOrdinal` method)
+
 
 The foundation is solid and ready for the next session to complete the operations implementation!

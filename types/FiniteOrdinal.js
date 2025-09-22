@@ -64,6 +64,8 @@ class FiniteOrdinal extends OrdinalBase {
 
     getFiniteBigInt() { return this.value; }
 
+    getFinitePart() { return this.value; }
+
     nextRank() {
         if (this.isZero()) return new OneOrdinal(this._tracer);
         return new OmegaOrdinal(this._tracer);
@@ -112,6 +114,12 @@ class FiniteOrdinal extends OrdinalBase {
         }
 
         return { simplifiedOrdinal: zero, remainingBudget: 0 };
+    }
+
+    isEpsilonNumber() { return false; }
+
+    epsilonIndex() {
+        throw new Error('FiniteOrdinal is not an epsilon number');
     }
 
     // === CONVERSION SYSTEM ===
