@@ -104,7 +104,7 @@ class EpsilonNumber extends OrdinalBase {
     // === CONVERSION SYSTEM ===
 
     static getTypeName() { return 'EpsilonNumber'; }
-    static getDirectConversions() { return ['ENFTerm']; }
+    static getDirectConversions() { return ['ENFTerm', 'EpsilonTower']; }
     convertTo(targetTypeName) {
         switch (targetTypeName) {
             case 'ENFTerm':
@@ -114,6 +114,12 @@ class EpsilonNumber extends OrdinalBase {
                     return new ENFTerm([factor], 1n, this._tracer);
                 }
                 throw new Error('ENFTerm conversion not available for EpsilonNumber');
+            case 'EpsilonTower':
+                if (typeof EpsilonTowerOrdinal !== 'undefined') {
+                    // Convert e_k to EpsilonTower e_k^^1 (which equals e_k)
+                    return new EpsilonTowerOrdinal(this.k.clone(this._tracer), 1, this._tracer);
+                }
+                throw new Error('EpsilonTowerOrdinal conversion not available for EpsilonNumber');
             default:
                 throw new Error(`EpsilonNumber cannot convert directly to ${targetTypeName}`);
         }

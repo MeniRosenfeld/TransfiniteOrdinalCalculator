@@ -26,7 +26,7 @@ class EpsilonTunnelOrdinal extends OrdinalBase {
     isFinite() { return this.depth === 0n; }
     isLessThanEpsilon0() { return this.depth === 0n; }
     isOmega() { return false; }
-    isBasic() { return false; }
+    isBasic() { return this.depth > 0n; }
     isOne() { return false; }
 
     isLimit() {

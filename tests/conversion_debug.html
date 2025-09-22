@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Conversion Debug Matrix</title>
+    <title>Conversion Debug Matrix - All Ordinal Types</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -58,9 +58,8 @@
 </head>
 
 <body>
-    <h2>Conversion Debug Matrix</h2>
-    <p>This page lists all registered types and shows whether conversion is possible from each source (rows) to each
-        target (columns).</p>
+    <h2>Conversion Debug Matrix - All Ordinal Types</h2>
+    <p>This page lists all registered ordinal types (including new types: EpsilonTower, EpsilonTunnel, ZetaZero) and shows whether conversion is possible from each source (rows) to each target (columns). The matrix shows direct and indirect conversion paths through the conversion engine.</p>
 
     <div id="matrix"></div>
     <h3>Direct Conversion Graph</h3>
@@ -78,6 +77,9 @@
     <script src="../types/WTowerOrdinal.js"></script>
     <script src="../types/EpsilonZero.js"></script>
     <script src="../types/EpsilonNumber.js"></script>
+    <script src="../types/EpsilonTowerOrdinal.js"></script>
+    <script src="../types/EpsilonTunnelOrdinal.js"></script>
+    <script src="../types/ZetaZero.js"></script>
     <script src="../types/ENFFactor.js"></script>
     <script src="../types/ENFTerm.js"></script>
     <script src="../types/ENFOrdinal.js"></script>
@@ -85,6 +87,9 @@
     <script src="../conversions/ConversionEngine.js"></script>
     <script src="../operations/RuleEngine.js"></script>
     <script src="../operations/AdditionRules.js"></script>
+    <script src="../operations/MultiplicationRules.js"></script>
+    <script src="../operations/ExponentiationRules.js"></script>
+    <script src="../operations/TetrationRules.js"></script>
     <script src="../operations/Comparison.js"></script>
     <script src="../operations/Operations.js"></script>
 
@@ -108,17 +113,22 @@
                         const TypeClass = OPERATIONS.registry.getTypeClass(src);
                         let instance;
                         try {
-                            if (src === 'Zero') instance = new ZeroOrdinal();
-                            else if (src === 'One') instance = new OneOrdinal();
-                            else if (src === 'Finite') instance = new FiniteOrdinal(2);
-                            else if (src === 'Omega') instance = new OmegaOrdinal();
-                            else if (src === 'CNF') instance = new CNFOrdinal(0);
-                            else if (src === 'WTower') instance = new WTowerOrdinal(2);
-                            else if (src === 'EpsilonZero') instance = new EpsilonZero();
-                            else if (src === 'EpsilonNumber') instance = new EpsilonNumber(new ZeroOrdinal()); // e_0
-                            else if (src === 'ENF') instance = new ENFOrdinal([new ENFTerm([], 5n)]); // finite 5 as ENF
-                            else if (src === 'ENFTerm') instance = new ENFTerm([], 5n);
-                            else instance = new TypeClass();
+                            const tracer = new OperationTracer(1000);
+                            if (src === 'Zero') instance = new ZeroOrdinal(tracer);
+                            else if (src === 'One') instance = new OneOrdinal(tracer);
+                            else if (src === 'Finite') instance = new FiniteOrdinal(2, tracer);
+                            else if (src === 'Omega') instance = new OmegaOrdinal(tracer);
+                            else if (src === 'CNF') instance = new CNFOrdinal(0, tracer);
+                            else if (src === 'WTower') instance = new WTowerOrdinal(2, tracer);
+                            else if (src === 'EpsilonZero') instance = new EpsilonZero(tracer);
+                            else if (src === 'EpsilonNumber') instance = new EpsilonNumber(new ZeroOrdinal(tracer), tracer); // e_0
+                            else if (src === 'EpsilonTower') instance = new EpsilonTowerOrdinal(new ZeroOrdinal(tracer), 2, tracer); // e_0^^2
+                            else if (src === 'EpsilonTunnel') instance = new EpsilonTunnelOrdinal(2, tracer); // e__2
+                            else if (src === 'ZetaZero') instance = new ZetaZero(tracer);
+                            else if (src === 'ENF') instance = new ENFOrdinal([new ENFTerm([], 5n, tracer)], tracer); // finite 5 as ENF
+                            else if (src === 'ENFTerm') instance = new ENFTerm([], 5n, tracer);
+                            else if (src === 'ENFFactor') instance = new ENFFactor(new OmegaOrdinal(tracer), new OneOrdinal(tracer)); // ω^1
+                            else instance = new TypeClass(tracer);
                         } catch (e) {
                             instance = null;
                         }
