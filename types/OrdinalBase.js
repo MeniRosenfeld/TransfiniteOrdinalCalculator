@@ -235,6 +235,9 @@ class OrdinalBase {
     }
 
     tunnel() {
+        // Tunnel operation: creates deeply nested epsilon structures
+        // e__0 = 0, e__1 = e_0, e__2 = e_e_0, etc.
+        
         // If this is infinite: return z_0
         if (!this.isFinite()) {
             return new ZetaZero(this._tracer);
@@ -249,6 +252,7 @@ class OrdinalBase {
         }
         
         // If 0<n<=10, return an EpsilonNumber e_e_e_...(n times)...0
+        // For small n, we expand the structure explicitly for better performance
         if (n > 0n && n <= 10n) {
             let result = new ZeroOrdinal(this._tracer);
             for (let i = 0n; i < n; i++) {
@@ -258,6 +262,7 @@ class OrdinalBase {
         }
         
         // If n>10, return an EpsilonTunnel object of depth n
+        // For large n, we use the compact tunnel representation
         return new EpsilonTunnelOrdinal(n, this._tracer);
     }
 

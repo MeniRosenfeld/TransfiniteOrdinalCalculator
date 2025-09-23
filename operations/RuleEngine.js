@@ -52,6 +52,7 @@ class RuleEngine {
         }
 
         // Try each rule in definition order
+        // IMPORTANT: More specific rules should be added before general ones
         for (const rule of this.rules) {
             let matched = false;
             try {

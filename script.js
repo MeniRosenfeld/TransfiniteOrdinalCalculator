@@ -579,7 +579,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const ordinalRepFromInverse = fInverse(sliderValue, DEFAULT_F_PARAMS);
                 console.log("[fInverseCalc] fInverse returned:", ordinalRepFromInverse);
 
-                const ordinalInstanceFromInverse = convertFFormatToOrdinalInstance(ordinalRepFromInverse, new OperationTracer(10000)); // Use a fresh tracer
+                const ordinalInstanceFromInverse = convertFFormatToOrdinalInstance(ordinalRepFromInverse, new OperationTracer(1000000)); // Use a fresh tracer
                 console.log("[fInverseCalc] convertFFormatToOrdinalInstance returned:", ordinalInstanceFromInverse);
 
                 const sliderDisplayString = ordinalInstanceFromInverse.toString();

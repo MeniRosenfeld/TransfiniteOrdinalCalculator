@@ -69,6 +69,7 @@ function multiplyCNF(a, b) {
 function multiplyENFTerms(termA, termB, tracer) {
     // Multiply two ENFTerms with correct factor absorption
     // A * B: factors are absorbed by higher-ranked factors on the right
+    // This implements ordinal multiplication's key property: only the "large" part of A survives
     
     const factorsA = termA.factors || [];
     const factorsB = termB.factors || [];

@@ -25,7 +25,7 @@ function renderOrdinalSimple(ordinal) {
  */
 function renderOrdinalGraphicalFromStringSimple(ordinalString) {
     try {
-        const tracer = new OperationTracer(10000);
+        const tracer = new OperationTracer(1000000);
         const parser = new SimpleParser(ordinalString, tracer);
         const ordinal = parser.parse();
         return renderOrdinalSimple(ordinal);

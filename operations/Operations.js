@@ -27,6 +27,7 @@ class Operations {
         console.log('[Operations] Initializing ordinal operations system...');
 
         // Register all available ordinal types
+        // Note: Order matters for some operations - basic types first, then complex types
         const typeClasses = [
             typeof FiniteOrdinal !== 'undefined' ? FiniteOrdinal : null,
             typeof ZeroOrdinal !== 'undefined' ? ZeroOrdinal : null,

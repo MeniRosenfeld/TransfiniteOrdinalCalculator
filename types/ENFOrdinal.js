@@ -13,6 +13,8 @@ class ENFOrdinal extends OrdinalBase {
         if (!Array.isArray(terms) || !terms.every(t => t instanceof ENFTerm)) {
             throw new Error("ENFOrdinal constructor expects an array of ENFTerm instances.");
         }
+        // Terms should be in descending order: t1 > t2 > ... > tn
+        // This invariant is maintained by all operations
         this.terms = terms;
     }
 
