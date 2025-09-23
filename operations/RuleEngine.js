@@ -58,8 +58,9 @@ class RuleEngine {
             try {
                 matched = !!rule.condition(a, b);
             } catch (condErr) {
-                console.warn(`[RuleEngine] ${operationName}: Rule "${rule.name}" condition threw error:`, condErr.message);
-                matched = false; // skip this rule
+                // CRITICAL FIX: If rule condition throws, the entire operation is unreliable
+                // We cannot safely continue to other rules as they may give incorrect results
+                throw new Error(`${operationName}: Rule "${rule.name}" condition failed with error: ${condErr.message}. Operation cannot proceed safely.`);
             }
 
             if (matched) {

@@ -151,9 +151,45 @@ class ENFTerm extends OrdinalBase {
         if (this.isFinite()) {
             return this.isZero() ? -1n : 0n;
         }
-        const logVal = this.log();
-        const logStarOfLog = logVal.logStar(); // BigInt
-        return 1n + logStarOfLog;
+        
+        // Iterative implementation to avoid quadratic complexity
+        let count = 0;
+        let currentTerm = this;
+        
+        while (!currentTerm.isFinite()) {
+            count++;
+            
+            // Consume operation for this iteration
+            if (this._tracer) {
+                this._tracer.consume();
+            }
+            
+            // Get the log without creating full ordinal objects (direct access to exponent)
+            const logResult = currentTerm.factors[0].exponent;
+            
+            if (logResult.isFinite()) {
+                break;
+            } else if (logResult instanceof ENFTerm) {
+                currentTerm = logResult;
+            } else if (logResult instanceof ENFOrdinal) {
+                // If log returns an ENFOrdinal, get its leading term
+                if (logResult.isZero()) {
+                    break;
+                } else {
+                    currentTerm = logResult.terms[0];
+                }
+            } else {
+                // For other types, delegate to their logStar implementation
+                return BigInt(count) + logResult.logStar();
+            }
+            
+            // Safety break
+            if (count > 1000) {
+                throw new Error("Exceeded maximum recursion depth for ENFTerm logStar calculation.");
+            }
+        }
+        
+        return BigInt(count);
     }
 
     isEpsilonNumber() {

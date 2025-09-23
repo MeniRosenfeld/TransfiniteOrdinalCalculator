@@ -135,21 +135,56 @@ class CNFOrdinal extends OrdinalBase {
             }
         }
 
+        // Iterative implementation to avoid quadratic complexity from cloning
         let count = 0;
-        let current = this;
-        // Iterate until the ordinal becomes finite
-        while (!current.isFinite()) {
+        let currentTerms = this.terms;
+        
+        // Navigate down the exponent tower without cloning entire ordinals
+        while (currentTerms.length > 0 && !this._isFiniteTerms(currentTerms)) {
             count++;
-            current = current.log();
+            
+            // Consume operation for this iteration
+            if (this._tracer) {
+                this._tracer.consume();
+            }
+            
+            // Get the exponent of the leading term without cloning the whole ordinal
+            const leadingTerm = currentTerms[0];
+            const exponent = leadingTerm.exponent;
+            
+            if (exponent.isFinite()) {
+                // If exponent is finite, we're done - the log is finite
+                break;
+            } else if (exponent instanceof CNFOrdinal) {
+                // Continue with the exponent's terms
+                currentTerms = exponent.terms;
+            } else {
+                // For other ordinal types, fall back to the recursive approach
+                // but only for this single step
+                const logResult = exponent.log();
+                if (logResult.isFinite()) {
+                    break;
+                } else if (logResult instanceof CNFOrdinal) {
+                    currentTerms = logResult.terms;
+                } else {
+                    // Can't continue iteratively, but we've already reduced the problem significantly
+                    return BigInt(count) + logResult.logStar();
+                }
+            }
+            
             // Safety break for unexpected cycles or extremely deep chains
             if (count > 1000) {
                 throw new Error("Exceeded maximum recursion depth for logStar calculation.");
             }
         }
 
-        // 'current' is now a finite ordinal. Get its logStar value (-1 for 0, 0 for >0)
-        const finalPart = current.logStar();
-        return BigInt(count) + finalPart;
+        // Final result: count of iterations plus logStar of finite result (0 for positive finite, -1 for 0)
+        return BigInt(count);
+    }
+    
+    // Helper method to check if terms represent a finite ordinal
+    _isFiniteTerms(terms) {
+        return terms.length === 0 || (terms.length === 1 && terms[0].exponent.isZero());
     }
 
     isTower() {
