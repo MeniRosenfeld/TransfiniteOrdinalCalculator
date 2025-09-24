@@ -242,6 +242,13 @@
 
     <!-- New UI Scripts -->
     <script src="script.js"></script> <!-- Main UI interaction logic -->
+    
+    <!-- Initialize global tracer -->
+    <script>
+        // Initialize global tracer for main calculator
+        OperationTracer.setGlobalTracer(10000000); // 10M operations budget
+        console.log('[GlobalTracer] Main calculator initialized with budget:', OperationTracer.getBudget());
+    </script>
 
 </body>
 

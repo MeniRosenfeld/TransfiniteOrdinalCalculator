@@ -831,7 +831,7 @@
             } catch (error) {
                 console.error('Error in fInverse or conversion:', error);
                 // Fallback to a simple ordinal
-                return new FiniteOrdinal(BigInt(Math.floor(Math.random() * 100)), null);
+                return new FiniteOrdinal(BigInt(Math.floor(testState.rng.next() * 100)));
             }
         }
 
@@ -1005,11 +1005,8 @@
 
         function runTripleTestsImpl(a, b, c) {
             try {
-                // Create fresh tracer for this test
-                const tracer = new OperationTracer(50000);
-                a._tracer = tracer;
-                b._tracer = tracer;
-                c._tracer = tracer;
+                // Set global tracer for this test
+                OperationTracer.setGlobalTracer(50000);
                 
                 // Test 1: Associativity of addition: (a+b)+c = a+(b+c)
                 try {
@@ -1045,6 +1042,8 @@
                     return { status: 'failed', reason: 'Addition associativity error: ' + error.message };
                 }
 
+                OperationTracer.reset(40000);
+
                 // Test 2: Associativity of multiplication: (a*b)*c = a*(b*c)
                 try {
                     const lhs2 = OPERATIONS.multiply(OPERATIONS.multiply(a, b), c);
@@ -1062,6 +1061,8 @@
                     }
                     return { status: 'failed', reason: 'Multiplication associativity error: ' + error.message };
                 }
+
+                OperationTracer.reset(50000);
 
                 // Test 3: Left distributivity: a*(b+c) = a*b+a*c
                 try {
@@ -1081,6 +1082,8 @@
                     return { status: 'failed', reason: 'Left distributivity error: ' + error.message };
                 }
 
+                OperationTracer.reset(50000);
+
                 // Test 4: Exponent addition: a^(b+c) = a^b*a^c
                 try {
                     const lhs4 = OPERATIONS.power(a, OPERATIONS.add(b, c));
@@ -1098,6 +1101,8 @@
                     }
                     return { status: 'failed', reason: 'Exponent addition error: ' + error.message };
                 }
+
+                OperationTracer.reset(50000);
 
                 // Test 5: Exponent multiplication: a^(b*c) = (a^b)^c
                 try {
@@ -1117,6 +1122,7 @@
                     return { status: 'failed', reason: 'Exponent multiplication error: ' + error.message };
                 }
 
+                OperationTracer.reset(50000);
                 // Test 6: Addition monotonicity: a+b ? a+c = b ? c
                 try {
                     const sum_ab = OPERATIONS.add(a, b);
@@ -1138,9 +1144,10 @@
                     return { status: 'failed', reason: 'Addition monotonicity error: ' + error.message };
                 }
 
+                OperationTracer.reset(50000);
                 // Test 7: Multiplication monotonicity: a*b ? a*c = b ? c (if a > 0)
                 try {
-                    const zero = new ZeroOrdinal(tracer);
+                    const zero = new ZeroOrdinal();
                     if (OPERATIONS.compare(a, zero) > 0) {
                         const prod_ab = OPERATIONS.multiply(a, b);
                         const prod_ac = OPERATIONS.multiply(a, c);
@@ -1162,9 +1169,10 @@
                     return { status: 'failed', reason: 'Multiplication monotonicity error: ' + error.message };
                 }
 
+                OperationTracer.reset(50000);
                 // Test 8: Exponentiation monotonicity: a^b ? a^c = b ? c (if a > 1)
                 try {
-                    const one = new OneOrdinal(tracer);
+                    const one = new OneOrdinal();
                     if (OPERATIONS.compare(a, one) > 0) {
                         const pow_ab = OPERATIONS.power(a, b);
                         const pow_ac = OPERATIONS.power(a, c);

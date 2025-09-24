@@ -11,8 +11,8 @@ class ENFTerm extends OrdinalBase {
      * @param {Array<ENFFactor>} factors - An array of ENFFactor instances, sorted by descending base.
      * @param {BigInt} coefficient - The finite coefficient of the term.
      */
-    constructor(factors = [], coefficient = 1n, operationTracer = null) {
-        super(operationTracer);
+    constructor(factors = [], coefficient = 1n) {
+        super();
         // Validation for factors can be added here (e.g., ensuring they are sorted)
         this.factors = factors;
         if (typeof coefficient !== 'bigint' || coefficient <= 0n) {
@@ -39,7 +39,7 @@ class ENFTerm extends OrdinalBase {
         if (this.factors.length > 1) return false;
         if (this.factors.length === 0) return this.isOne(); // Finite 1 is a tower
         const factor = this.factors[0];
-        return factor.base.equalTo(factor.exponent.rank()) && factor.exponent.isTower();
+        return factor.base.equals(factor.exponent.rank()) && factor.exponent.isTower();
     }
     isLessThanEpsilon0() {
         if (this.isFinite()) return true;
@@ -128,20 +128,20 @@ class ENFTerm extends OrdinalBase {
         }
     }
 
-    clone(newTracer = null) {
+    clone() {
         const newFactors = this.factors.map(f => f.clone());
-        return new ENFTerm(newFactors, this.coefficient, newTracer || this._tracer);
+        return new ENFTerm(newFactors, this.coefficient);
     }
 
     rank() {
         if (this.isFinite()) {
-            return this.isZero() ? new ZeroOrdinal(this._tracer) : new OneOrdinal(this._tracer);
+            return this.isZero() ? new ZeroOrdinal() : new OneOrdinal();
         }
         return this.factors[0].base.clone();
     }
 
     log() {
-        if (this.isFinite()) return new ZeroOrdinal(this._tracer);
+        if (this.isFinite()) return new ZeroOrdinal();
         // For an infinite ENF term, the logarithm is the exponent of the leading factor
         return this.factors[0].exponent.clone();
     }
@@ -160,9 +160,7 @@ class ENFTerm extends OrdinalBase {
             count++;
             
             // Consume operation for this iteration
-            if (this._tracer) {
-                this._tracer.consume();
-            }
+            OperationTracer.consume();
             
             // Get the log without creating full ordinal objects (direct access to exponent)
             const logResult = currentTerm.factors[0].exponent;
@@ -222,7 +220,7 @@ class ENFTerm extends OrdinalBase {
     nextRank() { 
         if (this.factors.length === 0) {
             // Pure finite term - next rank is ω
-            return new OmegaOrdinal(this._tracer);
+            return new OmegaOrdinal();
         }
         
         const leadingFactor = this.factors[0];
@@ -230,12 +228,12 @@ class ENFTerm extends OrdinalBase {
         
         if (leadingBase.isOmega()) {
             // Base is ω, next rank is ε₀
-            return new EpsilonZero(this._tracer);
+            return new EpsilonZero();
         } else if (leadingBase.isEpsilonNumber()) {
             // Base is ε_k, next rank is ε_(k+1)
             const k = leadingBase.epsilonIndex();
             const kPlusOne = k.successor();
-            return new EpsilonNumber(kPlusOne, this._tracer);
+            return new EpsilonNumber(kPlusOne);
         } else {
             // For other bases, fall back to the base's nextRank
             return leadingBase.nextRank();
@@ -307,7 +305,7 @@ class ENFTerm extends OrdinalBase {
             case 'ENF':
                 if (typeof ENFOrdinal !== 'undefined') {
                     // Convert ENFTerm to ENFOrdinal with single term
-                    return new ENFOrdinal([this], this._tracer);
+                    return new ENFOrdinal([this]);
                 }
                 throw new Error('ENFOrdinal conversion not available for ENFTerm');
             default:

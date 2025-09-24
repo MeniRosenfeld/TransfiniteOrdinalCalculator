@@ -11,9 +11,8 @@
 // - Parentheses for grouping
 
 class SimpleParser {
-    constructor(inputString, operationTracer) {
+    constructor(inputString) {
         this.inputString = inputString.trim();
-        this.tracer = operationTracer;
         this.tokens = this._tokenize(inputString);
         this.pos = 0;
     }
@@ -75,7 +74,7 @@ class SimpleParser {
 
     parse() {
         if (this.tokens.length === 0) {
-            return new FiniteOrdinal(0, this.tracer);
+            return new FiniteOrdinal(0);
         }
 
         const result = this._parseExpression();
@@ -141,10 +140,10 @@ class SimpleParser {
 
         if (token.type === 'NUMBER') {
             const num = this._consume('NUMBER').value;
-            return new FiniteOrdinal(num, this.tracer);
+            return new FiniteOrdinal(num);
         } else if (token.type === 'OMEGA') {
             this._consume('OMEGA');
-            return new OmegaOrdinal(this.tracer);
+            return new OmegaOrdinal();
             } else if (token.type === 'EPSILON') {
                 return this._parseEpsilon();
             } else if (token.type === 'TUNNEL') {
@@ -169,11 +168,11 @@ class SimpleParser {
         
         // Handle special case: if index is 0, return EpsilonZero
         if (index.isZero()) {
-            return new EpsilonZero(this.tracer);
+            return new EpsilonZero();
         }
         
         // Otherwise return EpsilonNumber with the parsed index
-        return new EpsilonNumber(index, this.tracer);
+        return new EpsilonNumber(index);
     }
 
     _parseEpsilonIndex() {
@@ -191,10 +190,10 @@ class SimpleParser {
         
         if (token.type === 'NUMBER') {
             const num = this._consume('NUMBER').value;
-            return new FiniteOrdinal(num, this.tracer);
+            return new FiniteOrdinal(num);
         } else if (token.type === 'OMEGA') {
             this._consume('OMEGA');
-            return new OmegaOrdinal(this.tracer);
+            return new OmegaOrdinal();
         } else if (token.type === 'EPSILON') {
             // Nested epsilon number: e_e_k
             return this._parseEpsilon();
@@ -222,7 +221,7 @@ class SimpleParser {
         
         if (token.type === 'NUMBER') {
             const depth = this._consume('NUMBER').value;
-            depthOrdinal = new FiniteOrdinal(depth, this.tracer);
+            depthOrdinal = new FiniteOrdinal(depth);
         } else if (token.type === 'LPAREN') {
             // Parse parenthesized expression for depth
             this._consume('LPAREN');

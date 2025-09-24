@@ -6,8 +6,8 @@
  * This is a specialized type for a common value.
  */
 class OneOrdinal extends OrdinalBase {
-    constructor(operationTracer = null) {
-        super(operationTracer);
+    constructor() {
+        super();
     }
 
     // === REQUIRED UNARY METHODS ===
@@ -29,7 +29,7 @@ class OneOrdinal extends OrdinalBase {
     needsParenthesesAsExponent() { return false; }
 
     nextRank() {
-        return new OmegaOrdinal(this._tracer);
+        return new OmegaOrdinal();
     }
 
     complexity() { return 1; }
@@ -42,8 +42,8 @@ class OneOrdinal extends OrdinalBase {
 
     toFFormat() { return 1n; }
 
-    clone(newTracer = null) {
-        return new OneOrdinal(newTracer || this._tracer);
+    clone() {
+        return new OneOrdinal();
     }
 
     simplify(complexityBudget, skipMyOwnMPTFCheck = false) {
@@ -54,16 +54,16 @@ class OneOrdinal extends OrdinalBase {
             };
         }
         // Fallback to 0 if 1 doesn't fit
-        const zero = new ZeroOrdinal(this._tracer);
+        const zero = new ZeroOrdinal();
         return { simplifiedOrdinal: zero, remainingBudget: complexityBudget };
     }
 
     rank() {
-        return new OneOrdinal(this._tracer);
+        return new OneOrdinal();
     }
 
     log() {
-        return new ZeroOrdinal(this._tracer);
+        return new ZeroOrdinal();
     }
 
     logStar() {
@@ -71,7 +71,7 @@ class OneOrdinal extends OrdinalBase {
     }
 
     successor() {
-        return new FiniteOrdinal(2n, this._tracer);
+        return new FiniteOrdinal(2n);
     }
 
     isEpsilonNumber() { return false; }
@@ -85,8 +85,8 @@ class OneOrdinal extends OrdinalBase {
     static getTypeName() { return 'One'; }
     static getDirectConversions() { return ['Finite', 'WTower']; }
     convertTo(targetTypeName) {
-        if (targetTypeName === 'Finite') return new FiniteOrdinal(1n, this._tracer);
-        if (targetTypeName === 'WTower') return new WTowerOrdinal(0n, this._tracer);
+        if (targetTypeName === 'Finite') return new FiniteOrdinal(1n);
+        if (targetTypeName === 'WTower') return new WTowerOrdinal(0n);
         throw new Error(`OneOrdinal cannot convert directly to ${targetTypeName}`);
     }
 }

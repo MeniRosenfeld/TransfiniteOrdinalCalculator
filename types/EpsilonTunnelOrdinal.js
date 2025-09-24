@@ -3,8 +3,8 @@
 // Defined recursively as: e__0 = 0, e__(k+1) = e_(e__k)
 
 class EpsilonTunnelOrdinal extends OrdinalBase {
-    constructor(depth = 0, operationTracer = null) {
-        super(operationTracer);
+    constructor(depth = 0) {
+        super();
         
         // Validate and set depth
         if (typeof depth === 'bigint') {
@@ -39,18 +39,18 @@ class EpsilonTunnelOrdinal extends OrdinalBase {
 
     rank() {
         if (this.depth === 0n) {
-            return new ZeroOrdinal(this._tracer);
+            return new ZeroOrdinal();
         }
         // For depth > 0, the rank is quite complex - it's essentially the ordinal itself
         // but we'll approximate with a high epsilon number
-        return new EpsilonNumber(new EpsilonZero(this._tracer), this._tracer);
+        return new EpsilonNumber(new EpsilonZero());
     }
 
     log() {
         if (this.depth === 0n) {
             throw new Error('Log of 0 is undefined.');
         }
-        return new EpsilonTunnelOrdinal(this.depth - 1n, this._tracer);
+        return new EpsilonTunnelOrdinal(this.depth - 1n);
     }
 
     logStar() {
@@ -79,8 +79,8 @@ class EpsilonTunnelOrdinal extends OrdinalBase {
         return RenderingComponents.renderTunnel(this.depth.toString());
     }
 
-    clone(newTracer = null) {
-        return new EpsilonTunnelOrdinal(this.depth, newTracer || this._tracer);
+    clone() {
+        return new EpsilonTunnelOrdinal(this.depth);
     }
 
     toFFormat() {
@@ -93,19 +93,19 @@ class EpsilonTunnelOrdinal extends OrdinalBase {
     // Convenience method: expand to actual epsilon number structure
     expand() {
         if (this.depth === 0n) {
-            return new ZeroOrdinal(this._tracer);
+            return new ZeroOrdinal();
         }
         
         // Build e_e_e_..._0 structure
-        let result = new ZeroOrdinal(this._tracer);
+        let result = new ZeroOrdinal();
         for (let i = 0n; i < this.depth; i++) {
-            result = new EpsilonNumber(result, this._tracer);
+            result = new EpsilonNumber(result);
         }
         return result;
     }
 
     simplify(complexityBudget, skipMyOwnMPTFCheck = false) {
-        if (this._tracer) this._tracer.consume();
+        OperationTracer.consume();
         const myComplexity = this.complexity();
         if (myComplexity <= complexityBudget) {
             return {
@@ -127,7 +127,7 @@ class EpsilonTunnelOrdinal extends OrdinalBase {
         }
 
         // Fall back to 0
-        const zero = new ZeroOrdinal(this._tracer);
+        const zero = new ZeroOrdinal();
         const zeroComplexity = zero.complexity();
         return {
             simplifiedOrdinal: zero,
@@ -150,7 +150,7 @@ class EpsilonTunnelOrdinal extends OrdinalBase {
         if (!this.isEpsilonNumber()) {
             throw new Error('EpsilonTunnelOrdinal is not an epsilon number');
         }
-        return new ZeroOrdinal(this._tracer); // e__1 = e_0
+        return new ZeroOrdinal(); // e__1 = e_0
     }
 
     // === CONVERSION SYSTEM ===
@@ -165,7 +165,7 @@ class EpsilonTunnelOrdinal extends OrdinalBase {
         switch (targetTypeName) {
             case 'ENF': {
                 if (this.depth === 0n) {
-                    return new ENFOrdinal([], this._tracer);
+                    return new ENFOrdinal([]);
                 }
                 
                 // Convert to the expanded epsilon number structure
@@ -184,9 +184,9 @@ class EpsilonTunnelOrdinal extends OrdinalBase {
     }
 
     nextRank() {
-        if (this.depth === 0n) return new OneOrdinal(this._tracer);
+        if (this.depth === 0n) return new OneOrdinal();
         // For epsilon tunnels, next rank is complex - approximate with successor tunnel
-        return new EpsilonTunnelOrdinal(this.depth + 1n, this._tracer);
+        return new EpsilonTunnelOrdinal(this.depth + 1n);
     }
 }
 

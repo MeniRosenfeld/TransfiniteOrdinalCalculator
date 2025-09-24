@@ -6,12 +6,10 @@
  * This is an abstract base - all methods must be implemented by subclasses.
  */
 class OrdinalBase {
-    constructor(operationTracer = null) {
-        this._tracer = operationTracer;
+    constructor() {
         this._ordinalBrand = Symbol.for('TransfiniteOrdinal.OrdinalBrand');
-        if (this._tracer) {
-            this._tracer.consume(1);
-        }
+        // Consume operation for construction using global tracer
+        OperationTracer.consume(1);
     }
 
     // === REQUIRED UNARY METHODS ===
@@ -45,10 +43,10 @@ class OrdinalBase {
         }
         if (this.isFinite()) {
             const n = this.getFiniteBigInt();
-            return new FiniteOrdinal(n - 1n, this._tracer);
+            return new FiniteOrdinal(n - 1n);
         }
         // For infinite ordinals, left predecessor is itself
-        return this.clone(this._tracer);
+        return this.clone();
     }
 
     /**
@@ -126,7 +124,7 @@ class OrdinalBase {
      */
     successor() {
         // This relies on the global availability of FiniteOrdinal and the rule-based addition system
-        return this.add(new OneOrdinal(this._tracer));
+        return this.add(new OneOrdinal());
     }
 
     /**
@@ -240,7 +238,7 @@ class OrdinalBase {
         
         // If this is infinite: return z_0
         if (!this.isFinite()) {
-            return new ZetaZero(this._tracer);
+            return new ZetaZero();
         }
         
         // If this is finite n:
@@ -248,28 +246,28 @@ class OrdinalBase {
         
         // If n=0, return 0
         if (n === 0n) {
-            return new ZeroOrdinal(this._tracer);
+            return new ZeroOrdinal();
         }
         
         // If 0<n<=10, return an EpsilonNumber e_e_e_...(n times)...0
         // For small n, we expand the structure explicitly for better performance
         if (n > 0n && n <= 10n) {
-            let result = new ZeroOrdinal(this._tracer);
+            let result = new ZeroOrdinal();
             for (let i = 0n; i < n; i++) {
-                result = new EpsilonNumber(result, this._tracer);
+                result = new EpsilonNumber(result);
             }
             return result;
         }
         
         // If n>10, return an EpsilonTunnel object of depth n
         // For large n, we use the compact tunnel representation
-        return new EpsilonTunnelOrdinal(n, this._tracer);
+        return new EpsilonTunnelOrdinal(n);
     }
 
     /**
-     * Creates a copy of this ordinal with optional new tracer.
+     * Creates a copy of this ordinal .
      */
-    clone(newTracer = null) { throw new Error(`${this.constructor.name} must implement clone()`); }
+    clone() { throw new Error(`${this.constructor.name} must implement clone()`); }
 
     /**
      * Simplifies this ordinal within the given complexity budget.

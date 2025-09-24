@@ -148,8 +148,8 @@
         }
 
         function runOne(idx, input, expected) {
-            const tracer = new OperationTracer(20000);
-            const parser = new SimpleParser(input, tracer);
+            OperationTracer.setGlobalTracer(20000);
+            const parser = new SimpleParser(input);
             let actual = '';
             let error = '';
             let fReprStr = '';
@@ -170,7 +170,7 @@
                     // Round-trip via fInverse
                     if (typeof fInverse === 'function' && typeof convertFFormatToOrdinalInstance === 'function' && typeof OPERATIONS !== 'undefined' && OPERATIONS.initialized) {
                         const invRep = fInverse(val, (typeof DEFAULT_F_PARAMS !== 'undefined') ? DEFAULT_F_PARAMS : undefined);
-                        const invOrd = convertFFormatToOrdinalInstance(invRep, new OperationTracer(20000));
+                        const invOrd = convertFFormatToOrdinalInstance(invRep);
                         invStr = (invOrd && typeof invOrd.toString === 'function') ? invOrd.toString() : String(invOrd);
                         try {
                             rtOk = (invOrd.equals && ord.equals) ? (invOrd.equals(ord) && ord.equals(invOrd)) : (OPERATIONS.compare(invOrd, ord) === 0);
@@ -216,6 +216,10 @@
                 setTimeout(runAll, 150);
                 return;
             }
+            
+            // Initialize global tracer for smoke tests
+            OperationTracer.setGlobalTracer(500000); // 500K operations budget
+            console.log('[GlobalTracer] Smoke tests initialized with budget:', OperationTracer.getBudget());
             const tbody = document.getElementById('resultsBody');
             tbody.innerHTML = '';
             let passes = 0;

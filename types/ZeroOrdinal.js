@@ -6,8 +6,8 @@
  * This is a specialized type for a common value.
  */
 class ZeroOrdinal extends OrdinalBase {
-    constructor(operationTracer = null) {
-        super(operationTracer);
+    constructor() {
+        super();
     }
 
     // === REQUIRED UNARY METHODS ===
@@ -29,7 +29,7 @@ class ZeroOrdinal extends OrdinalBase {
     needsParenthesesAsExponent() { return false; }
 
     nextRank() {
-        return new OneOrdinal(this._tracer);
+        return new OneOrdinal();
     }
 
     complexity() { return 0; }
@@ -42,8 +42,8 @@ class ZeroOrdinal extends OrdinalBase {
 
     toFFormat() { return 0n; }
 
-    clone(newTracer = null) {
-        return new ZeroOrdinal(newTracer || this._tracer);
+    clone() {
+        return new ZeroOrdinal();
     }
 
     simplify(complexityBudget, skipMyOwnMPTFCheck = false) {
@@ -55,7 +55,7 @@ class ZeroOrdinal extends OrdinalBase {
     }
 
     rank() {
-        return new ZeroOrdinal(this._tracer);
+        return new ZeroOrdinal();
     }
 
     log() {
@@ -68,7 +68,7 @@ class ZeroOrdinal extends OrdinalBase {
     }
 
     successor() {
-        return new OneOrdinal(this._tracer);
+        return new OneOrdinal();
     }
 
     isEpsilonNumber() { return false; }
@@ -82,8 +82,8 @@ class ZeroOrdinal extends OrdinalBase {
     static getTypeName() { return 'Zero'; }
     static getDirectConversions() { return ['Finite', 'WTower']; }
     convertTo(targetTypeName) {
-        if (targetTypeName === 'Finite') return new FiniteOrdinal(0n, this._tracer);
-        if (targetTypeName === 'WTower') return new WTowerOrdinal(-1n, this._tracer);
+        if (targetTypeName === 'Finite') return new FiniteOrdinal(0n);
+        if (targetTypeName === 'WTower') return new WTowerOrdinal(-1n);
         throw new Error(`ZeroOrdinal cannot convert directly to ${targetTypeName}`);
     }
 }

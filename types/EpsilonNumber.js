@@ -6,8 +6,8 @@
  * Epsilon numbers are fixed points of exponentiation: w^x = x.
  */
 class EpsilonNumber extends OrdinalBase {
-    constructor(k, operationTracer = null) {
-        super(operationTracer);
+    constructor(k) {
+        super();
         if (!k || !k.isOrdinal()) {
             throw new Error('EpsilonNumber index k must be a valid ordinal object');
         }
@@ -30,7 +30,7 @@ class EpsilonNumber extends OrdinalBase {
     }
 
     nextRank() {
-        return new EpsilonNumber(this.k.successor(), this._tracer);
+        return new EpsilonNumber(this.k.successor());
     }
 
     complexity() {
@@ -58,12 +58,12 @@ class EpsilonNumber extends OrdinalBase {
         return { type: 'epsilon', index: this.k.toFFormat() };
     }
 
-    clone(newTracer = null) {
-        return new EpsilonNumber(this.k.clone(newTracer), newTracer || this._tracer);
+    clone() {
+        return new EpsilonNumber(this.k.clone());
     }
 
     simplify(complexityBudget, skipMyOwnMPTFCheck = false) {
-        if (this._tracer) this._tracer.consume();
+        OperationTracer.consume();
         const myComplexity = this.complexity();
         if (myComplexity <= complexityBudget) {
             return {
@@ -72,7 +72,7 @@ class EpsilonNumber extends OrdinalBase {
             };
         }
 
-        const zero = new FiniteOrdinal(0, this._tracer);
+        const zero = new FiniteOrdinal(0);
         const zeroComplexity = zero.complexity();
         if (zeroComplexity <= complexityBudget) {
             return {
@@ -89,7 +89,7 @@ class EpsilonNumber extends OrdinalBase {
     }
 
     log() {
-        return new OneOrdinal(this._tracer);
+        return new OneOrdinal();
     }
 
     logStar() {
@@ -104,7 +104,7 @@ class EpsilonNumber extends OrdinalBase {
     isEpsilonNumber() { return true; }
 
     epsilonIndex() {
-        return this.k.clone(this._tracer);
+        return this.k.clone();
     }
 
     // === CONVERSION SYSTEM ===
@@ -116,14 +116,14 @@ class EpsilonNumber extends OrdinalBase {
             case 'ENFTerm':
                 if (typeof ENFFactor !== 'undefined' && typeof ENFTerm !== 'undefined') {
                     // Convert e_k to ENFTerm with single factor: e_k^1 * 1
-                    const factor = new ENFFactor(this, new OneOrdinal(this._tracer));
-                    return new ENFTerm([factor], 1n, this._tracer);
+                    const factor = new ENFFactor(this, new OneOrdinal());
+                    return new ENFTerm([factor], 1n);
                 }
                 throw new Error('ENFTerm conversion not available for EpsilonNumber');
             case 'EpsilonTower':
                 if (typeof EpsilonTowerOrdinal !== 'undefined') {
                     // Convert e_k to EpsilonTower e_k^^1 (which equals e_k)
-                    return new EpsilonTowerOrdinal(this.k.clone(this._tracer), 1, this._tracer);
+                    return new EpsilonTowerOrdinal(this.k.clone(), 1);
                 }
                 throw new Error('EpsilonTowerOrdinal conversion not available for EpsilonNumber');
             default:

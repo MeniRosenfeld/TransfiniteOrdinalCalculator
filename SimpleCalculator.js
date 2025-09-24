@@ -11,8 +11,9 @@ function calculateSimple(expressionString, maxOperations = 10000) {
     }
 
     try {
-        const tracer = new OperationTracer(maxOperations);
-        const parser = new SimpleParser(expressionString, tracer);
+        // Reset global tracer for this calculation
+        OperationTracer.setGlobalTracer(maxOperations);
+        const parser = new SimpleParser(expressionString);
         const result = parser.parse();
 
         return {

@@ -2,8 +2,8 @@
 // Represents ε₀, the first fixed point of ω^x = x
 
 class EpsilonZero extends OrdinalBase {
-    constructor(operationTracer = null) {
-        super(operationTracer);
+    constructor() {
+        super();
     }
 
     // === REQUIRED UNARY METHODS ===
@@ -20,11 +20,11 @@ class EpsilonZero extends OrdinalBase {
     }
 
     rank() {
-        return new EpsilonZero(this._tracer);
+        return new EpsilonZero();
     }
 
     log() {
-        return new FiniteOrdinal(1n, this._tracer);
+        return new FiniteOrdinal(1n);
     }
 
     logStar() {
@@ -40,7 +40,7 @@ class EpsilonZero extends OrdinalBase {
     isEpsilonNumber() { return true; }
 
     epsilonIndex() {
-        return new ZeroOrdinal(this._tracer);
+        return new ZeroOrdinal();
     }
 
     getFinitePart() { return 0n; }
@@ -52,14 +52,14 @@ class EpsilonZero extends OrdinalBase {
 
     toGraphicalHTML() { return RenderingComponents.renderEpsilonZero(); }
 
-    clone(newTracer = null) { return new EpsilonZero(newTracer || this._tracer); }
+    clone() { return new EpsilonZero(); }
 
     toFFormat() {
         return { type: 'epsilon', index: 0n };
     }
 
     simplify(complexityBudget, skipMyOwnMPTFCheck = false) {
-        if (this._tracer) this._tracer.consume();
+        OperationTracer.consume();
         const myComplexity = this.complexity();
         if (myComplexity <= complexityBudget) {
             return {
@@ -68,7 +68,7 @@ class EpsilonZero extends OrdinalBase {
             };
         }
 
-        const zero = new FiniteOrdinal(0, this._tracer);
+        const zero = new FiniteOrdinal(0);
         const zeroComplexity = zero.complexity();
         if (zeroComplexity <= complexityBudget) {
             return {
@@ -87,7 +87,7 @@ class EpsilonZero extends OrdinalBase {
     convertTo(targetTypeName) {
         switch (targetTypeName) {
             case 'EpsilonNumber':
-                return new EpsilonNumber(new ZeroOrdinal(this._tracer), this._tracer);
+                return new EpsilonNumber(new ZeroOrdinal());
             default:
                 throw new Error(`EpsilonZero cannot convert directly to ${targetTypeName}`);
         }
@@ -95,7 +95,7 @@ class EpsilonZero extends OrdinalBase {
 
     nextRank() {
         // nextRank for e_0 is e_1
-        return new EpsilonNumber(new OneOrdinal(this._tracer), this._tracer);
+        return new EpsilonNumber(new OneOrdinal());
     }
 }
 

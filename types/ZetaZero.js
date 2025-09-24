@@ -2,8 +2,8 @@
 // Represents ζ₀, the smallest ordinal larger than any ENF
 
 class ZetaZero extends OrdinalBase {
-    constructor(operationTracer = null) {
-        super(operationTracer);
+    constructor() {
+        super();
     }
 
     // === REQUIRED UNARY METHODS ===
@@ -31,12 +31,12 @@ class ZetaZero extends OrdinalBase {
         return '<span class="ordinal-zeta">ζ₀</span>';
     }
 
-    clone(newTracer = null) { return new ZetaZero(newTracer || this._tracer); }
+    clone() { return new ZetaZero(); }
 
     toFFormat() { return { type: 'zeta_zero' }; }
 
     simplify(complexityBudget, skipMyOwnMPTFCheck = false) {
-        if (this._tracer) this._tracer.consume();
+        OperationTracer.consume();
         const myComplexity = this.complexity();
         if (myComplexity <= complexityBudget) {
             return {
@@ -44,7 +44,7 @@ class ZetaZero extends OrdinalBase {
                 remainingBudget: complexityBudget - myComplexity
             };
         }
-        const zero = new ZeroOrdinal(this._tracer);
+        const zero = new ZeroOrdinal();
         const zeroComplexity = zero.complexity();
         return {
             simplifiedOrdinal: zero,
@@ -54,7 +54,7 @@ class ZetaZero extends OrdinalBase {
 
     rank() { return this.clone(); }
 
-    log() { return new OneOrdinal(this._tracer); }
+    log() { return new OneOrdinal(); }
 
     logStar() { return 1n; }
 

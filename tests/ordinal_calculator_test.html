@@ -576,8 +576,8 @@
                     let eqCheckPassed = true;
                     if (!expectedLooksLikeError && originalOrdinalObject) {
                         try {
-                            const eqTracer = new OperationTracer(10000);
-                            const expectedParsedOrdinal = new SimpleParser(expectedCNF, eqTracer).parse();
+                            OperationTracer.setGlobalTracer(10000);
+                            const expectedParsedOrdinal = new SimpleParser(expectedCNF).parse();
                             eqCheckPassed = expectedParsedOrdinal.equals(originalOrdinalObject);
                             addDetailElement(`Equality with Parsed(Expected CNF): ${eqCheckPassed ? 'PASSED' : 'FAILED'}`);
                             addDetailElement(`  Parsed(Expected CNF): "${toCnfString(expectedParsedOrdinal)}"`);
@@ -717,7 +717,7 @@
         }
 
         // --- MINIMALLY MODIFIED OTHER TEST FUNCTIONS ---
-        function testWTowerOrdinal(description, height, expectedCNFString, operationTracerBudget = 10000000) {
+        function testWTowerOrdinal(description, height, expectedCNFString, budget = 10000000) {
             testStats.WTOWER.total++;
             const outputElements = [];
             const addDetailElement = (text, className = '') => {
@@ -728,13 +728,13 @@
                 outputElements.push(p);
             };
 
-            const tracer = new OperationTracer(operationTracerBudget);
+            OperationTracer.setGlobalTracer(budget);
             addDetailElement(`Test (WTower): ${description}`);
 
             let actualCNF = '', statusMsg = '', sClass = '', currentTestPassed = false, cnfOrdForMapping;
 
             try {
-                let inst = new WTowerOrdinal(height, tracer);
+                let inst = new WTowerOrdinal(height);
                 addDetailElement(`Input WTower: w^^${height}`);
                 let cnfOrd = inst.toCNFOrdinal();
                 cnfOrdForMapping = inst; // Store original WTower for mapping (not CNF expansion)
@@ -784,13 +784,13 @@
                 outputElements.push(p);
             };
 
-            const tr = new OperationTracer(opBudget);
+            OperationTracer.setGlobalTracer(opBudget);
             addDetailElement(`Test (Simplify): ${description} [Budget: ${budget}]`);
 
             let actualStr = '', actRem = -1, sMsg = '', sCls = '', currentTestPassed = true, notes = [], simpG = 'N/A', originalOrdinalStr = 'N/A';
 
             try {
-                const p = new SimpleParser(inputStr, tr);
+                const p = new SimpleParser(inputStr);
                 let origOrd = p.parse();
                 originalOrdinalStr = origOrd.toString(); // Get string form for comparison
                 addDetailElement(`Input Ordinal: "${inputStr}" (g=${origOrd.complexity()})`);
@@ -841,8 +841,8 @@
 
             let actComp = -1, sMsg = '', sCls = '', currentTestPassed = false;
             try {
-                const tr = new OperationTracer(opBudget);
-                const p = new SimpleParser(inputStr, tr);
+                OperationTracer.setGlobalTracer(opBudget);
+                const p = new SimpleParser(inputStr);
                 let ord = p.parse();
                 actComp = ord.complexity();
                 if (actComp === expectedComp) {
@@ -941,7 +941,10 @@
                     const safeString = (obj => {
                         try {
                             return JSON.stringify(obj, (k, v) => typeof v === 'bigint' ? v.toString() : v);
-                        } catch (_) { return String(obj); }
+                        } catch (jsonError) { 
+                            console.error('Error in JSON.stringify:', jsonError);
+                            return String(obj); 
+                        }
                     })(result);
                     return "ErrorInConversion: " + safeString;
                 }
@@ -1189,10 +1192,10 @@
             // testWTowerOrdinal("w^^3 toCNF", 3, "w^(w^w)"); // This can be very slow
 
             try { /* WTower ops that use testOrdinalCalc */
-                const tracerTest = new OperationTracer(1000000);
-                let wt0_cnf_str = toCnfString(new WTowerOrdinal(0, tracerTest).toCNFOrdinal());
-                let wt1_cnf_str = toCnfString(new WTowerOrdinal(1, tracerTest).toCNFOrdinal());
-                let wt2_cnf_str = toCnfString(new WTowerOrdinal(2, tracerTest).toCNFOrdinal());
+                OperationTracer.setGlobalTracer(1000000);
+                let wt0_cnf_str = toCnfString(new WTowerOrdinal(0).toCNFOrdinal());
+                let wt1_cnf_str = toCnfString(new WTowerOrdinal(1).toCNFOrdinal());
+                let wt2_cnf_str = toCnfString(new WTowerOrdinal(2).toCNFOrdinal());
                 testOrdinalCalc('(' + wt1_cnf_str + ') + 1', "w+1");
                 testOrdinalCalc('(' + wt0_cnf_str + ') * w', "w");
                 testOrdinalCalc('2 + (' + wt1_cnf_str + ')', "w");
@@ -1221,10 +1224,10 @@
 
             // WTowerOrdinal (manual simplify tests from original)
             try {
-                const tracer = new OperationTracer(100000);
-                let wt0 = new WTowerOrdinal(0, tracer);
-                let wt1 = new WTowerOrdinal(1, tracer);
-                let wt2 = new WTowerOrdinal(2, tracer);
+                OperationTracer.setGlobalTracer(100000);
+                let wt0 = new WTowerOrdinal(0);
+                let wt1 = new WTowerOrdinal(1);
+                let wt2 = new WTowerOrdinal(2);
                 testManualSimplify("w^^0 fits", wt0, 10, "w^^0", 6);
                 testManualSimplify("w^^1 fits", wt1, 10, "w^^1", 6);
                 testManualSimplify("w^^2 fits", wt2, 5, "w^^2", 1);
@@ -1300,10 +1303,10 @@
             testOrdinalComplexity("e_0", 6);
 
             try { /* Manual complexity tests for WTowerOrdinal from original */
-                const tracerTest = new OperationTracer(100000);
-                let wtHeight0 = new WTowerOrdinal(0, tracerTest);
-                let wtHeight7 = new WTowerOrdinal(7, tracerTest);
-                let wtHeight123 = new WTowerOrdinal(123, tracerTest);
+                OperationTracer.setGlobalTracer(100000);
+                let wtHeight0 = new WTowerOrdinal(0);
+                let wtHeight7 = new WTowerOrdinal(7);
+                let wtHeight123 = new WTowerOrdinal(123);
 
                 testManualComplexity("w^^0", wtHeight0, 1 + 3);
                 testManualComplexity("w^^7", wtHeight7, 1 + 3);
@@ -1611,14 +1614,54 @@
             }
         })();
 
-        runAllTestsAndRender();
+        // Global error handler to catch test failures
+        let hasUnhandledErrors = false;
+        window.addEventListener('error', (event) => {
+            console.error('UNHANDLED ERROR during testing:', event.error);
+            hasUnhandledErrors = true;
+            // Force all test sections to show failure if there are unhandled errors
+            for (const kindKey in testStats) {
+                if (testStats[kindKey].total === 0) {
+                    testStats[kindKey].failed = 1;
+                    testStats[kindKey].total = 1;
+                }
+            }
+        });
+        
+        // Wrapper function to safely execute test sections
+        function executeTestSection(sectionName, testFunction) {
+            try {
+                testFunction();
+            } catch (error) {
+                console.error(`CRITICAL ERROR in ${sectionName} test section:`, error);
+                hasUnhandledErrors = true;
+                
+                // Force a failed test to be recorded
+                const kindKey = sectionName.toUpperCase().replace(/\s+/g, '_');
+                if (testStats[kindKey]) {
+                    testStats[kindKey].failed++;
+                    testStats[kindKey].total++;
+                }
+            }
+        }
+
+        // Initialize global tracer for calculator tests
+        OperationTracer.setGlobalTracer(2000000); // 2M operations budget
+        console.log('[GlobalTracer] Calculator test suite initialized with budget:', OperationTracer.getBudget());
+        
+        try {
+            runAllTestsAndRender();
+        } catch (error) {
+            console.error('CRITICAL ERROR during test execution:', error);
+            document.body.innerHTML += `<div style="background: red; color: white; padding: 20px; margin: 20px;"><h2>CRITICAL TEST FAILURE</h2><p>Test execution failed: ${error.message}</p></div>`;
+        }
 
         // --- Test Runner ---
 
         function calculateAndSimplify(expr) {
             try {
-                const tracer = new OperationTracer(1000000);
-                const parser = new SimpleParser(expr, tracer);
+                OperationTracer.setGlobalTracer(1000000);
+                const parser = new SimpleParser(expr);
                 let ord = parser.parse();
                 const simplified = (typeof ord.simplify === 'function') ? ord.simplify(1000) : { simplifiedOrdinal: ord };
                 let simpOrd = simplified.simplifiedOrdinal || ord;

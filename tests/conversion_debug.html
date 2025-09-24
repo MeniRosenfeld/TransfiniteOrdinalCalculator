@@ -309,6 +309,10 @@
                 graphHost.appendChild(svg);
             }
 
+            // Initialize global tracer for conversion tests
+            OperationTracer.setGlobalTracer(1000000); // 1M operations budget
+            console.log('[GlobalTracer] Conversion debug initialized with budget:', OperationTracer.getBudget());
+            
             renderMatrix();
         })();
     </script>

@@ -6,8 +6,8 @@
  * This is the most basic ordinal type.
  */
 class FiniteOrdinal extends OrdinalBase {
-    constructor(value = 0, operationTracer = null) {
-        super(operationTracer);
+    constructor(value = 0) {
+        super();
 
         if (typeof value === 'bigint') {
             this.value = value;
@@ -19,6 +19,9 @@ class FiniteOrdinal extends OrdinalBase {
         } else {
             throw new Error('FiniteOrdinal value must be a number or BigInt');
         }
+        
+        // Consume operation for construction
+        OperationTracer.consume();
     }
 
     // === REQUIRED UNARY METHODS ===
@@ -39,15 +42,15 @@ class FiniteOrdinal extends OrdinalBase {
     }
 
     rank() {
-        if (this.isZero()) return new FiniteOrdinal(0n, this._tracer);
-        return new FiniteOrdinal(1n, this._tracer);
+        if (this.isZero()) return new FiniteOrdinal(0n);
+        return new FiniteOrdinal(1n);
     }
 
     log() {
         if (this.isZero()) {
             throw new Error('Log of 0 is undefined.');
         }
-        return new ZeroOrdinal(this._tracer);
+        return new ZeroOrdinal();
     }
 
     logStar() {
@@ -68,8 +71,8 @@ class FiniteOrdinal extends OrdinalBase {
     needsParenthesesAsExponent() { return false; }
 
     nextRank() {
-        if (this.isZero()) return new OneOrdinal(this._tracer);
-        return new OmegaOrdinal(this._tracer);
+        if (this.isZero()) return new OneOrdinal();
+        return new OmegaOrdinal();
     }
 
     complexity() {
@@ -91,12 +94,12 @@ class FiniteOrdinal extends OrdinalBase {
         return this.value;
     }
 
-    clone(newTracer = null) {
-        return new FiniteOrdinal(this.value, newTracer || this._tracer);
+    clone() {
+        return new FiniteOrdinal(this.value);
     }
 
     simplify(complexityBudget, skipMyOwnMPTFCheck = false) {
-        if (this._tracer) this._tracer.consume();
+        OperationTracer.consume();
         const myComplexity = this.complexity();
         if (myComplexity <= complexityBudget) {
             return {
@@ -105,7 +108,7 @@ class FiniteOrdinal extends OrdinalBase {
             };
         }
 
-        const zero = new ZeroOrdinal(this._tracer);
+        const zero = new ZeroOrdinal();
         const zeroComplexity = zero.complexity();
         if (zeroComplexity <= complexityBudget) {
             return {
@@ -135,7 +138,7 @@ class FiniteOrdinal extends OrdinalBase {
         switch (targetTypeName) {
             case 'CNF':
                 // Finite n as CNF is just n (ω^0 * n)
-                return new CNFOrdinal(this.value, this._tracer);
+                return new CNFOrdinal(this.value);
             default:
                 throw new Error(`FiniteOrdinal cannot convert directly to ${targetTypeName}`);
         }
@@ -155,15 +158,15 @@ class FiniteOrdinal extends OrdinalBase {
     /**
      * Creates a FiniteOrdinal from various input types.
      */
-    static from(input, tracer = null) {
+    static from(input) {
         if (input instanceof FiniteOrdinal) {
-            return input.clone(tracer);
+            return input.clone();
         }
         if (typeof input === 'number' || typeof input === 'bigint') {
-            return new FiniteOrdinal(input, tracer);
+            return new FiniteOrdinal(input);
         }
         if (input && input.isFinite && input.isFinite() && input.getFiniteValue) {
-            return new FiniteOrdinal(input.getFiniteValue(), tracer);
+            return new FiniteOrdinal(input.getFiniteValue());
         }
 
         throw new Error(`Cannot create FiniteOrdinal from ${input}`);

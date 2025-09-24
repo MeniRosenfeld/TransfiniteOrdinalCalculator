@@ -572,7 +572,7 @@
         }
 
         // --- MINIMALLY MODIFIED OTHER TEST FUNCTIONS ---
-        function testWTowerOrdinal(description, height, expectedCNFString, operationTracerBudget = 10000000) {
+        function testWTowerOrdinal(description, height, expectedCNFString, budget = 10000000) {
             testStats.WTOWER.total++;
             const outputElements = [];
             const addDetailElement = (text, className = '') => {
@@ -583,7 +583,7 @@
                 outputElements.push(p);
             };
 
-            const tracer = new OperationTracer(operationTracerBudget);
+            OperationTracer.setGlobalTracer(budget);
             addDetailElement(`Test (WTower): ${description}`);
 
             let actualCNF = '', statusMsg = '', sClass = '', currentTestPassed = false, cnfOrdForMapping;

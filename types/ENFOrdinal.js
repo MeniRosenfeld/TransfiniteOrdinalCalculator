@@ -7,8 +7,8 @@
  * where t1 > t2 > ... > tn.
  */
 class ENFOrdinal extends OrdinalBase {
-    constructor(terms = [], operationTracer = null) {
-        super(operationTracer);
+    constructor(terms = []) {
+        super();
         // Validation: ensure it's an array of ENFTerm instances
         if (!Array.isArray(terms) || !terms.every(t => t instanceof ENFTerm)) {
             throw new Error("ENFOrdinal constructor expects an array of ENFTerm instances.");
@@ -113,13 +113,13 @@ class ENFOrdinal extends OrdinalBase {
         return RenderingComponents.joinTerms(termHTMLs);
     }
 
-    clone(newTracer = null) {
-        const newTerms = this.terms.map(t => t.clone(newTracer));
-        return new ENFOrdinal(newTerms, newTracer || this._tracer);
+    clone() {
+        const newTerms = this.terms.map(t => t.clone());
+        return new ENFOrdinal(newTerms);
     }
 
     rank() {
-        if (this.isZero()) return new ZeroOrdinal(this._tracer);
+        if (this.isZero()) return new ZeroOrdinal();
         return this.terms[0].rank();
     }
 
@@ -141,7 +141,7 @@ class ENFOrdinal extends OrdinalBase {
                 limitTerms.push(term.clone());
             }
         }
-        return new ENFOrdinal(limitTerms, this._tracer);
+        return new ENFOrdinal(limitTerms);
     }
 
     ordinalDivision(k) {
@@ -184,8 +184,8 @@ class ENFOrdinal extends OrdinalBase {
         }
 
         return {
-            quotient: new ENFOrdinal(quotientTerms, this._tracer),
-            remainder: new ENFOrdinal(remainderTerms, this._tracer)
+            quotient: new ENFOrdinal(quotientTerms),
+            remainder: new ENFOrdinal(remainderTerms)
         };
     }
 
@@ -205,7 +205,7 @@ class ENFOrdinal extends OrdinalBase {
     // Methods that need more complex implementation
     nextRank() {
         if (this.isZero()) {
-            return new OneOrdinal(this._tracer);
+            return new OneOrdinal();
         }
         // Delegate to the leading term's nextRank
         return this.terms[0].nextRank();
@@ -228,7 +228,7 @@ class ENFOrdinal extends OrdinalBase {
             return { simplifiedOrdinal: this.clone(), remainingBudget: complexityBudget - this.complexity() };
         }
         // Proper simplification would truncate terms. For now, fallback to 0.
-        return { simplifiedOrdinal: new ZeroOrdinal(this._tracer), remainingBudget: complexityBudget };
+        return { simplifiedOrdinal: new ZeroOrdinal(), remainingBudget: complexityBudget };
     }
 
     // === CONVERSION SYSTEM ===

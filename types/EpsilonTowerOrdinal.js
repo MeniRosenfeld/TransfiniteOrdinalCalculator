@@ -2,14 +2,14 @@
 // Represents finite-height ε-tower: e_k^^h where k is an ordinal and h is an integer; h = -1 is semantic zero
 
 class EpsilonTowerOrdinal extends OrdinalBase {
-    constructor(baseIndex, height = 1, operationTracer = null) {
-        super(operationTracer);
+    constructor(baseIndex, height = 1) {
+        super();
         
         // Validate and set base (the k in e_k)
         if (!baseIndex || !baseIndex.isOrdinal || !baseIndex.isOrdinal()) {
             throw new Error('EpsilonTowerOrdinal base must be an ordinal');
         }
-        this.baseIndex = baseIndex.clone(operationTracer);
+        this.baseIndex = baseIndex.clone();
         
         // Validate and set height
         if (typeof height === 'bigint') {
@@ -45,13 +45,13 @@ class EpsilonTowerOrdinal extends OrdinalBase {
 
     rank() {
         if (this.height === -1n) {
-            return new ZeroOrdinal(this._tracer);
+            return new ZeroOrdinal();
         }
         if (this.height === 0n) {
-            return new OneOrdinal(this._tracer);
+            return new OneOrdinal();
         } else {
             // Rank of e_k^^h for h >= 1 is e_k
-            return new EpsilonNumber(this.baseIndex, this._tracer);
+            return new EpsilonNumber(this.baseIndex);
         }
     }
 
@@ -60,9 +60,9 @@ class EpsilonTowerOrdinal extends OrdinalBase {
             throw new Error('Log of 0 is undefined.');
         }
         if (this.height === 0n) {
-            return new ZeroOrdinal(this._tracer);
+            return new ZeroOrdinal();
         } else {
-            return new EpsilonTowerOrdinal(this.baseIndex, this.height - 1n, this._tracer);
+            return new EpsilonTowerOrdinal(this.baseIndex, this.height - 1n);
         }
     }
 
@@ -102,8 +102,8 @@ class EpsilonTowerOrdinal extends OrdinalBase {
         return RenderingComponents.renderTower(`ε<sub>${baseHTML}</sub>`, this.height.toString());
     }
 
-    clone(newTracer = null) {
-        return new EpsilonTowerOrdinal(this.baseIndex, this.height, newTracer || this._tracer);
+    clone() {
+        return new EpsilonTowerOrdinal(this.baseIndex, this.height);
     }
 
     toFFormat() {
@@ -121,7 +121,7 @@ class EpsilonTowerOrdinal extends OrdinalBase {
     }
 
     simplify(complexityBudget, skipMyOwnMPTFCheck = false) {
-        if (this._tracer) this._tracer.consume();
+        OperationTracer.consume();
         const myComplexity = this.complexity();
         if (myComplexity <= complexityBudget) {
             return {
@@ -132,7 +132,7 @@ class EpsilonTowerOrdinal extends OrdinalBase {
 
         // If it doesn't fit, check height.
         if (this.height >= 3n) {
-            const zero = new ZeroOrdinal(this._tracer);
+            const zero = new ZeroOrdinal();
             const zeroComplexity = zero.complexity();
             return {
                 simplifiedOrdinal: zero,
@@ -142,16 +142,16 @@ class EpsilonTowerOrdinal extends OrdinalBase {
 
         let expandedOrdinal;
         if (this.height === -1n) {
-            expandedOrdinal = new ZeroOrdinal(this._tracer);
+            expandedOrdinal = new ZeroOrdinal();
         } else if (this.height === 2n) {
             // e_k^^2 -> e_k^e_k (convert to ENF)
             expandedOrdinal = this.convertTo('ENF');
         } else if (this.height === 1n) {
             // e_k^^1 -> e_k
-            expandedOrdinal = new EpsilonNumber(this.baseIndex, this._tracer);
+            expandedOrdinal = new EpsilonNumber(this.baseIndex);
         } else { // this.height === 0n
             // e_k^^0 -> 1
-            expandedOrdinal = new OneOrdinal(this._tracer);
+            expandedOrdinal = new OneOrdinal();
         }
 
         const expandedComplexity = expandedOrdinal.complexity();
@@ -162,7 +162,7 @@ class EpsilonTowerOrdinal extends OrdinalBase {
             };
         } else {
             // Expanded form also doesn't fit, fallback to 0.
-            const zero = new ZeroOrdinal(this._tracer);
+            const zero = new ZeroOrdinal();
             const zeroComplexity = zero.complexity();
             return {
                 simplifiedOrdinal: zero,
@@ -189,7 +189,7 @@ class EpsilonTowerOrdinal extends OrdinalBase {
         if (!this.isEpsilonNumber()) {
             throw new Error('EpsilonTowerOrdinal is not an epsilon number');
         }
-        return this.baseIndex.clone(this._tracer);
+        return this.baseIndex.clone();
     }
 
     // === CONVERSION SYSTEM ===
@@ -204,25 +204,25 @@ class EpsilonTowerOrdinal extends OrdinalBase {
         switch (targetTypeName) {
             case 'ENF': {
                 // height -1 -> 0 ; height 0 -> 1
-                if (this.height === -1n) return new ENFOrdinal([], this._tracer);
-                if (this.height === 0n) return new ENFOrdinal([new ENFTerm([], 1n, this._tracer)], this._tracer);
+                if (this.height === -1n) return new ENFOrdinal([]);
+                if (this.height === 0n) return new ENFOrdinal([new ENFTerm([], 1n)]);
                 
                 // height 1 -> e_k (single epsilon number)
                 if (this.height === 1n) {
-                    const epsilonBase = new EpsilonNumber(this.baseIndex, this._tracer);
-                    const factor = new ENFFactor(epsilonBase, new ENFOrdinal([new ENFTerm([], 1n, this._tracer)], this._tracer));
-                    return new ENFOrdinal([new ENFTerm([factor], 1n, this._tracer)], this._tracer);
+                    const epsilonBase = new EpsilonNumber(this.baseIndex);
+                    const factor = new ENFFactor(epsilonBase, new ENFOrdinal([new ENFTerm([], 1n)]));
+                    return new ENFOrdinal([new ENFTerm([factor], 1n)]);
                 }
                 
                 // height >= 2: Build e_k^(e_k^(...)) tower
                 // Start with e_k
-                let exponentExp = new ENFOrdinal([new ENFTerm([new ENFFactor(new EpsilonNumber(this.baseIndex, this._tracer), 
-                    new ENFOrdinal([new ENFTerm([], 1n, this._tracer)], this._tracer))], 1n, this._tracer)], this._tracer);
+                let exponentExp = new ENFOrdinal([new ENFTerm([new ENFFactor(new EpsilonNumber(this.baseIndex), 
+                    new ENFOrdinal([new ENFTerm([], 1n)]))], 1n)]);
                 
                 for (let i = 1n; i < this.height; i++) {
-                    const epsilonBase = new EpsilonNumber(this.baseIndex, this._tracer);
+                    const epsilonBase = new EpsilonNumber(this.baseIndex);
                     const factor = new ENFFactor(epsilonBase, exponentExp);
-                    exponentExp = new ENFOrdinal([new ENFTerm([factor], 1n, this._tracer)], this._tracer);
+                    exponentExp = new ENFOrdinal([new ENFTerm([factor], 1n)]);
                 }
                 
                 return exponentExp;
@@ -233,9 +233,9 @@ class EpsilonTowerOrdinal extends OrdinalBase {
     }
 
     nextRank() {
-        if (this.height === -1n) return new OneOrdinal(this._tracer);
-        if (this.height === 0n) return new OmegaOrdinal(this._tracer);
-        return new EpsilonNumber(this.baseIndex.successor(), this._tracer);
+        if (this.height === -1n) return new OneOrdinal();
+        if (this.height === 0n) return new OmegaOrdinal();
+        return new EpsilonNumber(this.baseIndex.successor());
     }
 }
 

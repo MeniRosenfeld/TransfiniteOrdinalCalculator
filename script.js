@@ -185,7 +185,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         let resultFromCalc;
         try {
-            // const tempTracer = new OperationTracer(10000000); // REMOVE THIS LINE
+            // Reset global tracer for each calculation
+            OperationTracer.setGlobalTracer(10000000); // 10M operations budget
 
             // Use new simple calculator (finite ordinals + addition only)
             resultFromCalc = calculateSimple(inputString, 10000000);

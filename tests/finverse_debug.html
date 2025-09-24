@@ -101,6 +101,10 @@
                 console.error("Error during fInverse calculation:", e);
             }
         });
+        
+        // Initialize global tracer for finverse debug
+        OperationTracer.setGlobalTracer(500000); // 500K operations budget
+        console.log('[GlobalTracer] Finverse debug initialized with budget:', OperationTracer.getBudget());
     </script>
 </body>
 

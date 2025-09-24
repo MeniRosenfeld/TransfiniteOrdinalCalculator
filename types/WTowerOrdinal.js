@@ -2,8 +2,8 @@
 // Represents finite-height ω-tower: w^^h where h is an integer; h = -1 is semantic zero
 
 class WTowerOrdinal extends OrdinalBase {
-    constructor(height = 1, operationTracer = null) {
-        super(operationTracer);
+    constructor(height = 1) {
+        super();
         if (typeof height === 'bigint') {
             if (height < -1n) throw new Error('WTowerOrdinal height must be at least -1');
             this.height = height;
@@ -37,12 +37,12 @@ class WTowerOrdinal extends OrdinalBase {
 
     rank() {
         if (this.height === -1n) {
-            return new ZeroOrdinal(this._tracer);
+            return new ZeroOrdinal();
         }
         if (this.height === 0n) {
-            return new OneOrdinal(this._tracer);
+            return new OneOrdinal();
         } else {
-            return new OmegaOrdinal(this._tracer);
+            return new OmegaOrdinal();
         }
     }
 
@@ -51,9 +51,9 @@ class WTowerOrdinal extends OrdinalBase {
             throw new Error('Log of 0 is undefined.');
         }
         if (this.height === 0n) {
-            return new ZeroOrdinal(this._tracer);
+            return new ZeroOrdinal();
         } else {
-            return new WTowerOrdinal(this.height - 1n, this._tracer);
+            return new WTowerOrdinal(this.height - 1n);
         }
     }
 
@@ -85,8 +85,8 @@ class WTowerOrdinal extends OrdinalBase {
         return RenderingComponents.renderTower(RenderingComponents.renderOmega(), this.height.toString());
     }
 
-    clone(newTracer = null) {
-        return new WTowerOrdinal(this.height, newTracer || this._tracer);
+    clone() {
+        return new WTowerOrdinal(this.height);
     }
 
     toFFormat() {
@@ -103,7 +103,7 @@ class WTowerOrdinal extends OrdinalBase {
     }
 
     simplify(complexityBudget, skipMyOwnMPTFCheck = false) {
-        if (this._tracer) this._tracer.consume();
+        OperationTracer.consume();
         const myComplexity = this.complexity();
         if (myComplexity <= complexityBudget) {
             return {
@@ -114,7 +114,7 @@ class WTowerOrdinal extends OrdinalBase {
 
         // If it doesn't fit, check height.
         if (this.height >= 3n) {
-            const zero = new ZeroOrdinal(this._tracer);
+            const zero = new ZeroOrdinal();
             const zeroComplexity = zero.complexity();
             return {
                 simplifiedOrdinal: zero,
@@ -124,16 +124,16 @@ class WTowerOrdinal extends OrdinalBase {
 
         let expandedOrdinal;
         if (this.height === -1n) {
-            expandedOrdinal = new ZeroOrdinal(this._tracer);
+            expandedOrdinal = new ZeroOrdinal();
         } else if (this.height === 2n) {
             // w^^2 -> w^w
             expandedOrdinal = this.convertTo('CNF');
         } else if (this.height === 1n) {
             // w^^1 -> w
-            expandedOrdinal = new OmegaOrdinal(this._tracer);
+            expandedOrdinal = new OmegaOrdinal();
         } else { // this.height === 0n
             // w^^0 -> 1
-            expandedOrdinal = new OneOrdinal(this._tracer);
+            expandedOrdinal = new OneOrdinal();
         }
 
         const expandedComplexity = expandedOrdinal.complexity();
@@ -144,7 +144,7 @@ class WTowerOrdinal extends OrdinalBase {
             };
         } else {
             // Expanded form also doesn't fit, fallback to 0.
-            const zero = new ZeroOrdinal(this._tracer);
+            const zero = new ZeroOrdinal();
             const zeroComplexity = zero.complexity();
             return {
                 simplifiedOrdinal: zero,
@@ -179,15 +179,16 @@ class WTowerOrdinal extends OrdinalBase {
         switch (targetTypeName) {
             case 'CNF': {
                 // height -1 -> 0 ; height 0 -> 1
-                if (this.height === -1n) return CNFOrdinal.ZEROStatic().clone(this._tracer);
-                if (this.height === 0n) return CNFOrdinal.ONEStatic().clone(this._tracer);
+                if (this.height === -1n) return CNFOrdinal.ZEROStatic().clone();
+                if (this.height === 0n) return CNFOrdinal.ONEStatic().clone();
                 // Build exponentExp by iterating x_{0}=1, x_{k+1}=ω^{x_k} for k from 0 to height-2
-                let exponentExp = CNFOrdinal.ONEStatic().clone(this._tracer);
+                let exponentExp = CNFOrdinal.ONEStatic();
                 const steps = this.height - 1n; // if height=1, zero steps and exponentExp stays 1
+                OperationTracer.consume(Number(steps));
                 for (let i = 0n; i < steps; i++) {
-                    exponentExp = new CNFOrdinal([{ exponent: exponentExp, coefficient: 1n }], this._tracer);
+                    exponentExp = new CNFOrdinal([{ exponent: exponentExp, coefficient: 1n }]);
                 }
-                return new CNFOrdinal([{ exponent: exponentExp, coefficient: 1n }], this._tracer);
+                return new CNFOrdinal([{ exponent: exponentExp, coefficient: 1n }]);
             }
             default:
                 throw new Error(`WTowerOrdinal cannot convert directly to ${targetTypeName}`);
@@ -195,9 +196,9 @@ class WTowerOrdinal extends OrdinalBase {
     }
 
     nextRank() {
-        if (this.height === -1n) return new OneOrdinal(this._tracer);
-        if (this.height === 0n) return new OmegaOrdinal(this._tracer);
-        return new EpsilonZero(this._tracer);
+        if (this.height === -1n) return new OneOrdinal();
+        if (this.height === 0n) return new OmegaOrdinal();
+        return new EpsilonZero();
     }
 }
 

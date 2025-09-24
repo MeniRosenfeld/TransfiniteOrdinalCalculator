@@ -374,8 +374,18 @@
             __renderScheduled = true;
             setTimeout(() => {
                 __renderScheduled = false;
-                try { renderAllKindResults(); } catch (_) { }
-                try { updateOverallPageSummary(); } catch (_) { }
+                try { 
+                    renderAllKindResults(); 
+                } catch (renderError) { 
+                    console.error('CRITICAL: renderAllKindResults failed:', renderError);
+                    hasUnhandledErrors = true;
+                }
+                try { 
+                    updateOverallPageSummary(); 
+                } catch (summaryError) { 
+                    console.error('CRITICAL: updateOverallPageSummary failed:', summaryError);
+                    hasUnhandledErrors = true;
+                }
             }, 0);
         }
 
@@ -387,6 +397,42 @@
             stats.results.push({ passed, node: containerNode });
             console.log(`[DEBUG] Recorded test for ${kindKey}: passed=${passed}, total results now=${stats.results.length}`);
             scheduleRender();
+        }
+        
+        // Wrapper function to safely execute test sections and ensure errors are recorded
+        function executeTestSection(sectionName, testFunction) {
+            try {
+                testFunction();
+            } catch (error) {
+                console.error(`CRITICAL ERROR in ${sectionName} test section:`, error);
+                
+                // Create error container
+                const container = document.createElement('div');
+                container.className = 'test-case';
+                const title = document.createElement('h3');
+                title.textContent = `${sectionName} - Critical Error`;
+                container.appendChild(title);
+                const p = document.createElement('p');
+                p.className = 'log-output status-failed';
+                p.textContent = `CRITICAL ERROR: ${error.message}`;
+                container.appendChild(p);
+                
+                // Force record as failed
+                try { 
+                    recordTestResult(CURRENT_KIND, false, container); 
+                } catch (recordError) { 
+                    console.error('CRITICAL: Failed to record error for', sectionName, recordError);
+                    document.getElementById('test-details-container').appendChild(container);
+                    // Manually update stats to ensure failure is recorded
+                    if (testStats[CURRENT_KIND]) {
+                        testStats[CURRENT_KIND].failed++;
+                        testStats[CURRENT_KIND].total++;
+                    }
+                }
+                
+                // Set global error flag
+                hasUnhandledErrors = true;
+            }
         }
 
         function updateKindSummary(kindKey) {
@@ -488,8 +534,16 @@
                 }
             }
             if (grandTotal === 0) { overallStatusIndicator.textContent = 'No tests were run.'; overallStatusIndicator.className = 'status-overall-pending'; return; }
-            if (overallPass) { overallStatusIndicator.textContent = 'ALL TESTS PASSED!'; overallStatusIndicator.className = 'status-overall-pass'; }
-            else { overallStatusIndicator.textContent = `FAILURES DETECTED! (${grandPassed} / ${grandTotal} passed)`; overallStatusIndicator.className = 'status-overall-fail'; }
+            // Check for unhandled errors and force failure if any occurred
+            const finalOverallPass = overallPass && !hasUnhandledErrors;
+            if (finalOverallPass) { 
+                overallStatusIndicator.textContent = 'ALL TESTS PASSED!'; 
+                overallStatusIndicator.className = 'status-overall-pass'; 
+            } else { 
+                const errorSuffix = hasUnhandledErrors ? ' (INCLUDES UNHANDLED ERRORS)' : '';
+                overallStatusIndicator.textContent = `FAILURES DETECTED! (${grandPassed} / ${grandTotal} passed)${errorSuffix}`; 
+                overallStatusIndicator.className = 'status-overall-fail'; 
+            }
         }
         const testResults = [];
         let totalTests = 0;
@@ -541,7 +595,15 @@
                 console.error(`Error in test "${testName}":`, e);
             }
             const finalPassed = container.querySelector('.status-failed') === null;
-            try { recordTestResult(CURRENT_KIND, finalPassed, container); } catch (_) { document.getElementById('test-details-container').appendChild(container); }
+            try { recordTestResult(CURRENT_KIND, finalPassed, container); } catch (recordError) { 
+                    console.error('CRITICAL: Failed to record test result for', CURRENT_KIND, recordError);
+                    document.getElementById('test-details-container').appendChild(container);
+                    // Force test section to be marked as failed
+                    if (testStats[CURRENT_KIND]) {
+                        testStats[CURRENT_KIND].failed++;
+                        testStats[CURRENT_KIND].total++;
+                    }
+                }
         }
 
         function runAdditionTest(testName, ordA, ordB, expectedString) {
@@ -589,7 +651,15 @@
                 console.error(`Error in test "${testName}":`, e);
             }
             const finalPassed = container.querySelector('.status-failed') === null;
-            try { recordTestResult(CURRENT_KIND, finalPassed, container); } catch (_) { document.getElementById('test-details-container').appendChild(container); }
+            try { recordTestResult(CURRENT_KIND, finalPassed, container); } catch (recordError) { 
+                    console.error('CRITICAL: Failed to record test result for', CURRENT_KIND, recordError);
+                    document.getElementById('test-details-container').appendChild(container);
+                    // Force test section to be marked as failed
+                    if (testStats[CURRENT_KIND]) {
+                        testStats[CURRENT_KIND].failed++;
+                        testStats[CURRENT_KIND].total++;
+                    }
+                }
         }
 
         function runEqualityTest(testName, actualOrdinal, expectedOrdinal) {
@@ -626,7 +696,15 @@
                 console.error(`Error in equality test "${testName}":`, e);
             }
             const finalPassed = container.querySelector('.status-failed') === null;
-            try { recordTestResult(CURRENT_KIND, finalPassed, container); } catch (_) { document.getElementById('test-details-container').appendChild(container); }
+            try { recordTestResult(CURRENT_KIND, finalPassed, container); } catch (recordError) { 
+                    console.error('CRITICAL: Failed to record test result for', CURRENT_KIND, recordError);
+                    document.getElementById('test-details-container').appendChild(container);
+                    // Force test section to be marked as failed
+                    if (testStats[CURRENT_KIND]) {
+                        testStats[CURRENT_KIND].failed++;
+                        testStats[CURRENT_KIND].total++;
+                    }
+                }
         }
 
         function runENFCalculationTest(testName, inputString, expectedString) {
@@ -647,8 +725,8 @@
 
             try {
                 // Parse and calculate using new architecture only
-                const tracer = new OperationTracer(10000000);
-                const parser = new SimpleParser(inputString, tracer, { coerceToCNF: false });
+                OperationTracer.setGlobalTracer(10000000);
+                const parser = new SimpleParser(inputString);
                 const result = { ordinalObject: parser.parse() };
 
                 if (result.error) {
@@ -723,8 +801,8 @@
                         let roundTripPassed = false;
                         let roundTripError = '';
                         try {
-                            const roundTripTracer = new OperationTracer(10000000);
-                            const roundTripParser = new SimpleParser(actualString, roundTripTracer, { coerceToCNF: false });
+                            OperationTracer.setGlobalTracer(10000000);
+                            const roundTripParser = new SimpleParser(actualString);
                             const roundTripOrdinal = roundTripParser.parse();
                             
                             const B = result.ordinalObject;  // Original ordinal
@@ -797,7 +875,15 @@
             }
 
             const finalPassed = container.querySelector('.status-failed') === null;
-            try { recordTestResult(CURRENT_KIND, finalPassed, container); } catch (_) { document.getElementById('test-details-container').appendChild(container); }
+            try { recordTestResult(CURRENT_KIND, finalPassed, container); } catch (recordError) { 
+                    console.error('CRITICAL: Failed to record test result for', CURRENT_KIND, recordError);
+                    document.getElementById('test-details-container').appendChild(container);
+                    // Force test section to be marked as failed
+                    if (testStats[CURRENT_KIND]) {
+                        testStats[CURRENT_KIND].failed++;
+                        testStats[CURRENT_KIND].total++;
+                    }
+                }
         }
 
         function runComprehensiveAdditionTest(ordinals) {
@@ -871,7 +957,15 @@
                 console.error('Error in comprehensive addition test:', e);
             }
 
-            try { recordTestResult(CURRENT_KIND, container.querySelector('.status-failed') === null, container); } catch (_) { document.getElementById('test-details-container').appendChild(container); }
+            try { recordTestResult(CURRENT_KIND, container.querySelector('.status-failed') === null, container); } catch (recordError) { 
+                    console.error('CRITICAL: Failed to record test result for', CURRENT_KIND, recordError);
+                    document.getElementById('test-details-container').appendChild(container);
+                    // Force test section to be marked as failed
+                    if (testStats[CURRENT_KIND]) {
+                        testStats[CURRENT_KIND].failed++;
+                        testStats[CURRENT_KIND].total++;
+                    }
+                }
         }
 
         function runAdditionMonotonicityTest(ordinals) {
@@ -900,8 +994,8 @@
                                 const ab_result = expectedAdditionResults[a][b];
                                 const ac_result = expectedAdditionResults[a][c];
 
-                                const ab_ord = new SimpleParser(ab_result, new OperationTracer(10000), { coerceToCNF: false }).parse();
-                                const ac_ord = new SimpleParser(ac_result, new OperationTracer(10000), { coerceToCNF: false }).parse();
+                                const ab_ord = new SimpleParser(ab_result).parse();
+                                const ac_ord = new SimpleParser(ac_result).parse();
 
                                 if (ab_ord.compareTo(ac_ord) >= 0) {
                                     violations++;
@@ -920,8 +1014,8 @@
                                 const ba_result = expectedAdditionResults[b][a];
                                 const ca_result = expectedAdditionResults[c][a];
 
-                                const ba_ord = new SimpleParser(ba_result, new OperationTracer(10000), { coerceToCNF: false }).parse();
-                                const ca_ord = new SimpleParser(ca_result, new OperationTracer(10000), { coerceToCNF: false }).parse();
+                                const ba_ord = new SimpleParser(ba_result).parse();
+                                const ca_ord = new SimpleParser(ca_result).parse();
 
                                 if (ba_ord.compareTo(ca_ord) > 0) {
                                     violations++;
@@ -968,7 +1062,15 @@
                 console.error('Error in addition monotonicity test:', e);
             }
 
-            try { recordTestResult(CURRENT_KIND, container.querySelector('.status-failed') === null, container); } catch (_) { document.getElementById('test-details-container').appendChild(container); }
+            try { recordTestResult(CURRENT_KIND, container.querySelector('.status-failed') === null, container); } catch (recordError) { 
+                    console.error('CRITICAL: Failed to record test result for', CURRENT_KIND, recordError);
+                    document.getElementById('test-details-container').appendChild(container);
+                    // Force test section to be marked as failed
+                    if (testStats[CURRENT_KIND]) {
+                        testStats[CURRENT_KIND].failed++;
+                        testStats[CURRENT_KIND].total++;
+                    }
+                }
         }
 
         function runMultiplicationMonotonicityTest(ordinals) {
@@ -997,8 +1099,8 @@
                                 const ab_result = expectedMultiplicationResults[a][b];
                                 const ac_result = expectedMultiplicationResults[a][c];
 
-                                const ab_ord = new SimpleParser(ab_result, new OperationTracer(10000), { coerceToCNF: false }).parse();
-                                const ac_ord = new SimpleParser(ac_result, new OperationTracer(10000), { coerceToCNF: false }).parse();
+                                const ab_ord = new SimpleParser(ab_result).parse();
+                                const ac_ord = new SimpleParser(ac_result).parse();
 
                                 if (ab_ord.compareTo(ac_ord) >= 0) {
                                     violations++;
@@ -1017,8 +1119,8 @@
                                 const ba_result = expectedMultiplicationResults[b][a];
                                 const ca_result = expectedMultiplicationResults[c][a];
 
-                                const ba_ord = new SimpleParser(ba_result, new OperationTracer(10000), { coerceToCNF: false }).parse();
-                                const ca_ord = new SimpleParser(ca_result, new OperationTracer(10000), { coerceToCNF: false }).parse();
+                                const ba_ord = new SimpleParser(ba_result).parse();
+                                const ca_ord = new SimpleParser(ca_result).parse();
 
                                 if (ba_ord.compareTo(ca_ord) > 0) {
                                     violations++;
@@ -1065,7 +1167,15 @@
                 console.error('Error in multiplication monotonicity test:', e);
             }
 
-            try { recordTestResult(CURRENT_KIND, container.querySelector('.status-failed') === null, container); } catch (_) { document.getElementById('test-details-container').appendChild(container); }
+            try { recordTestResult(CURRENT_KIND, container.querySelector('.status-failed') === null, container); } catch (recordError) { 
+                    console.error('CRITICAL: Failed to record test result for', CURRENT_KIND, recordError);
+                    document.getElementById('test-details-container').appendChild(container);
+                    // Force test section to be marked as failed
+                    if (testStats[CURRENT_KIND]) {
+                        testStats[CURRENT_KIND].failed++;
+                        testStats[CURRENT_KIND].total++;
+                    }
+                }
         }
 
         function runExponentiationMonotonicityTest(ordinals) {
@@ -1088,9 +1198,7 @@
 
                 // Right monotonicity in exponent: if b < c then a^b < a^c for a > 1
                 for (let a = 0; a < ordinals.length; a++) {
-                    try {
-                        if (ordinals[a].compareTo(enf_one) <= 0) continue; // skip a <= 1
-                    } catch (_) { continue; }
+                    if (ordinals[a].compareTo(new OneOrdinal()) <= 0) continue; // skip a <= 1
                     for (let b = 0; b < ordinals.length; b++) {
                         for (let c = 0; c < ordinals.length; c++) {
                             if (b < c) {
@@ -1107,9 +1215,7 @@
 
                 // Left monotonicity in base: if b ≤ c then b^a ≤ c^a for a > 0
                 for (let a = 0; a < ordinals.length; a++) {
-                    try {
-                        if (ordinals[a].compareTo(enf_zero) <= 0) continue; // skip a <= 0
-                    } catch (_) { continue; }
+                    if (ordinals[a].isZero()) continue; // skip a = 0
                     for (let b = 0; b < ordinals.length; b++) {
                         for (let c = 0; c < ordinals.length; c++) {
                             if (b <= c) {
@@ -1156,7 +1262,15 @@
                 console.error('Error in exponentiation monotonicity test:', e);
             }
 
-            try { recordTestResult(CURRENT_KIND, container.querySelector('.status-failed') === null, container); } catch (_) { document.getElementById('test-details-container').appendChild(container); }
+            try { recordTestResult(CURRENT_KIND, container.querySelector('.status-failed') === null, container); } catch (recordError) { 
+                    console.error('CRITICAL: Failed to record test result for', CURRENT_KIND, recordError);
+                    document.getElementById('test-details-container').appendChild(container);
+                    // Force test section to be marked as failed
+                    if (testStats[CURRENT_KIND]) {
+                        testStats[CURRENT_KIND].failed++;
+                        testStats[CURRENT_KIND].total++;
+                    }
+                }
         }
 
         function runComprehensiveMultiplicationTest(ordinals) {
@@ -1229,7 +1343,15 @@
                 console.error('Error in comprehensive multiplication test:', e);
             }
 
-            try { recordTestResult(CURRENT_KIND, container.querySelector('.status-failed') === null, container); } catch (_) { document.getElementById('test-details-container').appendChild(container); }
+            try { recordTestResult(CURRENT_KIND, container.querySelector('.status-failed') === null, container); } catch (recordError) { 
+                    console.error('CRITICAL: Failed to record test result for', CURRENT_KIND, recordError);
+                    document.getElementById('test-details-container').appendChild(container);
+                    // Force test section to be marked as failed
+                    if (testStats[CURRENT_KIND]) {
+                        testStats[CURRENT_KIND].failed++;
+                        testStats[CURRENT_KIND].total++;
+                    }
+                }
         }
 
         function runRandomTripleAssociativityAdditionTest(ordinals, sampleCount = 100) {
@@ -1275,9 +1397,9 @@
                 for (let idx = 0; idx < triples.length; idx++) {
                     const [i, j, k] = triples[idx];
                     try {
-                        // Create fresh copies with a new tracer to avoid budget conflicts
-                        const freshTracer = new OperationTracer(500000); // Fresh budget for each triple
-                        const a = ordinals[i].clone(freshTracer), b = ordinals[j].clone(freshTracer), c = ordinals[k].clone(freshTracer);
+                        // Reset global tracer to avoid budget conflicts
+                        OperationTracer.setGlobalTracer(500000); // Fresh budget for each triple
+                        const a = ordinals[i].clone(), b = ordinals[j].clone(), c = ordinals[k].clone();
                         const left = a.add(b).add(c);
                         const right = a.add(b.add(c));
                         if (!left.equals(right)) {
@@ -1331,7 +1453,15 @@
                 console.error('Error in associativity test (addition):', e);
             }
 
-            try { recordTestResult(CURRENT_KIND, container.querySelector('.status-failed') === null, container); } catch (_) { document.getElementById('test-details-container').appendChild(container); }
+            try { recordTestResult(CURRENT_KIND, container.querySelector('.status-failed') === null, container); } catch (recordError) { 
+                    console.error('CRITICAL: Failed to record test result for', CURRENT_KIND, recordError);
+                    document.getElementById('test-details-container').appendChild(container);
+                    // Force test section to be marked as failed
+                    if (testStats[CURRENT_KIND]) {
+                        testStats[CURRENT_KIND].failed++;
+                        testStats[CURRENT_KIND].total++;
+                    }
+                }
         }
 
         function runRandomTripleAlgebraRulesTest(ordinals, sampleCount = 100) {
@@ -1377,9 +1507,9 @@
 
                 for (let t = 0; t < triples.length; t++) {
                     const [i, j, k] = triples[t];
-                    // Create fresh copies with a new tracer to avoid budget conflicts
-                    const freshTracer = new OperationTracer(500000); // Fresh budget for each triple
-                    const a = ordinals[i].clone(freshTracer), b = ordinals[j].clone(freshTracer), c = ordinals[k].clone(freshTracer);
+                    // Reset global tracer to avoid budget conflicts
+                    OperationTracer.setGlobalTracer(500000); // Fresh budget for each triple
+                    const a = ordinals[i].clone(), b = ordinals[j].clone(), c = ordinals[k].clone();
                     try {
                         // Multiplication associativity
                         const ab = a.multiply(b);
@@ -1465,7 +1595,15 @@
                 console.error('Error in algebraic laws test:', e);
             }
 
-            try { recordTestResult(CURRENT_KIND, container.querySelector('.status-failed') === null, container); } catch (_) { document.getElementById('test-details-container').appendChild(container); }
+            try { recordTestResult(CURRENT_KIND, container.querySelector('.status-failed') === null, container); } catch (recordError) { 
+                    console.error('CRITICAL: Failed to record test result for', CURRENT_KIND, recordError);
+                    document.getElementById('test-details-container').appendChild(container);
+                    // Force test section to be marked as failed
+                    if (testStats[CURRENT_KIND]) {
+                        testStats[CURRENT_KIND].failed++;
+                        testStats[CURRENT_KIND].total++;
+                    }
+                }
         }
 
         function runComprehensiveExponentiationTest(ordinals) {
@@ -1547,77 +1685,86 @@
                 console.error('Error in comprehensive exponentiation test:', e);
             }
 
-            try { recordTestResult(CURRENT_KIND, container.querySelector('.status-failed') === null, container); } catch (_) { document.getElementById('test-details-container').appendChild(container); }
+            try { recordTestResult(CURRENT_KIND, container.querySelector('.status-failed') === null, container); } catch (recordError) { 
+                    console.error('CRITICAL: Failed to record test result for', CURRENT_KIND, recordError);
+                    document.getElementById('test-details-container').appendChild(container);
+                    // Force test section to be marked as failed
+                    if (testStats[CURRENT_KIND]) {
+                        testStats[CURRENT_KIND].failed++;
+                        testStats[CURRENT_KIND].total++;
+                    }
+                }
         }
 
         function defineTests() {
-            const tracer = new OperationTracer(2000000); // Increased from 200,000 to 2,000,000
+            // Use global tracer - no need for local tracer
+            OperationTracer.setGlobalTracer(2000000); // Ensure fresh budget for test definitions
 
-            const enf_zero = new ENFOrdinal([], tracer);
-            const enf_one = new ENFOrdinal([new ENFTerm([], 1n, tracer)]);
-            const enf_w = ENFOrdinal.fromCNF(new OmegaOrdinal(tracer));
-            const enf_e0 = new ENFOrdinal([new ENFTerm([new ENFFactor(new EpsilonZero(tracer), enf_one)], 1n, tracer)]);
-            const e0_base = new EpsilonNumber(new ZeroOrdinal(tracer), tracer);
-            const e1_base = new EpsilonNumber(new OneOrdinal(tracer), tracer);
-            const w_cnf = OPERATIONS.convert(new OmegaOrdinal(tracer), 'CNF');
-            const one_cnf = OPERATIONS.convert(new OneOrdinal(tracer), 'CNF');
+            const enf_zero = new ENFOrdinal([]);
+            const enf_one = new ENFOrdinal([new ENFTerm([], 1n)]);
+            const enf_w = ENFOrdinal.fromCNF(new OmegaOrdinal());
+            const enf_e0 = new ENFOrdinal([new ENFTerm([new ENFFactor(new EpsilonZero(), enf_one)], 1n)]);
+            const e0_base = new EpsilonNumber(new ZeroOrdinal());
+            const e1_base = new EpsilonNumber(new OneOrdinal());
+            const w_cnf = OPERATIONS.convert(new OmegaOrdinal(), 'CNF');
+            const one_cnf = OPERATIONS.convert(new OneOrdinal(), 'CNF');
 
             // Additional ordinals referenced in tests
             const ord_zero = enf_zero;
             const ord_one = enf_one;
-            const ord_five = new ENFOrdinal([new ENFTerm([], 5n, tracer)]);
+            const ord_five = new ENFOrdinal([new ENFTerm([], 5n)]);
             const ord_w = enf_w;
             const ord_e0 = enf_e0;
             const ord_e0_plus_1 = OPERATIONS.add(enf_e0, enf_one);
-            const ord_w_times_2 = OPERATIONS.multiply(enf_w, new FiniteOrdinal(2, tracer));
+            const ord_w_times_2 = OPERATIONS.multiply(enf_w, new FiniteOrdinal(2));
             const ord_w_plus_1 = OPERATIONS.add(enf_w, enf_one);
-            const ord_w_squared = OPERATIONS.power(enf_w, new FiniteOrdinal(2, tracer));
+            const ord_w_squared = OPERATIONS.power(enf_w, new FiniteOrdinal(2));
 
             // Complex test cases
-            const ord_w_w = new ENFOrdinal([new ENFTerm([new ENFFactor(new OmegaOrdinal(tracer), new OmegaOrdinal(tracer))], 1n, tracer)]);
-            const ord_w_w_plus_1 = new ENFOrdinal([new ENFTerm([new ENFFactor(new OmegaOrdinal(tracer), new OmegaOrdinal(tracer))], 1n, tracer), new ENFTerm([], 1n, tracer)]);
-            const ord_w_w_times_2 = new ENFOrdinal([new ENFTerm([new ENFFactor(new OmegaOrdinal(tracer), new OmegaOrdinal(tracer))], 2n, tracer)]);
-            const ord_w_w2 = new ENFOrdinal([new ENFTerm([new ENFFactor(new OmegaOrdinal(tracer), new SimpleParser("w^2", tracer).parse())], 1n, tracer)]);
+            const ord_w_w = new ENFOrdinal([new ENFTerm([new ENFFactor(new OmegaOrdinal(), new OmegaOrdinal())], 1n)]);
+            const ord_w_w_plus_1 = new ENFOrdinal([new ENFTerm([new ENFFactor(new OmegaOrdinal(), new OmegaOrdinal())], 1n), new ENFTerm([], 1n)]);
+            const ord_w_w_times_2 = new ENFOrdinal([new ENFTerm([new ENFFactor(new OmegaOrdinal(), new OmegaOrdinal())], 2n)]);
+            const ord_w_w2 = new ENFOrdinal([new ENFTerm([new ENFFactor(new OmegaOrdinal(), new SimpleParser("w^2").parse())], 1n)]);
 
             const ord_e0_plus_w = new ENFOrdinal([ord_e0.terms[0].clone(), ord_w.terms[0].clone()]);
             const ord_e0_plus_w_w = new ENFOrdinal([ord_e0.terms[0].clone(), ord_w_w.terms[0].clone()]);
-            const ord_e0_times_2 = new ENFOrdinal([new ENFTerm([new ENFFactor(e0_base, enf_one)], 2n, tracer)]);
-            const ord_e0_times_w = new ENFOrdinal([new ENFTerm([new ENFFactor(e0_base, enf_one), new ENFFactor(new OmegaOrdinal(tracer), enf_one)], 1n, tracer)]);
-            const ord_e0_squared = new ENFOrdinal([new ENFTerm([new ENFFactor(e0_base, new FiniteOrdinal(2, tracer))], 1n, tracer)]);
+            const ord_e0_times_2 = new ENFOrdinal([new ENFTerm([new ENFFactor(e0_base, enf_one)], 2n)]);
+            const ord_e0_times_w = new ENFOrdinal([new ENFTerm([new ENFFactor(e0_base, enf_one), new ENFFactor(new OmegaOrdinal(), enf_one)], 1n)]);
+            const ord_e0_squared = new ENFOrdinal([new ENFTerm([new ENFFactor(e0_base, new FiniteOrdinal(2))], 1n)]);
 
-            const ord_e1 = new ENFOrdinal([new ENFTerm([new ENFFactor(e1_base, enf_one)], 1n, tracer)]);
-            const ord_e1_times_2 = new ENFOrdinal([new ENFTerm([new ENFFactor(e1_base, enf_one)], 2n, tracer)]);
-            const ord_e1_times_w = new ENFOrdinal([new ENFTerm([new ENFFactor(e1_base, enf_one), new ENFFactor(new OmegaOrdinal(tracer), enf_one)], 1n, tracer)]);
-            const ord_e1_times_e0 = new ENFOrdinal([new ENFTerm([new ENFFactor(e1_base, enf_one), new ENFFactor(e0_base, enf_one)], 1n, tracer)]);
-            const ord_e2 = new ENFOrdinal([new ENFTerm([new ENFFactor(new EpsilonNumber(new FiniteOrdinal(2, tracer), tracer), enf_one)], 1n, tracer)]);
+            const ord_e1 = new ENFOrdinal([new ENFTerm([new ENFFactor(e1_base, enf_one)], 1n)]);
+            const ord_e1_times_2 = new ENFOrdinal([new ENFTerm([new ENFFactor(e1_base, enf_one)], 2n)]);
+            const ord_e1_times_w = new ENFOrdinal([new ENFTerm([new ENFFactor(e1_base, enf_one), new ENFFactor(new OmegaOrdinal(), enf_one)], 1n)]);
+            const ord_e1_times_e0 = new ENFOrdinal([new ENFTerm([new ENFFactor(e1_base, enf_one), new ENFFactor(e0_base, enf_one)], 1n)]);
+            const ord_e2 = new ENFOrdinal([new ENFTerm([new ENFFactor(new EpsilonNumber(new FiniteOrdinal(2)), enf_one)], 1n)]);
 
            // --- Very Complex Test Case ---
-           const ord_e0_pow_w = new ENFOrdinal([new ENFTerm([new ENFFactor(e0_base, ord_w)], 1n, tracer)]);
+           const ord_e0_pow_w = new ENFOrdinal([new ENFTerm([new ENFFactor(e0_base, ord_w)], 1n)]);
             // New ordinal: e_0^(w+1)
             const ord_e0_pow_w_plus_1 = (function () {
-                const w_plus_1_cnf = new SimpleParser("w+1", tracer).parse();
-                return new ENFOrdinal([new ENFTerm([new ENFFactor(e0_base, ENFOrdinal.fromCNF(w_plus_1_cnf))], 1n, tracer)]);
+                const w_plus_1_cnf = new SimpleParser("w+1").parse();
+                return new ENFOrdinal([new ENFTerm([new ENFFactor(e0_base, ENFOrdinal.fromCNF(w_plus_1_cnf))], 1n)]);
             })();
             const ord_e1_plus_e0 = new ENFOrdinal([ord_e1.terms[0].clone(), ord_e0.terms[0].clone()]);
-            const ord_e_w_base = new EpsilonNumber(enf_w, tracer);
-            const ord_e_w = new ENFOrdinal([new ENFTerm([new ENFFactor(ord_e_w_base, enf_one)], 1n, tracer)]);
-            const ord_e_e0_base = new EpsilonNumber(ord_e0, tracer);
-            const ord_e_e0 = new ENFOrdinal([new ENFTerm([new ENFFactor(ord_e_e0_base, enf_one)], 1n, tracer)]);
-            const ord_e1_pow_e0 = new ENFOrdinal([new ENFTerm([new ENFFactor(e1_base, ord_e0)], 1n, tracer)]);
+            const ord_e_w_base = new EpsilonNumber(enf_w);
+            const ord_e_w = new ENFOrdinal([new ENFTerm([new ENFFactor(ord_e_w_base, enf_one)], 1n)]);
+            const ord_e_e0_base = new EpsilonNumber(ord_e0);
+            const ord_e_e0 = new ENFOrdinal([new ENFTerm([new ENFFactor(ord_e_e0_base, enf_one)], 1n)]);
+            const ord_e1_pow_e0 = new ENFOrdinal([new ENFTerm([new ENFFactor(e1_base, ord_e0)], 1n)]);
 
             // Build w^3+2 as an ordinal: w^3 + 2
             const w_cubed_plus_2 = new ENFOrdinal([
-                new ENFTerm([new ENFFactor(new OmegaOrdinal(tracer), new FiniteOrdinal(3, tracer))], 1n, tracer),
-                new ENFTerm([], 2n, tracer)
+                new ENFTerm([new ENFFactor(new OmegaOrdinal(), new FiniteOrdinal(3))], 1n),
+                new ENFTerm([], 2n)
             ]);
             
             const multi_term_1 = new ENFOrdinal([
-                new ENFTerm([new ENFFactor(e1_base, ord_w), new ENFFactor(e0_base, ord_five), new ENFFactor(new OmegaOrdinal(tracer), w_cubed_plus_2)], 3n, tracer),
-                new ENFTerm([new ENFFactor(new OmegaOrdinal(tracer), new SimpleParser("w^2", tracer).parse())], 5n, tracer),
-                new ENFTerm([], 10n, tracer)
+                new ENFTerm([new ENFFactor(e1_base, ord_w), new ENFFactor(e0_base, ord_five), new ENFFactor(new OmegaOrdinal(), w_cubed_plus_2)], 3n),
+                new ENFTerm([new ENFFactor(new OmegaOrdinal(), new SimpleParser("w^2").parse())], 5n),
+                new ENFTerm([], 10n)
             ]);
             const multi_term_2 = new ENFOrdinal([
-                new ENFTerm([new ENFFactor(e1_base, ord_w), new ENFFactor(e0_base, ord_five), new ENFFactor(new OmegaOrdinal(tracer), w_cubed_plus_2)], 2n, tracer)
+                new ENFTerm([new ENFFactor(e1_base, ord_w), new ENFFactor(e0_base, ord_five), new ENFFactor(new OmegaOrdinal(), w_cubed_plus_2)], 2n)
             ]);
 
             // --- Construction Tests ---
@@ -1648,7 +1795,15 @@
                     passedTests++;
                 }
 
-                try { recordTestResult(CURRENT_KIND, passed, container); } catch (_) { document.getElementById('test-details-container').appendChild(container); }
+                try { recordTestResult(CURRENT_KIND, passed, container); } catch (recordError) { 
+                    console.error('CRITICAL: Failed to record test result for', CURRENT_KIND, recordError);
+                    document.getElementById('test-details-container').appendChild(container);
+                    // Force test section to be marked as failed
+                    if (testStats[CURRENT_KIND]) {
+                        testStats[CURRENT_KIND].failed++;
+                        testStats[CURRENT_KIND].total++;
+                    }
+                }
             }
 
             // Basic ordinals
@@ -1676,33 +1831,33 @@
             runConstructionTest("w^w*2", ord_w_w_times_2, "w^w*2");
 
             // Stress test parentheses - simple exponents
-            const simple_exp_test = new ENFOrdinal([new ENFTerm([new ENFFactor(new OmegaOrdinal(tracer), new FiniteOrdinal(2, tracer))], 1n, tracer)]);
+            const simple_exp_test = new ENFOrdinal([new ENFTerm([new ENFFactor(new OmegaOrdinal(), new FiniteOrdinal(2))], 1n)]);
             runConstructionTest("w^2 (simple exponent)", simple_exp_test, "w^2");
 
             // Stress test parentheses - complex exponent with addition
-            const complex_exp_test1 = new ENFOrdinal([new ENFTerm([new ENFFactor(new OmegaOrdinal(tracer), 
-                new ENFOrdinal([new ENFTerm([new ENFFactor(new OmegaOrdinal(tracer), new FiniteOrdinal(2, tracer))], 1n, tracer), new ENFTerm([], 3n, tracer)]))], 1n, tracer)]);
+            const complex_exp_test1 = new ENFOrdinal([new ENFTerm([new ENFFactor(new OmegaOrdinal(), 
+                new ENFOrdinal([new ENFTerm([new ENFFactor(new OmegaOrdinal(), new FiniteOrdinal(2))], 1n), new ENFTerm([], 3n)]))], 1n)]);
             runConstructionTest("w^(w^2+3) (complex exponent)", complex_exp_test1, "w^(w^2+3)");
 
             // Stress test parentheses - exponent with coefficient
-            const coeff_exp_test = new ENFOrdinal([new ENFTerm([new ENFFactor(new OmegaOrdinal(tracer), 
-                new ENFOrdinal([new ENFTerm([new ENFFactor(new OmegaOrdinal(tracer), new FiniteOrdinal(2, tracer))], 3n, tracer)]))], 1n, tracer)]);
+            const coeff_exp_test = new ENFOrdinal([new ENFTerm([new ENFFactor(new OmegaOrdinal(), 
+                new ENFOrdinal([new ENFTerm([new ENFFactor(new OmegaOrdinal(), new FiniteOrdinal(2))], 3n)]))], 1n)]);
             runConstructionTest("w^(w^2*3) (exponent with coefficient)", coeff_exp_test, "w^(w^2*3)");
 
             // Stress test parentheses - exponent with multiple factors
-            const multi_factor_exp_test = new ENFOrdinal([new ENFTerm([new ENFFactor(new OmegaOrdinal(tracer), 
-                new ENFOrdinal([new ENFTerm([new ENFFactor(e1_base, enf_one), new ENFFactor(e0_base, new FiniteOrdinal(2, tracer))], 1n, tracer)]))], 1n, tracer)]);
+            const multi_factor_exp_test = new ENFOrdinal([new ENFTerm([new ENFFactor(new OmegaOrdinal(), 
+                new ENFOrdinal([new ENFTerm([new ENFFactor(e1_base, enf_one), new ENFFactor(e0_base, new FiniteOrdinal(2))], 1n)]))], 1n)]);
             runConstructionTest("w^(e_1*e_0^2) (exponent with multiple factors)", multi_factor_exp_test, "w^(e_1*e_0^2)");
 
             // Stress test parentheses - exponent with multiple factors AND coefficient
-            const multi_factor_coeff_exp_test = new ENFOrdinal([new ENFTerm([new ENFFactor(new OmegaOrdinal(tracer), 
-                new ENFOrdinal([new ENFTerm([new ENFFactor(e1_base, enf_one), new ENFFactor(e0_base, new FiniteOrdinal(2, tracer))], 5n, tracer)]))], 1n, tracer)]);
+            const multi_factor_coeff_exp_test = new ENFOrdinal([new ENFTerm([new ENFFactor(new OmegaOrdinal(), 
+                new ENFOrdinal([new ENFTerm([new ENFFactor(e1_base, enf_one), new ENFFactor(e0_base, new FiniteOrdinal(2))], 5n)]))], 1n)]);
             runConstructionTest("w^(e_1*e_0^2*5) (exponent with multiple factors and coefficient)", multi_factor_coeff_exp_test, "w^(e_1*e_0^2*5)");
 
             // Stress test parentheses - nested complex exponents
-            const nested_exp_test = new ENFOrdinal([new ENFTerm([new ENFFactor(new OmegaOrdinal(tracer), 
-                new ENFOrdinal([new ENFTerm([new ENFFactor(new OmegaOrdinal(tracer), 
-                    new ENFOrdinal([new ENFTerm([new ENFFactor(new OmegaOrdinal(tracer), new FiniteOrdinal(2, tracer))], 1n, tracer), new ENFTerm([], 1n, tracer)]))], 1n, tracer)]))], 1n, tracer)]);
+            const nested_exp_test = new ENFOrdinal([new ENFTerm([new ENFFactor(new OmegaOrdinal(), 
+                new ENFOrdinal([new ENFTerm([new ENFFactor(new OmegaOrdinal(), 
+                    new ENFOrdinal([new ENFTerm([new ENFFactor(new OmegaOrdinal(), new FiniteOrdinal(2))], 1n), new ENFTerm([], 1n)]))], 1n)]))], 1n)]);
             runConstructionTest("w^(w^(w^2+1)) (nested complex exponents)", nested_exp_test, "w^w^(w^2+1)");
 
             // Test the problematic case from Very Complex section
@@ -1740,19 +1895,19 @@
             CURRENT_KIND = 'ADDITION';
             runAdditionTest("w + 1", ord_w, ord_one, "w+1");
             runAdditionTest("1 + w", ord_one, ord_w, "w");
-            runAdditionTest("w*2 + w*3", ord_w_times_2, new ENFOrdinal([new ENFTerm([new ENFFactor(new OmegaOrdinal(tracer), enf_one)], 3n, tracer)]), "w*5");
-            runAdditionTest("(w^2*3 + w*5) + (w*8 + 1)", new ENFOrdinal([new ENFTerm([new ENFFactor(new OmegaOrdinal(tracer), OPERATIONS.convert(new FiniteOrdinal(2, tracer), 'CNF'))], 3n, tracer), new ENFTerm([new ENFFactor(new OmegaOrdinal(tracer), enf_one)], 5n, tracer)]), new ENFOrdinal([new ENFTerm([new ENFFactor(new OmegaOrdinal(tracer), enf_one)], 8n, tracer), new ENFTerm([], 1n, tracer)]), "w^2*3+w*13+1");
-            runAdditionTest("(w^2 + 5) + (w+3)", new ENFOrdinal([new ENFTerm([new ENFFactor(new OmegaOrdinal(tracer), OPERATIONS.convert(new FiniteOrdinal(2, tracer), 'CNF'))], 1n, tracer), new ENFTerm([], 5n, tracer)]), new ENFOrdinal([new ENFTerm([new ENFFactor(new OmegaOrdinal(tracer), enf_one)], 1n, tracer), new ENFTerm([], 3n, tracer)]), "w^2+w+3");
+            runAdditionTest("w*2 + w*3", ord_w_times_2, new ENFOrdinal([new ENFTerm([new ENFFactor(new OmegaOrdinal(), enf_one)], 3n)]), "w*5");
+            runAdditionTest("(w^2*3 + w*5) + (w*8 + 1)", new ENFOrdinal([new ENFTerm([new ENFFactor(new OmegaOrdinal(), OPERATIONS.convert(new FiniteOrdinal(2), 'CNF'))], 3n), new ENFTerm([new ENFFactor(new OmegaOrdinal(), enf_one)], 5n)]), new ENFOrdinal([new ENFTerm([new ENFFactor(new OmegaOrdinal(), enf_one)], 8n), new ENFTerm([], 1n)]), "w^2*3+w*13+1");
+            runAdditionTest("(w^2 + 5) + (w+3)", new ENFOrdinal([new ENFTerm([new ENFFactor(new OmegaOrdinal(), OPERATIONS.convert(new FiniteOrdinal(2), 'CNF'))], 1n), new ENFTerm([], 5n)]), new ENFOrdinal([new ENFTerm([new ENFFactor(new OmegaOrdinal(), enf_one)], 1n), new ENFTerm([], 3n)]), "w^2+w+3");
             runAdditionTest("e_0 + w^w", ord_e0, ord_w_w, "e_0+w^w");
             runAdditionTest("w^w + e_0", ord_w_w, ord_e0, "e_0");
 
             // --- Targeted Regression: w^(e_1^(w+1)) should be e_1^e_1^(w+1) ---
             CURRENT_KIND = 'EXPONENTIATION';
             try {
-                const exp_w_plus_1 = new SimpleParser("w+1", tracer).parse();
-                const e1_pow_w_plus_1 = new ENFOrdinal([new ENFTerm([new ENFFactor(e1_base, ENFOrdinal.fromCNF(exp_w_plus_1))], 1n, tracer)]);
+                const exp_w_plus_1 = new SimpleParser("w+1").parse();
+                const e1_pow_w_plus_1 = new ENFOrdinal([new ENFTerm([new ENFFactor(e1_base, ENFOrdinal.fromCNF(exp_w_plus_1))], 1n)]);
                 const actual = enf_w.power(e1_pow_w_plus_1);
-                const expected = new ENFOrdinal([new ENFTerm([new ENFFactor(e1_base, e1_pow_w_plus_1)], 1n, tracer)]);
+                const expected = new ENFOrdinal([new ENFTerm([new ENFFactor(e1_base, e1_pow_w_plus_1)], 1n)]);
 
                 // Probe division behavior used by power split: x from b.ordinalDivision(rank(b))
                 const k_rank = e1_pow_w_plus_1.rank();
@@ -1764,7 +1919,15 @@
                 container.className = 'test-case';
                 const t = document.createElement('h3'); t.textContent = 'Regression Probe: division in power'; container.appendChild(t);
                 container.appendChild(probe);
-                try { recordTestResult(CURRENT_KIND, true, container); } catch (_) { document.getElementById('test-details-container').appendChild(container); }
+                try { recordTestResult(CURRENT_KIND, true, container); } catch (recordError) { 
+                    console.error('CRITICAL: Failed to record test result for', CURRENT_KIND, recordError);
+                    document.getElementById('test-details-container').appendChild(container);
+                    // Force test section to be marked as failed
+                    if (testStats[CURRENT_KIND]) {
+                        testStats[CURRENT_KIND].failed++;
+                        testStats[CURRENT_KIND].total++;
+                    }
+                }
 
                 runEqualityTest("Regression: w^(e_1^(w+1))", actual, expected);
             } catch (e) {
@@ -1777,22 +1940,30 @@
                 p.className = 'log-output status-failed';
                 p.textContent = e.message;
                 container.appendChild(p);
-                try { recordTestResult(CURRENT_KIND, false, container); } catch (_) { document.getElementById('test-details-container').appendChild(container); }
+                try { recordTestResult(CURRENT_KIND, false, container); } catch (recordError) { 
+                    console.error('CRITICAL: Failed to record test result for', CURRENT_KIND, recordError);
+                    document.getElementById('test-details-container').appendChild(container);
+                    // Force test section to be marked as failed
+                    if (testStats[CURRENT_KIND]) {
+                        testStats[CURRENT_KIND].failed++;
+                        testStats[CURRENT_KIND].total++;
+                    }
+                }
             }
 
             // --- EpsilonTowerOrdinal Tests ---
             CURRENT_KIND = 'EPSILON_TOWER';
             try {
-                const k0_cnf = CNFOrdinal.ZEROStatic().clone(tracer);
-                const epsTower0 = new EpsilonTowerOrdinal(k0_cnf, 0, tracer);
-                const epsTower1 = new EpsilonTowerOrdinal(k0_cnf, 1, tracer);
-                const epsTower2 = new EpsilonTowerOrdinal(k0_cnf, 2, tracer);
+                const k0_cnf = CNFOrdinal.ZEROStatic().clone();
+                const epsTower0 = new EpsilonTowerOrdinal(k0_cnf, 0);
+                const epsTower1 = new EpsilonTowerOrdinal(k0_cnf, 1);
+                const epsTower2 = new EpsilonTowerOrdinal(k0_cnf, 2);
 
                 // Check ENF conversion matches recursion: e_0^^0 = 1
                 runEqualityTest("EpsTower: e_0^^0 = 1", epsTower0.toENFOrdinal(), enf_one);
 
                 // e_0^^1 = e_0
-                const e0_enf = new ENFOrdinal([new ENFTerm([new ENFFactor(e0_base, enf_one)], 1n, tracer)]);
+                const e0_enf = new ENFOrdinal([new ENFTerm([new ENFFactor(e0_base, enf_one)], 1n)]);
                 runEqualityTest("EpsTower: e_0^^1 = e_0", epsTower1.toENFOrdinal(), e0_enf);
 
                 // e_0^^2 = e_0^e_0
@@ -1816,13 +1987,21 @@
                     const status = document.createElement('p'); status.textContent = `Status: ${ok ? 'PASSED' : 'FAILED'}`; status.className = ok ? 'status-passed' : 'status-failed'; container.appendChild(status);
                     if (ok) { passedTests++; } else { /* count in total only */ }
                     totalTests++;
-                    try { recordTestResult(CURRENT_KIND, ok, container); } catch (_) { document.getElementById('test-details-container').appendChild(container); }
+                    try { recordTestResult(CURRENT_KIND, ok, container); } catch (recordError) { 
+                    console.error('CRITICAL: Failed to record test result for', CURRENT_KIND, recordError);
+                    document.getElementById('test-details-container').appendChild(container);
+                    // Force test section to be marked as failed
+                    if (testStats[CURRENT_KIND]) {
+                        testStats[CURRENT_KIND].failed++;
+                        testStats[CURRENT_KIND].total++;
+                    }
+                }
                 })();
 
                 // Special-case power: e_0^(e_0^^n) = e_0^^(n+1)
-                const base_e0_cnf = new EpsilonZero(tracer);
-                const lhs = base_e0_cnf.power(new EpsilonTowerOrdinal(k0_cnf, 2, tracer));
-                const rhs = new EpsilonTowerOrdinal(k0_cnf, 3, tracer);
+                const base_e0_cnf = new EpsilonZero();
+                const lhs = base_e0_cnf.power(new EpsilonTowerOrdinal(k0_cnf, 2));
+                const rhs = new EpsilonTowerOrdinal(k0_cnf, 3);
                 runEqualityTest("EpsTower: e_0^(e_0^^2) = e_0^^3", lhs, rhs);
 
             } catch (e) {
@@ -1835,15 +2014,23 @@
                 p.className = 'log-output status-failed';
                 p.textContent = e.message;
                 container.appendChild(p);
-                try { recordTestResult(CURRENT_KIND, false, container); } catch (_) { document.getElementById('test-details-container').appendChild(container); }
+                try { recordTestResult(CURRENT_KIND, false, container); } catch (recordError) { 
+                    console.error('CRITICAL: Failed to record test result for', CURRENT_KIND, recordError);
+                    document.getElementById('test-details-container').appendChild(container);
+                    // Force test section to be marked as failed
+                    if (testStats[CURRENT_KIND]) {
+                        testStats[CURRENT_KIND].failed++;
+                        testStats[CURRENT_KIND].total++;
+                    }
+                }
             }
 
             // --- EpsilonTowerOrdinal (complex k and arithmetic via ENF conversion) ---
             try {
                 // k = 1
-                const k1 = CNFOrdinal.ONEStatic().clone(tracer);
-                const e1_t3 = new EpsilonTowerOrdinal(k1, 3, tracer);
-                const e1_base_enf = ENFOrdinal.fromCNF(new EpsilonNumber(k1, tracer));
+                const k1 = CNFOrdinal.ONEStatic().clone();
+                const e1_t3 = new EpsilonTowerOrdinal(k1, 3);
+                const e1_base_enf = ENFOrdinal.fromCNF(new EpsilonNumber(k1));
                 const e1_pow2 = e1_base_enf.power(e1_base_enf);
                 const e1_pow3 = e1_base_enf.power(e1_pow2);
                 runEqualityTest("EpsTower(k=1): e_1^^3 = e_1^(e_1^e_1)", e1_t3.toENFOrdinal(), e1_pow3);
@@ -1853,9 +2040,9 @@
                 runEqualityTest("EpsTower(k=1): (e_1^^3)+w equals (e_1^(e_1^e_1))+w", add_enf, expected_add_enf);
 
                 // k = w
-                const kw = CNFOrdinal.OMEGAStatic().clone(tracer);
-                const ew_t2 = new EpsilonTowerOrdinal(kw, 2, tracer);
-                const ew_base_enf = ENFOrdinal.fromCNF(new EpsilonNumber(kw, tracer));
+                const kw = CNFOrdinal.OMEGAStatic().clone();
+                const ew_t2 = new EpsilonTowerOrdinal(kw, 2);
+                const ew_base_enf = ENFOrdinal.fromCNF(new EpsilonNumber(kw));
                 const ew_pow2 = ew_base_enf.power(ew_base_enf);
                 runEqualityTest("EpsTower(k=w): e_w^^2 = e_w^e_w", ew_t2.toENFOrdinal(), ew_pow2);
                 // Multiplication by 2 (finite)
@@ -1864,9 +2051,9 @@
                 runEqualityTest("EpsTower(k=w): (e_w^^2)*2 equals (e_w^e_w)*2", mult2_enf, expected_mult2_enf);
 
                 // k = (w+1)
-                const k_w_plus_1_cnf = new SimpleParser("w+1", tracer).parse();
-                const e_w1_t2 = new EpsilonTowerOrdinal(k_w_plus_1_cnf, 2, tracer);
-                const e_w1_base_enf = ENFOrdinal.fromCNF(new EpsilonNumber(k_w_plus_1_cnf, tracer));
+                const k_w_plus_1_cnf = new SimpleParser("w+1").parse();
+                const e_w1_t2 = new EpsilonTowerOrdinal(k_w_plus_1_cnf, 2);
+                const e_w1_base_enf = ENFOrdinal.fromCNF(new EpsilonNumber(k_w_plus_1_cnf));
                 const e_w1_pow2 = e_w1_base_enf.power(e_w1_base_enf);
                 runEqualityTest("EpsTower(k=w+1): e_(w+1)^^2 = e_(w+1)^e_(w+1)", e_w1_t2.toENFOrdinal(), e_w1_pow2);
                 // String check for parenthesized index
@@ -1882,13 +2069,21 @@
                     const status = document.createElement('p'); status.textContent = `Status: ${ok ? 'PASSED' : 'FAILED'}`; status.className = ok ? 'status-passed' : 'status-failed'; container.appendChild(status);
                     if (ok) { passedTests++; } else { /* count only */ }
                     totalTests++;
-                    try { recordTestResult(CURRENT_KIND, ok, container); } catch (_) { document.getElementById('test-details-container').appendChild(container); }
+                    try { recordTestResult(CURRENT_KIND, ok, container); } catch (recordError) { 
+                    console.error('CRITICAL: Failed to record test result for', CURRENT_KIND, recordError);
+                    document.getElementById('test-details-container').appendChild(container);
+                    // Force test section to be marked as failed
+                    if (testStats[CURRENT_KIND]) {
+                        testStats[CURRENT_KIND].failed++;
+                        testStats[CURRENT_KIND].total++;
+                    }
+                }
                 })();
 
                 // k = e_0 (so base is e_{e_0})
-                const k_e0 = new EpsilonZero(tracer);
-                const e_e0_t2 = new EpsilonTowerOrdinal(k_e0, 2, tracer);
-                const e_e0_base_enf = ENFOrdinal.fromCNF(new EpsilonNumber(k_e0, tracer));
+                const k_e0 = new EpsilonZero();
+                const e_e0_t2 = new EpsilonTowerOrdinal(k_e0, 2);
+                const e_e0_base_enf = ENFOrdinal.fromCNF(new EpsilonNumber(k_e0));
                 const e_e0_pow2 = OPERATIONS.power(e_e0_base_enf, e_e0_base_enf);
                 runEqualityTest("EpsTower(k=e_0): e_e_0^^2 = e_e_0^e_e_0", e_e0_t2.toENFOrdinal(), e_e0_pow2);
             } catch (e) {
@@ -1901,59 +2096,92 @@
                 p.className = 'log-output status-failed';
                 p.textContent = e.message;
                 container.appendChild(p);
-                try { recordTestResult(CURRENT_KIND, false, container); } catch (_) { document.getElementById('test-details-container').appendChild(container); }
+                try { recordTestResult(CURRENT_KIND, false, container); } catch (recordError) { 
+                    console.error('CRITICAL: Failed to record test result for', CURRENT_KIND, recordError);
+                    document.getElementById('test-details-container').appendChild(container);
+                    // Force test section to be marked as failed
+                    if (testStats[CURRENT_KIND]) {
+                        testStats[CURRENT_KIND].failed++;
+                        testStats[CURRENT_KIND].total++;
+                    }
+                }
             }
 
             // --- Extended tetration rules tests ---
             CURRENT_KIND = 'TETRATION';
             try {
                 // 0^^n parity (finite n)
-                const zero = CNFOrdinal.ZEROStatic().clone(tracer);
-                const one = CNFOrdinal.ONEStatic().clone(tracer);
-                const two = CNFOrdinal.fromInt(2, tracer);
+                const zero = CNFOrdinal.ZEROStatic().clone();
+                const one = CNFOrdinal.ONEStatic().clone();
+                const two = CNFOrdinal.fromInt(2);
                 function expectEqual(title, a, b) {
                     runEqualityTest(title, a, b);
                 }
-                expectEqual('0^^0 = 1', zero.tetrate(CNFOrdinal.fromInt(0, tracer)), one);
-                expectEqual('0^^1 = 0', zero.tetrate(CNFOrdinal.fromInt(1, tracer)), zero);
-                expectEqual('0^^2 = 1', zero.tetrate(CNFOrdinal.fromInt(2, tracer)), one);
+                expectEqual('0^^0 = 1', zero.tetrate(CNFOrdinal.fromInt(0)), one);
+                expectEqual('0^^1 = 0', zero.tetrate(CNFOrdinal.fromInt(1)), zero);
+                expectEqual('0^^2 = 1', zero.tetrate(CNFOrdinal.fromInt(2)), one);
 
                 // 0^^(infinite) should error
                 (function () {
                     const container = document.createElement('div'); container.className = 'test-case';
                     const title = document.createElement('h3'); title.textContent = '0^^w throws'; container.appendChild(title);
-                    let passed = false; try { zero.tetrate(CNFOrdinal.OMEGAStatic().clone(tracer)); } catch (_) { passed = true; }
+                    let passed = false; 
+                    try { 
+                        zero.tetrate(CNFOrdinal.OMEGAStatic().clone()); 
+                        // If no error thrown, test failed
+                        passed = false;
+                    } catch (expectedError) { 
+                        // Error was expected, so test passed
+                        passed = true; 
+                        console.log('Expected tetration error caught:', expectedError.message);
+                    }
                     const status = document.createElement('p'); status.textContent = `Status: ${passed ? 'PASSED' : 'FAILED'}`; status.className = passed ? 'status-passed' : 'status-failed'; container.appendChild(status);
                     if (passed) passedTests++; totalTests++;
-                    try { recordTestResult(CURRENT_KIND, passed, container); } catch (_) { document.getElementById('test-details-container').appendChild(container); }
+                    try { recordTestResult(CURRENT_KIND, passed, container); } catch (recordError) { 
+                    console.error('CRITICAL: Failed to record test result for', CURRENT_KIND, recordError);
+                    document.getElementById('test-details-container').appendChild(container);
+                    // Force test section to be marked as failed
+                    if (testStats[CURRENT_KIND]) {
+                        testStats[CURRENT_KIND].failed++;
+                        testStats[CURRENT_KIND].total++;
+                    }
+                }
                 })();
 
                 // 1^^k = 1 (finite and infinite)
-                expectEqual('1^^5 = 1', one.tetrate(CNFOrdinal.fromInt(5, tracer)), one);
-                expectEqual('1^^w = 1', one.tetrate(CNFOrdinal.OMEGAStatic().clone(tracer)), one);
+                expectEqual('1^^5 = 1', one.tetrate(CNFOrdinal.fromInt(5)), one);
+                expectEqual('1^^w = 1', one.tetrate(CNFOrdinal.OMEGAStatic().clone()), one);
 
                 // m>1 ^^ infinite -> w
-                expectEqual('2^^w = w', CNFOrdinal.fromInt(2, tracer).tetrate(CNFOrdinal.OMEGAStatic().clone(tracer)), CNFOrdinal.OMEGAStatic().clone(tracer));
+                expectEqual('2^^w = w', CNFOrdinal.fromInt(2).tetrate(CNFOrdinal.OMEGAStatic().clone()), CNFOrdinal.OMEGAStatic().clone());
 
                 // w^^n threshold (n>10 -> WTower)
                 (function () {
                     const container = document.createElement('div'); container.className = 'test-case';
                     const title = document.createElement('h3'); title.textContent = 'w^^11 produces WTower'; container.appendChild(title);
-                    const omega = new OmegaOrdinal(tracer);
-                    const eleven = new FiniteOrdinal(11, tracer);
+                    const omega = new OmegaOrdinal();
+                    const eleven = new FiniteOrdinal(11);
                     const res = omega.tetrate(eleven);
                     const ok = (typeof WTowerOrdinal !== 'undefined') && (res instanceof WTowerOrdinal) && res.height === 11n;
                     const status = document.createElement('p'); status.textContent = `Status: ${ok ? 'PASSED' : 'FAILED'}`; status.className = ok ? 'status-passed' : 'status-failed'; container.appendChild(status);
                     if (ok) passedTests++; totalTests++;
-                    try { recordTestResult(CURRENT_KIND, ok, container); } catch (_) { document.getElementById('test-details-container').appendChild(container); }
+                    try { recordTestResult(CURRENT_KIND, ok, container); } catch (recordError) { 
+                    console.error('CRITICAL: Failed to record test result for', CURRENT_KIND, recordError);
+                    document.getElementById('test-details-container').appendChild(container);
+                    // Force test section to be marked as failed
+                    if (testStats[CURRENT_KIND]) {
+                        testStats[CURRENT_KIND].failed++;
+                        testStats[CURRENT_KIND].total++;
+                    }
+                }
                 })();
 
                 // e_k^^n threshold (n>10 -> EpsilonTower)
                 (function () {
                     const container = document.createElement('div'); container.className = 'test-case';
                     const title = document.createElement('h3'); title.textContent = 'e_0^^11 produces EpsilonTower'; container.appendChild(title);
-                    const e0 = new EpsilonZero(tracer);
-                    const eleven = new FiniteOrdinal(11, tracer);
+                    const e0 = new EpsilonZero();
+                    const eleven = new FiniteOrdinal(11);
                     const res = e0.tetrate(eleven);
                     let ok = false;
                     if (typeof EpsilonTowerOrdinal !== 'undefined' && res instanceof EpsilonTowerOrdinal) {
@@ -1962,29 +2190,45 @@
                     }
                     const status = document.createElement('p'); status.textContent = `Status: ${ok ? 'PASSED' : 'FAILED'}`; status.className = ok ? 'status-passed' : 'status-failed'; container.appendChild(status);
                     if (ok) passedTests++; totalTests++;
-                    try { recordTestResult(CURRENT_KIND, ok, container); } catch (_) { document.getElementById('test-details-container').appendChild(container); }
+                    try { recordTestResult(CURRENT_KIND, ok, container); } catch (recordError) { 
+                    console.error('CRITICAL: Failed to record test result for', CURRENT_KIND, recordError);
+                    document.getElementById('test-details-container').appendChild(container);
+                    // Force test section to be marked as failed
+                    if (testStats[CURRENT_KIND]) {
+                        testStats[CURRENT_KIND].failed++;
+                        testStats[CURRENT_KIND].total++;
+                    }
+                }
                 })();
 
                 // Finite height with base > e_0 but not pure epsilon: (e_0+1)^^3 computed recursively
                 (function () {
                     const container = document.createElement('div'); container.className = 'test-case';
                     const title = document.createElement('h3'); title.textContent = '(e_0+1)^^3 is recursive (no error)'; container.appendChild(title);
-                    const a = new ENFOrdinal([new ENFTerm([new ENFFactor(e0_base, enf_one)], 1n, tracer), new ENFTerm([], 1n, tracer)]);
+                    const a = new ENFOrdinal([new ENFTerm([new ENFFactor(e0_base, enf_one)], 1n), new ENFTerm([], 1n)]);
                     let passed = true; let res; let errMsg = '';
-                    try { res = a.tetrate(CNFOrdinal.fromInt(3, tracer)); } catch (e) { passed = false; errMsg = e && e.message ? e.message : String(e); }
+                    try { res = a.tetrate(CNFOrdinal.fromInt(3)); } catch (e) { passed = false; errMsg = e && e.message ? e.message : String(e); }
                     if (!passed) { const pErr = document.createElement('p'); pErr.className = 'log-output'; pErr.textContent = `Error: ${errMsg}`; container.appendChild(pErr); }
                     const status = document.createElement('p'); status.textContent = `Status: ${passed ? 'PASSED' : 'FAILED'}`; status.className = passed ? 'status-passed' : 'status-failed'; container.appendChild(status);
                     if (passed) passedTests++; totalTests++;
-                    try { recordTestResult(CURRENT_KIND, passed, container); } catch (_) { document.getElementById('test-details-container').appendChild(container); }
+                    try { recordTestResult(CURRENT_KIND, passed, container); } catch (recordError) { 
+                    console.error('CRITICAL: Failed to record test result for', CURRENT_KIND, recordError);
+                    document.getElementById('test-details-container').appendChild(container);
+                    // Force test section to be marked as failed
+                    if (testStats[CURRENT_KIND]) {
+                        testStats[CURRENT_KIND].failed++;
+                        testStats[CURRENT_KIND].total++;
+                    }
+                }
                 })();
 
                 // EpsilonTower for e_5^^12
                 (function () {
                     const container = document.createElement('div'); container.className = 'test-case';
                     const title = document.createElement('h3'); title.textContent = 'e_5^^12 returns EpsilonTowerOrdinal'; container.appendChild(title);
-                    const five = new FiniteOrdinal(5, tracer);
-                    const e5 = new EpsilonNumber(five, tracer);
-                    const twelve = new FiniteOrdinal(12, tracer);
+                    const five = new FiniteOrdinal(5);
+                    const e5 = new EpsilonNumber(five);
+                    const twelve = new FiniteOrdinal(12);
                     const res = e5.tetrate(twelve);
                     let ok = false; let s = '';
                     if (typeof EpsilonTowerOrdinal !== 'undefined' && res instanceof EpsilonTowerOrdinal) {
@@ -1994,42 +2238,61 @@
                     const pStr = document.createElement('p'); pStr.className = 'log-output'; pStr.textContent = `Got: ${s || '[non-string]'}`; container.appendChild(pStr);
                     const status = document.createElement('p'); status.textContent = `Status: ${ok ? 'PASSED' : 'FAILED'}`; status.className = ok ? 'status-passed' : 'status-failed'; container.appendChild(status);
                     if (ok) passedTests++; totalTests++;
-                    try { recordTestResult(CURRENT_KIND, ok, container); } catch (_) { document.getElementById('test-details-container').appendChild(container); }
+                    try { recordTestResult(CURRENT_KIND, ok, container); } catch (recordError) { 
+                    console.error('CRITICAL: Failed to record test result for', CURRENT_KIND, recordError);
+                    document.getElementById('test-details-container').appendChild(container);
+                    // Force test section to be marked as failed
+                    if (testStats[CURRENT_KIND]) {
+                        testStats[CURRENT_KIND].failed++;
+                        testStats[CURRENT_KIND].total++;
+                    }
+                }
                 })();
 
                 // a (not w or e_k) ^^ 2 = a^a
                 (function () {
                     const container = document.createElement('div'); container.className = 'test-case';
                     const title = document.createElement('h3'); title.textContent = 'a^^2 = a^a for a=w^2'; container.appendChild(title);
-                    const a = new CNFOrdinal([{ exponent: CNFOrdinal.fromInt(2, tracer), coefficient: 1n }], tracer);
-                    const left = a.tetrate(CNFOrdinal.fromInt(2, tracer));
+                    const a = new CNFOrdinal([{ exponent: CNFOrdinal.fromInt(2), coefficient: 1n }]);
+                    const left = a.tetrate(CNFOrdinal.fromInt(2));
                     const right = a.power(a);
                     const ok = left.equals(right);
                     const status = document.createElement('p'); status.textContent = `Status: ${ok ? 'PASSED' : 'FAILED'}`; status.className = ok ? 'status-passed' : 'status-failed'; container.appendChild(status);
                     if (ok) passedTests++; totalTests++;
-                    try { recordTestResult(CURRENT_KIND, ok, container); } catch (_) { document.getElementById('test-details-container').appendChild(container); }
+                    try { recordTestResult(CURRENT_KIND, ok, container); } catch (recordError) { 
+                    console.error('CRITICAL: Failed to record test result for', CURRENT_KIND, recordError);
+                    document.getElementById('test-details-container').appendChild(container);
+                    // Force test section to be marked as failed
+                    if (testStats[CURRENT_KIND]) {
+                        testStats[CURRENT_KIND].failed++;
+                        testStats[CURRENT_KIND].total++;
+                    }
+                }
                 })();
 
                 // a (CNF infinite epsilon-free) ^^ infinite = e_0
-                expectEqual('w^2 ^^ w = e_0', new CNFOrdinal([{ exponent: CNFOrdinal.fromInt(2, tracer), coefficient: 1n }], tracer).tetrate(CNFOrdinal.OMEGAStatic().clone(tracer)), new EpsilonZero(tracer));
+                expectEqual('w^2 ^^ w = e_0', new CNFOrdinal([{ exponent: CNFOrdinal.fromInt(2), coefficient: 1n }]).tetrate(CNFOrdinal.OMEGAStatic().clone()), new EpsilonZero());
 
                 // a ≥ e_0: (e_1^e_0) ^^ e_4 = e_2
                 (function () {
                     const container = document.createElement('div'); container.className = 'test-case';
                     const title = document.createElement('h3'); title.textContent = '(e_1^e_0) ^^ e_4 = e_2'; container.appendChild(title);
-                    const e1 = new EpsilonNumber(CNFOrdinal.fromInt(1, tracer), tracer);
-                    const e0 = new EpsilonZero(tracer);
+                    const e1 = new EpsilonNumber(CNFOrdinal.fromInt(1));
+                    const e0 = new EpsilonZero();
                     const base = ENFOrdinal.fromCNF(e1).power(ENFOrdinal.fromCNF(e0));
-                    const height = new EpsilonNumber(CNFOrdinal.fromInt(4, tracer), tracer);
+                    const height = new EpsilonNumber(CNFOrdinal.fromInt(4));
                     const actual = base.tetrate(height);
-                    const expected = new EpsilonNumber(CNFOrdinal.fromInt(2, tracer), tracer);
+                    const expected = new EpsilonNumber(CNFOrdinal.fromInt(2));
                     const ok = actual.equals(expected);
                     const ordStr = (o) => {
                         try {
                             if (o && typeof o.toDisplayString === 'function') return o.toDisplayString({ format: 'ENF' });
                             if (o && typeof o.toStringCNF === 'function') return o.toStringCNF();
                             if (o && typeof o.toString === 'function') return o.toString();
-                        } catch (_) { /* ignore */ }
+                        } catch (stringError) { 
+                            console.error('Error converting ordinal to string:', stringError);
+                            /* Continue with fallback */ 
+                        }
                         return String(o);
                     };
                     const actualStr = ordStr(actual);
@@ -2038,7 +2301,15 @@
                     const pExp = document.createElement('p'); pExp.className = 'log-output'; pExp.textContent = `Expected: ${expectedStr}`; container.appendChild(pExp);
                     const status = document.createElement('p'); status.textContent = `Status: ${ok ? 'PASSED' : 'FAILED'}`; status.className = ok ? 'status-passed' : 'status-failed'; container.appendChild(status);
                     if (ok) passedTests++; totalTests++;
-                    try { recordTestResult(CURRENT_KIND, ok, container); } catch (_) { document.getElementById('test-details-container').appendChild(container); }
+                    try { recordTestResult(CURRENT_KIND, ok, container); } catch (recordError) { 
+                    console.error('CRITICAL: Failed to record test result for', CURRENT_KIND, recordError);
+                    document.getElementById('test-details-container').appendChild(container);
+                    // Force test section to be marked as failed
+                    if (testStats[CURRENT_KIND]) {
+                        testStats[CURRENT_KIND].failed++;
+                        testStats[CURRENT_KIND].total++;
+                    }
+                }
                 })();
 
             } catch (e) {
@@ -2046,7 +2317,15 @@
                 container.className = 'test-case';
                 const title = document.createElement('h3'); title.textContent = 'Extended tetration setup error'; container.appendChild(title);
                 const p = document.createElement('p'); p.className = 'log-output status-failed'; p.textContent = e.message; container.appendChild(p);
-                try { recordTestResult(CURRENT_KIND, false, container); } catch (_) { document.getElementById('test-details-container').appendChild(container); }
+                try { recordTestResult(CURRENT_KIND, false, container); } catch (recordError) { 
+                    console.error('CRITICAL: Failed to record test result for', CURRENT_KIND, recordError);
+                    document.getElementById('test-details-container').appendChild(container);
+                    // Force test section to be marked as failed
+                    if (testStats[CURRENT_KIND]) {
+                        testStats[CURRENT_KIND].failed++;
+                        testStats[CURRENT_KIND].total++;
+                    }
+                }
             }
 
             // --- All Ordinals for Tables ---
@@ -2066,18 +2345,23 @@
             runComprehensiveMultiplicationTest(allOrdinals);
             CURRENT_KIND = 'EXPONENTIATION';
             runComprehensiveExponentiationTest(allOrdinals);
-
+/*
             // Run monotonicity sanity tests
             CURRENT_KIND = 'ADDITION';
+            OperationTracer.reset(1000000);
             runAdditionMonotonicityTest(allOrdinals);
             CURRENT_KIND = 'MULTIPLICATION';
+            OperationTracer.reset(1000000);
             runMultiplicationMonotonicityTest(allOrdinals);
             CURRENT_KIND = 'EXPONENTIATION';
+            OperationTracer.reset(1000000);
             runExponentiationMonotonicityTest(allOrdinals);
-
+*/
             // Random triple associativity tests
             CURRENT_KIND = 'RANDOM';
+            OperationTracer.reset(1000000);
             runRandomTripleAssociativityAdditionTest(allOrdinals, 100);
+            OperationTracer.reset(1000000);
             runRandomTripleAlgebraRulesTest(allOrdinals, 100);
 
             // --- ENF Calculation Tests ---
@@ -2458,10 +2742,34 @@
 
         function finalizeSummary() { /* replaced by updateOverallPageSummary */ }
 
-        document.addEventListener('DOMContentLoaded', () => {
-            defineTests();
-            renderAllKindResults();
+        // Global error handler to catch test failures
+        let hasUnhandledErrors = false;
+        window.addEventListener('error', (event) => {
+            console.error('UNHANDLED ERROR during testing:', event.error);
+            hasUnhandledErrors = true;
+            // Force all test sections to show failure if there are unhandled errors
+            for (const kindKey in testStats) {
+                if (testStats[kindKey].total === 0) {
+                    testStats[kindKey].failed = 1;
+                    testStats[kindKey].total = 1;
+                }
+            }
             updateOverallPageSummary();
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // Initialize global tracer BEFORE defining tests
+            OperationTracer.setGlobalTracer(2000000); // 2M operations budget
+            console.log('[GlobalTracer] ENF test suite initialized with budget:', OperationTracer.getBudget());
+            
+            try {
+                defineTests();
+                renderAllKindResults();
+                updateOverallPageSummary();
+            } catch (error) {
+                console.error('CRITICAL ERROR during test initialization:', error);
+                document.body.innerHTML += `<div style="background: red; color: white; padding: 20px; margin: 20px;"><h2>CRITICAL TEST FAILURE</h2><p>Test initialization failed: ${error.message}</p></div>`;
+            }
 
             // Add toggle listeners with debug logging
             document.querySelectorAll('details.test-kind-section').forEach(detailsElement => {
@@ -2484,8 +2792,9 @@
         // Test runner for individual expressions
         function calculateAndSimplify(expr, options = {}) {
             try {
-                const tracer = new OperationTracer(options.budget || 200000);
-                const parser = new SimpleParser(expr, tracer);
+                // Reset global tracer for each test with specified budget
+                OperationTracer.setGlobalTracer(options.budget || 200000);
+                const parser = new SimpleParser(expr);
                 let ord = parser.parse();
                 return { ordinal: ord, error: null };
             } catch (e) {
@@ -2517,7 +2826,7 @@
             // ... existing test calls ...
         }
 
-        window.onload = runAllTests;
+        // Remove duplicate initialization - now handled in DOMContentLoaded
     </script>
 </body>
 

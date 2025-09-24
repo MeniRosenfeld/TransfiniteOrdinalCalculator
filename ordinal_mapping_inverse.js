@@ -302,7 +302,7 @@ function fInverse(x, params = DEFAULT_F_PARAMS, threshold = 1e-14, depth = 0) {
 }
 
 // Helper function to convert f() format to ordinal instance
-function convertFFormatToOrdinalInstance(ord_representation, tracer) {
+function convertFFormatToOrdinalInstance(ord_representation) {
     // Handles:
     // - BigInt n (finite)
     // - "E0_TYPE"
@@ -311,15 +311,14 @@ function convertFFormatToOrdinalInstance(ord_representation, tracer) {
     // - { type: 'w_tower', height: n } (NEW)
     // - { type: 'epsilon', index: k_rep } (NEW)
 
-    // Ensure tracer is provided, create a default if not (though script.js should provide one)
-    const effectiveTracer = tracer || new OperationTracer(100000); // Default budget if no tracer given
+     OperationTracer.reset(100000);
 
     if (typeof ord_representation === 'bigint') {
-        return new CNFOrdinal(ord_representation, effectiveTracer); // Pass tracer
+        return new CNFOrdinal(ord_representation);
     }
 
     if (ord_representation === "E0_TYPE") { // Legacy fallback
-        return new EpsilonZero(effectiveTracer);
+        return new EpsilonZero();
     }
 
     if (typeof ord_representation === 'object' && ord_representation !== null) {
@@ -327,13 +326,13 @@ function convertFFormatToOrdinalInstance(ord_representation, tracer) {
             // New architecture currently only supports ε₀ as a dedicated type
             const index_rep = ord_representation.index;
             if (typeof index_rep === 'bigint' && index_rep === 0n) {
-                return new EpsilonZero(effectiveTracer);
+                return new EpsilonZero();
             }
             // If index is represented as an object equal to 0, accept too
             if (typeof index_rep === 'object' && index_rep !== null) {
-                const idxConv = convertFFormatToOrdinalInstance(index_rep, effectiveTracer);
+                const idxConv = convertFFormatToOrdinalInstance(index_rep);
                 if (idxConv instanceof CNFOrdinal && idxConv.isFinite() && idxConv.getFiniteBigInt() === 0n) {
-                    return new EpsilonZero(effectiveTracer);
+                    return new EpsilonZero();
                 }
             }
             throw new Error("Only epsilon-zero (e_0) is supported by the current architecture");
@@ -342,21 +341,21 @@ function convertFFormatToOrdinalInstance(ord_representation, tracer) {
         if (ord_representation.type === 'w_tower') { // NEW case for w_tower
             if (typeof ord_representation.height !== 'number' || ord_representation.height < 1 || !Number.isInteger(ord_representation.height)) {
                 console.error("Invalid height for w_tower in convertFFormatToOrdinalInstance:", ord_representation.height);
-                return new CNFOrdinal(0n, effectiveTracer); // Fallback to 0
+                return new CNFOrdinal(0n); // Fallback to 0
             }
-            return new WTowerOrdinal(ord_representation.height, effectiveTracer);
+            return new WTowerOrdinal(ord_representation.height);
         }
 
         if (ord_representation.type === 'pow') {
-            const exponent_k_object = convertFFormatToOrdinalInstance(ord_representation.k, effectiveTracer); // Pass tracer
+            const exponent_k_object = convertFFormatToOrdinalInstance(ord_representation.k);
 
             if (exponent_k_object instanceof CNFOrdinal && exponent_k_object.isZero()) {
-                return new CNFOrdinal(1n, effectiveTracer);
+                return new CNFOrdinal(1n);
             }
             return new CNFOrdinal([{
                 exponent: exponent_k_object,
                 coefficient: 1n
-            }], effectiveTracer); // Pass tracer
+            }]);
         }
 
         if (ord_representation.type === 'sum') {
@@ -366,15 +365,15 @@ function convertFFormatToOrdinalInstance(ord_representation, tracer) {
 
             if (typeof coefficient_c_js_number !== 'number' || !Number.isFinite(coefficient_c_js_number) || coefficient_c_js_number < 0) {
                 console.error("convertFFormatToOrdinalInstance 'sum': coefficient c is invalid:", coefficient_c_js_number);
-                return convertFFormatToOrdinalInstance(delta_representation, effectiveTracer); // Pass tracer
+                return convertFFormatToOrdinalInstance(delta_representation);
             }
             if (coefficient_c_js_number === 0) {
-                return convertFFormatToOrdinalInstance(delta_representation, effectiveTracer); // Pass tracer
+                return convertFFormatToOrdinalInstance(delta_representation);
             }
             const coefficient_c_bigint = BigInt(Math.max(1, Math.floor(coefficient_c_js_number)));
 
-            const exponent_beta_object = convertFFormatToOrdinalInstance(exponent_beta_representation, effectiveTracer); // Pass tracer
-            const delta_object = convertFFormatToOrdinalInstance(delta_representation, effectiveTracer); // Pass tracer
+            const exponent_beta_object = convertFFormatToOrdinalInstance(exponent_beta_representation);
+            const delta_object = convertFFormatToOrdinalInstance(delta_representation);
 
             let main_term_ordinal_object;
             let is_exponent_beta_zero = false;
@@ -383,19 +382,18 @@ function convertFFormatToOrdinalInstance(ord_representation, tracer) {
             }
 
             if (is_exponent_beta_zero) {
-                main_term_ordinal_object = new CNFOrdinal(coefficient_c_bigint, effectiveTracer); // Pass tracer
+                main_term_ordinal_object = new CNFOrdinal(coefficient_c_bigint);
             } else {
                 main_term_ordinal_object = new CNFOrdinal([{
                     exponent: exponent_beta_object,
                     coefficient: coefficient_c_bigint
-                }], effectiveTracer); // Pass tracer
+                }]);
             }
-            return main_term_ordinal_object.add(delta_object); // add should also handle tracers internally
+            return main_term_ordinal_object.add(delta_object);
         }
     }
     console.error("Unknown ordinal format in convertFFormatToOrdinalInstance:", ord_representation);
-    // Ensure a tracer is passed if an error leads to CNFOrdinal(0n) or similar fallback
-    return new CNFOrdinal(0n, effectiveTracer); // Modified fallback to include tracer
+    return new CNFOrdinal(0n);
 }
 
 function DisplayfInverse(x, params = DEFAULT_F_PARAMS, threshold = 1e-14, depth = 0) {

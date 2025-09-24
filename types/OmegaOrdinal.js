@@ -6,8 +6,8 @@
  * This is the smallest infinite ordinal.
  */
 class OmegaOrdinal extends OrdinalBase {
-    constructor(operationTracer = null) {
-        super(operationTracer);
+    constructor() {
+        super();
     }
 
     // === REQUIRED UNARY METHODS ===
@@ -24,11 +24,11 @@ class OmegaOrdinal extends OrdinalBase {
     }
 
     rank() {
-        return new OmegaOrdinal(this._tracer);
+        return new OmegaOrdinal();
     }
 
     log() {
-        return new OneOrdinal(this._tracer);
+        return new OneOrdinal();
     }
 
     logStar() {
@@ -47,7 +47,7 @@ class OmegaOrdinal extends OrdinalBase {
     needsParenthesesAsExponent() { return false; }
 
     nextRank() {
-        return new EpsilonZero(this._tracer);
+        return new EpsilonZero();
     }
 
     complexity() { return 1; }
@@ -60,8 +60,8 @@ class OmegaOrdinal extends OrdinalBase {
         return RenderingComponents.renderOmega();
     }
 
-    clone(newTracer = null) {
-        return new OmegaOrdinal(newTracer || this._tracer);
+    clone() {
+        return new OmegaOrdinal();
     }
 
     toFFormat() {
@@ -70,7 +70,7 @@ class OmegaOrdinal extends OrdinalBase {
     }
 
     simplify(complexityBudget, skipMyOwnMPTFCheck = false) {
-        if (this._tracer) this._tracer.consume();
+        OperationTracer.consume();
         const myComplexity = this.complexity();
         if (myComplexity <= complexityBudget) {
             return {
@@ -79,7 +79,7 @@ class OmegaOrdinal extends OrdinalBase {
             };
         }
 
-        const zero = new ZeroOrdinal(this._tracer);
+        const zero = new ZeroOrdinal();
         const zeroComplexity = zero.complexity();
         if (zeroComplexity <= complexityBudget) {
             return {
@@ -110,11 +110,11 @@ class OmegaOrdinal extends OrdinalBase {
             case 'CNF':
                 // ω = CNFOrdinal with single term: ω^1 * 1
                 return new CNFOrdinal([{
-                    exponent: CNFOrdinal.ONEStatic().clone(this._tracer), // ω^1 as CNF exponent
+                    exponent: CNFOrdinal.ONEStatic().clone(), // ω^1 as CNF exponent
                     coefficient: 1n
-                }], this._tracer);
+                }]);
             case 'WTower':
-                return new WTowerOrdinal(1, this._tracer);
+                return new WTowerOrdinal(1);
 
             default:
                 throw new Error(`OmegaOrdinal cannot convert directly to ${targetTypeName}`);
@@ -126,8 +126,8 @@ class OmegaOrdinal extends OrdinalBase {
     /**
      * Singleton instance for efficiency.
      */
-    static instance(tracer = null) {
-        return new OmegaOrdinal(tracer);
+    static instance() {
+        return new OmegaOrdinal();
     }
 }
 
