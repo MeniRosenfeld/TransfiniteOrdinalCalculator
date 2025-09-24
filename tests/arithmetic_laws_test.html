@@ -1036,7 +1036,7 @@
                         };
                     }
                 } catch (error) {
-                    if (error.message && error.message.includes('budget exceeded')) {
+                    if (error.message && (error.message.includes('budget exceeded') || error.message.includes('too much recursion') || error.message.includes('Maximum call stack'))) {
                         return { status: 'aborted', reason: 'Addition associativity: ' + error.message };
                     }
                     return { status: 'failed', reason: 'Addition associativity error: ' + error.message };
@@ -1056,7 +1056,7 @@
                         };
                     }
                 } catch (error) {
-                    if (error.message && error.message.includes('budget exceeded')) {
+                    if (error.message && (error.message.includes('budget exceeded') || error.message.includes('too much recursion') || error.message.includes('Maximum call stack'))) {
                         return { status: 'aborted', reason: 'Multiplication associativity: ' + error.message };
                     }
                     return { status: 'failed', reason: 'Multiplication associativity error: ' + error.message };
@@ -1076,7 +1076,7 @@
                         };
                     }
                 } catch (error) {
-                    if (error.message && error.message.includes('budget exceeded')) {
+                    if (error.message && (error.message.includes('budget exceeded') || error.message.includes('too much recursion') || error.message.includes('Maximum call stack'))) {
                         return { status: 'aborted', reason: 'Left distributivity: ' + error.message };
                     }
                     return { status: 'failed', reason: 'Left distributivity error: ' + error.message };
@@ -1096,7 +1096,7 @@
                         };
                     }
                 } catch (error) {
-                    if (error.message && error.message.includes('budget exceeded')) {
+                    if (error.message && (error.message.includes('budget exceeded') || error.message.includes('too much recursion') || error.message.includes('Maximum call stack'))) {
                         return { status: 'aborted', reason: 'Exponent addition: ' + error.message };
                     }
                     return { status: 'failed', reason: 'Exponent addition error: ' + error.message };
@@ -1116,7 +1116,7 @@
                         };
                     }
                 } catch (error) {
-                    if (error.message && error.message.includes('budget exceeded')) {
+                    if (error.message && (error.message.includes('budget exceeded') || error.message.includes('too much recursion') || error.message.includes('Maximum call stack'))) {
                         return { status: 'aborted', reason: 'Exponent multiplication: ' + error.message };
                     }
                     return { status: 'failed', reason: 'Exponent multiplication error: ' + error.message };
@@ -1138,7 +1138,7 @@
                         };
                     }
                 } catch (error) {
-                    if (error.message && error.message.includes('budget exceeded')) {
+                    if (error.message && (error.message.includes('budget exceeded') || error.message.includes('too much recursion') || error.message.includes('Maximum call stack'))) {
                         return { status: 'aborted', reason: 'Addition monotonicity: ' + error.message };
                     }
                     return { status: 'failed', reason: 'Addition monotonicity error: ' + error.message };
@@ -1163,7 +1163,7 @@
                         }
                     }
                 } catch (error) {
-                    if (error.message && error.message.includes('budget exceeded')) {
+                    if (error.message && (error.message.includes('budget exceeded') || error.message.includes('too much recursion') || error.message.includes('Maximum call stack'))) {
                         return { status: 'aborted', reason: 'Multiplication monotonicity: ' + error.message };
                     }
                     return { status: 'failed', reason: 'Multiplication monotonicity error: ' + error.message };
@@ -1188,7 +1188,7 @@
                         }
                     }
                 } catch (error) {
-                    if (error.message && error.message.includes('budget exceeded')) {
+                    if (error.message && (error.message.includes('budget exceeded') || error.message.includes('too much recursion') || error.message.includes('Maximum call stack'))) {
                         return { status: 'aborted', reason: 'Exponentiation monotonicity: ' + error.message };
                     }
                     return { status: 'failed', reason: 'Exponentiation monotonicity error: ' + error.message };

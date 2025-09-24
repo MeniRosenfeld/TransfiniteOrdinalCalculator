@@ -43,7 +43,7 @@ The Transfinite Ordinal Calculator is a sophisticated JavaScript application for
 
 ## Architecture Overview
 
-The project follows a modular, rule-based architecture with clear separation of concerns:
+The project follows a modular, rule-based architecture with clear separation of concerns and a global tracer system for performance optimization:
 
 ```
 TransfiniteOrdinalCalculator/
@@ -60,16 +60,21 @@ TransfiniteOrdinalCalculator/
 1. **Modular Design**: Each ordinal type is self-contained with its own file
 2. **Rule-Based Operations**: Operations are defined as composable rules
 3. **Type Safety**: Strong typing with comprehensive validation
-4. **Immutability**: Ordinal objects are immutable; operations return new instances
-5. **Extensibility**: Easy to add new ordinal types and operations
-6. **Performance**: Efficient algorithms with operation budget tracking
+4. **True Immutability**: Ordinal objects are completely stateless with global tracer system
+5. **Performance Optimization**: Linear-complexity algorithms with no cloning overhead
+6. **Global Budget Management**: Centralized operation tracking prevents infinite loops
+7. **Extensibility**: Easy to add new ordinal types and operations
 
 ### Key Architectural Components
 
 1. **OrdinalBase**: Abstract base class defining the ordinal contract
-2. **RuleEngine**: Dispatches operations based on pattern matching
+2. **RuleEngine**: Dispatches operations based on pattern matching with fail-fast error handling
 3. **ConversionEngine**: Manages type conversions with path finding
-4. **OperationTracer**: Tracks computational budget to prevent infinite loops
+4. **Global OperationTracer**: Centralized operation budget tracking system
+   - **Static Methods**: `OperationTracer.setGlobalTracer(budget)`, `OperationTracer.consume()`
+   - **No Per-Object Tracers**: Eliminates cloning overhead and simplifies architecture
+   - **Frontend Control**: Applications manage budget, operations just consume
+   - **Linear Performance**: Enables efficient recursive operations without quadratic cloning
 5. **SimpleParser**: Parses ordinal expressions into object trees
 6. **RenderingComponents**: Provides graphical HTML rendering
 
@@ -427,12 +432,23 @@ new Rule("Rule Name",
 ### Utility Files
 
 #### `OperationTracer.js`
-**Purpose**: Tracks computational budget to prevent infinite loops.
+**Purpose**: Global operation budget tracking system for performance and infinite loop prevention.
 
 **Features**:
-- Configurable operation limits
-- Automatic consumption tracking
-- Exception throwing when budget exceeded
+- **Global Static Tracer**: Single centralized budget for entire application
+- **Static Methods**: `setGlobalTracer(budget)`, `consume(amount)`, `reset(budget)`
+- **Frontend Control**: Applications initialize and reset budget as needed
+- **Automatic Consumption**: All ordinal operations consume from global budget
+- **Fail-Fast**: Throws exception when budget exceeded
+- **Performance Benefits**: Eliminates per-object tracer overhead and cloning costs
+
+**Key Methods**:
+```javascript
+OperationTracer.setGlobalTracer(1000000);  // Initialize with budget
+OperationTracer.consume(5);                // Consume operations
+OperationTracer.getCount();                // Check consumption
+OperationTracer.reset(2000000);            // Reset with new budget
+```
 
 #### `ordinal_mapping.js` & `ordinal_mapping_inverse.js`
 **Purpose**: Implements the f-function mapping between ordinals and real numbers.
@@ -460,6 +476,80 @@ new Rule("Rule Name",
 - Visual conversion matrix showing all possible conversions
 - SVG graph of conversion dependencies
 - Diagnostic information about the conversion registry
+
+---
+
+## Performance Architecture
+
+### Global Tracer System
+
+The project uses a revolutionary global tracer architecture that eliminates performance bottlenecks:
+
+#### **Before: Per-Object Tracers**
+- Each ordinal carried its own `OperationTracer` instance
+- Operations required cloning ordinals to manage different tracers
+- **Quadratic complexity**: `logStar()` and `WTower→CNF` scaled O(n²) due to cloning
+- Complex tracer parameter passing throughout codebase
+
+#### **After: Global Static Tracer**
+- Single global `OperationTracer` managed via static methods
+- Ordinals are completely stateless - no tracer members
+- **Linear complexity**: Operations scale O(n) with direct object navigation
+- Simplified architecture with no tracer parameter passing
+
+### Performance Improvements
+
+#### **WTower→CNF Conversion**
+```javascript
+// OLD: O(n²) - each iteration cloned the growing exponent
+for (let i = 0n; i < steps; i++) {
+    exponentExp = new CNFOrdinal([{ exponent: exponentExp.clone(), coefficient: 1n }]);
+}
+
+// NEW: O(n) - direct object sharing with linear operation consumption
+for (let i = 0n; i < steps; i++) {
+    OperationTracer.consume(); // Linear tracking
+    exponentExp = new CNFOrdinal([{ exponent: exponentExp, coefficient: 1n }]);
+}
+```
+
+#### **logStar() Operations**
+```javascript
+// OLD: O(n²) - recursive calls with cloning at each level
+while (!current.isFinite()) {
+    current = current.log(); // Expensive cloning
+}
+
+// NEW: O(n) - direct navigation through object structure
+while (!this._isFiniteTerms(currentTerms)) {
+    OperationTracer.consume(); // Linear tracking
+    currentTerms = leadingTerm.exponent.terms; // Direct access
+}
+```
+
+### Rule Engine Reliability
+
+#### **Fail-Fast Error Handling**
+The Rule Engine now implements fail-fast behavior for maximum reliability:
+
+```javascript
+// OLD: Silent error ignoring
+try {
+    matched = !!rule.condition(a, b);
+} catch (condErr) {
+    console.warn('Rule condition failed:', condErr.message);
+    matched = false; // Continue to next rule - DANGEROUS!
+}
+
+// NEW: Fail-fast reliability
+try {
+    matched = !!rule.condition(a, b);
+} catch (condErr) {
+    throw new Error(`Rule condition failed: ${condErr.message}. Operation cannot proceed safely.`);
+}
+```
+
+This prevents incorrect arithmetic results when complex ordinals exceed computational limits during rule evaluation.
 
 ---
 

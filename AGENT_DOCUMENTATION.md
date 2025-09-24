@@ -10,28 +10,38 @@ This document provides practical development guidance and lessons learned for wo
 
 This section documents critical guidelines based on bugs and issues encountered during development. Following these will prevent repeating past mistakes.
 
-### **Guideline 1: `OrdinalParser` and `OperationTracer` Usage**
+### **Guideline 1: Global `OperationTracer` Usage**
 
-**The Bug**: Repeated `OrdinalParser requires a valid OperationTracer instance` and `Operation budget exceeded` errors.
+**The Revolution**: The project now uses a global static tracer system instead of per-object tracers.
 
-**The Causes**:
-1. Incorrectly calling `new OrdinalParser(tracer)` instead of `new OrdinalParser(string, tracer)`
-2. Passing a single `OperationTracer` instance to functions performing thousands of operations, exhausting the budget
+**The New Architecture**:
+1. **Single Global Tracer**: `OperationTracer` is now managed via static methods
+2. **No Per-Object Tracers**: Ordinal constructors no longer take tracer parameters
+3. **Frontend Responsibility**: Applications must initialize and manage the global budget
 
 **The Rules**:
-- Constructor signature: `new OrdinalParser(inputString, operationTracer, options?)`
-- Use `{ coerceToCNF: false }` for ENF-only parsing
-- **Critical**: Create a `new OperationTracer(budget)` for each independent operation in loops
-- `OperationTracer` has **no** `.reset()` method
+- **Initialize First**: Always call `OperationTracer.setGlobalTracer(budget)` before any ordinal operations
+- **Reset Per Calculation**: Use `OperationTracer.reset(budget)` for fresh calculations
+- **No Tracer Parameters**: Ordinal constructors and operations no longer take tracers
+- **Automatic Consumption**: All operations automatically consume from global budget
 
 ```javascript
-// CORRECT USAGE IN A LOOP
+// CORRECT USAGE WITH GLOBAL TRACER
+OperationTracer.setGlobalTracer(100000);  // Initialize global budget
+const parser = new SimpleParser(inputString); // No tracer parameter
+const result = parser.parse();
+
+// For loops, reset budget as needed
 for (const str of manyStrings) {
-    // Create fresh tracer for each parse
-    const ord = new OrdinalParser(str, new OperationTracer(10000)).parse(); 
-    // ... use ord
+    OperationTracer.reset(10000);  // Fresh budget for each parse
+    const ord = new SimpleParser(str).parse(); 
 }
 ```
+
+**Performance Benefits**:
+- **No Cloning Overhead**: Ordinals are truly immutable and stateless
+- **Linear Complexity**: Operations scale O(n) instead of O(n²)
+- **Simplified Code**: No tracer parameter passing throughout codebase
 
 ### **Guideline 2: Static Properties vs Methods**
 
@@ -91,6 +101,44 @@ for (const str of manyStrings) {
 - **Left-division valid**: `∃! q,r: b·q + r = a` with `r < b`
 
 **The Rule**: Always use left-arithmetic operations in ordinal division. For infinite omega exponents, use identity; for finite ones, use `exponentPredecessor()`.
+
+### **Guideline 8: Immutability and Object Sharing**
+
+**The Architecture**: With the global tracer system, ordinals are truly immutable and stateless.
+
+**The Benefits**:
+- **Safe Object Sharing**: Multiple references to the same ordinal are safe
+- **No Cloning Needed**: Operations can share objects without mutation concerns
+- **Performance**: Linear complexity instead of quadratic cloning overhead
+
+**The Rules**:
+- **Never Mutate**: Operations must create new objects, never modify existing ones
+- **Clone When Building**: Use `.clone()` when constructing new ordinals from existing parts
+- **Share Safely**: Direct object references are safe due to immutability
+
+### **Guideline 9: Error Categorization in Tests**
+
+**The Issue**: Different types of errors need different handling in test suites.
+
+**The Categories**:
+- **Failed**: Arithmetic law violations or incorrect results
+- **Aborted**: Resource limitations (budget exceeded, recursion limit, stack overflow)
+- **Error**: Unexpected exceptions or system failures
+
+**The Detection**:
+```javascript
+if (error.message && (
+    error.message.includes('budget exceeded') ||      // Our operation budget
+    error.message.includes('too much recursion') ||   // Firefox recursion limit  
+    error.message.includes('Maximum call stack')      // Chrome/Safari recursion limit
+)) {
+    return { status: 'aborted', reason: error.message };
+} else {
+    return { status: 'failed', reason: error.message };
+}
+```
+
+**The Rule**: Distinguish between computational limits (abort) vs mathematical incorrectness (fail).
 
 ---
 
