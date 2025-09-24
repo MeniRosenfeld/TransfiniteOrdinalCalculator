@@ -11,18 +11,18 @@ function getTowerInfo(ord) {
 
     // Base case: Finite ordinals contribute 0 to tower height. MPT is the ordinal itself.
     if (ord.isFinite()) {
-        return { numOmegas: 0n, mptOrdinalForG: ord.clone() };
+        return { numOmegas: 0n, mptOrdinalForG: ord };
     }
 
     // If it's already a WTower, we know the height. The MPT is the tower itself.
     if (ord instanceof WTowerOrdinal) {
-        return { numOmegas: ord.height, mptOrdinalForG: ord.clone() };
+        return { numOmegas: ord.height, mptOrdinalForG: ord };
     }
 
     // For CNF: ω^a * c + ... -> recursively analyze 'a'
     if (ord instanceof CNFOrdinal) {
         if (ord.isZero()) {
-            return { numOmegas: 0n, mptOrdinalForG: ord.clone() };
+            return { numOmegas: 0n, mptOrdinalForG: ord };
         }
         const leadingTerm = ord.terms[0];
         const a = leadingTerm.exponent;
@@ -39,7 +39,7 @@ function getTowerInfo(ord) {
 
     // Fallback for other types like EpsilonZero, which don't have a simple tower structure in this context.
     // Treat them like a base case.
-    return { numOmegas: 0n, mptOrdinalForG: ord.clone() };
+    return { numOmegas: 0n, mptOrdinalForG: ord };
 }
 
 if (typeof module !== 'undefined' && module.exports) {

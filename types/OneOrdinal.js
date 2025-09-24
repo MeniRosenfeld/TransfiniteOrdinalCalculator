@@ -49,7 +49,7 @@ class OneOrdinal extends OrdinalBase {
     simplify(complexityBudget, skipMyOwnMPTFCheck = false) {
         if (this.complexity() <= complexityBudget) {
             return {
-                simplifiedOrdinal: this.clone(),
+                simplifiedOrdinal: this,
                 remainingBudget: complexityBudget - this.complexity()
             };
         }

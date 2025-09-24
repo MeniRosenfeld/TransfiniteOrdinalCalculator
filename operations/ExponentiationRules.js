@@ -17,22 +17,22 @@ function buildLimitPart(cnf) {
     for (let i = 0; i < terms.length; i++) {
         const t = terms[i];
         if (i === terms.length - 1 && t.exponent.isZero()) continue; // drop finite tail
-        resultTerms.push({ exponent: t.exponent.clone(), coefficient: t.coefficient });
+        resultTerms.push({ exponent: t.exponent, coefficient: t.coefficient });
     }
     return new CNFOrdinal(resultTerms);
 }
 
 function powerCNF(a, b) {
     // Port of legacy CNF power with available helpers
-    if (b.isZero()) return CNFOrdinal.ONEStatic().clone();
-    if (a.isZero()) return CNFOrdinal.ZEROStatic().clone();
-    if (a.isOne()) return CNFOrdinal.ONEStatic().clone();
-    if (b.isOne()) return a.clone();
+    if (b.isZero()) return CNFOrdinal.ONEStatic();
+    if (a.isZero()) return CNFOrdinal.ZEROStatic();
+    if (a.isOne()) return CNFOrdinal.ONEStatic();
+    if (b.isOne()) return a;
 
     // Helper: exponentiation by squaring for CNF ordinals
     function powBySquaringCNF(baseCNF, expBigInt) {
-        let result = CNFOrdinal.ONEStatic().clone();
-        let base = baseCNF.clone();
+        let result = CNFOrdinal.ONEStatic();
+        let base = baseCNF;
         let e = expBigInt;
         let loopCount = 0;
         while (e > 0n) {
@@ -59,7 +59,7 @@ function powerCNF(a, b) {
     // Infinite base, finite exponent
     if (!a.isFinite() && b.isFinite()) {
         const m = b.getFinitePart();
-        if (m === 0n) return CNFOrdinal.ONEStatic().clone();
+        if (m === 0n) return CNFOrdinal.ONEStatic();
 
         // (ω^α)^m = ω^(α*m) when single term with coeff 1
         if (a.terms.length === 1 && a.terms[0].coefficient === 1n) {
@@ -79,7 +79,7 @@ function powerCNF(a, b) {
         const B_lim = buildLimitPart(b);
 
         // α^m (finite power)
-        let alphaPowM = CNFOrdinal.ONEStatic().clone();
+        let alphaPowM = CNFOrdinal.ONEStatic();
         if (mVal > 0n) {
             const mAsOrdinal = new CNFOrdinal(mVal);
             // Use repeated multiplication or the single-term fast path if available
@@ -134,13 +134,13 @@ function powerENF(a, b) {
     if (b.isZero()) return new ENFOrdinal([new ENFTerm([], 1n)]);
     if (a.isZero()) return new ENFOrdinal([]);
     if (a.isOne()) return new ENFOrdinal([new ENFTerm([], 1n)]);
-    if (b.isOne()) return a.clone();
+    if (b.isOne()) return a;
 
     // Finite exponent -> exponentiation by squaring
     if (b.isFinite()) {
         let n = b.getFinitePart();
         let res = new ENFOrdinal([new ENFTerm([], 1n)]);
-        let temp_a = a.clone();
+        let temp_a = a;
         while (n > 0n) {
             OperationTracer.consume();
             if (n % 2n === 1n) res = res.multiply(temp_a);
@@ -156,7 +156,7 @@ function powerENF(a, b) {
         if (a.isOmega()) {
             // Special identity: ω^(ε_k) = ε_k
             if (b.isBasic() && b.isEpsilonNumber()) {
-                return b.clone();
+                return b;
             }
             
             // If rank(b) > rank(a)=ω, use rank-based decomposition: b = k*X + r, return k^X * ω^r
@@ -169,13 +169,13 @@ function powerENF(a, b) {
                 if (k.isOmega()) {
                     // ω^x: create ENFFactor with base=ω and exponent=x
                     const omegaBase = new OmegaOrdinal();
-                    const factor = new ENFFactor(omegaBase, x.clone());
+                    const factor = new ENFFactor(omegaBase, x);
                     k_pow_x = new ENFOrdinal([new ENFTerm([factor], 1n)]);
                 } else {
                     // k is epsilon: ε_t^x
                     const t = k.epsilonIndex();
                     const epsilonBase = new EpsilonNumber(t);
-                    const factor = new ENFFactor(epsilonBase, x.clone());
+                    const factor = new ENFFactor(epsilonBase, x);
                     k_pow_x = new ENFOrdinal([new ENFTerm([factor], 1n)]);
                 }
                 const w_pow_r = powerENF(a, r);
@@ -192,7 +192,7 @@ function powerENF(a, b) {
             
             // General case: ω^b → ENFFactor with base=ω and exponent=b
             const omegaBase = new OmegaOrdinal();
-            const factor = new ENFFactor(omegaBase, b.clone());
+            const factor = new ENFFactor(omegaBase, b);
             return new ENFOrdinal([new ENFTerm([factor], 1n)]);
         }
         
@@ -208,12 +208,12 @@ function powerENF(a, b) {
                 let k_pow_x;
                 if (k.isOmega()) {
                     const omegaBase = new OmegaOrdinal();
-                    const factor = new ENFFactor(omegaBase, x.clone());
+                    const factor = new ENFFactor(omegaBase, x);
                     k_pow_x = new ENFOrdinal([new ENFTerm([factor], 1n)]);
                 } else {
                     const t = k.epsilonIndex();
                     const epsilonBase = new EpsilonNumber(t);
-                    const factor = new ENFFactor(epsilonBase, x.clone());
+                    const factor = new ENFFactor(epsilonBase, x);
                     k_pow_x = new ENFOrdinal([new ENFTerm([factor], 1n)]);
                 }
                 const term_r = powerENF(a, r);
@@ -221,7 +221,7 @@ function powerENF(a, b) {
             }
             // ε_idx^b = ε_idx with exponent b
             const epsilonBase = new EpsilonNumber(idx);
-            const factor = new ENFFactor(epsilonBase, b.clone());
+            const factor = new ENFFactor(epsilonBase, b);
             return new ENFOrdinal([new ENFTerm([factor], 1n)]);
         }
     }
@@ -238,13 +238,13 @@ function powerENF(a, b) {
         let k_pow_x;
         if (k.isOmega()) {
             const omegaBase = new OmegaOrdinal();
-            const factor = new ENFFactor(omegaBase, x.clone());
+            const factor = new ENFFactor(omegaBase, x);
             k_pow_x = new ENFOrdinal([new ENFTerm([factor], 1n)]);
         } else {
             // k is epsilon basic: extract its index t
             const t = k.epsilonIndex();
             const epsilonBase = new EpsilonNumber(t);
-            const factor = new ENFFactor(epsilonBase, x.clone());
+            const factor = new ENFFactor(epsilonBase, x);
             k_pow_x = new ENFOrdinal([new ENFTerm([factor], 1n)]);
         }
         const term_r = powerENF(a, r);
@@ -265,12 +265,12 @@ function powerENF(a, b) {
         let k_pow_cd;
         if (k.isOmega()) {
             const omegaBase = new OmegaOrdinal();
-            const factor = new ENFFactor(omegaBase, cd.clone());
+            const factor = new ENFFactor(omegaBase, cd);
             k_pow_cd = new ENFOrdinal([new ENFTerm([factor], 1n)]);
         } else {
             const t = k.epsilonIndex();
             const epsilonBase = new EpsilonNumber(t);
-            const factor = new ENFFactor(epsilonBase, cd.clone());
+            const factor = new ENFFactor(epsilonBase, cd);
             k_pow_cd = new ENFOrdinal([new ENFTerm([factor], 1n)]);
         }
         return k_pow_cd.multiply(term_r);
@@ -297,7 +297,7 @@ function createExponentiationRules(conversionEngine) {
         // a ^ 1 = a
         new Rule('a^1 = a',
             (a, b) => b.isOne(),
-            (a, b) => a.clone()),
+            (a, b) => a),
 
         // Finite ^ finite
         new Rule('Finite ^ finite',
@@ -336,7 +336,7 @@ function createExponentiationRules(conversionEngine) {
         // a^z0 = z0 (here a is known not to be z0 due to previous rule)
         new Rule('a^z0 = z0',
             (a, b) => (typeof ZetaZero !== 'undefined') && (b instanceof ZetaZero),
-            (a, b) => b.clone()),
+            (a, b) => b),
 
         // ENF fallback can be added later
         new Rule("Convert to ENF fallback",

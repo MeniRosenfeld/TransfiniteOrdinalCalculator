@@ -59,7 +59,7 @@ class EpsilonNumber extends OrdinalBase {
     }
 
     clone() {
-        return new EpsilonNumber(this.k.clone());
+        return new EpsilonNumber(this.k);
     }
 
     simplify(complexityBudget, skipMyOwnMPTFCheck = false) {
@@ -67,7 +67,7 @@ class EpsilonNumber extends OrdinalBase {
         const myComplexity = this.complexity();
         if (myComplexity <= complexityBudget) {
             return {
-                simplifiedOrdinal: this.clone(),
+                simplifiedOrdinal: this,
                 remainingBudget: complexityBudget - myComplexity
             };
         }
@@ -85,7 +85,7 @@ class EpsilonNumber extends OrdinalBase {
     }
 
     rank() {
-        return this.clone();
+        return this;
     }
 
     log() {
@@ -104,7 +104,7 @@ class EpsilonNumber extends OrdinalBase {
     isEpsilonNumber() { return true; }
 
     epsilonIndex() {
-        return this.k.clone();
+        return this.k;
     }
 
     // === CONVERSION SYSTEM ===
@@ -123,7 +123,7 @@ class EpsilonNumber extends OrdinalBase {
             case 'EpsilonTower':
                 if (typeof EpsilonTowerOrdinal !== 'undefined') {
                     // Convert e_k to EpsilonTower e_k^^1 (which equals e_k)
-                    return new EpsilonTowerOrdinal(this.k.clone(), 1);
+                    return new EpsilonTowerOrdinal(this.k, 1);
                 }
                 throw new Error('EpsilonTowerOrdinal conversion not available for EpsilonNumber');
             default:

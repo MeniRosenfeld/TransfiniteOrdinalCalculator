@@ -7,24 +7,24 @@ function addCNF(a, b) {
     OperationTracer.consume()
     // Case 1: b is 0
     if (b.isZero()) {
-        return a.clone();
+        return a;
     }
 
     // Case 2: a is 0
     if (a.isZero()) {
-        return b.clone();
+        return b;
     }
 
     // Case 3: a is finite, b is infinite
     if (a.isFinite() && !b.isFinite()) {
-        return b.clone();
+        return b;
     }
 
     // Case 4: a is infinite, b is finite
     if (!a.isFinite() && b.isFinite()) {
         OperationTracer.consume(a.terms.length || 0);
         const newTerms = a.terms.map(t => ({
-            exponent: t.exponent.clone(),
+            exponent: t.exponent,
             coefficient: t.coefficient
         }));
         const aFinitePart = a.getFinitePart();
@@ -32,12 +32,14 @@ function addCNF(a, b) {
         const combinedFinitePart = aFinitePart + bFinitePart;
 
         if (aFinitePart > 0n) {
-            newTerms[newTerms.length - 1].coefficient = combinedFinitePart;
-            if (combinedFinitePart === 0n && newTerms[newTerms.length - 1].exponent.isZero()) {
-                newTerms.pop();
-            }
+            // IMMUTABILITY FIX: Don't mutate existing term, create new one
+            const lastTerm = newTerms[newTerms.length - 1];
+            newTerms[newTerms.length - 1] = { 
+                exponent: lastTerm.exponent, 
+                coefficient: combinedFinitePart 
+            };
         } else if (combinedFinitePart > 0n) {
-            newTerms.push({ exponent: CNFOrdinal.ZEROStatic().clone(), coefficient: combinedFinitePart });
+            newTerms.push({ exponent: CNFOrdinal.ZEROStatic(), coefficient: combinedFinitePart });
         }
         return new CNFOrdinal(newTerms);
     }
@@ -57,36 +59,27 @@ function addCNF(a, b) {
     // Copy terms from a whose exponents are greater than the leading exponent of b
     OperationTracer.consume(a.terms.length || 0);
     while (i < a.terms.length && a.terms[i].exponent.compareTo(firstExpOther) > 0) {
-        newTermsResult.push({
-            exponent: a.terms[i].exponent.clone(),
-            coefficient: a.terms[i].coefficient
-        });
+        newTermsResult.push(a.terms[i]);
         i++;
     }
 
     if (i < a.terms.length && a.terms[i].exponent.equals(firstExpOther)) {
         // Exponents are equal: add coefficients and take the rest of b
         newTermsResult.push({
-            exponent: a.terms[i].exponent.clone(),
+            exponent: a.terms[i].exponent,
             coefficient: a.terms[i].coefficient + firstTermOther.coefficient
         });
         // Add remaining terms from b
         OperationTracer.consume(Math.max(0, (b.terms.length - 1)));
         for (let j = 1; j < b.terms.length; j++) {
-            newTermsResult.push({
-                exponent: b.terms[j].exponent.clone(),
-                coefficient: b.terms[j].coefficient
-            });
+            newTermsResult.push(b.terms[j]);
         }
     } else {
         // All remaining exponents in a are smaller than firstExpOther,
         // or a has no more terms. So, all terms of b are appended.
         OperationTracer.consume(b.terms.length || 0);
         for (let j = 0; j < b.terms.length; j++) {
-            newTermsResult.push({
-                exponent: b.terms[j].exponent.clone(),
-                coefficient: b.terms[j].coefficient
-            });
+            newTermsResult.push(b.terms[j]);
         }
     }
     return new CNFOrdinal(newTermsResult);
@@ -94,8 +87,8 @@ function addCNF(a, b) {
 
 function addENF(a, b) {
     // ENF-specific addition algorithm (extracted from ENFOrdinal.prototype.add)
-    if (a.isZero()) return b.clone();
-    if (b.isZero()) return a.clone();
+    if (a.isZero()) return b;
+    if (b.isZero()) return a;
 
     const b1 = b.terms[0];
     const newTerms = [];
@@ -107,22 +100,25 @@ function addENF(a, b) {
             k = i;
             break;
         }
-        newTerms.push(a.terms[i].clone());
+        newTerms.push(a.terms[i]);
     }
 
-    if (k === -1) return new ENFOrdinal(newTerms.concat(b.terms.map(t => t.clone())));
+    if (k === -1) return new ENFOrdinal(newTerms.concat(b.terms.map(t => t)));
 
     const ak = a.terms[k];
-    if (ak.compareStructureTo(b1) < 0) return new ENFOrdinal(newTerms.concat(b.terms.map(t => t.clone())));
+    if (ak.compareStructureTo(b1) < 0) return new ENFOrdinal(newTerms.concat(b.terms.map(t => t)));
 
     if (ak.compareStructureTo(b1) === 0) {
-        const junctionTerm = ak.clone();
-        junctionTerm.coefficient += b1.coefficient;
-        newTerms.push(junctionTerm);
-        const restOfBeta = b.terms.slice(1).map(t => t.clone());
+        // IMMUTABILITY FIX: Don't mutate existing term, create new one
+        const newJunctionTerm = new ENFTerm(
+            ak.factors,
+            ak.coefficient + b1.coefficient  // Combined coefficient
+        );
+        newTerms.push(newJunctionTerm);
+        const restOfBeta = b.terms.slice(1).map(t => t); // Clone remaining terms
         return new ENFOrdinal(newTerms.concat(restOfBeta));
     }
-    return new ENFOrdinal(newTerms.concat(b.terms.map(t => t.clone())));
+    return new ENFOrdinal(newTerms.concat(b.terms.map(t => t)));
 }
 
 function addFinite(a, b) {
@@ -142,11 +138,11 @@ function createAdditionRules(conversionEngine) {
         // Identity rules (highest precedence)
         new Rule("Zero left identity",
             (a, b) => a.isZero(),
-            (a, b) => b.clone()),
+            (a, b) => b),
 
         new Rule("Zero right identity",
             (a, b) => b.isZero(),
-            (a, b) => a.clone()),
+            (a, b) => a),
 
         // Finite arithmetic
         new Rule("Both finite",
@@ -156,7 +152,7 @@ function createAdditionRules(conversionEngine) {
         // Finite + infinite => infinite (left finite)
         new Rule("Finite + infinite = infinite",
             (a, b) => a.isFinite() && !b.isFinite(),
-            (a, b) => b.clone()),
+            (a, b) => b),
 
         // Convert to CNF for <ε₀ ordinals
         new Rule("Convert to CNF for <ε₀",
@@ -186,7 +182,7 @@ function createAdditionRules(conversionEngine) {
         // a + z0 = z0 (here a is known not to be z0 due to previous rule)
         new Rule("a + z0 = z0",
             (a, b) => (typeof ZetaZero !== 'undefined') && (b instanceof ZetaZero),
-            (a, b) => b.clone())
+            (a, b) => b)
     ];
 }
 

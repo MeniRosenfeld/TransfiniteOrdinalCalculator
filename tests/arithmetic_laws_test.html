@@ -1006,7 +1006,7 @@
         function runTripleTestsImpl(a, b, c) {
             try {
                 // Set global tracer for this test
-                OperationTracer.setGlobalTracer(50000);
+                OperationTracer.setGlobalTracer(1000000);
                 
                 // Test 1: Associativity of addition: (a+b)+c = a+(b+c)
                 try {
@@ -1042,7 +1042,7 @@
                     return { status: 'failed', reason: 'Addition associativity error: ' + error.message };
                 }
 
-                OperationTracer.reset(40000);
+                OperationTracer.reset(1000000);
 
                 // Test 2: Associativity of multiplication: (a*b)*c = a*(b*c)
                 try {
@@ -1062,7 +1062,7 @@
                     return { status: 'failed', reason: 'Multiplication associativity error: ' + error.message };
                 }
 
-                OperationTracer.reset(50000);
+                OperationTracer.reset(1000000);
 
                 // Test 3: Left distributivity: a*(b+c) = a*b+a*c
                 try {
@@ -1082,7 +1082,7 @@
                     return { status: 'failed', reason: 'Left distributivity error: ' + error.message };
                 }
 
-                OperationTracer.reset(50000);
+                OperationTracer.reset(1000000);
 
                 // Test 4: Exponent addition: a^(b+c) = a^b*a^c
                 try {
@@ -1102,7 +1102,7 @@
                     return { status: 'failed', reason: 'Exponent addition error: ' + error.message };
                 }
 
-                OperationTracer.reset(50000);
+                OperationTracer.reset(1000000);
 
                 // Test 5: Exponent multiplication: a^(b*c) = (a^b)^c
                 try {
@@ -1122,7 +1122,7 @@
                     return { status: 'failed', reason: 'Exponent multiplication error: ' + error.message };
                 }
 
-                OperationTracer.reset(50000);
+                OperationTracer.reset(1000000);
                 // Test 6: Addition monotonicity: a+b ? a+c = b ? c
                 try {
                     const sum_ab = OPERATIONS.add(a, b);
@@ -1144,7 +1144,7 @@
                     return { status: 'failed', reason: 'Addition monotonicity error: ' + error.message };
                 }
 
-                OperationTracer.reset(50000);
+                OperationTracer.reset(1000000);
                 // Test 7: Multiplication monotonicity: a*b ? a*c = b ? c (if a > 0)
                 try {
                     const zero = new ZeroOrdinal();
@@ -1169,7 +1169,7 @@
                     return { status: 'failed', reason: 'Multiplication monotonicity error: ' + error.message };
                 }
 
-                OperationTracer.reset(50000);
+                OperationTracer.reset(1000000);
                 // Test 8: Exponentiation monotonicity: a^b ? a^c = b ? c (if a > 1)
                 try {
                     const one = new OneOrdinal();

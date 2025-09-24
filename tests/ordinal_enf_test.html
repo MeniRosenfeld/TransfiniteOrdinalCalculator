@@ -454,7 +454,7 @@
             console.log(`[DEBUG] renderSingleKindOutput(${kindKey}): stats.results.length=${stats.results.length}, isExpanded=${detailsElement?.open}`);
             if (!detailsElement || !previewContainer || !allTestsContainerWhenOpen) {
                 console.warn(`[DEBUG] Missing elements for ${kindKey}: details=${!!detailsElement}, preview=${!!previewContainer}, container=${!!allTestsContainerWhenOpen}`);
-                return;
+            return;
             }
 
             previewContainer.innerHTML = '';
@@ -1708,7 +1708,6 @@
             const e1_base = new EpsilonNumber(new OneOrdinal());
             const w_cnf = OPERATIONS.convert(new OmegaOrdinal(), 'CNF');
             const one_cnf = OPERATIONS.convert(new OneOrdinal(), 'CNF');
-
             // Additional ordinals referenced in tests
             const ord_zero = enf_zero;
             const ord_one = enf_one;
@@ -1719,6 +1718,7 @@
             const ord_w_times_2 = OPERATIONS.multiply(enf_w, new FiniteOrdinal(2));
             const ord_w_plus_1 = OPERATIONS.add(enf_w, enf_one);
             const ord_w_squared = OPERATIONS.power(enf_w, new FiniteOrdinal(2));
+
 
             // Complex test cases
             const ord_w_w = new ENFOrdinal([new ENFTerm([new ENFFactor(new OmegaOrdinal(), new OmegaOrdinal())], 1n)]);
@@ -1766,6 +1766,103 @@
             const multi_term_2 = new ENFOrdinal([
                 new ENFTerm([new ENFFactor(e1_base, ord_w), new ENFFactor(e0_base, ord_five), new ENFFactor(new OmegaOrdinal(), w_cubed_plus_2)], 2n)
             ]);
+
+
+            // === MUTABILITY TEST SETUP ===
+            console.log('[MUTABILITY] Setting up mutation detection...');
+            
+            // --- All Ordinals for Tables ---
+            const allOrdinals = [
+                ord_zero, ord_one, ord_five, ord_w, ord_w_plus_1, ord_w_times_2, ord_w_squared,
+                ord_w_w, ord_w_w_plus_1, ord_w_w_times_2, ord_w_w2,
+                ord_e0, ord_e0_plus_1, ord_e0_plus_w, ord_e0_plus_w_w, ord_e0_times_2, ord_e0_times_w, ord_e0_squared, ord_e0_pow_w, ord_e0_pow_w_plus_1,
+                ord_e1, ord_e1_plus_e0, ord_e1_times_2, ord_e1_times_w, ord_e1_times_e0, ord_e1_pow_e0,
+                ord_e2, ord_e_w, ord_e_e0,
+                multi_term_1, multi_term_2
+            ].sort((a, b) => a.compareTo(b));
+
+            // Store immutable string representations for mutation detection
+            const originalStrings = allOrdinals.map(ord => {
+                try {
+                    return ord.toString();
+                } catch (error) {
+                    console.error('[MUTABILITY] Error getting toString for ordinal:', error);
+                    return `ERROR: ${error.message}`;
+                }
+            });
+            
+            console.log('[MUTABILITY] Captured', allOrdinals.length, 'ordinal string representations');
+            console.log('[MUTABILITY] Sample strings:', originalStrings.slice(0, 5));
+
+            // Store mutation detection data globally
+            window.mutabilityTest = {
+                ordinals: allOrdinals,
+                originalStrings: originalStrings,
+                checkMutations: function() {
+                    console.log('[MUTABILITY] Checking for mutations...');
+                    let mutationCount = 0;
+                    const mutations = [];
+                    
+                    for (let i = 0; i < allOrdinals.length; i++) {
+                        const ordinal = allOrdinals[i];
+                        const originalString = originalStrings[i];
+                        
+                        try {
+                            const currentString = ordinal.toString();
+                            if (currentString !== originalString) {
+                                mutationCount++;
+                                const mutation = {
+                                    index: i,
+                                    original: originalString,
+                                    current: currentString,
+                                    ordinal: ordinal
+                                };
+                                mutations.push(mutation);
+                                console.error(`[MUTABILITY] MUTATION DETECTED at index ${i}:`, mutation);
+                            }
+                        } catch (error) {
+                            mutationCount++;
+                            const mutation = {
+                                index: i,
+                                original: originalString,
+                                current: `ERROR: ${error.message}`,
+                                ordinal: ordinal
+                            };
+                            mutations.push(mutation);
+                            console.error(`[MUTABILITY] MUTATION ERROR at index ${i}:`, mutation);
+                        }
+                    }
+                    
+                    if (mutationCount > 0) {
+                        console.error(`[MUTABILITY] FOUND ${mutationCount} MUTATIONS!`);
+                        hasUnhandledErrors = true;
+                        
+                        // Create mutation report container
+                        const mutationContainer = document.createElement('div');
+                        mutationContainer.style.cssText = 'background: red; color: white; padding: 20px; margin: 20px; border-radius: 10px;';
+                        mutationContainer.innerHTML = `
+                            <h2>🚨 IMMUTABILITY VIOLATIONS DETECTED</h2>
+                            <p><strong>${mutationCount} ordinal objects were mutated during testing!</strong></p>
+                            <details>
+                                <summary>Show Mutation Details</summary>
+                                ${mutations.map(m => `
+                                    <div style="margin: 10px 0; padding: 10px; background: rgba(255,255,255,0.1);">
+                                        <strong>Index ${m.index}:</strong><br>
+                                        Original: <code>${m.original}</code><br>
+                                        Current: <code>${m.current}</code>
+                                    </div>
+                                `).join('')}
+                            </details>
+                        `;
+                        document.body.appendChild(mutationContainer);
+                        
+                        return false; // Indicate failure
+                    } else {
+                        console.log('[MUTABILITY] ✅ No mutations detected - all ordinals remain immutable!');
+                        return true; // Indicate success
+                    }
+                }
+            };
 
             // --- Construction Tests ---
             CURRENT_KIND = 'CONSTRUCTION';
@@ -2328,15 +2425,7 @@
                 }
             }
 
-            // --- All Ordinals for Tables ---
-            const allOrdinals = [
-                ord_zero, ord_one, ord_five, ord_w, ord_w_plus_1, ord_w_times_2, ord_w_squared,
-                ord_w_w, ord_w_w_plus_1, ord_w_w_times_2, ord_w_w2,
-                ord_e0, ord_e0_plus_1, ord_e0_plus_w, ord_e0_plus_w_w, ord_e0_times_2, ord_e0_times_w, ord_e0_squared, ord_e0_pow_w, ord_e0_pow_w_plus_1,
-                ord_e1, ord_e1_plus_e0, ord_e1_times_2, ord_e1_times_w, ord_e1_times_e0, ord_e1_pow_e0,
-                ord_e2, ord_e_w, ord_e_e0,
-                multi_term_1, multi_term_2
-            ].sort((a, b) => a.compareTo(b));
+
 
             // Run comprehensive tests against expected results
             CURRENT_KIND = 'ADDITION';
@@ -2786,6 +2875,27 @@
             setTimeout(() => {
                 console.log('[DEBUG] Force-rendering all sections after initial load');
                 renderAllKindResults();
+                
+                // === MUTABILITY CHECK AT END OF ALL TESTS ===
+                setTimeout(() => {
+                    console.log('[MUTABILITY] All tests completed, checking for mutations...');
+                    
+                    if (window.mutabilityTest && typeof window.mutabilityTest.checkMutations === 'function') {
+                        // Perform mutation check
+                        const mutabilityResult = window.mutabilityTest.checkMutations();
+                        
+                        // Update overall test status based on mutability
+                        if (!mutabilityResult) {
+                            console.error('[MUTABILITY] Test suite FAILED due to immutability violations');
+                            hasUnhandledErrors = true;
+                            updateOverallPageSummary();
+                        } else {
+                            console.log('[MUTABILITY] ✅ Immutability test PASSED - no mutations detected');
+                        }
+                    } else {
+                        console.warn('[MUTABILITY] Mutation test not available - mutabilityTest not defined');
+                    }
+                }, 500); // Give tests time to complete
             }, 100);
         });
 

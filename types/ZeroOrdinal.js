@@ -49,7 +49,7 @@ class ZeroOrdinal extends OrdinalBase {
     simplify(complexityBudget, skipMyOwnMPTFCheck = false) {
         // 0 is already as simple as it gets.
         return {
-            simplifiedOrdinal: this.clone(),
+            simplifiedOrdinal: this,
             remainingBudget: complexityBudget // Consumes 0 budget
         };
     }

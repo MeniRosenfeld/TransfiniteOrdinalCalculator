@@ -109,7 +109,7 @@ class EpsilonTunnelOrdinal extends OrdinalBase {
         const myComplexity = this.complexity();
         if (myComplexity <= complexityBudget) {
             return {
-                simplifiedOrdinal: this.clone(),
+                simplifiedOrdinal: this,
                 remainingBudget: complexityBudget - myComplexity
             };
         }

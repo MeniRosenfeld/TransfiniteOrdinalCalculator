@@ -1,6 +1,8 @@
 // ENFOrdinal.js
 // Epsilon Normal Form ordinal representation
 
+// ENFTerm is loaded via script tag in browser environment
+
 /**
  * Represents an ordinal in Epsilon Normal Form (ENF).
  * ENF is a sum of ENFTerms: t1 + t2 + ... + tn
@@ -114,7 +116,7 @@ class ENFOrdinal extends OrdinalBase {
     }
 
     clone() {
-        const newTerms = this.terms.map(t => t.clone());
+        const newTerms = this.terms.map(t => t);
         return new ENFOrdinal(newTerms);
     }
 
@@ -138,7 +140,7 @@ class ENFOrdinal extends OrdinalBase {
         const limitTerms = [];
         for (const term of this.terms) {
             if (!term.isFinite()) {
-                limitTerms.push(term.clone());
+                limitTerms.push(term);
             }
         }
         return new ENFOrdinal(limitTerms);
@@ -156,7 +158,7 @@ class ENFOrdinal extends OrdinalBase {
         for (const term of this.terms) {
             if (term.factors.length === 0) {
                 // Finite term - goes to remainder
-                remainderTerms.push(term.clone());
+                remainderTerms.push(term);
                 continue;
             }
 
@@ -165,10 +167,10 @@ class ENFOrdinal extends OrdinalBase {
 
             if (comparison > 0) {
                 // term.factors[0].base > k: Add term as is to the quotient
-                quotientTerms.push(term.clone());
+                quotientTerms.push(term);
             } else if (comparison === 0) {
                 // term.factors[0].base = k: Add term to quotient with leftPredecessor applied to leading factor's exponent
-                const newTerm = term.clone();
+                const newTerm = new ENFTerm (term.factors.map(t=>t.clone()), term.coefficient);
                 const newExp = leadingFactor.exponent.leftPredecessor();
                 if (newExp.isZero()) {
                     // Remove the leading factor entirely
@@ -179,7 +181,7 @@ class ENFOrdinal extends OrdinalBase {
                 quotientTerms.push(newTerm);
             } else {
                 // term.factors[0].base < k: Add term to remainder
-                remainderTerms.push(term.clone());
+                remainderTerms.push(term);
             }
         }
 
@@ -225,7 +227,7 @@ class ENFOrdinal extends OrdinalBase {
     }
     simplify(complexityBudget, skipMyOwnMPTFCheck = false) {
         if (this.complexity() <= complexityBudget) {
-            return { simplifiedOrdinal: this.clone(), remainingBudget: complexityBudget - this.complexity() };
+            return { simplifiedOrdinal: this, remainingBudget: complexityBudget - this.complexity() };
         }
         // Proper simplification would truncate terms. For now, fallback to 0.
         return { simplifiedOrdinal: new ZeroOrdinal(), remainingBudget: complexityBudget };
@@ -241,7 +243,7 @@ class ENFOrdinal extends OrdinalBase {
     // === STATIC CONSTRUCTORS ===
 
     static fromCNF(ord) {
-        if (ord instanceof ENFOrdinal) return ord.clone();
+        if (ord instanceof ENFOrdinal) return ord;
 
         // Handle new arch basic types
         if (ord instanceof ZeroOrdinal) return new ENFOrdinal([]);

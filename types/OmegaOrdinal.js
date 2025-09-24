@@ -74,7 +74,7 @@ class OmegaOrdinal extends OrdinalBase {
         const myComplexity = this.complexity();
         if (myComplexity <= complexityBudget) {
             return {
-                simplifiedOrdinal: this.clone(),
+                simplifiedOrdinal: this,
                 remainingBudget: complexityBudget - myComplexity
             };
         }
@@ -110,7 +110,7 @@ class OmegaOrdinal extends OrdinalBase {
             case 'CNF':
                 // ω = CNFOrdinal with single term: ω^1 * 1
                 return new CNFOrdinal([{
-                    exponent: CNFOrdinal.ONEStatic().clone(), // ω^1 as CNF exponent
+                    exponent: CNFOrdinal.ONEStatic(), // ω^1 as CNF exponent
                     coefficient: 1n
                 }]);
             case 'WTower':

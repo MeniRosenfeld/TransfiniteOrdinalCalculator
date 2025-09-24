@@ -24,7 +24,7 @@ class CNFOrdinal extends OrdinalBase {
         } else if (Array.isArray(initVal)) {
             OperationTracer.consume(initVal.length || 0);
             this.terms = initVal.map(t => ({
-                exponent: t.exponent.clone(),
+                exponent: t.exponent,
                 coefficient: t.coefficient
             }));
         } else if (typeof initVal === 'object' && initVal.constructor) {
@@ -32,13 +32,13 @@ class CNFOrdinal extends OrdinalBase {
             if (initVal instanceof CNFOrdinal) {
                 OperationTracer.consume(initVal.terms.length || 0);
                 this.terms = initVal.terms.map(t => ({
-                    exponent: t.exponent.clone(),
+                    exponent: t.exponent,
                     coefficient: t.coefficient
                 }));
             } else if (typeof ENFOrdinal !== 'undefined' && initVal instanceof ENFOrdinal) {
                 const cnf = initVal.toCNFOrdinal();
                 OperationTracer.consume(cnf.terms.length || 0);
-                this.terms = cnf.terms.map(t => ({ exponent: t.exponent.clone(), coefficient: t.coefficient }));
+                this.terms = cnf.terms.map(t => ({ exponent: t.exponent, coefficient: t.coefficient }));
             } else if (initVal instanceof WTowerOrdinal) {
                 const cnf = initVal.toCNFOrdinal();
                 OperationTracer.consume(cnf.terms.length || 0);
@@ -123,7 +123,7 @@ class CNFOrdinal extends OrdinalBase {
         if (this.isFinite()) {
             return new ZeroOrdinal();
         }
-        return this.terms[0].exponent.clone();
+        return this.terms[0].exponent;
     }
 
     logStar() {
@@ -171,7 +171,7 @@ class CNFOrdinal extends OrdinalBase {
             }
             
             // Safety break for unexpected cycles or extremely deep chains
-            if (count > 1000) {
+            if (count > 100000) {
                 throw new Error("Exceeded maximum recursion depth for logStar calculation.");
             }
         }
@@ -349,7 +349,7 @@ class CNFOrdinal extends OrdinalBase {
         if (terms.length === 1) {
             delta_rep_for_f = 0n;
         } else {
-            const remainderTerms = terms.slice(1).map(t => ({ exponent: t.exponent.clone(), coefficient: t.coefficient }));
+            const remainderTerms = terms.slice(1).map(t => ({ exponent: t.exponent, coefficient: t.coefficient }));
             const remainderOrdinal = new CNFOrdinal(remainderTerms);
             delta_rep_for_f = remainderOrdinal.toFFormat();
         }
@@ -426,12 +426,12 @@ class CNFOrdinal extends OrdinalBase {
                 const towerInfo_this = getTowerInfo(E_this);
                 let mptStructureOfThis_expPart;
                 if (E_this.isZero()) {
-                    mptStructureOfThis_expPart = CNFOrdinal.ZEROStatic().clone();
+                    mptStructureOfThis_expPart = CNFOrdinal.ZEROStatic();
                 } else {
                     mptStructureOfThis_expPart = towerInfo_this.mptOrdinalForG;
                 }
                 // Check complexity of the exponent's tower structure w^(mpt_of_E_this)
-                const mptExpTowerStructureOfThis = new CNFOrdinal([{ exponent: mptStructureOfThis_expPart.clone(), coefficient: 1n }]);
+                const mptExpTowerStructureOfThis = new CNFOrdinal([{ exponent: mptStructureOfThis_expPart, coefficient: 1n }]);
                 const g_mptExpTowerStructureOfThis = mptExpTowerStructureOfThis.complexity();
 
                 const wTowerHeightForThisApprox = 1n + towerInfo_this.numOmegas;
@@ -451,9 +451,9 @@ class CNFOrdinal extends OrdinalBase {
         if (this.isZero()) {
             const costThis = this.complexity();
             if (costThis <= complexityBudget) {
-                return { simplifiedOrdinal: this.clone(), remainingBudget: complexityBudget - costThis };
+                return { simplifiedOrdinal: this, remainingBudget: complexityBudget - costThis };
             } else {
-                return { simplifiedOrdinal: this.clone(), remainingBudget: 0 };
+                return { simplifiedOrdinal: this, remainingBudget: 0 };
             }
         }
 
@@ -461,7 +461,7 @@ class CNFOrdinal extends OrdinalBase {
         if (this.isFinite()) {
             const costThis = this.complexity();
             if (costThis <= complexityBudget) {
-                return { simplifiedOrdinal: this.clone(), remainingBudget: complexityBudget - costThis };
+                return { simplifiedOrdinal: this, remainingBudget: complexityBudget - costThis };
             } else {
                 const zeroOrdinal = new ZeroOrdinal();
                 const costZero = zeroOrdinal.complexity();
@@ -528,7 +528,7 @@ class CNFOrdinal extends OrdinalBase {
             if (!accumulatorIsAcceptable) {
                 const g_this = this.complexity();
                 if (g_this <= complexityBudget) {
-                    finalSimplifiedOrdinal = this.clone();
+                    finalSimplifiedOrdinal = this;
                     finalRemainingBudget = complexityBudget - g_this;
                 } else {
                     if (!this.isZero() && this.terms.length > 0) {
@@ -545,13 +545,13 @@ class CNFOrdinal extends OrdinalBase {
                         } else {
                             const zeroStatic = new ZeroOrdinal();
                             const g_zero_final = zeroStatic.complexity();
-                            finalSimplifiedOrdinal = zeroStatic.clone();
+                            finalSimplifiedOrdinal = zeroStatic;
                             finalRemainingBudget = (g_zero_final <= complexityBudget) ? complexityBudget - g_zero_final : 0;
                         }
                     } else {
                         const zeroStatic = new ZeroOrdinal();
                         const g_zero_final = zeroStatic.complexity();
-                        finalSimplifiedOrdinal = zeroStatic.clone();
+                        finalSimplifiedOrdinal = zeroStatic;
                         finalRemainingBudget = (g_zero_final <= complexityBudget) ? complexityBudget - g_zero_final : 0;
                     }
                 }
@@ -578,7 +578,7 @@ class CNFOrdinal extends OrdinalBase {
             OperationTracer.consume();
             const towerInfo = getTowerInfo(expB);
             const mptExponentPart = towerInfo.mptOrdinalForG;
-            const mptExpTowerStructure = new CNFOrdinal([{ exponent: mptExponentPart.clone(), coefficient: 1n }]);
+            const mptExpTowerStructure = new CNFOrdinal([{ exponent: mptExponentPart, coefficient: 1n }]);
             const g_mptExpTowerStructure = mptExpTowerStructure.complexity();
             const wTowerHeightForApproximation = 1n + towerInfo.numOmegas;
 
@@ -598,7 +598,7 @@ class CNFOrdinal extends OrdinalBase {
             }
         }
 
-        const originalTermOrdinal = new CNFOrdinal([{ exponent: expB.clone(), coefficient: coeffM }]);
+        const originalTermOrdinal = new CNFOrdinal([{ exponent: expB, coefficient: coeffM }]);
         const g_originalTermOrdinal = originalTermOrdinal.complexity();
         if (g_originalTermOrdinal <= budgetForThisTerm) {
             return { simplifiedOrdinal: originalTermOrdinal, remainingBudget: budgetForThisTerm - g_originalTermOrdinal };
@@ -642,12 +642,12 @@ class CNFOrdinal extends OrdinalBase {
         const omegaStatic = CNFOrdinal.OMEGAStatic();
         const omega_cost_actual = omegaStatic.complexity();
         if (omega_cost_actual <= budgetForThisTerm) {
-            return { simplifiedOrdinal: omegaStatic.clone(), remainingBudget: budgetForThisTerm - omega_cost_actual };
+            return { simplifiedOrdinal: omegaStatic, remainingBudget: budgetForThisTerm - omega_cost_actual };
         }
 
         const zeroStatic = new ZeroOrdinal();
         const zero_cost_actual = zeroStatic.complexity();
-        return { simplifiedOrdinal: zeroStatic.clone(), remainingBudget: (zero_cost_actual <= budgetForThisTerm) ? budgetForThisTerm - zero_cost_actual : 0 };
+        return { simplifiedOrdinal: zeroStatic, remainingBudget: (zero_cost_actual <= budgetForThisTerm) ? budgetForThisTerm - zero_cost_actual : 0 };
     }
 
     // === STATIC FACTORY METHODS ===

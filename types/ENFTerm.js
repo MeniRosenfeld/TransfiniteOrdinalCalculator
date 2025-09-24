@@ -129,7 +129,7 @@ class ENFTerm extends OrdinalBase {
     }
 
     clone() {
-        const newFactors = this.factors.map(f => f.clone());
+        const newFactors = this.factors.map(f => f);
         return new ENFTerm(newFactors, this.coefficient);
     }
 
@@ -137,13 +137,13 @@ class ENFTerm extends OrdinalBase {
         if (this.isFinite()) {
             return this.isZero() ? new ZeroOrdinal() : new OneOrdinal();
         }
-        return this.factors[0].base.clone();
+        return this.factors[0].base;
     }
 
     log() {
         if (this.isFinite()) return new ZeroOrdinal();
         // For an infinite ENF term, the logarithm is the exponent of the leading factor
-        return this.factors[0].exponent.clone();
+        return this.factors[0].exponent;
     }
 
     logStar() {
@@ -182,7 +182,7 @@ class ENFTerm extends OrdinalBase {
             }
             
             // Safety break
-            if (count > 1000) {
+            if (count > 100000) {
                 throw new Error("Exceeded maximum recursion depth for ENFTerm logStar calculation.");
             }
         }
@@ -245,7 +245,7 @@ class ENFTerm extends OrdinalBase {
         return c;
     }
     toFFormat() { throw new Error("toFFormat not implemented for ENFTerm"); }
-    simplify() { return { simplifiedOrdinal: this.clone(), remainingBudget: 0 }; }
+    simplify() { return { simplifiedOrdinal: this, remainingBudget: 0 }; }
 
     /**
      * Structural comparison ignoring coefficient.

@@ -4,8 +4,8 @@
 function tetrateFinite(base, heightFinite) {
     const h = heightFinite.getFiniteBigInt();
     if (h === 0n) return new OneOrdinal();
-    if (h === 1n) return base.clone();
-    let result = base.clone();
+    if (h === 1n) return base;
+    let result = base;
     // Build right-associative tower: a^(a^(...)) of height h
     for (let i = 2n; i <= h; i++) {
         result = base.power(result);
@@ -24,7 +24,7 @@ function createTetrationRules(conversionEngine) {
         // a ^^ 1 = a
         new Rule('a^^1 = a',
             (a, b) => b.isOne(),
-            (a, b) => a.clone()),
+            (a, b) => a),
 
         // 1 ^^ a = 1
         new Rule('1^^a = 1',

@@ -40,7 +40,7 @@ class ZetaZero extends OrdinalBase {
         const myComplexity = this.complexity();
         if (myComplexity <= complexityBudget) {
             return {
-                simplifiedOrdinal: this.clone(),
+                simplifiedOrdinal: this,
                 remainingBudget: complexityBudget - myComplexity
             };
         }
@@ -52,7 +52,7 @@ class ZetaZero extends OrdinalBase {
         };
     }
 
-    rank() { return this.clone(); }
+    rank() { return this; }
 
     log() { return new OneOrdinal(); }
 

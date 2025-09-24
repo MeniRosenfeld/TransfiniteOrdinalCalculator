@@ -25,7 +25,7 @@ class ConversionEngine {
 
         // Identity conversion
         if (sourceTypeName === targetTypeName) {
-            return ordinal.clone();
+            return ordinal;
         }
 
         // Get conversion path

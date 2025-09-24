@@ -107,7 +107,7 @@ class WTowerOrdinal extends OrdinalBase {
         const myComplexity = this.complexity();
         if (myComplexity <= complexityBudget) {
             return {
-                simplifiedOrdinal: this.clone(),
+                simplifiedOrdinal: this,
                 remainingBudget: complexityBudget - myComplexity
             };
         }
@@ -179,8 +179,8 @@ class WTowerOrdinal extends OrdinalBase {
         switch (targetTypeName) {
             case 'CNF': {
                 // height -1 -> 0 ; height 0 -> 1
-                if (this.height === -1n) return CNFOrdinal.ZEROStatic().clone();
-                if (this.height === 0n) return CNFOrdinal.ONEStatic().clone();
+                if (this.height === -1n) return CNFOrdinal.ZEROStatic();
+                if (this.height === 0n) return CNFOrdinal.ONEStatic();
                 // Build exponentExp by iterating x_{0}=1, x_{k+1}=ω^{x_k} for k from 0 to height-2
                 let exponentExp = CNFOrdinal.ONEStatic();
                 const steps = this.height - 1n; // if height=1, zero steps and exponentExp stays 1

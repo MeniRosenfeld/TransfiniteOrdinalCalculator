@@ -46,7 +46,7 @@ class OrdinalBase {
             return new FiniteOrdinal(n - 1n);
         }
         // For infinite ordinals, left predecessor is itself
-        return this.clone();
+        return this;
     }
 
     /**

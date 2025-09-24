@@ -31,7 +31,7 @@ class ENFFactor {
      * @returns {ENFFactor} A new ENFFactor instance.
      */
     clone() {
-        return new ENFFactor(this.base.clone(), this.exponent.clone());
+        return new ENFFactor(this.base, this.exponent);
     }
 
     /**

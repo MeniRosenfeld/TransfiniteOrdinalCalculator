@@ -18,16 +18,16 @@ function buildLimitPart(cnf) {
         const t = terms[i];
         // Skip finite last term (ω^0)
         if (i === terms.length - 1 && t.exponent.isZero()) continue;
-        resultTerms.push({ exponent: t.exponent.clone(), coefficient: t.coefficient });
+        resultTerms.push({ exponent: t.exponent, coefficient: t.coefficient });
     }
     return new CNFOrdinal(resultTerms);
 }
 
 function multiplyCNF(a, b) {
     // Implements the legacy CNF * CNF algorithm, using rule-based add for exponents
-    if (a.isZero() || b.isZero()) return CNFOrdinal.ZEROStatic().clone();
-    if (a.isOne()) return b.clone();
-    if (b.isOne()) return a.clone();
+    if (a.isZero() || b.isZero()) return CNFOrdinal.ZEROStatic();
+    if (a.isOne()) return b;
+    if (b.isOne()) return a;
 
     const a1_exp = a.terms[0].exponent;
     const n1_coeff = a.terms[0].coefficient;
@@ -52,11 +52,11 @@ function multiplyCNF(a, b) {
 
     if (m_finite_part > 0n) {
         // ω^{a1} * n1 * m
-        newTerms.push({ exponent: a1_exp.clone(), coefficient: n1_coeff * m_finite_part });
+        newTerms.push({ exponent: a1_exp, coefficient: n1_coeff * m_finite_part });
         // plus the tail of a (i >= 2)
         OperationTracer.consume(Math.max(0, a.terms.length - 1));
         for (let i = 1; i < a.terms.length; i++) {
-            newTerms.push({ exponent: a.terms[i].exponent.clone(), coefficient: a.terms[i].coefficient });
+            newTerms.push({ exponent: a.terms[i].exponent, coefficient: a.terms[i].coefficient });
         }
     }
 
@@ -75,7 +75,7 @@ function multiplyENFTerms(termA, termB) {
     // If B is finite, just multiply coefficients and keep A's factors
     if (factorsB.length === 0) {
         return new ENFTerm(
-            factorsA.map(f => f.clone()),
+            factorsA.map(f => f),
             termA.coefficient * termB.coefficient
         );
     }
@@ -90,7 +90,7 @@ function multiplyENFTerms(termA, termB) {
         
         if (baseCmp > 0) {
             // Base of A > leading base of B: keep this factor
-            newFactors.push(factorA.clone());
+            newFactors.push(factorA);
         } else if (baseCmp === 0 && !foundEqualBase) {
             // Base of A = leading base of B: combine exponents
             const combinedExp = factorA.exponent.add(factorsB[0].exponent);
@@ -106,12 +106,12 @@ function multiplyENFTerms(termA, termB) {
     
     // If we didn't find an equal base in A, add the leading factor of B
     if (!foundEqualBase) {
-        newFactors.push(factorsB[0].clone());
+        newFactors.push(factorsB[0]);
     }
     
     // Append all remaining factors of B (after the leading one)
     for (let i = 1; i < factorsB.length; i++) {
-        newFactors.push(factorsB[i].clone());
+        newFactors.push(factorsB[i]);
     }
     
     // Coefficient: use B's coefficient unless B is finite (then multiply)
@@ -127,20 +127,20 @@ function createMultiplicationRules(conversionEngine) {
         // Zero annihilators
         new Rule("Zero left",
             (a, b) => a.isZero(),
-            (a, b) => a.clone()), // 0 * b = 0
+            (a, b) => a), // 0 * b = 0
 
         new Rule("Zero right",
             (a, b) => b.isZero(),
-            (a, b) => b.clone()), // a * 0 = 0
+            (a, b) => b), // a * 0 = 0
 
         // One identities
         new Rule("One left",
             (a, b) => a.isOne(),
-            (a, b) => b.clone()),
+            (a, b) => b),
 
         new Rule("One right",
             (a, b) => b.isOne(),
-            (a, b) => a.clone()),
+            (a, b) => a),
 
         // Finite * finite
         new Rule("Both finite",
@@ -153,7 +153,7 @@ function createMultiplicationRules(conversionEngine) {
             (a, b) => {
                 const n = a.getFiniteBigInt();
                 const k = b.getFinitePart();
-                return b.clone().add(new FiniteOrdinal((n - 1n) * k));
+                return b.add(new FiniteOrdinal((n - 1n) * k));
             }),
 
         // ENFTerm * ENFTerm multiplication
@@ -171,7 +171,7 @@ function createMultiplicationRules(conversionEngine) {
                 const aCNF = conversionEngine.convert(a, 'CNF');
                 const bCNF = conversionEngine.convert(b, 'CNF');
                 const res = multiplyCNF(aCNF, bCNF);
-                return res.clone();
+                return res;
             }),
 
         // ZetaZero rules (lowest precedence)
@@ -183,7 +183,7 @@ function createMultiplicationRules(conversionEngine) {
         // a * z0 = z0 (here a is known not to be z0 due to previous rule)
         new Rule("a * z0 = z0",
             (a, b) => (typeof ZetaZero !== 'undefined') && (b instanceof ZetaZero),
-            (a, b) => b.clone()),
+            (a, b) => b),
 
         // ENF fallback can be added later when ENF is migrated
         new Rule("Convert to ENF fallback",
@@ -204,10 +204,14 @@ function multiplyENF(a, b) {
         if (a.isFinite()) {
             return new ENFOrdinal([new ENFTerm([], a.getFiniteBigInt() * b.getFiniteBigInt())]);
         }
-        const leadingTermProduct = a.terms[0].clone();
-        leadingTermProduct.coefficient *= b.getFinitePart();
-        const remainingTerms = a.terms.slice(1).map(t => t.clone());
-        return new ENFOrdinal([leadingTermProduct, ...remainingTerms]);
+        // IMMUTABILITY FIX: Don't mutate existing term, create new one
+        const leadingTerm = a.terms[0];
+        const newLeadingTerm = new ENFTerm(
+            leadingTerm.factors,
+            leadingTerm.coefficient * b.getFinitePart() // New coefficient
+        );
+        const remainingTerms = a.terms.slice(1);
+        return new ENFOrdinal([newLeadingTerm, ...remainingTerms]);
     }
 
     // a * b where b is infinite: (t1 + t2 + ...)*(s1 + s2 + ...) 
@@ -226,7 +230,7 @@ function multiplyENF(a, b) {
     if (bFinitePart > 0n) {
         // Add the lower-order terms of a (unmodified)
         for (let i = 1; i < a.terms.length; i++) {
-            resultTerms.push(a.terms[i].clone());
+            resultTerms.push(a.terms[i]);
         }
     }
     

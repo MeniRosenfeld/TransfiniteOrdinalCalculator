@@ -9,7 +9,7 @@ class EpsilonTowerOrdinal extends OrdinalBase {
         if (!baseIndex || !baseIndex.isOrdinal || !baseIndex.isOrdinal()) {
             throw new Error('EpsilonTowerOrdinal base must be an ordinal');
         }
-        this.baseIndex = baseIndex.clone();
+        this.baseIndex = baseIndex;
         
         // Validate and set height
         if (typeof height === 'bigint') {
@@ -125,7 +125,7 @@ class EpsilonTowerOrdinal extends OrdinalBase {
         const myComplexity = this.complexity();
         if (myComplexity <= complexityBudget) {
             return {
-                simplifiedOrdinal: this.clone(),
+                simplifiedOrdinal: this,
                 remainingBudget: complexityBudget - myComplexity
             };
         }
@@ -189,7 +189,7 @@ class EpsilonTowerOrdinal extends OrdinalBase {
         if (!this.isEpsilonNumber()) {
             throw new Error('EpsilonTowerOrdinal is not an epsilon number');
         }
-        return this.baseIndex.clone();
+        return this.baseIndex;
     }
 
     // === CONVERSION SYSTEM ===

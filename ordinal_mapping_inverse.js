@@ -419,7 +419,7 @@ function runTests() {
             if (typeof result === 'object' && result !== null && result.type) {
                 displayResult = convertFFormatToOrdinalInstance(result);
             } else if (result === "E0_TYPE") {
-                displayResult = EpsilonOrdinal.E_ZEROStatic().clone();
+                displayResult = EpsilonOrdinal.E_ZEROStatic();
             } else if (typeof result === 'bigint') {
                 displayResult = new CNFOrdinal(result);
             }

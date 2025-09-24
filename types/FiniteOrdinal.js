@@ -103,7 +103,7 @@ class FiniteOrdinal extends OrdinalBase {
         const myComplexity = this.complexity();
         if (myComplexity <= complexityBudget) {
             return {
-                simplifiedOrdinal: this.clone(),
+                simplifiedOrdinal: this,
                 remainingBudget: complexityBudget - myComplexity
             };
         }
@@ -160,7 +160,7 @@ class FiniteOrdinal extends OrdinalBase {
      */
     static from(input) {
         if (input instanceof FiniteOrdinal) {
-            return input.clone();
+            return input;
         }
         if (typeof input === 'number' || typeof input === 'bigint') {
             return new FiniteOrdinal(input);
