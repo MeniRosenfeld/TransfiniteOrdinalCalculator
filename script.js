@@ -231,8 +231,8 @@ document.addEventListener('DOMContentLoaded', () => {
             // --- End Simplification Step ---
 
             const displayOrdinalObject = simplifiedOrdinalObject; // Use simplified for display
-            // Native string display per type
-            const displayString = nativeString || displayOrdinalObject.toString();
+            // Use simplified ordinal's string representation, not the original nativeString
+            const displayString = displayOrdinalObject.toString();
             const linearResultHeader = document.querySelector('.linear-result-section h3');
 
             // --- Output Format Selection ---

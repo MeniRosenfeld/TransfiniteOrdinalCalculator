@@ -56,8 +56,8 @@ class FParams {
 }
 
 // Default parameters for f and fInverse - now an instance of FParams
-const OLD_F_PARAMS = new FParams(DoubleFloatContext, 1, 1, 1, 1, 3);
-const DEFAULT_F_PARAMS = new FParams(DoubleFloatContext, 3, 3, 3, 3, 3);
+var OLD_F_PARAMS = new FParams(DoubleFloatContext, 1, 1, 1, 1, 3);
+var DEFAULT_F_PARAMS = new FParams(DoubleFloatContext, 3, 3, 3, 3, 3);
 
 console.log("[Debug] In ordinal_mapping.js, typeof WTowerOrdinal:", typeof WTowerOrdinal, "WTowerOrdinal itself:", WTowerOrdinal);
 const memo = new Map();

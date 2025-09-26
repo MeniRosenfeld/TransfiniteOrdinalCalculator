@@ -1,6 +1,16 @@
 // operations/NumericContexts.js
 
-const DoubleFloatContext = {
+// Import Rational class
+if (typeof module !== 'undefined' && module.exports) {
+    const Rational = require('./Rational.js');
+} else {
+    // In browser environment, Rational should be loaded via script tag
+    if (typeof Rational === 'undefined') {
+        throw new Error('Rational class not found. Make sure Rational.js is loaded before NumericContexts.js');
+    }
+}
+
+var DoubleFloatContext = {
     ZERO: 0.0,
     ONE: 1.0,
     fromInt: (n) => {
@@ -23,7 +33,7 @@ const DoubleFloatContext = {
     isZero: (a) => a === 0.0
 };
 
-const RationalContext = {
+var RationalContext = {
     ZERO: new Rational(0n),
     ONE: new Rational(1n),
     fromInt: (n) => Rational.fromInt(n),

@@ -5,6 +5,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Transfinite Ordinal Calculator</title>
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" sizes="32x32" href="epsilonOmega.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="epsilonOmega.png">
+    <link rel="shortcut icon" href="epsilonOmega.png">
+    <link rel="apple-touch-icon" href="epsilonOmega.png">
+
     <link rel="stylesheet" href="style.css">
     <!-- html2canvas library for "Copy as Image" -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"
@@ -73,22 +80,31 @@
 
     <div class="instructions">
         <h2>How to Use</h2>
-        <p>This tool parses expressions representing transfinite ordinal numbers and computes their optimal representation using multiple normal forms (CNF, ENF) and specialized structures.</p>
-        
+        <p>This tool parses expressions representing transfinite ordinal numbers and computes their optimal
+            representation using multiple normal forms (CNF, ENF) and specialized structures.</p>
+
         <h3>Supported Syntax</h3>
         <ul>
-            <li><strong>Numbers:</strong> Non-negative integers (e.g., <code>0</code>, <code>1</code>, <code>42</code>, <code>123</code>)</li>
+            <li><strong>Numbers:</strong> Non-negative integers (e.g., <code>0</code>, <code>1</code>, <code>42</code>,
+                <code>123</code>)
+            </li>
             <li><strong>Omega:</strong> <code>w</code> for the first infinite ordinal ω</li>
             <li><strong>Epsilon Numbers:</strong>
                 <ul>
                     <li><code>e_0</code> for epsilon-zero (ε₀)</li>
-                    <li><code>e_k</code> for arbitrary epsilon numbers (e.g., <code>e_1</code>, <code>e_w</code>, <code>e_(w+1)</code>)</li>
+                    <li><code>e_k</code> for arbitrary epsilon numbers (e.g., <code>e_1</code>, <code>e_w</code>,
+                        <code>e_(w+1)</code>)
+                    </li>
                 </ul>
             </li>
-            <li><strong>Epsilon Tunnels:</strong> <code>e__n</code> for deeply nested epsilon structures (e.g., <code>e__3</code> = ε_ε_ε_0)</li>
-            <li><strong>Operations:</strong> <code>+</code> (addition), <code>*</code> (multiplication), <code>^</code> (exponentiation), <code>^^</code> (tetration)</li>
+            <li><strong>Epsilon Tunnels:</strong> <code>e__n</code> for deeply nested epsilon structures (e.g.,
+                <code>e__3</code> = ε_ε_ε_0)
+            </li>
+            <li><strong>Operations:</strong> <code>+</code> (addition), <code>*</code> (multiplication), <code>^</code>
+                (exponentiation), <code>^^</code> (tetration)</li>
             <li><strong>Grouping:</strong> Parentheses <code>()</code> for controlling order of operations</li>
-            <li><strong>Precedence:</strong> <code>^^</code> (highest, right-associative) → <code>^</code> (right-associative) → <code>*</code> (left-associative) → <code>+</code> (lowest, left-associative)</li>
+            <li><strong>Precedence:</strong> <code>^^</code> (highest, right-associative) → <code>^</code>
+                (right-associative) → <code>*</code> (left-associative) → <code>+</code> (lowest, left-associative)</li>
         </ul>
         <h3>Examples</h3>
         <ul>
@@ -142,8 +158,10 @@
     <div class="about-section">
         <h2>About This Calculator</h2>
         <p>
-            This Transfinite Ordinal Calculator is a comprehensive tool for exploring ordinal numbers up to ζ₀ (zeta-zero).
-            It features a modern, modular architecture supporting multiple ordinal representations and advanced mathematical operations.
+            This Transfinite Ordinal Calculator is a comprehensive tool for exploring ordinal numbers up to ζ₀
+            (zeta-zero).
+            It features a modern, modular architecture supporting multiple ordinal representations and advanced
+            mathematical operations.
         </p>
         <p>
             The calculator automatically selects the optimal representation for each ordinal:
@@ -151,7 +169,8 @@
         <ul>
             <li><strong>Cantor Normal Form (CNF)</strong> for ordinals less than ε₀</li>
             <li><strong>Epsilon Normal Form (ENF)</strong> for ordinals with epsilon structure up to Γ₀</li>
-            <li><strong>Specialized structures</strong> like omega towers (ω↑↑n), epsilon towers (ε_k↑↑n), and epsilon tunnels (ε↓↓n)</li>
+            <li><strong>Specialized structures</strong> like omega towers (ω↑↑n), epsilon towers (ε_k↑↑n), and epsilon
+                tunnels (ε↓↓n)</li>
         </ul>
         <p>
             All operations follow the rigorous mathematical rules of ordinal arithmetic, ensuring accuracy across
@@ -161,27 +180,35 @@
             <strong>Key Features:</strong>
         </p>
         <ul>
-            <li><strong>Comprehensive Parsing:</strong> Supports epsilon numbers with arbitrary indices (ε_k), epsilon tunnels (ε↓↓n), towers, and complex nested expressions</li>
-            <li><strong>Multiple Representations:</strong> Automatically uses CNF, ENF, or specialized structures as appropriate</li>
-            <li><strong>Advanced Operations:</strong> Full support for addition, multiplication, exponentiation, and tetration with proper ordinal arithmetic rules</li>
-            <li><strong>Dual Display:</strong> Both mathematical notation (ω, ε₀, ζ₀, arrows) and clean linear text format</li>
-            <li><strong>Smart Simplification:</strong> Automatically simplifies complex results with complexity indicators when applied</li>
+            <li><strong>Comprehensive Parsing:</strong> Supports epsilon numbers with arbitrary indices (ε_k), epsilon
+                tunnels (ε↓↓n), towers, and complex nested expressions</li>
+            <li><strong>Multiple Representations:</strong> Automatically uses CNF, ENF, or specialized structures as
+                appropriate</li>
+            <li><strong>Advanced Operations:</strong> Full support for addition, multiplication, exponentiation, and
+                tetration with proper ordinal arithmetic rules</li>
+            <li><strong>Dual Display:</strong> Both mathematical notation (ω, ε₀, ζ₀, arrows) and clean linear text
+                format</li>
+            <li><strong>Smart Simplification:</strong> Automatically simplifies complex results with complexity
+                indicators when applied</li>
             <li><strong>Ordinal-Real Mapping:</strong> Interactive f(α) function with <span class="tooltip-trigger"
-                    data-tooltip="The mapping uses configurable scale parameters and supports the full range of ordinal types. The slider range adapts dynamically to the current ordinal's f(α) value.">parameterizable scaling</span> and bidirectional exploration</li>
+                    data-tooltip="The mapping uses configurable scale parameters and supports the full range of ordinal types. The slider range adapts dynamically to the current ordinal's f(α) value.">parameterizable
+                    scaling</span> and bidirectional exploration</li>
             <li><strong>Export Options:</strong> Copy results as formatted text or high-quality images</li>
             <li><strong>Performance Protection:</strong> Operation budgets prevent infinite computation loops</li>
             <li><strong>Rule-Based Engine:</strong> Modular architecture with extensible operation rules</li>
         </ul>
         <p>
             The <strong>interactive ordinal explorer</strong> is a unique feature for discovering ordinal structures.
-            Use the slider below the input area to select real number values—the calculator instantly finds and displays 
-            the corresponding transfinite ordinal <code style="font-family: 'Times New Roman', Times, serif;">α</code> 
+            Use the slider below the input area to select real number values—the calculator instantly finds and displays
+            the corresponding transfinite ordinal <code style="font-family: 'Times New Roman', Times, serif;">α</code>
             where <code style="font-family: 'Times New Roman', Times, serif;">f(α)</code> equals your selected value.
-            The main input box updates automatically, letting you explore the rich landscape of ordinal numbers through their real-number representations.
+            The main input box updates automatically, letting you explore the rich landscape of ordinal numbers through
+            their real-number representations.
             Use the <code style="font-size: 1.2em;">↔️</code> nudge control for precise adjustments.
         </p>
         <p>
-            This project provides a comprehensive platform for experimenting with and visualizing transfinite ordinal numbers
+            This project provides a comprehensive platform for experimenting with and visualizing transfinite ordinal
+            numbers
             from basic omega arithmetic up to the sophisticated structures approaching zeta-zero (ζ₀).
         </p>
         <p>
@@ -233,6 +260,7 @@
     <script src="operations/Auxiliary.js"></script>
     <script src="operations/Comparison.js"></script>
     <script src="operations/Operations.js"></script>
+    <script src="operations/Rational.js"></script>
     <script src="operations/NumericContexts.js"></script>
     <script src="ordinal_mapping.js"></script>
     <script src="ordinal_mapping_inverse.js"></script>
@@ -242,7 +270,7 @@
 
     <!-- New UI Scripts -->
     <script src="script.js"></script> <!-- Main UI interaction logic -->
-    
+
     <!-- Initialize global tracer -->
     <script>
         // Initialize global tracer for main calculator
@@ -253,4 +281,5 @@
 </body>
 
 </html>
+
 </html>
