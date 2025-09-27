@@ -59,7 +59,9 @@
 
 <body>
     <h2>Conversion Debug Matrix - All Ordinal Types</h2>
-    <p>This page lists all registered ordinal types (including new types: EpsilonTower, EpsilonTunnel, ZetaZero) and shows whether conversion is possible from each source (rows) to each target (columns). The matrix shows direct and indirect conversion paths through the conversion engine.</p>
+    <p>This page lists all registered ordinal types (including new types: EpsilonTower, EpsilonTunnel, ZetaZero) and
+        shows whether conversion is possible from each source (rows) to each target (columns). The matrix shows direct
+        and indirect conversion paths through the conversion engine.</p>
 
     <div id="matrix"></div>
     <h3>Direct Conversion Graph</h3>
@@ -312,7 +314,15 @@
             // Initialize global tracer for conversion tests
             OperationTracer.setGlobalTracer(1000000); // 1M operations budget
             console.log('[GlobalTracer] Conversion debug initialized with budget:', OperationTracer.getBudget());
-            
+
+            // Initialize OPERATIONS system immediately
+            if (typeof OPERATIONS !== 'undefined' && OPERATIONS.initialize) {
+                OPERATIONS.initialize();
+                console.log('[ConversionDebug] OPERATIONS system initialized immediately');
+            } else {
+                console.error('[ConversionDebug] OPERATIONS not available or missing initialize method');
+            }
+
             renderMatrix();
         })();
     </script>

@@ -216,10 +216,18 @@
                 setTimeout(runAll, 150);
                 return;
             }
-            
+
             // Initialize global tracer for smoke tests
             OperationTracer.setGlobalTracer(500000); // 500K operations budget
             console.log('[GlobalTracer] Smoke tests initialized with budget:', OperationTracer.getBudget());
+
+            // Initialize OPERATIONS system immediately
+            if (typeof OPERATIONS !== 'undefined' && OPERATIONS.initialize) {
+                OPERATIONS.initialize();
+                console.log('[SmokeTests] OPERATIONS system initialized immediately');
+            } else {
+                console.error('[SmokeTests] OPERATIONS not available or missing initialize method');
+            }
             const tbody = document.getElementById('resultsBody');
             tbody.innerHTML = '';
             let passes = 0;

@@ -374,15 +374,15 @@
             __renderScheduled = true;
             setTimeout(() => {
                 __renderScheduled = false;
-                try { 
-                    renderAllKindResults(); 
-                } catch (renderError) { 
+                try {
+                    renderAllKindResults();
+                } catch (renderError) {
                     console.error('CRITICAL: renderAllKindResults failed:', renderError);
                     hasUnhandledErrors = true;
                 }
-                try { 
-                    updateOverallPageSummary(); 
-                } catch (summaryError) { 
+                try {
+                    updateOverallPageSummary();
+                } catch (summaryError) {
                     console.error('CRITICAL: updateOverallPageSummary failed:', summaryError);
                     hasUnhandledErrors = true;
                 }
@@ -398,14 +398,14 @@
             console.log(`[DEBUG] Recorded test for ${kindKey}: passed=${passed}, total results now=${stats.results.length}`);
             scheduleRender();
         }
-        
+
         // Wrapper function to safely execute test sections and ensure errors are recorded
         function executeTestSection(sectionName, testFunction) {
             try {
                 testFunction();
             } catch (error) {
                 console.error(`CRITICAL ERROR in ${sectionName} test section:`, error);
-                
+
                 // Create error container
                 const container = document.createElement('div');
                 container.className = 'test-case';
@@ -416,11 +416,11 @@
                 p.className = 'log-output status-failed';
                 p.textContent = `CRITICAL ERROR: ${error.message}`;
                 container.appendChild(p);
-                
+
                 // Force record as failed
-                try { 
-                    recordTestResult(CURRENT_KIND, false, container); 
-                } catch (recordError) { 
+                try {
+                    recordTestResult(CURRENT_KIND, false, container);
+                } catch (recordError) {
                     console.error('CRITICAL: Failed to record error for', sectionName, recordError);
                     document.getElementById('test-details-container').appendChild(container);
                     // Manually update stats to ensure failure is recorded
@@ -429,7 +429,7 @@
                         testStats[CURRENT_KIND].total++;
                     }
                 }
-                
+
                 // Set global error flag
                 hasUnhandledErrors = true;
             }
@@ -454,7 +454,7 @@
             console.log(`[DEBUG] renderSingleKindOutput(${kindKey}): stats.results.length=${stats.results.length}, isExpanded=${detailsElement?.open}`);
             if (!detailsElement || !previewContainer || !allTestsContainerWhenOpen) {
                 console.warn(`[DEBUG] Missing elements for ${kindKey}: details=${!!detailsElement}, preview=${!!previewContainer}, container=${!!allTestsContainerWhenOpen}`);
-            return;
+                return;
             }
 
             previewContainer.innerHTML = '';
@@ -536,13 +536,13 @@
             if (grandTotal === 0) { overallStatusIndicator.textContent = 'No tests were run.'; overallStatusIndicator.className = 'status-overall-pending'; return; }
             // Check for unhandled errors and force failure if any occurred
             const finalOverallPass = overallPass && !hasUnhandledErrors;
-            if (finalOverallPass) { 
-                overallStatusIndicator.textContent = 'ALL TESTS PASSED!'; 
-                overallStatusIndicator.className = 'status-overall-pass'; 
-            } else { 
+            if (finalOverallPass) {
+                overallStatusIndicator.textContent = 'ALL TESTS PASSED!';
+                overallStatusIndicator.className = 'status-overall-pass';
+            } else {
                 const errorSuffix = hasUnhandledErrors ? ' (INCLUDES UNHANDLED ERRORS)' : '';
-                overallStatusIndicator.textContent = `FAILURES DETECTED! (${grandPassed} / ${grandTotal} passed)${errorSuffix}`; 
-                overallStatusIndicator.className = 'status-overall-fail'; 
+                overallStatusIndicator.textContent = `FAILURES DETECTED! (${grandPassed} / ${grandTotal} passed)${errorSuffix}`;
+                overallStatusIndicator.className = 'status-overall-fail';
             }
         }
         const testResults = [];
@@ -595,15 +595,15 @@
                 console.error(`Error in test "${testName}":`, e);
             }
             const finalPassed = container.querySelector('.status-failed') === null;
-            try { recordTestResult(CURRENT_KIND, finalPassed, container); } catch (recordError) { 
-                    console.error('CRITICAL: Failed to record test result for', CURRENT_KIND, recordError);
-                    document.getElementById('test-details-container').appendChild(container);
-                    // Force test section to be marked as failed
-                    if (testStats[CURRENT_KIND]) {
-                        testStats[CURRENT_KIND].failed++;
-                        testStats[CURRENT_KIND].total++;
-                    }
+            try { recordTestResult(CURRENT_KIND, finalPassed, container); } catch (recordError) {
+                console.error('CRITICAL: Failed to record test result for', CURRENT_KIND, recordError);
+                document.getElementById('test-details-container').appendChild(container);
+                // Force test section to be marked as failed
+                if (testStats[CURRENT_KIND]) {
+                    testStats[CURRENT_KIND].failed++;
+                    testStats[CURRENT_KIND].total++;
                 }
+            }
         }
 
         function runAdditionTest(testName, ordA, ordB, expectedString) {
@@ -651,15 +651,15 @@
                 console.error(`Error in test "${testName}":`, e);
             }
             const finalPassed = container.querySelector('.status-failed') === null;
-            try { recordTestResult(CURRENT_KIND, finalPassed, container); } catch (recordError) { 
-                    console.error('CRITICAL: Failed to record test result for', CURRENT_KIND, recordError);
-                    document.getElementById('test-details-container').appendChild(container);
-                    // Force test section to be marked as failed
-                    if (testStats[CURRENT_KIND]) {
-                        testStats[CURRENT_KIND].failed++;
-                        testStats[CURRENT_KIND].total++;
-                    }
+            try { recordTestResult(CURRENT_KIND, finalPassed, container); } catch (recordError) {
+                console.error('CRITICAL: Failed to record test result for', CURRENT_KIND, recordError);
+                document.getElementById('test-details-container').appendChild(container);
+                // Force test section to be marked as failed
+                if (testStats[CURRENT_KIND]) {
+                    testStats[CURRENT_KIND].failed++;
+                    testStats[CURRENT_KIND].total++;
                 }
+            }
         }
 
         function runEqualityTest(testName, actualOrdinal, expectedOrdinal) {
@@ -696,15 +696,15 @@
                 console.error(`Error in equality test "${testName}":`, e);
             }
             const finalPassed = container.querySelector('.status-failed') === null;
-            try { recordTestResult(CURRENT_KIND, finalPassed, container); } catch (recordError) { 
-                    console.error('CRITICAL: Failed to record test result for', CURRENT_KIND, recordError);
-                    document.getElementById('test-details-container').appendChild(container);
-                    // Force test section to be marked as failed
-                    if (testStats[CURRENT_KIND]) {
-                        testStats[CURRENT_KIND].failed++;
-                        testStats[CURRENT_KIND].total++;
-                    }
+            try { recordTestResult(CURRENT_KIND, finalPassed, container); } catch (recordError) {
+                console.error('CRITICAL: Failed to record test result for', CURRENT_KIND, recordError);
+                document.getElementById('test-details-container').appendChild(container);
+                // Force test section to be marked as failed
+                if (testStats[CURRENT_KIND]) {
+                    testStats[CURRENT_KIND].failed++;
+                    testStats[CURRENT_KIND].total++;
                 }
+            }
         }
 
         function runENFCalculationTest(testName, inputString, expectedString) {
@@ -804,7 +804,7 @@
                             OperationTracer.setGlobalTracer(10000000);
                             const roundTripParser = new SimpleParser(actualString);
                             const roundTripOrdinal = roundTripParser.parse();
-                            
+
                             const B = result.ordinalObject;  // Original ordinal
                             const D = roundTripOrdinal;  // Re-parsed ordinal
                             roundTripPassed = B.equals(D);
@@ -875,15 +875,15 @@
             }
 
             const finalPassed = container.querySelector('.status-failed') === null;
-            try { recordTestResult(CURRENT_KIND, finalPassed, container); } catch (recordError) { 
-                    console.error('CRITICAL: Failed to record test result for', CURRENT_KIND, recordError);
-                    document.getElementById('test-details-container').appendChild(container);
-                    // Force test section to be marked as failed
-                    if (testStats[CURRENT_KIND]) {
-                        testStats[CURRENT_KIND].failed++;
-                        testStats[CURRENT_KIND].total++;
-                    }
+            try { recordTestResult(CURRENT_KIND, finalPassed, container); } catch (recordError) {
+                console.error('CRITICAL: Failed to record test result for', CURRENT_KIND, recordError);
+                document.getElementById('test-details-container').appendChild(container);
+                // Force test section to be marked as failed
+                if (testStats[CURRENT_KIND]) {
+                    testStats[CURRENT_KIND].failed++;
+                    testStats[CURRENT_KIND].total++;
                 }
+            }
         }
 
         function runComprehensiveAdditionTest(ordinals) {
@@ -957,15 +957,15 @@
                 console.error('Error in comprehensive addition test:', e);
             }
 
-            try { recordTestResult(CURRENT_KIND, container.querySelector('.status-failed') === null, container); } catch (recordError) { 
-                    console.error('CRITICAL: Failed to record test result for', CURRENT_KIND, recordError);
-                    document.getElementById('test-details-container').appendChild(container);
-                    // Force test section to be marked as failed
-                    if (testStats[CURRENT_KIND]) {
-                        testStats[CURRENT_KIND].failed++;
-                        testStats[CURRENT_KIND].total++;
-                    }
+            try { recordTestResult(CURRENT_KIND, container.querySelector('.status-failed') === null, container); } catch (recordError) {
+                console.error('CRITICAL: Failed to record test result for', CURRENT_KIND, recordError);
+                document.getElementById('test-details-container').appendChild(container);
+                // Force test section to be marked as failed
+                if (testStats[CURRENT_KIND]) {
+                    testStats[CURRENT_KIND].failed++;
+                    testStats[CURRENT_KIND].total++;
                 }
+            }
         }
 
         function runAdditionMonotonicityTest(ordinals) {
@@ -1062,15 +1062,15 @@
                 console.error('Error in addition monotonicity test:', e);
             }
 
-            try { recordTestResult(CURRENT_KIND, container.querySelector('.status-failed') === null, container); } catch (recordError) { 
-                    console.error('CRITICAL: Failed to record test result for', CURRENT_KIND, recordError);
-                    document.getElementById('test-details-container').appendChild(container);
-                    // Force test section to be marked as failed
-                    if (testStats[CURRENT_KIND]) {
-                        testStats[CURRENT_KIND].failed++;
-                        testStats[CURRENT_KIND].total++;
-                    }
+            try { recordTestResult(CURRENT_KIND, container.querySelector('.status-failed') === null, container); } catch (recordError) {
+                console.error('CRITICAL: Failed to record test result for', CURRENT_KIND, recordError);
+                document.getElementById('test-details-container').appendChild(container);
+                // Force test section to be marked as failed
+                if (testStats[CURRENT_KIND]) {
+                    testStats[CURRENT_KIND].failed++;
+                    testStats[CURRENT_KIND].total++;
                 }
+            }
         }
 
         function runMultiplicationMonotonicityTest(ordinals) {
@@ -1167,15 +1167,15 @@
                 console.error('Error in multiplication monotonicity test:', e);
             }
 
-            try { recordTestResult(CURRENT_KIND, container.querySelector('.status-failed') === null, container); } catch (recordError) { 
-                    console.error('CRITICAL: Failed to record test result for', CURRENT_KIND, recordError);
-                    document.getElementById('test-details-container').appendChild(container);
-                    // Force test section to be marked as failed
-                    if (testStats[CURRENT_KIND]) {
-                        testStats[CURRENT_KIND].failed++;
-                        testStats[CURRENT_KIND].total++;
-                    }
+            try { recordTestResult(CURRENT_KIND, container.querySelector('.status-failed') === null, container); } catch (recordError) {
+                console.error('CRITICAL: Failed to record test result for', CURRENT_KIND, recordError);
+                document.getElementById('test-details-container').appendChild(container);
+                // Force test section to be marked as failed
+                if (testStats[CURRENT_KIND]) {
+                    testStats[CURRENT_KIND].failed++;
+                    testStats[CURRENT_KIND].total++;
                 }
+            }
         }
 
         function runExponentiationMonotonicityTest(ordinals) {
@@ -1262,15 +1262,15 @@
                 console.error('Error in exponentiation monotonicity test:', e);
             }
 
-            try { recordTestResult(CURRENT_KIND, container.querySelector('.status-failed') === null, container); } catch (recordError) { 
-                    console.error('CRITICAL: Failed to record test result for', CURRENT_KIND, recordError);
-                    document.getElementById('test-details-container').appendChild(container);
-                    // Force test section to be marked as failed
-                    if (testStats[CURRENT_KIND]) {
-                        testStats[CURRENT_KIND].failed++;
-                        testStats[CURRENT_KIND].total++;
-                    }
+            try { recordTestResult(CURRENT_KIND, container.querySelector('.status-failed') === null, container); } catch (recordError) {
+                console.error('CRITICAL: Failed to record test result for', CURRENT_KIND, recordError);
+                document.getElementById('test-details-container').appendChild(container);
+                // Force test section to be marked as failed
+                if (testStats[CURRENT_KIND]) {
+                    testStats[CURRENT_KIND].failed++;
+                    testStats[CURRENT_KIND].total++;
                 }
+            }
         }
 
         function runComprehensiveMultiplicationTest(ordinals) {
@@ -1343,15 +1343,15 @@
                 console.error('Error in comprehensive multiplication test:', e);
             }
 
-            try { recordTestResult(CURRENT_KIND, container.querySelector('.status-failed') === null, container); } catch (recordError) { 
-                    console.error('CRITICAL: Failed to record test result for', CURRENT_KIND, recordError);
-                    document.getElementById('test-details-container').appendChild(container);
-                    // Force test section to be marked as failed
-                    if (testStats[CURRENT_KIND]) {
-                        testStats[CURRENT_KIND].failed++;
-                        testStats[CURRENT_KIND].total++;
-                    }
+            try { recordTestResult(CURRENT_KIND, container.querySelector('.status-failed') === null, container); } catch (recordError) {
+                console.error('CRITICAL: Failed to record test result for', CURRENT_KIND, recordError);
+                document.getElementById('test-details-container').appendChild(container);
+                // Force test section to be marked as failed
+                if (testStats[CURRENT_KIND]) {
+                    testStats[CURRENT_KIND].failed++;
+                    testStats[CURRENT_KIND].total++;
                 }
+            }
         }
 
         function runRandomTripleAssociativityAdditionTest(ordinals, sampleCount = 100) {
@@ -1453,15 +1453,15 @@
                 console.error('Error in associativity test (addition):', e);
             }
 
-            try { recordTestResult(CURRENT_KIND, container.querySelector('.status-failed') === null, container); } catch (recordError) { 
-                    console.error('CRITICAL: Failed to record test result for', CURRENT_KIND, recordError);
-                    document.getElementById('test-details-container').appendChild(container);
-                    // Force test section to be marked as failed
-                    if (testStats[CURRENT_KIND]) {
-                        testStats[CURRENT_KIND].failed++;
-                        testStats[CURRENT_KIND].total++;
-                    }
+            try { recordTestResult(CURRENT_KIND, container.querySelector('.status-failed') === null, container); } catch (recordError) {
+                console.error('CRITICAL: Failed to record test result for', CURRENT_KIND, recordError);
+                document.getElementById('test-details-container').appendChild(container);
+                // Force test section to be marked as failed
+                if (testStats[CURRENT_KIND]) {
+                    testStats[CURRENT_KIND].failed++;
+                    testStats[CURRENT_KIND].total++;
                 }
+            }
         }
 
         function runRandomTripleAlgebraRulesTest(ordinals, sampleCount = 100) {
@@ -1595,15 +1595,15 @@
                 console.error('Error in algebraic laws test:', e);
             }
 
-            try { recordTestResult(CURRENT_KIND, container.querySelector('.status-failed') === null, container); } catch (recordError) { 
-                    console.error('CRITICAL: Failed to record test result for', CURRENT_KIND, recordError);
-                    document.getElementById('test-details-container').appendChild(container);
-                    // Force test section to be marked as failed
-                    if (testStats[CURRENT_KIND]) {
-                        testStats[CURRENT_KIND].failed++;
-                        testStats[CURRENT_KIND].total++;
-                    }
+            try { recordTestResult(CURRENT_KIND, container.querySelector('.status-failed') === null, container); } catch (recordError) {
+                console.error('CRITICAL: Failed to record test result for', CURRENT_KIND, recordError);
+                document.getElementById('test-details-container').appendChild(container);
+                // Force test section to be marked as failed
+                if (testStats[CURRENT_KIND]) {
+                    testStats[CURRENT_KIND].failed++;
+                    testStats[CURRENT_KIND].total++;
                 }
+            }
         }
 
         function runComprehensiveExponentiationTest(ordinals) {
@@ -1685,15 +1685,15 @@
                 console.error('Error in comprehensive exponentiation test:', e);
             }
 
-            try { recordTestResult(CURRENT_KIND, container.querySelector('.status-failed') === null, container); } catch (recordError) { 
-                    console.error('CRITICAL: Failed to record test result for', CURRENT_KIND, recordError);
-                    document.getElementById('test-details-container').appendChild(container);
-                    // Force test section to be marked as failed
-                    if (testStats[CURRENT_KIND]) {
-                        testStats[CURRENT_KIND].failed++;
-                        testStats[CURRENT_KIND].total++;
-                    }
+            try { recordTestResult(CURRENT_KIND, container.querySelector('.status-failed') === null, container); } catch (recordError) {
+                console.error('CRITICAL: Failed to record test result for', CURRENT_KIND, recordError);
+                document.getElementById('test-details-container').appendChild(container);
+                // Force test section to be marked as failed
+                if (testStats[CURRENT_KIND]) {
+                    testStats[CURRENT_KIND].failed++;
+                    testStats[CURRENT_KIND].total++;
                 }
+            }
         }
 
         function defineTests() {
@@ -1738,8 +1738,8 @@
             const ord_e1_times_e0 = new ENFOrdinal([new ENFTerm([new ENFFactor(e1_base, enf_one), new ENFFactor(e0_base, enf_one)], 1n)]);
             const ord_e2 = new ENFOrdinal([new ENFTerm([new ENFFactor(new EpsilonNumber(new FiniteOrdinal(2)), enf_one)], 1n)]);
 
-           // --- Very Complex Test Case ---
-           const ord_e0_pow_w = new ENFOrdinal([new ENFTerm([new ENFFactor(e0_base, ord_w)], 1n)]);
+            // --- Very Complex Test Case ---
+            const ord_e0_pow_w = new ENFOrdinal([new ENFTerm([new ENFFactor(e0_base, ord_w)], 1n)]);
             // New ordinal: e_0^(w+1)
             const ord_e0_pow_w_plus_1 = (function () {
                 const w_plus_1_cnf = new SimpleParser("w+1").parse();
@@ -1757,7 +1757,7 @@
                 new ENFTerm([new ENFFactor(new OmegaOrdinal(), new FiniteOrdinal(3))], 1n),
                 new ENFTerm([], 2n)
             ]);
-            
+
             const multi_term_1 = new ENFOrdinal([
                 new ENFTerm([new ENFFactor(e1_base, ord_w), new ENFFactor(e0_base, ord_five), new ENFFactor(new OmegaOrdinal(), w_cubed_plus_2)], 3n),
                 new ENFTerm([new ENFFactor(new OmegaOrdinal(), new SimpleParser("w^2").parse())], 5n),
@@ -1770,7 +1770,7 @@
 
             // === MUTABILITY TEST SETUP ===
             console.log('[MUTABILITY] Setting up mutation detection...');
-            
+
             // --- All Ordinals for Tables ---
             const allOrdinals = [
                 ord_zero, ord_one, ord_five, ord_w, ord_w_plus_1, ord_w_times_2, ord_w_squared,
@@ -1790,7 +1790,7 @@
                     return `ERROR: ${error.message}`;
                 }
             });
-            
+
             console.log('[MUTABILITY] Captured', allOrdinals.length, 'ordinal string representations');
             console.log('[MUTABILITY] Sample strings:', originalStrings.slice(0, 5));
 
@@ -1798,15 +1798,15 @@
             window.mutabilityTest = {
                 ordinals: allOrdinals,
                 originalStrings: originalStrings,
-                checkMutations: function() {
+                checkMutations: function () {
                     console.log('[MUTABILITY] Checking for mutations...');
                     let mutationCount = 0;
                     const mutations = [];
-                    
+
                     for (let i = 0; i < allOrdinals.length; i++) {
                         const ordinal = allOrdinals[i];
                         const originalString = originalStrings[i];
-                        
+
                         try {
                             const currentString = ordinal.toString();
                             if (currentString !== originalString) {
@@ -1832,11 +1832,11 @@
                             console.error(`[MUTABILITY] MUTATION ERROR at index ${i}:`, mutation);
                         }
                     }
-                    
+
                     if (mutationCount > 0) {
                         console.error(`[MUTABILITY] FOUND ${mutationCount} MUTATIONS!`);
                         hasUnhandledErrors = true;
-                        
+
                         // Create mutation report container
                         const mutationContainer = document.createElement('div');
                         mutationContainer.style.cssText = 'background: red; color: white; padding: 20px; margin: 20px; border-radius: 10px;';
@@ -1855,7 +1855,7 @@
                             </details>
                         `;
                         document.body.appendChild(mutationContainer);
-                        
+
                         return false; // Indicate failure
                     } else {
                         console.log('[MUTABILITY] ✅ No mutations detected - all ordinals remain immutable!');
@@ -1866,7 +1866,7 @@
 
             // --- Construction Tests ---
             CURRENT_KIND = 'CONSTRUCTION';
-            
+
             function runConstructionTest(testName, ordinal, expectedString) {
                 totalTests++;
                 const container = document.createElement('div');
@@ -1892,7 +1892,7 @@
                     passedTests++;
                 }
 
-                try { recordTestResult(CURRENT_KIND, passed, container); } catch (recordError) { 
+                try { recordTestResult(CURRENT_KIND, passed, container); } catch (recordError) {
                     console.error('CRITICAL: Failed to record test result for', CURRENT_KIND, recordError);
                     document.getElementById('test-details-container').appendChild(container);
                     // Force test section to be marked as failed
@@ -1932,28 +1932,28 @@
             runConstructionTest("w^2 (simple exponent)", simple_exp_test, "w^2");
 
             // Stress test parentheses - complex exponent with addition
-            const complex_exp_test1 = new ENFOrdinal([new ENFTerm([new ENFFactor(new OmegaOrdinal(), 
+            const complex_exp_test1 = new ENFOrdinal([new ENFTerm([new ENFFactor(new OmegaOrdinal(),
                 new ENFOrdinal([new ENFTerm([new ENFFactor(new OmegaOrdinal(), new FiniteOrdinal(2))], 1n), new ENFTerm([], 3n)]))], 1n)]);
             runConstructionTest("w^(w^2+3) (complex exponent)", complex_exp_test1, "w^(w^2+3)");
 
             // Stress test parentheses - exponent with coefficient
-            const coeff_exp_test = new ENFOrdinal([new ENFTerm([new ENFFactor(new OmegaOrdinal(), 
+            const coeff_exp_test = new ENFOrdinal([new ENFTerm([new ENFFactor(new OmegaOrdinal(),
                 new ENFOrdinal([new ENFTerm([new ENFFactor(new OmegaOrdinal(), new FiniteOrdinal(2))], 3n)]))], 1n)]);
             runConstructionTest("w^(w^2*3) (exponent with coefficient)", coeff_exp_test, "w^(w^2*3)");
 
             // Stress test parentheses - exponent with multiple factors
-            const multi_factor_exp_test = new ENFOrdinal([new ENFTerm([new ENFFactor(new OmegaOrdinal(), 
+            const multi_factor_exp_test = new ENFOrdinal([new ENFTerm([new ENFFactor(new OmegaOrdinal(),
                 new ENFOrdinal([new ENFTerm([new ENFFactor(e1_base, enf_one), new ENFFactor(e0_base, new FiniteOrdinal(2))], 1n)]))], 1n)]);
             runConstructionTest("w^(e_1*e_0^2) (exponent with multiple factors)", multi_factor_exp_test, "w^(e_1*e_0^2)");
 
             // Stress test parentheses - exponent with multiple factors AND coefficient
-            const multi_factor_coeff_exp_test = new ENFOrdinal([new ENFTerm([new ENFFactor(new OmegaOrdinal(), 
+            const multi_factor_coeff_exp_test = new ENFOrdinal([new ENFTerm([new ENFFactor(new OmegaOrdinal(),
                 new ENFOrdinal([new ENFTerm([new ENFFactor(e1_base, enf_one), new ENFFactor(e0_base, new FiniteOrdinal(2))], 5n)]))], 1n)]);
             runConstructionTest("w^(e_1*e_0^2*5) (exponent with multiple factors and coefficient)", multi_factor_coeff_exp_test, "w^(e_1*e_0^2*5)");
 
             // Stress test parentheses - nested complex exponents
-            const nested_exp_test = new ENFOrdinal([new ENFTerm([new ENFFactor(new OmegaOrdinal(), 
-                new ENFOrdinal([new ENFTerm([new ENFFactor(new OmegaOrdinal(), 
+            const nested_exp_test = new ENFOrdinal([new ENFTerm([new ENFFactor(new OmegaOrdinal(),
+                new ENFOrdinal([new ENFTerm([new ENFFactor(new OmegaOrdinal(),
                     new ENFOrdinal([new ENFTerm([new ENFFactor(new OmegaOrdinal(), new FiniteOrdinal(2))], 1n), new ENFTerm([], 1n)]))], 1n)]))], 1n)]);
             runConstructionTest("w^(w^(w^2+1)) (nested complex exponents)", nested_exp_test, "w^w^(w^2+1)");
 
@@ -1981,7 +1981,7 @@
                 ["w^w", "w^w+1", "w^w*2", "w^w^2", "e_0", "e_0+1", "e_0+w", "e_0+w^w", "e_0*2", "e_0*w", "e_0^2", "e_1", "e_1*2", "e_1*w", "e_1*e_0", "e_2"]
             );
 
- 
+
             runComparisonTest(
                 "Very Complex Comparison",
                 [multi_term_2, ord_e_w, ord_e1, ord_e0_pow_w, multi_term_1, ord_e_e0, ord_e1_plus_e0, ord_e1_pow_e0],
@@ -2016,7 +2016,7 @@
                 container.className = 'test-case';
                 const t = document.createElement('h3'); t.textContent = 'Regression Probe: division in power'; container.appendChild(t);
                 container.appendChild(probe);
-                try { recordTestResult(CURRENT_KIND, true, container); } catch (recordError) { 
+                try { recordTestResult(CURRENT_KIND, true, container); } catch (recordError) {
                     console.error('CRITICAL: Failed to record test result for', CURRENT_KIND, recordError);
                     document.getElementById('test-details-container').appendChild(container);
                     // Force test section to be marked as failed
@@ -2037,7 +2037,7 @@
                 p.className = 'log-output status-failed';
                 p.textContent = e.message;
                 container.appendChild(p);
-                try { recordTestResult(CURRENT_KIND, false, container); } catch (recordError) { 
+                try { recordTestResult(CURRENT_KIND, false, container); } catch (recordError) {
                     console.error('CRITICAL: Failed to record test result for', CURRENT_KIND, recordError);
                     document.getElementById('test-details-container').appendChild(container);
                     // Force test section to be marked as failed
@@ -2084,15 +2084,15 @@
                     const status = document.createElement('p'); status.textContent = `Status: ${ok ? 'PASSED' : 'FAILED'}`; status.className = ok ? 'status-passed' : 'status-failed'; container.appendChild(status);
                     if (ok) { passedTests++; } else { /* count in total only */ }
                     totalTests++;
-                    try { recordTestResult(CURRENT_KIND, ok, container); } catch (recordError) { 
-                    console.error('CRITICAL: Failed to record test result for', CURRENT_KIND, recordError);
-                    document.getElementById('test-details-container').appendChild(container);
-                    // Force test section to be marked as failed
-                    if (testStats[CURRENT_KIND]) {
-                        testStats[CURRENT_KIND].failed++;
-                        testStats[CURRENT_KIND].total++;
+                    try { recordTestResult(CURRENT_KIND, ok, container); } catch (recordError) {
+                        console.error('CRITICAL: Failed to record test result for', CURRENT_KIND, recordError);
+                        document.getElementById('test-details-container').appendChild(container);
+                        // Force test section to be marked as failed
+                        if (testStats[CURRENT_KIND]) {
+                            testStats[CURRENT_KIND].failed++;
+                            testStats[CURRENT_KIND].total++;
+                        }
                     }
-                }
                 })();
 
                 // Special-case power: e_0^(e_0^^n) = e_0^^(n+1)
@@ -2111,7 +2111,7 @@
                 p.className = 'log-output status-failed';
                 p.textContent = e.message;
                 container.appendChild(p);
-                try { recordTestResult(CURRENT_KIND, false, container); } catch (recordError) { 
+                try { recordTestResult(CURRENT_KIND, false, container); } catch (recordError) {
                     console.error('CRITICAL: Failed to record test result for', CURRENT_KIND, recordError);
                     document.getElementById('test-details-container').appendChild(container);
                     // Force test section to be marked as failed
@@ -2166,15 +2166,15 @@
                     const status = document.createElement('p'); status.textContent = `Status: ${ok ? 'PASSED' : 'FAILED'}`; status.className = ok ? 'status-passed' : 'status-failed'; container.appendChild(status);
                     if (ok) { passedTests++; } else { /* count only */ }
                     totalTests++;
-                    try { recordTestResult(CURRENT_KIND, ok, container); } catch (recordError) { 
-                    console.error('CRITICAL: Failed to record test result for', CURRENT_KIND, recordError);
-                    document.getElementById('test-details-container').appendChild(container);
-                    // Force test section to be marked as failed
-                    if (testStats[CURRENT_KIND]) {
-                        testStats[CURRENT_KIND].failed++;
-                        testStats[CURRENT_KIND].total++;
+                    try { recordTestResult(CURRENT_KIND, ok, container); } catch (recordError) {
+                        console.error('CRITICAL: Failed to record test result for', CURRENT_KIND, recordError);
+                        document.getElementById('test-details-container').appendChild(container);
+                        // Force test section to be marked as failed
+                        if (testStats[CURRENT_KIND]) {
+                            testStats[CURRENT_KIND].failed++;
+                            testStats[CURRENT_KIND].total++;
+                        }
                     }
-                }
                 })();
 
                 // k = e_0 (so base is e_{e_0})
@@ -2193,7 +2193,7 @@
                 p.className = 'log-output status-failed';
                 p.textContent = e.message;
                 container.appendChild(p);
-                try { recordTestResult(CURRENT_KIND, false, container); } catch (recordError) { 
+                try { recordTestResult(CURRENT_KIND, false, container); } catch (recordError) {
                     console.error('CRITICAL: Failed to record test result for', CURRENT_KIND, recordError);
                     document.getElementById('test-details-container').appendChild(container);
                     // Force test section to be marked as failed
@@ -2222,27 +2222,27 @@
                 (function () {
                     const container = document.createElement('div'); container.className = 'test-case';
                     const title = document.createElement('h3'); title.textContent = '0^^w throws'; container.appendChild(title);
-                    let passed = false; 
-                    try { 
-                        zero.tetrate(CNFOrdinal.OMEGAStatic().clone()); 
+                    let passed = false;
+                    try {
+                        zero.tetrate(CNFOrdinal.OMEGAStatic().clone());
                         // If no error thrown, test failed
                         passed = false;
-                    } catch (expectedError) { 
+                    } catch (expectedError) {
                         // Error was expected, so test passed
-                        passed = true; 
+                        passed = true;
                         console.log('Expected tetration error caught:', expectedError.message);
                     }
                     const status = document.createElement('p'); status.textContent = `Status: ${passed ? 'PASSED' : 'FAILED'}`; status.className = passed ? 'status-passed' : 'status-failed'; container.appendChild(status);
                     if (passed) passedTests++; totalTests++;
-                    try { recordTestResult(CURRENT_KIND, passed, container); } catch (recordError) { 
-                    console.error('CRITICAL: Failed to record test result for', CURRENT_KIND, recordError);
-                    document.getElementById('test-details-container').appendChild(container);
-                    // Force test section to be marked as failed
-                    if (testStats[CURRENT_KIND]) {
-                        testStats[CURRENT_KIND].failed++;
-                        testStats[CURRENT_KIND].total++;
+                    try { recordTestResult(CURRENT_KIND, passed, container); } catch (recordError) {
+                        console.error('CRITICAL: Failed to record test result for', CURRENT_KIND, recordError);
+                        document.getElementById('test-details-container').appendChild(container);
+                        // Force test section to be marked as failed
+                        if (testStats[CURRENT_KIND]) {
+                            testStats[CURRENT_KIND].failed++;
+                            testStats[CURRENT_KIND].total++;
+                        }
                     }
-                }
                 })();
 
                 // 1^^k = 1 (finite and infinite)
@@ -2262,15 +2262,15 @@
                     const ok = (typeof WTowerOrdinal !== 'undefined') && (res instanceof WTowerOrdinal) && res.height === 11n;
                     const status = document.createElement('p'); status.textContent = `Status: ${ok ? 'PASSED' : 'FAILED'}`; status.className = ok ? 'status-passed' : 'status-failed'; container.appendChild(status);
                     if (ok) passedTests++; totalTests++;
-                    try { recordTestResult(CURRENT_KIND, ok, container); } catch (recordError) { 
-                    console.error('CRITICAL: Failed to record test result for', CURRENT_KIND, recordError);
-                    document.getElementById('test-details-container').appendChild(container);
-                    // Force test section to be marked as failed
-                    if (testStats[CURRENT_KIND]) {
-                        testStats[CURRENT_KIND].failed++;
-                        testStats[CURRENT_KIND].total++;
+                    try { recordTestResult(CURRENT_KIND, ok, container); } catch (recordError) {
+                        console.error('CRITICAL: Failed to record test result for', CURRENT_KIND, recordError);
+                        document.getElementById('test-details-container').appendChild(container);
+                        // Force test section to be marked as failed
+                        if (testStats[CURRENT_KIND]) {
+                            testStats[CURRENT_KIND].failed++;
+                            testStats[CURRENT_KIND].total++;
+                        }
                     }
-                }
                 })();
 
                 // e_k^^n threshold (n>10 -> EpsilonTower)
@@ -2287,15 +2287,15 @@
                     }
                     const status = document.createElement('p'); status.textContent = `Status: ${ok ? 'PASSED' : 'FAILED'}`; status.className = ok ? 'status-passed' : 'status-failed'; container.appendChild(status);
                     if (ok) passedTests++; totalTests++;
-                    try { recordTestResult(CURRENT_KIND, ok, container); } catch (recordError) { 
-                    console.error('CRITICAL: Failed to record test result for', CURRENT_KIND, recordError);
-                    document.getElementById('test-details-container').appendChild(container);
-                    // Force test section to be marked as failed
-                    if (testStats[CURRENT_KIND]) {
-                        testStats[CURRENT_KIND].failed++;
-                        testStats[CURRENT_KIND].total++;
+                    try { recordTestResult(CURRENT_KIND, ok, container); } catch (recordError) {
+                        console.error('CRITICAL: Failed to record test result for', CURRENT_KIND, recordError);
+                        document.getElementById('test-details-container').appendChild(container);
+                        // Force test section to be marked as failed
+                        if (testStats[CURRENT_KIND]) {
+                            testStats[CURRENT_KIND].failed++;
+                            testStats[CURRENT_KIND].total++;
+                        }
                     }
-                }
                 })();
 
                 // Finite height with base > e_0 but not pure epsilon: (e_0+1)^^3 computed recursively
@@ -2308,15 +2308,15 @@
                     if (!passed) { const pErr = document.createElement('p'); pErr.className = 'log-output'; pErr.textContent = `Error: ${errMsg}`; container.appendChild(pErr); }
                     const status = document.createElement('p'); status.textContent = `Status: ${passed ? 'PASSED' : 'FAILED'}`; status.className = passed ? 'status-passed' : 'status-failed'; container.appendChild(status);
                     if (passed) passedTests++; totalTests++;
-                    try { recordTestResult(CURRENT_KIND, passed, container); } catch (recordError) { 
-                    console.error('CRITICAL: Failed to record test result for', CURRENT_KIND, recordError);
-                    document.getElementById('test-details-container').appendChild(container);
-                    // Force test section to be marked as failed
-                    if (testStats[CURRENT_KIND]) {
-                        testStats[CURRENT_KIND].failed++;
-                        testStats[CURRENT_KIND].total++;
+                    try { recordTestResult(CURRENT_KIND, passed, container); } catch (recordError) {
+                        console.error('CRITICAL: Failed to record test result for', CURRENT_KIND, recordError);
+                        document.getElementById('test-details-container').appendChild(container);
+                        // Force test section to be marked as failed
+                        if (testStats[CURRENT_KIND]) {
+                            testStats[CURRENT_KIND].failed++;
+                            testStats[CURRENT_KIND].total++;
+                        }
                     }
-                }
                 })();
 
                 // EpsilonTower for e_5^^12
@@ -2335,15 +2335,15 @@
                     const pStr = document.createElement('p'); pStr.className = 'log-output'; pStr.textContent = `Got: ${s || '[non-string]'}`; container.appendChild(pStr);
                     const status = document.createElement('p'); status.textContent = `Status: ${ok ? 'PASSED' : 'FAILED'}`; status.className = ok ? 'status-passed' : 'status-failed'; container.appendChild(status);
                     if (ok) passedTests++; totalTests++;
-                    try { recordTestResult(CURRENT_KIND, ok, container); } catch (recordError) { 
-                    console.error('CRITICAL: Failed to record test result for', CURRENT_KIND, recordError);
-                    document.getElementById('test-details-container').appendChild(container);
-                    // Force test section to be marked as failed
-                    if (testStats[CURRENT_KIND]) {
-                        testStats[CURRENT_KIND].failed++;
-                        testStats[CURRENT_KIND].total++;
+                    try { recordTestResult(CURRENT_KIND, ok, container); } catch (recordError) {
+                        console.error('CRITICAL: Failed to record test result for', CURRENT_KIND, recordError);
+                        document.getElementById('test-details-container').appendChild(container);
+                        // Force test section to be marked as failed
+                        if (testStats[CURRENT_KIND]) {
+                            testStats[CURRENT_KIND].failed++;
+                            testStats[CURRENT_KIND].total++;
+                        }
                     }
-                }
                 })();
 
                 // a (not w or e_k) ^^ 2 = a^a
@@ -2356,15 +2356,15 @@
                     const ok = left.equals(right);
                     const status = document.createElement('p'); status.textContent = `Status: ${ok ? 'PASSED' : 'FAILED'}`; status.className = ok ? 'status-passed' : 'status-failed'; container.appendChild(status);
                     if (ok) passedTests++; totalTests++;
-                    try { recordTestResult(CURRENT_KIND, ok, container); } catch (recordError) { 
-                    console.error('CRITICAL: Failed to record test result for', CURRENT_KIND, recordError);
-                    document.getElementById('test-details-container').appendChild(container);
-                    // Force test section to be marked as failed
-                    if (testStats[CURRENT_KIND]) {
-                        testStats[CURRENT_KIND].failed++;
-                        testStats[CURRENT_KIND].total++;
+                    try { recordTestResult(CURRENT_KIND, ok, container); } catch (recordError) {
+                        console.error('CRITICAL: Failed to record test result for', CURRENT_KIND, recordError);
+                        document.getElementById('test-details-container').appendChild(container);
+                        // Force test section to be marked as failed
+                        if (testStats[CURRENT_KIND]) {
+                            testStats[CURRENT_KIND].failed++;
+                            testStats[CURRENT_KIND].total++;
+                        }
                     }
-                }
                 })();
 
                 // a (CNF infinite epsilon-free) ^^ infinite = e_0
@@ -2386,9 +2386,9 @@
                             if (o && typeof o.toDisplayString === 'function') return o.toDisplayString({ format: 'ENF' });
                             if (o && typeof o.toStringCNF === 'function') return o.toStringCNF();
                             if (o && typeof o.toString === 'function') return o.toString();
-                        } catch (stringError) { 
+                        } catch (stringError) {
                             console.error('Error converting ordinal to string:', stringError);
-                            /* Continue with fallback */ 
+                            /* Continue with fallback */
                         }
                         return String(o);
                     };
@@ -2398,15 +2398,15 @@
                     const pExp = document.createElement('p'); pExp.className = 'log-output'; pExp.textContent = `Expected: ${expectedStr}`; container.appendChild(pExp);
                     const status = document.createElement('p'); status.textContent = `Status: ${ok ? 'PASSED' : 'FAILED'}`; status.className = ok ? 'status-passed' : 'status-failed'; container.appendChild(status);
                     if (ok) passedTests++; totalTests++;
-                    try { recordTestResult(CURRENT_KIND, ok, container); } catch (recordError) { 
-                    console.error('CRITICAL: Failed to record test result for', CURRENT_KIND, recordError);
-                    document.getElementById('test-details-container').appendChild(container);
-                    // Force test section to be marked as failed
-                    if (testStats[CURRENT_KIND]) {
-                        testStats[CURRENT_KIND].failed++;
-                        testStats[CURRENT_KIND].total++;
+                    try { recordTestResult(CURRENT_KIND, ok, container); } catch (recordError) {
+                        console.error('CRITICAL: Failed to record test result for', CURRENT_KIND, recordError);
+                        document.getElementById('test-details-container').appendChild(container);
+                        // Force test section to be marked as failed
+                        if (testStats[CURRENT_KIND]) {
+                            testStats[CURRENT_KIND].failed++;
+                            testStats[CURRENT_KIND].total++;
+                        }
                     }
-                }
                 })();
 
             } catch (e) {
@@ -2414,7 +2414,7 @@
                 container.className = 'test-case';
                 const title = document.createElement('h3'); title.textContent = 'Extended tetration setup error'; container.appendChild(title);
                 const p = document.createElement('p'); p.className = 'log-output status-failed'; p.textContent = e.message; container.appendChild(p);
-                try { recordTestResult(CURRENT_KIND, false, container); } catch (recordError) { 
+                try { recordTestResult(CURRENT_KIND, false, container); } catch (recordError) {
                     console.error('CRITICAL: Failed to record test result for', CURRENT_KIND, recordError);
                     document.getElementById('test-details-container').appendChild(container);
                     // Force test section to be marked as failed
@@ -2434,18 +2434,18 @@
             runComprehensiveMultiplicationTest(allOrdinals);
             CURRENT_KIND = 'EXPONENTIATION';
             runComprehensiveExponentiationTest(allOrdinals);
-/*
-            // Run monotonicity sanity tests
-            CURRENT_KIND = 'ADDITION';
-            OperationTracer.reset(1000000);
-            runAdditionMonotonicityTest(allOrdinals);
-            CURRENT_KIND = 'MULTIPLICATION';
-            OperationTracer.reset(1000000);
-            runMultiplicationMonotonicityTest(allOrdinals);
-            CURRENT_KIND = 'EXPONENTIATION';
-            OperationTracer.reset(1000000);
-            runExponentiationMonotonicityTest(allOrdinals);
-*/
+            /*
+                        // Run monotonicity sanity tests
+                        CURRENT_KIND = 'ADDITION';
+                        OperationTracer.reset(1000000);
+                        runAdditionMonotonicityTest(allOrdinals);
+                        CURRENT_KIND = 'MULTIPLICATION';
+                        OperationTracer.reset(1000000);
+                        runMultiplicationMonotonicityTest(allOrdinals);
+                        CURRENT_KIND = 'EXPONENTIATION';
+                        OperationTracer.reset(1000000);
+                        runExponentiationMonotonicityTest(allOrdinals);
+            */
             // Random triple associativity tests
             CURRENT_KIND = 'RANDOM';
             OperationTracer.reset(1000000);
@@ -2479,7 +2479,7 @@
             runENFCalculationTest("Parentheses check 2", "e_(w^w)", "e_(w^w)");
             runENFCalculationTest("Parentheses check 3", "e_(e_0+1)", "e_(e_0+1)");
             runENFCalculationTest("Parentheses check 4", "e_e_0+1", "e_e_0+1");
-            
+
             // Tunnel tests
             runENFCalculationTest("Tunnel 0", "e__0", "0");
             runENFCalculationTest("Tunnel 1", "e__1", "e_0");
@@ -2850,7 +2850,15 @@
             // Initialize global tracer BEFORE defining tests
             OperationTracer.setGlobalTracer(2000000); // 2M operations budget
             console.log('[GlobalTracer] ENF test suite initialized with budget:', OperationTracer.getBudget());
-            
+
+            // Initialize OPERATIONS system immediately
+            if (typeof OPERATIONS !== 'undefined' && OPERATIONS.initialize) {
+                OPERATIONS.initialize();
+                console.log('[ENFTest] OPERATIONS system initialized immediately');
+            } else {
+                console.error('[ENFTest] OPERATIONS not available or missing initialize method');
+            }
+
             try {
                 defineTests();
                 renderAllKindResults();
@@ -2875,15 +2883,15 @@
             setTimeout(() => {
                 console.log('[DEBUG] Force-rendering all sections after initial load');
                 renderAllKindResults();
-                
+
                 // === MUTABILITY CHECK AT END OF ALL TESTS ===
                 setTimeout(() => {
                     console.log('[MUTABILITY] All tests completed, checking for mutations...');
-                    
+
                     if (window.mutabilityTest && typeof window.mutabilityTest.checkMutations === 'function') {
                         // Perform mutation check
                         const mutabilityResult = window.mutabilityTest.checkMutations();
-                        
+
                         // Update overall test status based on mutability
                         if (!mutabilityResult) {
                             console.error('[MUTABILITY] Test suite FAILED due to immutability violations');

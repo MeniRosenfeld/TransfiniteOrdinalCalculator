@@ -22,6 +22,24 @@ class RuleEngine {
     }
 
     /**
+     * Global alertness test system - when enabled, randomly introduces errors
+     * to verify that test suites actually catch problems.
+     */
+    static alertnessTestEnabled = false;
+    static alertnessTestProbability = 1 / 1000; // 0.1% chance of error
+
+    static enableAlertnessTest(probability = 1 / 1000) {
+        RuleEngine.alertnessTestEnabled = true;
+        RuleEngine.alertnessTestProbability = probability;
+        console.log(`[RuleEngine] Alertness test ENABLED with probability ${probability}`);
+    }
+
+    static disableAlertnessTest() {
+        RuleEngine.alertnessTestEnabled = false;
+        console.log('[RuleEngine] Alertness test DISABLED');
+    }
+
+    /**
      * Adds a rule to the engine.
      * Rules are applied in the order they are added.
      */
@@ -51,6 +69,23 @@ class RuleEngine {
             throw new Error(`${operationName}: Second operand is not a valid ordinal`);
         }
 
+        // Alertness test: randomly introduce errors to verify test suites catch them
+        if (RuleEngine.alertnessTestEnabled && Math.random() < RuleEngine.alertnessTestProbability) {
+            console.warn(`[RuleEngine] ALERTNESS TEST: Introducing intentional error in ${operationName}`);
+
+            if (operationName === 'comparison') {
+                // For comparison, return random -1, 0, or 1
+                const randomResult = Math.floor(Math.random() * 3) - 1; // -1, 0, or 1
+                console.warn(`[RuleEngine] ALERTNESS TEST: Returning random comparison result: ${randomResult}`);
+                return randomResult;
+            } else {
+                // For other operations, randomly return a or b
+                const randomChoice = Math.random() < 0.5 ? a : b;
+                console.warn(`[RuleEngine] ALERTNESS TEST: Returning random operand: ${randomChoice.toString()}`);
+                return randomChoice;
+            }
+        }
+
         // Try each rule in definition order
         // IMPORTANT: More specific rules should be added before general ones
         for (const rule of this.rules) {
@@ -64,7 +99,7 @@ class RuleEngine {
             }
 
             if (matched) {
-                console.log(`[RuleEngine] ${operationName}: Applied rule "${rule.name}" for ${a.constructor.name} ${operationName} ${b.constructor.name}`);
+                //console.log(`[RuleEngine] ${operationName}: Applied rule "${rule.name}" for ${a.constructor.name} ${operationName} ${b.constructor.name}`);
                 try {
                     return rule.action(a, b);
                 } catch (actErr) {

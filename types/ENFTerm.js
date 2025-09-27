@@ -119,7 +119,7 @@ class ENFTerm extends OrdinalBase {
         }
 
         const factorHTMLs = this.factors.map(f => f.toGraphicalHTML ? f.toGraphicalHTML() : f.toString());
-        
+
         if (this.coefficient === 1n) {
             return RenderingComponents.wrapTerm(RenderingComponents.joinFactors(factorHTMLs));
         } else {
@@ -151,21 +151,25 @@ class ENFTerm extends OrdinalBase {
         if (this.isFinite()) {
             return this.isZero() ? -1n : 0n;
         }
-        
+
+        // Get the original base for comparison
+        const originalBase = this.factors[0].base;
+
         // Iterative implementation to avoid quadratic complexity
         let count = 0;
         let currentTerm = this;
-        
+
         while (!currentTerm.isFinite()) {
             count++;
-            
+
             // Consume operation for this iteration
             OperationTracer.consume();
-            
+
             // Get the log without creating full ordinal objects (direct access to exponent)
             const logResult = currentTerm.factors[0].exponent;
-            
-            if (logResult.isFinite()) {
+
+            // Stop when we reach a base smaller than the original base
+            if (logResult.isFinite() || OPERATIONS.compare(logResult, originalBase) < 0) {
                 break;
             } else if (logResult instanceof ENFTerm) {
                 currentTerm = logResult;
@@ -180,13 +184,13 @@ class ENFTerm extends OrdinalBase {
                 // For other types, delegate to their logStar implementation
                 return BigInt(count) + logResult.logStar();
             }
-            
+
             // Safety break
             if (count > 100000) {
                 throw new Error("Exceeded maximum recursion depth for ENFTerm logStar calculation.");
             }
         }
-        
+
         return BigInt(count);
     }
 
@@ -194,11 +198,11 @@ class ENFTerm extends OrdinalBase {
         // Must have coefficient of 1 and a single factor with exponent of 1 and base which is not omega
         if (this.coefficient !== 1n) return false;
         if (this.factors.length !== 1) return false;
-        
+
         const factor = this.factors[0];
         if (!factor.exponent.isOne()) return false;
         if (factor.base.isOmega()) return false;
-        
+
         return true;
     }
 
@@ -206,26 +210,26 @@ class ENFTerm extends OrdinalBase {
         if (!this.isEpsilonNumber()) {
             throw new Error('ENFTerm is not an epsilon number');
         }
-        
+
         const factor = this.factors[0];
         // If the base is an EpsilonNumber, return its index
         if (factor.base.isEpsilonNumber()) {
             return factor.base.epsilonIndex();
         }
-        
+
         throw new Error('Cannot determine epsilon index for this ENFTerm');
     }
 
     // Dummy implementations for methods that will be more complex
-    nextRank() { 
+    nextRank() {
         if (this.factors.length === 0) {
             // Pure finite term - next rank is ω
             return new OmegaOrdinal();
         }
-        
+
         const leadingFactor = this.factors[0];
         const leadingBase = leadingFactor.base;
-        
+
         if (leadingBase.isOmega()) {
             // Base is ω, next rank is ε₀
             return new EpsilonZero();

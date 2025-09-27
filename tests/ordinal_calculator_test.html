@@ -941,9 +941,9 @@
                     const safeString = (obj => {
                         try {
                             return JSON.stringify(obj, (k, v) => typeof v === 'bigint' ? v.toString() : v);
-                        } catch (jsonError) { 
+                        } catch (jsonError) {
                             console.error('Error in JSON.stringify:', jsonError);
-                            return String(obj); 
+                            return String(obj);
                         }
                     })(result);
                     return "ErrorInConversion: " + safeString;
@@ -1627,7 +1627,7 @@
                 }
             }
         });
-        
+
         // Wrapper function to safely execute test sections
         function executeTestSection(sectionName, testFunction) {
             try {
@@ -1635,7 +1635,7 @@
             } catch (error) {
                 console.error(`CRITICAL ERROR in ${sectionName} test section:`, error);
                 hasUnhandledErrors = true;
-                
+
                 // Force a failed test to be recorded
                 const kindKey = sectionName.toUpperCase().replace(/\s+/g, '_');
                 if (testStats[kindKey]) {
@@ -1648,7 +1648,15 @@
         // Initialize global tracer for calculator tests
         OperationTracer.setGlobalTracer(2000000); // 2M operations budget
         console.log('[GlobalTracer] Calculator test suite initialized with budget:', OperationTracer.getBudget());
-        
+
+        // Initialize OPERATIONS system immediately
+        if (typeof OPERATIONS !== 'undefined' && OPERATIONS.initialize) {
+            OPERATIONS.initialize();
+            console.log('[CalculatorTest] OPERATIONS system initialized immediately');
+        } else {
+            console.error('[CalculatorTest] OPERATIONS not available or missing initialize method');
+        }
+
         try {
             runAllTestsAndRender();
         } catch (error) {

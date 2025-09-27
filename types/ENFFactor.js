@@ -12,11 +12,11 @@ class ENFFactor {
      * @param {ENFOrdinal} exponent - The exponent of the factor.
      */
     constructor(base, exponent) {
-        if (!exponent || !exponent.isOrdinal()) {
+        if (!exponent || !exponent.isOrdinal || !exponent.isOrdinal()) {
             throw new Error("ENFFactor exponent must be a valid ordinal object.");
         }
         this.exponent = exponent;
-        if (base.isOmega()) {  
+        if (base.isOmega()) {
             this.base = new OmegaOrdinal();
         } else if (base.isEpsilonNumber()) {
             this.base = new EpsilonNumber(base.epsilonIndex());
@@ -69,13 +69,13 @@ class ENFFactor {
 
     toGraphicalHTML() {
         const baseHTML = this.base.toGraphicalHTML ? this.base.toGraphicalHTML() : this.base.toString();
-        
+
         if (this.exponent.isOne()) {
             return baseHTML;
         }
 
         const expHTML = this.exponent.toGraphicalHTML ? this.exponent.toGraphicalHTML() : this.exponent.toString();
-        
+
         if (this.base.isEpsilonNumber()) {
             // For epsilon numbers with exponents, we need parentheses around the epsilon to avoid visual ambiguity
             // Without parentheses, ε_k^b looks like ε_(k^b) instead of (ε_k)^b

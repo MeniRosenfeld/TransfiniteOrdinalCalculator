@@ -271,11 +271,19 @@
     <!-- New UI Scripts -->
     <script src="script.js"></script> <!-- Main UI interaction logic -->
 
-    <!-- Initialize global tracer -->
+    <!-- Initialize global tracer and operations system -->
     <script>
         // Initialize global tracer for main calculator
         OperationTracer.setGlobalTracer(10000000); // 10M operations budget
         console.log('[GlobalTracer] Main calculator initialized with budget:', OperationTracer.getBudget());
+
+        // Initialize OPERATIONS system immediately for URL parameter support
+        if (typeof OPERATIONS !== 'undefined' && OPERATIONS.initialize) {
+            OPERATIONS.initialize();
+            console.log('[MainCalculator] OPERATIONS system initialized immediately');
+        } else {
+            console.error('[MainCalculator] OPERATIONS not available or missing initialize method');
+        }
     </script>
 
 </body>

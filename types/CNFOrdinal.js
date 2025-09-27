@@ -135,21 +135,24 @@ class CNFOrdinal extends OrdinalBase {
             }
         }
 
+        // For CNF ordinals, the base is always omega, so we compare against omega
+        const originalBase = new OmegaOrdinal();
+
         // Iterative implementation to avoid quadratic complexity from cloning
         let count = 0;
         let currentTerms = this.terms;
-        
+
         // Navigate down the exponent tower without cloning entire ordinals
         while (currentTerms.length > 0 && !this._isFiniteTerms(currentTerms)) {
             count++;
-            
+
             // Consume operation for this iteration
             OperationTracer.consume();
-            
+
             // Get the exponent of the leading term without cloning the whole ordinal
             const leadingTerm = currentTerms[0];
             const exponent = leadingTerm.exponent;
-            
+
             if (exponent.isFinite()) {
                 // If exponent is finite, we're done - the log is finite
                 break;
@@ -169,7 +172,7 @@ class CNFOrdinal extends OrdinalBase {
                     return BigInt(count) + logResult.logStar();
                 }
             }
-            
+
             // Safety break for unexpected cycles or extremely deep chains
             if (count > 100000) {
                 throw new Error("Exceeded maximum recursion depth for logStar calculation.");
@@ -179,7 +182,7 @@ class CNFOrdinal extends OrdinalBase {
         // Final result: count of iterations plus logStar of finite result (0 for positive finite, -1 for 0)
         return BigInt(count);
     }
-    
+
     // Helper method to check if terms represent a finite ordinal
     _isFiniteTerms(terms) {
         return terms.length === 0 || (terms.length === 1 && terms[0].exponent.isZero());
