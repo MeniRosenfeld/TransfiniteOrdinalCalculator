@@ -195,27 +195,29 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error(resultFromCalc.error);
             }
 
-            const originalOrdinalResultObject = resultFromCalc.result;
+            const originalResultObject = resultFromCalc.result;
+            const resultType = resultFromCalc.resultType;
             // Use simple result string
             const nativeString = resultFromCalc.resultString;
 
-            // --- Simplification Step ---
+            // --- Simplification Step (only for ordinals) ---
             const complexityBudget = 1000; // Hardcoded budget
-            let simplifiedOrdinalObject = originalOrdinalResultObject; // Default to original
+            let simplifiedOrdinalObject = originalResultObject; // Default to original
             let remainingBudget = -1; // Not directly used in new message format
             let simplificationMessage = ""; // Initialize as empty
             let originalComplexity = -1;
             let simplifiedComplexity = -1;
 
-            if (originalOrdinalResultObject && typeof originalOrdinalResultObject.simplify === 'function') {
+            // Only attempt simplification for ordinal results
+            if (resultType === 'ordinal' && originalResultObject && typeof originalResultObject.simplify === 'function') {
                 try {
-                    originalComplexity = originalOrdinalResultObject.complexity();
-                    const simplifyResult = originalOrdinalResultObject.simplify(complexityBudget, false);
+                    originalComplexity = originalResultObject.complexity();
+                    const simplifyResult = originalResultObject.simplify(complexityBudget, false);
                     simplifiedOrdinalObject = simplifyResult.simplifiedOrdinal;
                     // remainingBudget = simplifyResult.remainingBudget; // Store if needed elsewhere
                     simplifiedComplexity = simplifiedOrdinalObject.complexity();
 
-                    if (!originalOrdinalResultObject.equals(simplifiedOrdinalObject)) {
+                    if (!originalResultObject.equals(simplifiedOrdinalObject)) {
                         // Format: "Displayed complexity: G_simp / G_orig"
                         simplificationMessage = `(Displayed complexity: ${simplifiedComplexity} / ${originalComplexity})`;
                     } else {
@@ -230,28 +232,58 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             // --- End Simplification Step ---
 
-            const displayOrdinalObject = simplifiedOrdinalObject; // Use simplified for display
-            // Use simplified ordinal's string representation, not the original nativeString
-            const displayString = displayOrdinalObject.toString();
+            // Handle different result types for display
+            let displayString, displayObject;
             const linearResultHeader = document.querySelector('.linear-result-section h3');
+
+            if (resultType === 'ordinal') {
+                displayObject = simplifiedOrdinalObject; // Use simplified for display
+                displayString = displayObject.toString();
+                if (linearResultHeader) linearResultHeader.textContent = "Linear String Representation:";
+
+                // Render graphical view using new simple renderer
+                if (typeof renderOrdinalGraphicalFromStringSimple === 'function') {
+                    graphicalResultArea.innerHTML = renderOrdinalGraphicalFromStringSimple(displayString);
+                } else if (typeof renderOrdinalSimple === 'function') {
+                    graphicalResultArea.innerHTML = renderOrdinalSimple(displayObject);
+                } else {
+                    graphicalResultArea.innerHTML = `<span class="ordinal-generic">${displayString}</span>`;
+                }
+            } else {
+                // Non-ordinal results (strings, booleans, etc.)
+                displayString = nativeString; // Use the formatted result string
+                displayObject = originalResultObject;
+
+                // Update header based on result type
+                if (linearResultHeader) {
+                    switch (resultType) {
+                        case 'string':
+                            linearResultHeader.textContent = "String Result:";
+                            break;
+                        case 'boolean':
+                            linearResultHeader.textContent = "Boolean Result:";
+                            break;
+                        case 'comparison':
+                            linearResultHeader.textContent = "Comparison Result:";
+                            break;
+                        case 'operation':
+                            linearResultHeader.textContent = "Expression Result:";
+                            break;
+                        default:
+                            linearResultHeader.textContent = "Result:";
+                    }
+                }
+
+                // Simple text display for non-ordinal results
+                graphicalResultArea.innerHTML = `<span class="result-${resultType}">${displayString}</span>`;
+            }
 
             // --- Output Format Selection ---
             linearResultTextElement.textContent = displayString;
-            if (linearResultHeader) linearResultHeader.textContent = "Linear String Representation:";
             // --- End Output Format Selection ---
 
-            // Update linear and graphical results with the (potentially) simplified ordinal
-            //linearResultTextElement.textContent = displayCnfString; // This is now handled above
+            // Update linear results
             linearResultTextElement.classList.remove('placeholder-text');
-
-            // Render graphical view using new simple renderer
-            if (typeof renderOrdinalGraphicalFromStringSimple === 'function') {
-                graphicalResultArea.innerHTML = renderOrdinalGraphicalFromStringSimple(displayString);
-            } else if (typeof renderOrdinalSimple === 'function') {
-                graphicalResultArea.innerHTML = renderOrdinalSimple(displayOrdinalObject);
-            } else {
-                graphicalResultArea.innerHTML = `<span class="ordinal-generic">${displayString}</span>`;
-            }
             graphicalResultArea.querySelector('.placeholder-text')?.remove();
 
             // Update simplification message display (target element will change in HTML)
@@ -261,14 +293,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 graphicalHeaderSimpInfo.style.display = simplificationMessage ? 'inline' : 'none'; // Show if message exists
             }
 
-            // --- Calculate and Display f(α) for the ORIGINAL ordinal FIRST ---
-            if (mappedValueTextElement && originalOrdinalResultObject) {
-                console.log("[fCalc] originalOrdinalResultObject type:", originalOrdinalResultObject.constructor.name);
+            // --- Calculate and Display f(α) for the ORIGINAL ordinal FIRST (only for ordinal results) ---
+            if (mappedValueTextElement && resultType === 'ordinal' && originalResultObject) {
+                console.log("[fCalc] originalResultObject type:", originalResultObject.constructor.name);
                 try {
-                    console.log("[fCalc] Calling convertOrdinalInstanceToFFormat with:", originalOrdinalResultObject);
+                    console.log("[fCalc] Calling convertOrdinalInstanceToFFormat with:", originalResultObject);
                     // The mapping logic is now handled by the toFFormat method on each ordinal type.
                     // We can now directly convert the result object.
-                    const fFormattedOrdinal = convertOrdinalInstanceToFFormat(originalOrdinalResultObject);
+                    const fFormattedOrdinal = convertOrdinalInstanceToFFormat(originalResultObject);
                     console.log("[fCalc] convertOrdinalInstanceToFFormat returned:", fFormattedOrdinal);
 
                     console.log("[fCalc] Calling f with:", fFormattedOrdinal, "and params:", DEFAULT_F_PARAMS);
@@ -299,6 +331,13 @@ document.addEventListener('DOMContentLoaded', () => {
                             mappedValueSliderElement.value = 0;
                         }
                     }
+                }
+            } else if (mappedValueTextElement) {
+                // Non-ordinal results don't have f-mapping
+                mappedValueTextElement.textContent = "N/A (non-ordinal)";
+                mappedValueTextElement.classList.add('placeholder-text');
+                if (mappedValueSliderElement) {
+                    mappedValueSliderElement.value = 0;
                 }
             }
 

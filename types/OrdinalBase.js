@@ -124,7 +124,7 @@ class OrdinalBase {
      */
     successor() {
         // This relies on the global availability of FiniteOrdinal and the rule-based addition system
-        return this.add(new OneOrdinal());
+        return this.add(OneOrdinal.instance());
     }
 
     /**
@@ -235,30 +235,30 @@ class OrdinalBase {
     tunnel() {
         // Tunnel operation: creates deeply nested epsilon structures
         // e__0 = 0, e__1 = e_0, e__2 = e_e_0, etc.
-        
+
         // If this is infinite: return z_0
         if (!this.isFinite()) {
             return new ZetaZero();
         }
-        
+
         // If this is finite n:
         const n = this.getFiniteBigInt();
-        
+
         // If n=0, return 0
         if (n === 0n) {
-            return new ZeroOrdinal();
+            return ZeroOrdinal.instance();
         }
-        
+
         // If 0<n<=10, return an EpsilonNumber e_e_e_...(n times)...0
         // For small n, we expand the structure explicitly for better performance
         if (n > 0n && n <= 10n) {
-            let result = new ZeroOrdinal();
+            let result = ZeroOrdinal.instance();
             for (let i = 0n; i < n; i++) {
                 result = new EpsilonNumber(result);
             }
             return result;
         }
-        
+
         // If n>10, return an EpsilonTunnel object of depth n
         // For large n, we use the compact tunnel representation
         return new EpsilonTunnelOrdinal(n);

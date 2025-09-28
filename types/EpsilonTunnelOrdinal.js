@@ -5,7 +5,7 @@
 class EpsilonTunnelOrdinal extends OrdinalBase {
     constructor(depth = 0) {
         super();
-        
+
         // Validate and set depth
         if (typeof depth === 'bigint') {
             if (depth < 0n) throw new Error('EpsilonTunnelOrdinal depth must be non-negative');
@@ -39,7 +39,7 @@ class EpsilonTunnelOrdinal extends OrdinalBase {
 
     rank() {
         if (this.depth === 0n) {
-            return new ZeroOrdinal();
+            return ZeroOrdinal.instance();
         }
         // For depth > 0, the rank is quite complex - it's essentially the ordinal itself
         // but we'll approximate with a high epsilon number
@@ -93,11 +93,11 @@ class EpsilonTunnelOrdinal extends OrdinalBase {
     // Convenience method: expand to actual epsilon number structure
     expand() {
         if (this.depth === 0n) {
-            return new ZeroOrdinal();
+            return ZeroOrdinal.instance();
         }
-        
+
         // Build e_e_e_..._0 structure
-        let result = new ZeroOrdinal();
+        let result = ZeroOrdinal.instance();
         for (let i = 0n; i < this.depth; i++) {
             result = new EpsilonNumber(result);
         }
@@ -127,7 +127,7 @@ class EpsilonTunnelOrdinal extends OrdinalBase {
         }
 
         // Fall back to 0
-        const zero = new ZeroOrdinal();
+        const zero = ZeroOrdinal.instance();
         const zeroComplexity = zero.complexity();
         return {
             simplifiedOrdinal: zero,
@@ -139,10 +139,10 @@ class EpsilonTunnelOrdinal extends OrdinalBase {
         if (this.depth === 0n) return 0n;
         return 0n; // Infinite tunnels have no finite part
     }
-    
+
     needsParenthesesAsExponent() { return false; }
 
-    isEpsilonNumber() { 
+    isEpsilonNumber() {
         return this.depth === 1n; // e__1 = e_0 is an epsilon number
     }
 
@@ -150,7 +150,7 @@ class EpsilonTunnelOrdinal extends OrdinalBase {
         if (!this.isEpsilonNumber()) {
             throw new Error('EpsilonTunnelOrdinal is not an epsilon number');
         }
-        return new ZeroOrdinal(); // e__1 = e_0
+        return ZeroOrdinal.instance(); // e__1 = e_0
     }
 
     // === CONVERSION SYSTEM ===
@@ -167,7 +167,7 @@ class EpsilonTunnelOrdinal extends OrdinalBase {
                 if (this.depth === 0n) {
                     return new ENFOrdinal([]);
                 }
-                
+
                 // Convert to the expanded epsilon number structure
                 const expanded = this.expand();
                 // Use the conversion engine to find a path to ENF
@@ -184,7 +184,7 @@ class EpsilonTunnelOrdinal extends OrdinalBase {
     }
 
     nextRank() {
-        if (this.depth === 0n) return new OneOrdinal();
+        if (this.depth === 0n) return OneOrdinal.instance();
         // For epsilon tunnels, next rank is complex - approximate with successor tunnel
         return new EpsilonTunnelOrdinal(this.depth + 1n);
     }

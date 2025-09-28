@@ -140,6 +140,80 @@ if (error.message && (
 
 **The Rule**: Distinguish between computational limits (abort) vs mathematical incorrectness (fail).
 
+### **Guideline 10: Singleton Instances for Constants**
+
+**The Pattern**: Constant ordinal types should provide cached singleton instances.
+
+**Implementation**:
+```javascript
+class ZeroOrdinal extends OrdinalBase {
+    // === SINGLETON INSTANCE ===
+    static _instance = null;
+    
+    static instance() {
+        if (!ZeroOrdinal._instance) {
+            ZeroOrdinal._instance = new ZeroOrdinal();
+        }
+        return ZeroOrdinal._instance;
+    }
+    
+    // Use singletons in methods
+    successor() {
+        return OneOrdinal.instance(); // Not new OneOrdinal()
+    }
+}
+```
+
+**The Rule**: Use `ClassName.instance()` instead of `new ClassName()` for constant ordinals (Zero, One, Omega, EpsilonZero, ZetaZero).
+
+### **Guideline 11: Immediate OPERATIONS Initialization**
+
+**The Issue**: Auto-initialization with `setTimeout()` causes race conditions with URL parameters and immediate parsing.
+
+**The Solution**: Manual initialization in all pages:
+```javascript
+// Initialize OPERATIONS system immediately
+if (typeof OPERATIONS !== 'undefined' && OPERATIONS.initialize) {
+    OPERATIONS.initialize();
+    console.log('[PageName] OPERATIONS system initialized immediately');
+}
+```
+
+**The Rule**: All pages (main app and tests) should initialize OPERATIONS immediately after script loading, not rely on auto-initialization delays.
+
+### **Guideline 12: Alertness Testing**
+
+**The Purpose**: Verify that test suites actually catch errors when they occur.
+
+**The Implementation**:
+```javascript
+// Enable alertness testing (introduces random errors)
+RuleEngine.enableAlertnessTest(0.001); // 0.1% error rate
+
+// Run test suite - should fail if tests are working correctly
+runTestSuite();
+
+// Disable when done
+RuleEngine.disableAlertnessTest();
+```
+
+**The Rule**: Use alertness testing to validate test suite quality. Good tests should fail when alertness is enabled.
+
+### **Guideline 13: LogStar Base Comparison Fix**
+
+**The Bug**: `logStar()` was climbing towers until reaching finite numbers instead of stopping at ordinals smaller than the original base.
+
+**The Fix**: Stop when reaching ordinals smaller than the original base:
+```javascript
+// ENFTerm.logStar()
+const originalBase = this.factors[0].base;
+if (logResult.isFinite() || OPERATIONS.compare(logResult, originalBase) < 0) {
+    break; // Stop here, don't continue climbing
+}
+```
+
+**The Rule**: `logStar()` should count tower height relative to the original base, not climb to absolute finite numbers.
+
 ---
 
 ## Current Implementation Status
@@ -153,6 +227,11 @@ if (error.message && (
 - Test page migration to new architecture
 - Tracer accounting framework with loop-scale consumption
 - Stringification standardized on `toString()`
+- **Singleton instances** for constant ordinals (`ZeroOrdinal.instance()`, etc.)
+- **Alertness testing system** for verifying test suite effectiveness
+- **Immutability testing framework** with sorting verification
+- **Fixed logStar calculation** to stop at ordinals smaller than original base
+- **Manual OPERATIONS initialization** for immediate URL parameter support
 
 ### ⚠️ **Partially Complete**
 - ENF multiplication logic (basic placeholder exists)
@@ -170,6 +249,36 @@ if (error.message && (
 - Binary operations implemented via rule engines, not in type classes
 - Conversion-first rule checking rather than ad-hoc type tests
 - Immutable operations with proper tracer threading
+
+---
+
+## Recent Technical Improvements
+
+### **Session Highlights**
+
+This section documents major improvements and bug fixes from recent development sessions.
+
+#### **Dependency and Initialization Fixes**
+- **Fixed missing Rational.js reference** in NumericContexts.js
+- **Resolved temporal dead zone issues** by changing `const` to `var` for cross-script dependencies
+- **Added manual OPERATIONS initialization** to all pages for immediate functionality
+- **Fixed simplification display logic** to show simplified results instead of original expressions
+
+#### **Test Infrastructure Enhancements**
+- **Created immutability_test.html** for comprehensive object immutability verification
+- **Enhanced debug_enf.html** with global tracer support and comparison debugging
+- **Added alertness testing system** in RuleEngine for test suite validation
+- **Implemented sorting verification** against known good ordinal orderings
+
+#### **Mathematical Bug Fixes**
+- **Fixed logStar calculation** in ENFTerm and CNFOrdinal to stop at ordinals smaller than original base
+- **Resolved comparison issues** for epsilon ordinals like `e_1^e_0` vs `e_1^w^w`
+- **Improved ordinal simplification** with correct complexity budget handling
+
+#### **Performance and Architecture**
+- **Added singleton instances** for constant ordinals (Zero, One, Omega, EpsilonZero, ZetaZero)
+- **Updated all constant references** to use `.instance()` methods for efficiency
+- **Enhanced favicon support** with proper browser compatibility
 
 ---
 

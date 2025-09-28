@@ -110,7 +110,7 @@ class ENFOrdinal extends OrdinalBase {
         if (this.isZero()) {
             return RenderingComponents.renderFinite(0);
         }
-        
+
         const termHTMLs = this.terms.map(t => t.toGraphicalHTML ? t.toGraphicalHTML() : t.toString());
         return RenderingComponents.joinTerms(termHTMLs);
     }
@@ -121,7 +121,7 @@ class ENFOrdinal extends OrdinalBase {
     }
 
     rank() {
-        if (this.isZero()) return new ZeroOrdinal();
+        if (this.isZero()) return ZeroOrdinal.instance();
         return this.terms[0].rank();
     }
 
@@ -170,7 +170,7 @@ class ENFOrdinal extends OrdinalBase {
                 quotientTerms.push(term);
             } else if (comparison === 0) {
                 // term.factors[0].base = k: Add term to quotient with leftPredecessor applied to leading factor's exponent
-                const newTerm = new ENFTerm (term.factors.map(t=>t.clone()), term.coefficient);
+                const newTerm = new ENFTerm(term.factors.map(t => t.clone()), term.coefficient);
                 const newExp = leadingFactor.exponent.leftPredecessor();
                 if (newExp.isZero()) {
                     // Remove the leading factor entirely
@@ -207,7 +207,7 @@ class ENFOrdinal extends OrdinalBase {
     // Methods that need more complex implementation
     nextRank() {
         if (this.isZero()) {
-            return new OneOrdinal();
+            return OneOrdinal.instance();
         }
         // Delegate to the leading term's nextRank
         return this.terms[0].nextRank();
@@ -230,7 +230,7 @@ class ENFOrdinal extends OrdinalBase {
             return { simplifiedOrdinal: this, remainingBudget: complexityBudget - this.complexity() };
         }
         // Proper simplification would truncate terms. For now, fallback to 0.
-        return { simplifiedOrdinal: new ZeroOrdinal(), remainingBudget: complexityBudget };
+        return { simplifiedOrdinal: ZeroOrdinal.instance(), remainingBudget: complexityBudget };
     }
 
     // === CONVERSION SYSTEM ===
@@ -253,19 +253,19 @@ class ENFOrdinal extends OrdinalBase {
             return new ENFOrdinal([new ENFTerm([], ord.getFiniteBigInt())]);
         }
         if (ord instanceof OmegaOrdinal) {
-            const one = new OneOrdinal();
+            const one = OneOrdinal.instance();
             const omegaFactor = new ENFFactor(new OmegaOrdinal(), one);
             return new ENFOrdinal([new ENFTerm([omegaFactor], 1n)]);
         }
         if (ord instanceof EpsilonZero) {
-            const base = new EpsilonNumber(new ZeroOrdinal());
-            const one = new OneOrdinal();
+            const base = new EpsilonNumber(ZeroOrdinal.instance());
+            const one = OneOrdinal.instance();
             const factor = new ENFFactor(base, one);
             return new ENFOrdinal([new ENFTerm([factor], 1n)]);
         }
         if (ord instanceof EpsilonNumber) {
             const base = ord;
-            const one = new OneOrdinal();
+            const one = OneOrdinal.instance();
             const factor = new ENFFactor(base, one);
             return new ENFOrdinal([new ENFTerm([factor], 1n)]);
         }

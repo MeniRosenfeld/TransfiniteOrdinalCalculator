@@ -66,8 +66,11 @@ A comprehensive web application for parsing, computing, and visualizing transfin
 
 ### **Developer Tools**
 *   **Comprehensive test suites** with visual feedback
+*   **Immutability testing** verifies ordinal objects remain unchanged during operations
 *   **Conversion debugging matrix** showing all type transformations
 *   **Operation tracing** with budget monitoring
+*   **Alertness testing** randomly introduces errors to verify test suite effectiveness
+*   **Singleton instances** for efficient constant ordinal access
 *   **Extensive documentation** and development guides
 
 ## How to Use
@@ -164,6 +167,8 @@ TransfiniteOrdinalCalculator/
 │   └── ConversionEngine.js            # Conversion path finding
 ├── tests/                             # Test suites and debugging tools
 │   ├── ordinal_enf_test.html          # Main ENF test suite
+│   ├── immutability_test.html         # Immutability and sorting verification
+│   ├── debug_enf.html                 # Interactive ENF comparison debugging
 │   ├── ordinal_calculator_test.html   # Legacy calculator tests
 │   ├── conversion_debug.html          # Conversion matrix debugger
 │   ├── new_system_smoke_tests.html    # Architecture validation tests
@@ -206,8 +211,10 @@ Then navigate to `http://localhost:8000`
 
 ### **Testing**
 *   **Main Test Suite:** Open `tests/ordinal_enf_test.html`
+*   **Immutability Tests:** Open `tests/immutability_test.html`
 *   **Conversion Testing:** Open `tests/conversion_debug.html`  
 *   **Architecture Tests:** Open `tests/new_system_smoke_tests.html`
+*   **Comparison Debugging:** Open `tests/debug_enf.html`
 
 ## Technologies Used
 

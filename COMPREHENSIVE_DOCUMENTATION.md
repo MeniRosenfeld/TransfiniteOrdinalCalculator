@@ -24,6 +24,9 @@ The Transfinite Ordinal Calculator is a sophisticated JavaScript application for
 - **Graphical Rendering**: Beautiful mathematical notation with HTML/CSS
 - **Type Conversion System**: Automatic conversion between different ordinal representations
 - **Extensive Testing**: Comprehensive test suites with thousands of test cases
+- **Immutability Verification**: Automated testing to ensure ordinal objects remain unchanged
+- **Alertness Testing**: Random error injection to validate test suite effectiveness
+- **Singleton Optimization**: Cached instances for constant ordinal types
 - **Modular Architecture**: Clean separation of concerns with extensible design
 
 ### Supported Ordinal Types
@@ -962,6 +965,8 @@ The testing system is built around HTML test pages that load the ordinal system 
 
 **Main Test Files**:
 - `ordinal_enf_test.html`: Primary test suite (2500+ lines, thousands of tests)
+- `immutability_test.html`: Immutability and sorting verification tests
+- `debug_enf.html`: Interactive ENF comparison and structure debugging
 - `conversion_debug.html`: Interactive conversion system debugging
 - `ordinal_calculator_test.html`: Calculator functionality tests
 - Specialized debug pages for specific features
@@ -1003,6 +1008,18 @@ The testing system is built around HTML test pages that load the ordinal system 
 - Previously fixed bugs remain fixed
 - Specific calculation verification
 - Complex expression edge cases
+
+**7. Immutability Tests**
+- Verify ordinal objects remain unchanged during operations
+- Test all pairwise arithmetic operations (addition, multiplication, exponentiation)
+- Compare string representations before and after operations
+- Validate sorting correctness against known good orderings
+
+**8. Alertness Tests**
+- Random error injection to verify test suite sensitivity
+- Configurable error probability (default 1/1000 operations)
+- Different error types for different operations (comparison vs arithmetic)
+- Validates that test suites actually catch problems when they occur
 
 ### Test Infrastructure
 
@@ -1092,16 +1109,23 @@ The Transfinite Ordinal Calculator represents a significant achievement in compu
 - Rule-based operation system for extensibility
 - Comprehensive type conversion system
 - Robust error handling and performance management
+- Singleton pattern for constant ordinal types (performance optimization)
+- Immediate OPERATIONS initialization for URL parameter support
+- Alertness testing system for test suite validation
 - Extensive documentation and testing
 
 ### Technical Achievements
 
 1. **ENF System**: Complete implementation of Epsilon Normal Form arithmetic
 2. **Rule Engine**: Flexible, extensible operation dispatch system
-3. **Type Conversion**: Automatic conversion with path finding
-4. **Parser**: Sophisticated expression parsing with proper precedence
-5. **Rendering**: Mathematical notation with visual clarity
-6. **Testing**: Industrial-strength test coverage
+3. **LogStar Fix**: Corrected tower height calculation to stop at ordinals smaller than original base
+4. **Comparison System**: Robust ordinal comparison with proper epsilon ordinal handling
+5. **Singleton Optimization**: Cached instances for constant ordinals improve performance
+6. **Test Suite Validation**: Alertness testing ensures test suites catch actual problems
+7. **Type Conversion**: Automatic conversion with path finding
+8. **Parser**: Sophisticated expression parsing with proper precedence
+9. **Rendering**: Mathematical notation with visual clarity
+10. **Testing**: Industrial-strength test coverage
 
 ### Future Possibilities
 

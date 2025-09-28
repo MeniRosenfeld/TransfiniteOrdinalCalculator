@@ -103,8 +103,8 @@
             checkFalse('FiniteOrdinal(-1) not well formed (constructor throws)', () => new FiniteOrdinal(-1).isWellFormed());
 
             // ZeroOrdinal / OneOrdinal / Omega / EpsilonZero
-            check('ZeroOrdinal well formed', () => new ZeroOrdinal().isWellFormed());
-            check('OneOrdinal well formed', () => new OneOrdinal().isWellFormed());
+            check('ZeroOrdinal well formed', () => ZeroOrdinal.instance().isWellFormed());
+            check('OneOrdinal well formed', () => OneOrdinal.instance().isWellFormed());
             check('OmegaOrdinal well formed', () => new OmegaOrdinal().isWellFormed());
             check('EpsilonZero well formed', () => new EpsilonZero().isWellFormed());
 

@@ -121,10 +121,10 @@
         const enf_one = new ENFOrdinal([new ENFTerm([], 1n)]);
         const enf_w = ENFOrdinal.fromCNF(new OmegaOrdinal());
         const enf_e0 = new ENFOrdinal([new ENFTerm([new ENFFactor(new EpsilonZero(), enf_one)], 1n)]);
-        const e0_base = new EpsilonNumber(new ZeroOrdinal());
-        const e1_base = new EpsilonNumber(new OneOrdinal());
+        const e0_base = new EpsilonNumber(ZeroOrdinal.instance());
+        const e1_base = new EpsilonNumber(OneOrdinal.instance());
         const w_cnf = OPERATIONS.convert(new OmegaOrdinal(), 'CNF');
-        const one_cnf = OPERATIONS.convert(new OneOrdinal(), 'CNF');
+        const one_cnf = OPERATIONS.convert(OneOrdinal.instance(), 'CNF');
 
         // Additional ordinals referenced in tests
         const ord_zero = enf_zero;

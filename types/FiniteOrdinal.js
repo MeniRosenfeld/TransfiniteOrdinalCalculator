@@ -19,7 +19,7 @@ class FiniteOrdinal extends OrdinalBase {
         } else {
             throw new Error('FiniteOrdinal value must be a number or BigInt');
         }
-        
+
         // Consume operation for construction
         OperationTracer.consume();
     }
@@ -50,7 +50,7 @@ class FiniteOrdinal extends OrdinalBase {
         if (this.isZero()) {
             throw new Error('Log of 0 is undefined.');
         }
-        return new ZeroOrdinal();
+        return ZeroOrdinal.instance();
     }
 
     logStar() {
@@ -71,7 +71,7 @@ class FiniteOrdinal extends OrdinalBase {
     needsParenthesesAsExponent() { return false; }
 
     nextRank() {
-        if (this.isZero()) return new OneOrdinal();
+        if (this.isZero()) return OneOrdinal.instance();
         return new OmegaOrdinal();
     }
 
@@ -108,7 +108,7 @@ class FiniteOrdinal extends OrdinalBase {
             };
         }
 
-        const zero = new ZeroOrdinal();
+        const zero = ZeroOrdinal.instance();
         const zeroComplexity = zero.complexity();
         if (zeroComplexity <= complexityBudget) {
             return {

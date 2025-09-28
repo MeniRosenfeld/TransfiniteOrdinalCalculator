@@ -29,7 +29,7 @@ class ZeroOrdinal extends OrdinalBase {
     needsParenthesesAsExponent() { return false; }
 
     nextRank() {
-        return new OneOrdinal();
+        return OneOrdinal.instance();
     }
 
     complexity() { return 0; }
@@ -43,7 +43,7 @@ class ZeroOrdinal extends OrdinalBase {
     toFFormat() { return 0n; }
 
     clone() {
-        return new ZeroOrdinal();
+        return ZeroOrdinal.instance();
     }
 
     simplify(complexityBudget, skipMyOwnMPTFCheck = false) {
@@ -55,7 +55,7 @@ class ZeroOrdinal extends OrdinalBase {
     }
 
     rank() {
-        return new ZeroOrdinal();
+        return ZeroOrdinal.instance();
     }
 
     log() {
@@ -68,13 +68,24 @@ class ZeroOrdinal extends OrdinalBase {
     }
 
     successor() {
-        return new OneOrdinal();
+        return OneOrdinal.instance();
     }
 
     isEpsilonNumber() { return false; }
 
     epsilonIndex() {
         throw new Error('ZeroOrdinal is not an epsilon number');
+    }
+
+    // === SINGLETON INSTANCE ===
+
+    static _instance = null;
+
+    static instance() {
+        if (!ZeroOrdinal._instance) {
+            ZeroOrdinal._instance = new ZeroOrdinal();
+        }
+        return ZeroOrdinal._instance;
     }
 
     // === CONVERSION SYSTEM ===

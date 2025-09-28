@@ -37,10 +37,10 @@ class WTowerOrdinal extends OrdinalBase {
 
     rank() {
         if (this.height === -1n) {
-            return new ZeroOrdinal();
+            return ZeroOrdinal.instance();
         }
         if (this.height === 0n) {
-            return new OneOrdinal();
+            return OneOrdinal.instance();
         } else {
             return new OmegaOrdinal();
         }
@@ -51,7 +51,7 @@ class WTowerOrdinal extends OrdinalBase {
             throw new Error('Log of 0 is undefined.');
         }
         if (this.height === 0n) {
-            return new ZeroOrdinal();
+            return ZeroOrdinal.instance();
         } else {
             return new WTowerOrdinal(this.height - 1n);
         }
@@ -114,7 +114,7 @@ class WTowerOrdinal extends OrdinalBase {
 
         // If it doesn't fit, check height.
         if (this.height >= 3n) {
-            const zero = new ZeroOrdinal();
+            const zero = ZeroOrdinal.instance();
             const zeroComplexity = zero.complexity();
             return {
                 simplifiedOrdinal: zero,
@@ -124,7 +124,7 @@ class WTowerOrdinal extends OrdinalBase {
 
         let expandedOrdinal;
         if (this.height === -1n) {
-            expandedOrdinal = new ZeroOrdinal();
+            expandedOrdinal = ZeroOrdinal.instance();
         } else if (this.height === 2n) {
             // w^^2 -> w^w
             expandedOrdinal = this.convertTo('CNF');
@@ -133,7 +133,7 @@ class WTowerOrdinal extends OrdinalBase {
             expandedOrdinal = new OmegaOrdinal();
         } else { // this.height === 0n
             // w^^0 -> 1
-            expandedOrdinal = new OneOrdinal();
+            expandedOrdinal = OneOrdinal.instance();
         }
 
         const expandedComplexity = expandedOrdinal.complexity();
@@ -144,7 +144,7 @@ class WTowerOrdinal extends OrdinalBase {
             };
         } else {
             // Expanded form also doesn't fit, fallback to 0.
-            const zero = new ZeroOrdinal();
+            const zero = ZeroOrdinal.instance();
             const zeroComplexity = zero.complexity();
             return {
                 simplifiedOrdinal: zero,
@@ -196,7 +196,7 @@ class WTowerOrdinal extends OrdinalBase {
     }
 
     nextRank() {
-        if (this.height === -1n) return new OneOrdinal();
+        if (this.height === -1n) return OneOrdinal.instance();
         if (this.height === 0n) return new OmegaOrdinal();
         return new EpsilonZero();
     }

@@ -40,7 +40,7 @@ class EpsilonZero extends OrdinalBase {
     isEpsilonNumber() { return true; }
 
     epsilonIndex() {
-        return new ZeroOrdinal();
+        return ZeroOrdinal.instance();
     }
 
     getFinitePart() { return 0n; }
@@ -80,6 +80,17 @@ class EpsilonZero extends OrdinalBase {
         return { simplifiedOrdinal: zero, remainingBudget: 0 };
     }
 
+    // === SINGLETON INSTANCE ===
+
+    static _instance = null;
+
+    static instance() {
+        if (!EpsilonZero._instance) {
+            EpsilonZero._instance = new EpsilonZero();
+        }
+        return EpsilonZero._instance;
+    }
+
     // === CONVERSION SYSTEM ===
 
     static getTypeName() { return 'EpsilonZero'; }
@@ -87,7 +98,7 @@ class EpsilonZero extends OrdinalBase {
     convertTo(targetTypeName) {
         switch (targetTypeName) {
             case 'EpsilonNumber':
-                return new EpsilonNumber(new ZeroOrdinal());
+                return new EpsilonNumber(ZeroOrdinal.instance());
             default:
                 throw new Error(`EpsilonZero cannot convert directly to ${targetTypeName}`);
         }
@@ -95,7 +106,7 @@ class EpsilonZero extends OrdinalBase {
 
     nextRank() {
         // nextRank for e_0 is e_1
-        return new EpsilonNumber(new OneOrdinal());
+        return new EpsilonNumber(OneOrdinal.instance());
     }
 }
 

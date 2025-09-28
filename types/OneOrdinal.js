@@ -43,7 +43,7 @@ class OneOrdinal extends OrdinalBase {
     toFFormat() { return 1n; }
 
     clone() {
-        return new OneOrdinal();
+        return OneOrdinal.instance();
     }
 
     simplify(complexityBudget, skipMyOwnMPTFCheck = false) {
@@ -54,16 +54,16 @@ class OneOrdinal extends OrdinalBase {
             };
         }
         // Fallback to 0 if 1 doesn't fit
-        const zero = new ZeroOrdinal();
+        const zero = ZeroOrdinal.instance();
         return { simplifiedOrdinal: zero, remainingBudget: complexityBudget };
     }
 
     rank() {
-        return new OneOrdinal();
+        return OneOrdinal.instance();
     }
 
     log() {
-        return new ZeroOrdinal();
+        return ZeroOrdinal.instance();
     }
 
     logStar() {
@@ -78,6 +78,17 @@ class OneOrdinal extends OrdinalBase {
 
     epsilonIndex() {
         throw new Error('OneOrdinal is not an epsilon number');
+    }
+
+    // === SINGLETON INSTANCE ===
+
+    static _instance = null;
+
+    static instance() {
+        if (!OneOrdinal._instance) {
+            OneOrdinal._instance = new OneOrdinal();
+        }
+        return OneOrdinal._instance;
     }
 
     // === CONVERSION SYSTEM ===

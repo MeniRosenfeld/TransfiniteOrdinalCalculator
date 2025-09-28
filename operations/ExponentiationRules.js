@@ -129,7 +129,7 @@ function powerCNF(a, b) {
 
 function powerENF(a, b) {
     OperationTracer.consume();
-    
+
     // Trivial cases
     if (b.isZero()) return new ENFOrdinal([new ENFTerm([], 1n)]);
     if (a.isZero()) return new ENFOrdinal([]);
@@ -158,7 +158,7 @@ function powerENF(a, b) {
             if (b.isBasic() && b.isEpsilonNumber()) {
                 return b;
             }
-            
+
             // If rank(b) > rank(a)=ω, use rank-based decomposition: b = k*X + r, return k^X * ω^r
             const rank_b = b.rank();
             if (OPERATIONS.compare(rank_b, a) > 0) {
@@ -181,7 +181,7 @@ function powerENF(a, b) {
                 const w_pow_r = powerENF(a, r);
                 return k_pow_x.multiply(w_pow_r);
             }
-            
+
             // If exponent splits as d + r with d = ε_k and r finite, use ω^(ε_k+r) = ε_k * ω^r
             const d = b.getLimitPart();
             const r = b.getFinitePart();
@@ -189,13 +189,13 @@ function powerENF(a, b) {
                 const w_pow_r = r > 0n ? powerENF(a, new ENFOrdinal([new ENFTerm([], r)])) : new ENFOrdinal([new ENFTerm([], 1n)]);
                 return d.multiply(w_pow_r);
             }
-            
+
             // General case: ω^b → ENFFactor with base=ω and exponent=b
             const omegaBase = new OmegaOrdinal();
             const factor = new ENFFactor(omegaBase, b);
             return new ENFOrdinal([new ENFTerm([factor], 1n)]);
         }
-        
+
         if (a.isEpsilonNumber()) {
             // ε_(idx)^b
             const idx = a.epsilonIndex();
@@ -282,17 +282,17 @@ function createExponentiationRules(conversionEngine) {
         // a ^ 0 = 1
         new Rule('a^0 = 1',
             (a, b) => b.isZero(),
-            (a, b) => new OneOrdinal()),
+            (a, b) => OneOrdinal.instance()),
 
         // 0 ^ a = 0 (a>0 is implied by previous rule)
         new Rule('0^a = 0',
             (a, b) => a.isZero(),
-            (a, b) => new ZeroOrdinal()),
+            (a, b) => ZeroOrdinal.instance()),
 
         // 1 ^ a = 1
         new Rule('1^a = 1',
             (a, b) => a.isOne(),
-            (a, b) => new OneOrdinal()),
+            (a, b) => OneOrdinal.instance()),
 
         // a ^ 1 = a
         new Rule('a^1 = a',
@@ -305,14 +305,14 @@ function createExponentiationRules(conversionEngine) {
             (a, b) => powerFinite(a, b)),
 
         // w ^ WTower
-        new Rule ('Omega ^ WTower',
+        new Rule('Omega ^ WTower',
             (a, b) => a.isOmega() && b instanceof WTowerOrdinal,
             (a, b) => {
                 return new WTowerOrdinal(b.height + 1n);
             }),
 
         // e_k ^ EpsilonTower
-        new Rule ('Epsilon ^ EpsilonTower',
+        new Rule('Epsilon ^ EpsilonTower',
             (a, b) => a.isEpsilonNumber() && b instanceof EpsilonTowerOrdinal && a.epsilonIndex().equals(b.baseIndex),
             (a, b) => {
                 return new EpsilonTowerOrdinal(a.epsilonIndex(), b.height + 1n);

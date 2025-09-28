@@ -28,7 +28,7 @@ class OmegaOrdinal extends OrdinalBase {
     }
 
     log() {
-        return new OneOrdinal();
+        return OneOrdinal.instance();
     }
 
     logStar() {
@@ -79,7 +79,7 @@ class OmegaOrdinal extends OrdinalBase {
             };
         }
 
-        const zero = new ZeroOrdinal();
+        const zero = ZeroOrdinal.instance();
         const zeroComplexity = zero.complexity();
         if (zeroComplexity <= complexityBudget) {
             return {
@@ -95,6 +95,17 @@ class OmegaOrdinal extends OrdinalBase {
 
     epsilonIndex() {
         throw new Error('OmegaOrdinal is not an epsilon number');
+    }
+
+    // === SINGLETON INSTANCE ===
+
+    static _instance = null;
+
+    static instance() {
+        if (!OmegaOrdinal._instance) {
+            OmegaOrdinal._instance = new OmegaOrdinal();
+        }
+        return OmegaOrdinal._instance;
     }
 
     // === CONVERSION SYSTEM ===

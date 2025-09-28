@@ -44,7 +44,7 @@ class ZetaZero extends OrdinalBase {
                 remainingBudget: complexityBudget - myComplexity
             };
         }
-        const zero = new ZeroOrdinal();
+        const zero = ZeroOrdinal.instance();
         const zeroComplexity = zero.complexity();
         return {
             simplifiedOrdinal: zero,
@@ -54,9 +54,20 @@ class ZetaZero extends OrdinalBase {
 
     rank() { return this; }
 
-    log() { return new OneOrdinal(); }
+    log() { return OneOrdinal.instance(); }
 
     logStar() { return 1n; }
+
+    // === SINGLETON INSTANCE ===
+
+    static _instance = null;
+
+    static instance() {
+        if (!ZetaZero._instance) {
+            ZetaZero._instance = new ZetaZero();
+        }
+        return ZetaZero._instance;
+    }
 
     isWellFormed() { return true; }
 

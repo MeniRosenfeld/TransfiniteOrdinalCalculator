@@ -135,13 +135,13 @@ class ENFTerm extends OrdinalBase {
 
     rank() {
         if (this.isFinite()) {
-            return this.isZero() ? new ZeroOrdinal() : new OneOrdinal();
+            return this.isZero() ? ZeroOrdinal.instance() : OneOrdinal.instance();
         }
         return this.factors[0].base;
     }
 
     log() {
-        if (this.isFinite()) return new ZeroOrdinal();
+        if (this.isFinite()) return ZeroOrdinal.instance();
         // For an infinite ENF term, the logarithm is the exponent of the leading factor
         return this.factors[0].exponent;
     }

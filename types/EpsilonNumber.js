@@ -89,7 +89,7 @@ class EpsilonNumber extends OrdinalBase {
     }
 
     log() {
-        return new OneOrdinal();
+        return OneOrdinal.instance();
     }
 
     logStar() {
@@ -116,7 +116,7 @@ class EpsilonNumber extends OrdinalBase {
             case 'ENFTerm':
                 if (typeof ENFFactor !== 'undefined' && typeof ENFTerm !== 'undefined') {
                     // Convert e_k to ENFTerm with single factor: e_k^1 * 1
-                    const factor = new ENFFactor(this, new OneOrdinal());
+                    const factor = new ENFFactor(this, OneOrdinal.instance());
                     return new ENFTerm([factor], 1n);
                 }
                 throw new Error('ENFTerm conversion not available for EpsilonNumber');

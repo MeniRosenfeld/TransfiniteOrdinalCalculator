@@ -1198,7 +1198,7 @@
 
                 // Right monotonicity in exponent: if b < c then a^b < a^c for a > 1
                 for (let a = 0; a < ordinals.length; a++) {
-                    if (ordinals[a].compareTo(new OneOrdinal()) <= 0) continue; // skip a <= 1
+                    if (ordinals[a].compareTo(OneOrdinal.instance()) <= 0) continue; // skip a <= 1
                     for (let b = 0; b < ordinals.length; b++) {
                         for (let c = 0; c < ordinals.length; c++) {
                             if (b < c) {
@@ -1704,10 +1704,10 @@
             const enf_one = new ENFOrdinal([new ENFTerm([], 1n)]);
             const enf_w = ENFOrdinal.fromCNF(new OmegaOrdinal());
             const enf_e0 = new ENFOrdinal([new ENFTerm([new ENFFactor(new EpsilonZero(), enf_one)], 1n)]);
-            const e0_base = new EpsilonNumber(new ZeroOrdinal());
-            const e1_base = new EpsilonNumber(new OneOrdinal());
+            const e0_base = new EpsilonNumber(ZeroOrdinal.instance());
+            const e1_base = new EpsilonNumber(OneOrdinal.instance());
             const w_cnf = OPERATIONS.convert(new OmegaOrdinal(), 'CNF');
-            const one_cnf = OPERATIONS.convert(new OneOrdinal(), 'CNF');
+            const one_cnf = OPERATIONS.convert(OneOrdinal.instance(), 'CNF');
             // Additional ordinals referenced in tests
             const ord_zero = enf_zero;
             const ord_one = enf_one;

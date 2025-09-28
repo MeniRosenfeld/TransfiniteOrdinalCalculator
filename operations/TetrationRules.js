@@ -3,7 +3,7 @@
 
 function tetrateFinite(base, heightFinite) {
     const h = heightFinite.getFiniteBigInt();
-    if (h === 0n) return new OneOrdinal();
+    if (h === 0n) return OneOrdinal.instance();
     if (h === 1n) return base;
     let result = base;
     // Build right-associative tower: a^(a^(...)) of height h
@@ -19,7 +19,7 @@ function createTetrationRules(conversionEngine) {
         // a ^^ 0 = 1
         new Rule('a^^0 = 1',
             (a, b) => b.isZero(),
-            (a, b) => new OneOrdinal()),
+            (a, b) => OneOrdinal.instance()),
 
         // a ^^ 1 = a
         new Rule('a^^1 = a',
@@ -29,15 +29,15 @@ function createTetrationRules(conversionEngine) {
         // 1 ^^ a = 1
         new Rule('1^^a = 1',
             (a, b) => a.isOne(),
-            (a, b) => new OneOrdinal()),
+            (a, b) => OneOrdinal.instance()),
 
         // 0 ^^ finite = 1 if even, 0 if odd
         new Rule('0^^finite parity',
             (a, b) => a.isZero() && b.isFinite(),
             (a, b) => {
                 const n = b.getFiniteBigInt();
-                if (n % 2n === 0n) return new OneOrdinal();
-                return new ZeroOrdinal();
+                if (n % 2n === 0n) return OneOrdinal.instance();
+                return ZeroOrdinal.instance();
             }),
 
         // 0 ^^ infinite is undefined
