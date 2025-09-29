@@ -246,6 +246,54 @@
         .status-stopped {
             color: #6c757d;
         }
+
+        .tests-list-section {
+            margin: 15px 0;
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+        }
+
+        .tests-list-title {
+            font-weight: bold;
+            font-size: 14px;
+            color: #495057;
+            margin-bottom: 10px;
+        }
+
+        .tests-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 8px;
+        }
+
+        .test-item {
+            background: white;
+            padding: 8px 12px;
+            border-radius: 5px;
+            border: 1px solid #dee2e6;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+        }
+
+        .test-item .test-name {
+            font-weight: bold;
+            color: #495057;
+            margin-bottom: 3px;
+        }
+
+        .test-item .test-expressions {
+            color: #6c757d;
+            font-size: 11px;
+        }
+
+        .test-item .test-condition {
+            color: #28a745;
+            font-size: 10px;
+            font-style: italic;
+            margin-top: 2px;
+        }
     </style>
 </head>
 
@@ -363,6 +411,10 @@
                     <div id="singleFailedExamples"></div>
                 </div>
             </div>
+            <div class="tests-list-section">
+                <div class="tests-list-title">Tests Being Run:</div>
+                <div id="singleTestsList" class="tests-list"></div>
+            </div>
         </div>
 
         <div class="test-category">
@@ -399,6 +451,10 @@
                     <div id="pairFailedExamples"></div>
                 </div>
             </div>
+            <div class="tests-list-section">
+                <div class="tests-list-title">Tests Being Run:</div>
+                <div id="pairTestsList" class="tests-list"></div>
+            </div>
         </div>
 
         <div class="test-category">
@@ -434,6 +490,10 @@
                     <div class="example-title">Failed Examples (up to 10):</div>
                     <div id="tripleFailedExamples"></div>
                 </div>
+            </div>
+            <div class="tests-list-section">
+                <div class="tests-list-title">Tests Being Run:</div>
+                <div id="tripleTestsList" class="tests-list"></div>
             </div>
         </div>
     </div>
@@ -1027,21 +1087,390 @@
 
         // Test implementation functions (currently vacuous)
         function runSingleOrdinalTestsImpl(ordinal) {
-            // Placeholder: all single ordinal tests pass
-            return { status: 'passed' };
+            try {
+                console.log(`[SINGLE] Testing with a=${ordinal.toString()}`);
+
+                // Create substitution map with direct object
+                const substitutions = new Map([['a', ordinal]]);
+
+                // Run single ordinal tests
+                const results = runTestList(SINGLE_ORDINAL_TESTS, substitutions);
+
+                // Check if any tests failed
+                for (const result of results) {
+                    if (result.status === 'failed') {
+                        return {
+                            status: 'failed',
+                            reason: `${result.name}: ${result.reason}`
+                        };
+                    } else if (result.status === 'aborted') {
+                        return {
+                            status: 'aborted',
+                            reason: `${result.name}: ${result.reason}`
+                        };
+                    }
+                    // Log passed and skipped tests
+                    if (result.status === 'passed') {
+                        console.log(`[SINGLE] ✓ ${result.name}`);
+                    } else if (result.status === 'skipped') {
+                        console.log(`[SINGLE] ⊘ ${result.name} (${result.reason})`);
+                    }
+                }
+
+                return { status: 'passed' };
+
+            } catch (error) {
+                return { status: 'failed', reason: `Single ordinal test error: ${error.message}` };
+            }
         }
 
         function runPairTestsImpl(ordinal1, ordinal2) {
-            // Placeholder: all pair tests pass
-            return { status: 'passed' };
+            try {
+                console.log(`[PAIR] Testing with a=${ordinal1.toString()}, b=${ordinal2.toString()}`);
+
+                // Create substitution map with direct objects
+                const substitutions = new Map([
+                    ['a', ordinal1],
+                    ['b', ordinal2]
+                ]);
+
+                // Run pair ordinal tests
+                const results = runTestList(PAIR_ORDINAL_TESTS, substitutions);
+
+                // Check if any tests failed
+                for (const result of results) {
+                    if (result.status === 'failed') {
+                        return {
+                            status: 'failed',
+                            reason: `${result.name}: ${result.reason}`
+                        };
+                    } else if (result.status === 'aborted') {
+                        return {
+                            status: 'aborted',
+                            reason: `${result.name}: ${result.reason}`
+                        };
+                    }
+                    // Log passed and skipped tests
+                    if (result.status === 'passed') {
+                        console.log(`[PAIR] ✓ ${result.name}`);
+                    } else if (result.status === 'skipped') {
+                        console.log(`[PAIR] ⊘ ${result.name} (${result.reason})`);
+                    }
+                }
+
+                return { status: 'passed' };
+
+            } catch (error) {
+                return { status: 'failed', reason: `Pair ordinal test error: ${error.message}` };
+            }
+        }
+
+        // Unified test definition system
+        // To add a new test, simply add an object with:
+        // - name: descriptive name for the test
+        // - lhs: left-hand side expression (can use variable a for single, a,b for pairs, a,b,c for triples)
+        // - rhs: right-hand side expression 
+        // - condition: optional condition that must be true for test to run
+        //
+        // Examples:
+        // {name: "Identity", lhs: "a+0", rhs: "a"}  // Single ordinal test
+        // {name: "Commutativity", lhs: "a+b", rhs: "b+a"}  // Pair test
+        // {name: "Associativity", lhs: "(a+b)+c", rhs: "a+(b+c)"}  // Triple test
+
+        // Single ordinal tests (use variable 'a')
+        const SINGLE_ORDINAL_TESTS = [
+            {
+                name: "Less than successor",
+                lhs: "a < a'",
+                rhs: "true"
+            },
+            {
+                name: "Parsing Round-Trip",
+                lhs: "parse[toString[a]]",
+                rhs: "a",
+            }
+        ];
+
+        // Pair ordinal tests (use variables 'a' and 'b')
+        const PAIR_ORDINAL_TESTS = [
+            {
+                name: "Successor Monotonicity",
+                lhs: "a' ? b'",
+                rhs: "a ? b"
+            },
+            {
+                name: "Successor addition",
+                lhs: "a+(b')",
+                rhs: "(a+b)'",
+            },
+            {
+                name: "Successor multiplication",
+                lhs: "a*(b')",
+                rhs: "(a*b)+a",
+            },
+            {
+                name: "Successor exponentiation",
+                lhs: "a^(b')",
+                rhs: "(a^b)*a",
+            },
+
+        ];
+
+        // Triple ordinal tests (use variables 'a', 'b', and 'c')
+        const TRIPLE_ORDINAL_TESTS = [
+            {
+                name: "Associativity of Addition",
+                lhs: "(a+b)+c",
+                rhs: "a+(b+c)"
+            },
+            {
+                name: "Associativity of Multiplication",
+                lhs: "(a*b)*c",
+                rhs: "a*(b*c)"
+            },
+            {
+                name: "Left Distributivity",
+                lhs: "a*(b+c)",
+                rhs: "a*b+a*c"
+            },
+
+            {
+                name: "Addition Monotonicity",
+                lhs: "a+b ? a+c",
+                rhs: "b ? c"
+            },
+            {
+                name: "Multiplication Monotonicity",
+                lhs: "a*b ? a*c",
+                rhs: "b ? c",
+                condition: "a > 0"
+            },
+            {
+                name: "Exponentiation Monotonicity",
+                lhs: "a^b ? a^c",
+                rhs: "b ? c",
+                condition: "a > 1"
+            },
+            {
+                name: "Addition Weak Monotonicity",
+                lhs: "b+a <= c+a",
+                rhs: "true",
+                condition: "b < c"
+            },
+            {
+                name: "Multiplication Weak Monotonicity",
+                lhs: "b*a <= c*a",
+                rhs: "true",
+                condition: "b < c"
+            },
+            {
+                name: "Exponentiation Weak Monotonicity",
+                lhs: "b^a <= c^a",
+                rhs: "true",
+                condition: "b < c"
+            },
+            {
+                name: "Exponent Addition",
+                lhs: "a^(b+c)",
+                rhs: "a^b*a^c",
+            },
+            {
+                name: "Exponent Multiplication",
+                lhs: "a^(b*c)",
+                rhs: "(a^b)^c",
+            }
+        ];
+
+        // Generic test runner for any test list and substitution map
+        function runTestList(testList, substitutions) {
+            const results = [];
+
+            for (const test of testList) {
+                try {
+                    OperationTracer.reset(1000000);
+
+                    // Check condition if present
+                    if (test.condition) {
+                        console.log(`[DEBUG] Evaluating condition: ${test.condition}`);
+                        const conditionParser = new SimpleParser(test.condition);
+                        const conditionResult = conditionParser.parseWithSubstitution(substitutions);
+                        console.log(`[DEBUG] Condition result:`, conditionResult);
+                        console.log(`[DEBUG] Condition result type:`, conditionResult?.type);
+                        console.log(`[DEBUG] Condition result value:`, conditionResult?.value);
+
+                        // Skip test if condition is false
+                        if (!conditionResult || (conditionResult.type === 'boolean' && !conditionResult.value)) {
+                            results.push({
+                                name: test.name,
+                                status: 'skipped',
+                                reason: `Condition not met: ${test.condition}`
+                            });
+                            continue;
+                        }
+                    }
+
+                    // Parse and evaluate LHS with direct substitution
+                    console.log(`[DEBUG] Parsing LHS: ${test.lhs}`);
+                    const lhsParser = new SimpleParser(test.lhs);
+                    const lhsResult = lhsParser.parseWithSubstitution(substitutions);
+                    console.log(`[DEBUG] LHS result:`, lhsResult, `formatted: ${_formatTestResult(lhsResult)}`);
+
+                    // Parse and evaluate RHS with direct substitution
+                    console.log(`[DEBUG] Parsing RHS: ${test.rhs}`);
+                    const rhsParser = new SimpleParser(test.rhs);
+                    const rhsResult = rhsParser.parseWithSubstitution(substitutions);
+                    console.log(`[DEBUG] RHS result:`, rhsResult, `formatted: ${_formatTestResult(rhsResult)}`);
+
+                    // Check if results are still unresolved
+                    if (_hasUnresolvedElements(lhsResult)) {
+                        throw new Error(`LHS expression not fully resolved: ${_formatTestResult(lhsResult)} from ${test.lhs}`);
+                    }
+                    if (_hasUnresolvedElements(rhsResult)) {
+                        throw new Error(`RHS expression not fully resolved: ${_formatTestResult(rhsResult)} from ${test.rhs}`);
+                    }
+
+                    // Compare results using unified comparison function
+                    const comparison = _compareTestValues(lhsResult, rhsResult);
+
+                    if (comparison === 0) {
+                        results.push({
+                            name: test.name,
+                            status: 'passed'
+                        });
+                    } else {
+                        // Format variable values for error message
+                        const varValues = Array.from(substitutions.entries())
+                            .map(([name, value]) => `${name}=${value.toString()}`)
+                            .join(', ');
+
+                        results.push({
+                            name: test.name,
+                            status: 'failed',
+                            reason: `${test.lhs} = ${_formatTestResult(lhsResult)} ≠ ${test.rhs} = ${_formatTestResult(rhsResult)} (with ${varValues})`
+                        });
+                    }
+
+                } catch (error) {
+                    if (error.message && (error.message.includes('budget exceeded') || error.message.includes('too much recursion') || error.message.includes('Maximum call stack'))) {
+                        results.push({
+                            name: test.name,
+                            status: 'aborted',
+                            reason: error.message
+                        });
+                    } else {
+                        results.push({
+                            name: test.name,
+                            status: 'failed',
+                            reason: `Error: ${error.message}`
+                        });
+                    }
+                }
+            }
+
+            return results;
+        }
+
+        function _isOrdinal(value) {
+            return value && typeof value === 'object' &&
+                typeof value.isZero === 'function' &&
+                typeof value.add === 'function';
+        }
+
+        function _hasUnresolvedElements(value) {
+            return value && typeof value === 'object' &&
+                (value.type === 'variable' || value.type === 'operation' || value.type === 'function' || value.type === 'comparison_op' || value.type === 'epsilon' || value.type === 'successor');
+        }
+
+        function _compareTestValues(left, right) {
+            // Both are ordinals
+            if (_isOrdinal(left) && _isOrdinal(right)) {
+                return OPERATIONS.compare(left, right);
+            }
+
+            // Both are strings
+            if (left.type === 'string' && right.type === 'string') {
+                if (left.value < right.value) return -1;
+                if (left.value > right.value) return 1;
+                return 0;
+            }
+
+            // Both are booleans
+            if (left.type === 'boolean' && right.type === 'boolean') {
+                if (left.value === right.value) return 0;
+                return left.value ? 1 : -1;
+            }
+
+            // Both are comparison results
+            if (left.type === 'comparison' && right.type === 'comparison') {
+                if (left.value < right.value) return -1;
+                if (left.value > right.value) return 1;
+                return 0;
+            }
+
+            // Mixed types - convert to strings for comparison
+            const leftStr = _formatTestResult(left);
+            const rightStr = _formatTestResult(right);
+            if (leftStr < rightStr) return -1;
+            if (leftStr > rightStr) return 1;
+            return 0;
+        }
+
+        function _formatTestResult(result) {
+            if (result && typeof result.toString === 'function' && typeof result.isZero === 'function') {
+                return result.toString();
+            } else if (result && result.type === 'boolean') {
+                return result.value.toString();
+            } else if (result && result.type === 'comparison') {
+                switch (result.value) {
+                    case -1: return '<';
+                    case 0: return '=';
+                    case 1: return '>';
+                    default: return result.value.toString();
+                }
+            } else {
+                return String(result);
+            }
         }
 
         function runTripleTestsImpl(a, b, c) {
             try {
-                // Set global tracer for this test
+                console.log(`[TRIPLE] Testing with a=${a.toString()}, b=${b.toString()}, c=${c.toString()}`);
+
+                // Create substitution map with direct objects
+                const substitutions = new Map([
+                    ['a', a],
+                    ['b', b],
+                    ['c', c]
+                ]);
+
+                // Run triple ordinal tests
+                const results = runTestList(TRIPLE_ORDINAL_TESTS, substitutions);
+
+                // Check if any tests failed
+                for (const result of results) {
+                    if (result.status === 'failed') {
+                        return {
+                            status: 'failed',
+                            reason: `${result.name}: ${result.reason}`
+                        };
+                    } else if (result.status === 'aborted') {
+                        return {
+                            status: 'aborted',
+                            reason: `${result.name}: ${result.reason}`
+                        };
+                    }
+                    // Log passed and skipped tests
+                    if (result.status === 'passed') {
+                        console.log(`[TRIPLE] ✓ ${result.name}`);
+                    } else if (result.status === 'skipped') {
+                        console.log(`[TRIPLE] ⊘ ${result.name} (${result.reason})`);
+                    }
+                }
+
+                // All unified tests passed, now run legacy tests for comparison
                 OperationTracer.setGlobalTracer(1000000);
 
-                // Test 1: Associativity of addition: (a+b)+c = a+(b+c)
+                // Test 1: Associativity of addition: (a+b)+c = a+(b+c) [LEGACY]
                 try {
                     // Add debugging info about the ordinals
                     console.log(`[DEBUG] Testing associativity with a=${a.toString()}, b=${b.toString()}, c=${c.toString()}`);
@@ -1237,6 +1666,50 @@
                 return { status: 'failed', reason: 'Unexpected error: ' + error.message };
             }
         }
+
+        // Display test lists in the UI
+        function displayTestLists() {
+            displayTestList('singleTestsList', SINGLE_ORDINAL_TESTS);
+            displayTestList('pairTestsList', PAIR_ORDINAL_TESTS);
+            displayTestList('tripleTestsList', TRIPLE_ORDINAL_TESTS);
+        }
+
+        function displayTestList(elementId, testList) {
+            const container = document.getElementById(elementId);
+            if (!container) return;
+
+            container.innerHTML = '';
+
+            testList.forEach(test => {
+                const testItem = document.createElement('div');
+                testItem.className = 'test-item';
+
+                const testName = document.createElement('div');
+                testName.className = 'test-name';
+                testName.textContent = test.name;
+
+                const testExpressions = document.createElement('div');
+                testExpressions.className = 'test-expressions';
+                testExpressions.textContent = `${test.lhs} = ${test.rhs}`;
+
+                testItem.appendChild(testName);
+                testItem.appendChild(testExpressions);
+
+                if (test.condition) {
+                    const testCondition = document.createElement('div');
+                    testCondition.className = 'test-condition';
+                    testCondition.textContent = `Condition: ${test.condition}`;
+                    testItem.appendChild(testCondition);
+                }
+
+                container.appendChild(testItem);
+            });
+        }
+
+        // Initialize test lists display when page loads
+        document.addEventListener('DOMContentLoaded', function () {
+            displayTestLists();
+        });
     </script>
 </body>
 

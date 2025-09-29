@@ -269,6 +269,24 @@ document.addEventListener('DOMContentLoaded', () => {
                         case 'operation':
                             linearResultHeader.textContent = "Expression Result:";
                             break;
+                        case 'variable':
+                            linearResultHeader.textContent = "Variable:";
+                            break;
+                        case 'successor':
+                            linearResultHeader.textContent = "Successor Expression:";
+                            break;
+                        case 'comparison_op':
+                            linearResultHeader.textContent = "Comparison Expression:";
+                            break;
+                        case 'function':
+                            linearResultHeader.textContent = "Function Expression:";
+                            break;
+                        case 'epsilon':
+                            linearResultHeader.textContent = "Epsilon Expression:";
+                            break;
+                        case 'logical_op':
+                            linearResultHeader.textContent = "Logical Expression:";
+                            break;
                         default:
                             linearResultHeader.textContent = "Result:";
                     }

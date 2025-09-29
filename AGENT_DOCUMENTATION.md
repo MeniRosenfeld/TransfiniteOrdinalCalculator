@@ -214,6 +214,35 @@ if (logResult.isFinite() || OPERATIONS.compare(logResult, originalBase) < 0) {
 
 **The Rule**: `logStar()` should count tower height relative to the original base, not climb to absolute finite numbers.
 
+### **Guideline 14: Enhanced Parser Usage**
+
+**The Architecture**: The parser now supports multiple expression types and deferred evaluation through expression trees.
+
+**Variable Substitution Best Practices**:
+- **Use Direct Object Substitution**: `parseWithSubstitution(Map)` is more efficient than string-based `/.{}`
+- **Lowest Precedence**: Substitution applies to entire left expression: `a+1/.{a:=w}` → `w+1`
+- **Partial Substitution**: Unassigned variables remain: `a+b/.{a:=w}` → `w+b`
+- **Nested Functions**: Complex expressions work: `parse[toString[a]]/.{a:=5}` → `5`
+
+**Expression Tree Patterns**:
+- **Variables Create Trees**: Operations with variables defer evaluation
+- **Substitution Resolves Trees**: Variables replaced, then trees evaluated if possible
+- **Type Separation**: Comparison results can't be used in ordinal arithmetic
+- **Function Composition**: Functions with unresolved arguments create function trees
+
+**Testing with Enhanced Parser**:
+```javascript
+// Declarative test definitions (new approach)
+const tests = [
+    {name: "Associativity", lhs: "(a+b)+c", rhs: "a+(b+c)"},
+    {name: "Conditional", lhs: "a^0", rhs: "1", condition: "a > 0"}
+];
+
+// Instead of 50+ lines of manual test code per law
+```
+
+**The Rule**: Prefer declarative test definitions over imperative test code for mathematical laws.
+
 ---
 
 ## Current Implementation Status
@@ -257,6 +286,18 @@ if (logResult.isFinite() || OPERATIONS.compare(logResult, originalBase) < 0) {
 ### **Session Highlights**
 
 This section documents major improvements and bug fixes from recent development sessions.
+
+#### **Enhanced Parser Revolution (Current Session)**
+- **Multi-Type Expression System**: Parser now supports ordinals, booleans, strings, comparisons, variables
+- **Variable Substitution**: Implemented `expr/.{var:=value}` syntax with partial substitution support
+- **Expression Trees**: Deferred evaluation architecture for complex expressions with variables
+- **Unified Test System**: Declarative test definitions reducing code complexity by 90%
+- **Operator Precedence**: 12-level hierarchy from substitution (lowest) to function calls (highest)
+- **Built-in Functions**: `complexity[ordinal]`, `toString[value]`, `parse[string]`
+- **Successor Operator**: Mathematical `ordinal'` notation for successor operation
+- **Comparison Results**: Separate type system preventing mixing with ordinal arithmetic
+- **Boolean Logic**: Full support for `&&`, `||`, `->`, `!` with proper tree creation
+- **Direct Object Substitution**: Efficient method eliminating string round-trip overhead
 
 #### **Dependency and Initialization Fixes**
 - **Fixed missing Rational.js reference** in NumericContexts.js

@@ -144,6 +144,193 @@ class SimpleParser {
         return result;
     }
 
+    // Parse with direct object substitution (more efficient than string-based substitution)
+    parseWithSubstitution(substitutions) {
+        if (this.tokens.length === 0) {
+            return new FiniteOrdinal(0);
+        }
+
+        // Parse the expression normally (this will create trees with variables)
+        const result = this._parseExpressionWithoutSubstitution();
+
+        if (this.pos < this.tokens.length) {
+            throw new Error(`Unexpected token after complete expression: ${this.tokens[this.pos].type}`);
+        }
+
+        // Apply direct object substitutions
+        return this._applyDirectSubstitutions(result, substitutions);
+    }
+
+    // Parse expression without substitution (creates trees with variables)
+    _parseExpressionWithoutSubstitution() {
+        return this._parseImplication();
+    }
+
+    // Apply direct object substitutions (no string conversion needed)
+    _applyDirectSubstitutions(expr, substitutions) {
+        if (!expr || typeof expr !== 'object') {
+            return expr;
+        }
+
+        // Handle variables
+        if (expr.type === 'variable') {
+            if (substitutions.has(expr.name)) {
+                return substitutions.get(expr.name);
+            } else {
+                // Return the variable unchanged if not in substitutions
+                return expr;
+            }
+        }
+
+        // Handle ordinal objects - they don't contain variables, so return as-is
+        if (this._isOrdinal(expr)) {
+            return expr;
+        }
+
+        // Handle function call trees
+        if (expr.type === 'function') {
+            const substitutedArgs = expr.args.map(arg => this._applyDirectSubstitutions(arg, substitutions));
+
+            // Check if all arguments are now resolved (no unresolved elements)
+            const hasUnresolved = substitutedArgs.some(arg => this._hasUnresolvedElements(arg));
+
+            if (!hasUnresolved) {
+                // All arguments resolved, execute the function
+                return this._executeFunction(expr.name, substitutedArgs);
+            } else {
+                // Some arguments still unresolved, return updated function tree
+                return { type: 'function', name: expr.name, args: substitutedArgs };
+            }
+        }
+
+        // Handle comparison operation trees
+        if (expr.type === 'comparison_op') {
+            const left = this._applyDirectSubstitutions(expr.left, substitutions);
+            const right = this._applyDirectSubstitutions(expr.right, substitutions);
+
+            // If both sides are now resolved, evaluate the comparison
+            if (!this._hasUnresolvedElements(left) && !this._hasUnresolvedElements(right)) {
+                switch (expr.operator) {
+                    case 'EQ':
+                        return this._createBooleanResult(this._compareValues(left, right) === 0);
+                    case 'NEQ':
+                        return this._createBooleanResult(this._compareValues(left, right) !== 0);
+                    case 'LT':
+                        return this._createBooleanResult(this._compareValues(left, right) < 0);
+                    case 'GT':
+                        return this._createBooleanResult(this._compareValues(left, right) > 0);
+                    case 'LTE':
+                        return this._createBooleanResult(this._compareValues(left, right) <= 0);
+                    case 'GTE':
+                        return this._createBooleanResult(this._compareValues(left, right) >= 0);
+                    case 'COMPARE':
+                        const compResult = this._compareValues(left, right);
+                        return { type: 'comparison', value: compResult };
+                    default:
+                        throw new Error(`Unknown comparison operator: ${expr.operator}`);
+                }
+            } else {
+                // Some elements still unresolved, return updated comparison tree
+                return { type: 'comparison_op', operator: expr.operator, left: left, right: right };
+            }
+        }
+
+        // Handle epsilon expression trees
+        if (expr.type === 'epsilon') {
+            const substitutedIndex = this._applyDirectSubstitutions(expr.index, substitutions);
+
+            // If index is now resolved, create the appropriate epsilon object
+            if (!this._hasUnresolvedElements(substitutedIndex)) {
+                if (substitutedIndex.isZero()) {
+                    return new EpsilonZero();
+                } else {
+                    return new EpsilonNumber(substitutedIndex);
+                }
+            } else {
+                // Index still has unresolved elements, return updated epsilon tree
+                return { type: 'epsilon', index: substitutedIndex };
+            }
+        }
+
+        // Handle successor trees
+        if (expr.type === 'successor') {
+            const substitutedOperand = this._applyDirectSubstitutions(expr.operand, substitutions);
+
+            // If operand is now resolved, apply successor
+            if (this._isOrdinal(substitutedOperand)) {
+                return substitutedOperand.successor();
+            } else {
+                // Operand still has unresolved elements, return updated successor tree
+                return { type: 'successor', operand: substitutedOperand };
+            }
+        }
+
+        // Handle logical operation trees
+        if (expr.type === 'logical_op') {
+            console.log(`   `, expr);
+            const left = this._applyDirectSubstitutions(expr.left, substitutions);
+            const right = this._applyDirectSubstitutions(expr.right, substitutions);
+            console.log(`[DEBUG] After substitution - left:`, left, `right:`, right);
+            console.log(`[DEBUG] Left has unresolved: ${this._hasUnresolvedElements(left)}, Right has unresolved: ${this._hasUnresolvedElements(right)}`);
+
+            // If both sides are now resolved, evaluate the logical operation
+            if (!this._hasUnresolvedElements(left) && !this._hasUnresolvedElements(right)) {
+                console.log(`[DEBUG] Evaluating logical operation ${expr.operator} with left:`, left, `right:`, right);
+                console.log(`[DEBUG] Left truthy: ${this._isTruthy(left)}, Right truthy: ${this._isTruthy(right)}`);
+
+                switch (expr.operator) {
+                    case 'AND':
+                        const andResult = this._createBooleanResult(this._isTruthy(left) && this._isTruthy(right));
+                        console.log(`[DEBUG] AND result:`, andResult);
+                        return andResult;
+                    case 'OR':
+                        return this._createBooleanResult(this._isTruthy(left) || this._isTruthy(right));
+                    case 'IMPLIES':
+                        return this._createBooleanResult(!this._isTruthy(left) || this._isTruthy(right));
+                    default:
+                        throw new Error(`Unknown logical operator: ${expr.operator}`);
+                }
+            } else {
+                // Some elements still unresolved, return updated logical tree
+                console.log(`[DEBUG] Logical tree still has unresolved elements, returning tree`);
+                return { type: 'logical_op', operator: expr.operator, left: left, right: right };
+            }
+        }
+
+        // Handle other value types (strings, booleans, comparisons) - return as-is
+        if (expr.type === 'string' || expr.type === 'boolean' || expr.type === 'comparison') {
+            return expr;
+        }
+
+        // Handle operation trees
+        if (expr.type === 'operation') {
+            const left = this._applyDirectSubstitutions(expr.left, substitutions);
+            const right = this._applyDirectSubstitutions(expr.right, substitutions);
+
+            // After substitution, evaluate the operation if both sides are fully resolved
+            if (this._isOrdinal(left) && this._isOrdinal(right)) {
+                switch (expr.operator) {
+                    case 'add':
+                        return left.add(right);
+                    case 'multiply':
+                        return left.multiply(right);
+                    case 'power':
+                        return left.power(right);
+                    case 'tetrate':
+                        return left.tetrate(right);
+                    default:
+                        throw new Error(`Unknown operation: ${expr.operator}`);
+                }
+            } else {
+                // If substitution didn't resolve both sides to ordinals, return the updated operation tree
+                return { type: 'operation', operator: expr.operator, left: left, right: right };
+            }
+        }
+
+        // For any other object types, return as-is
+        return expr;
+    }
+
     // Top-level expression parsing - handles substitution (lowest precedence)
     _parseExpression() {
         return this._parseSubstitution();
@@ -184,8 +371,14 @@ class SimpleParser {
 
             this._consume('RBRACE');
 
-            // Apply substitutions to the expression
-            expr = this._applySubstitutions(expr, substitutions);
+            // Convert string-based substitutions to object map and use direct substitution
+            const objectSubstitutions = new Map();
+            for (const [varName, valueExpr] of substitutions.entries()) {
+                objectSubstitutions.set(varName, valueExpr);
+            }
+
+            // Apply substitutions using the direct method
+            expr = this._applyDirectSubstitutions(expr, objectSubstitutions);
         }
 
         return expr;
@@ -198,8 +391,15 @@ class SimpleParser {
         while (this._peek() && this._peek().type === 'IMPLIES') {
             this._consume('IMPLIES');
             const right = this._parseLogicalOr();
-            // Implication: A -> B is equivalent to !A || B
-            left = this._createBooleanResult(!this._isTruthy(left) || this._isTruthy(right));
+
+            // Check if either operand has unresolved elements
+            if (this._hasUnresolvedElements(left) || this._hasUnresolvedElements(right)) {
+                // Create logical operation tree
+                left = { type: 'logical_op', operator: 'IMPLIES', left: left, right: right };
+            } else {
+                // Evaluate immediately: A -> B is equivalent to !A || B
+                left = this._createBooleanResult(!this._isTruthy(left) || this._isTruthy(right));
+            }
         }
 
         return left;
@@ -212,7 +412,15 @@ class SimpleParser {
         while (this._peek() && this._peek().type === 'OR') {
             this._consume('OR');
             const right = this._parseLogicalAnd();
-            left = this._createBooleanResult(this._isTruthy(left) || this._isTruthy(right));
+
+            // Check if either operand has unresolved elements
+            if (this._hasUnresolvedElements(left) || this._hasUnresolvedElements(right)) {
+                // Create logical operation tree
+                left = { type: 'logical_op', operator: 'OR', left: left, right: right };
+            } else {
+                // Evaluate immediately
+                left = this._createBooleanResult(this._isTruthy(left) || this._isTruthy(right));
+            }
         }
 
         return left;
@@ -225,7 +433,15 @@ class SimpleParser {
         while (this._peek() && this._peek().type === 'AND') {
             this._consume('AND');
             const right = this._parseComparison();
-            left = this._createBooleanResult(this._isTruthy(left) && this._isTruthy(right));
+
+            // Check if either operand has unresolved elements
+            if (this._hasUnresolvedElements(left) || this._hasUnresolvedElements(right)) {
+                // Create logical operation tree
+                left = { type: 'logical_op', operator: 'AND', left: left, right: right };
+            } else {
+                // Evaluate immediately
+                left = this._createBooleanResult(this._isTruthy(left) && this._isTruthy(right));
+            }
         }
 
         return left;
@@ -239,8 +455,8 @@ class SimpleParser {
             const operator = this._consume().type;
             const right = this._parseOrdinalExpression();
 
-            // Check if either operand has variables or operation trees
-            if (left.type === 'variable' || right.type === 'variable' || left.type === 'operation' || right.type === 'operation') {
+            // Check if either operand has unresolved elements
+            if (this._hasUnresolvedElements(left) || this._hasUnresolvedElements(right)) {
                 // Create comparison operation tree
                 left = { type: 'comparison_op', operator: operator, left: left, right: right };
             } else {
@@ -379,149 +595,15 @@ class SimpleParser {
 
             if (this._isOrdinal(expr)) {
                 expr = expr.successor();
-            } else if (this._hasUnresolvedElements(expr)) {
-                // Create successor operation tree
+            } else {
+                // Always create successor operation tree for non-ordinals (including variables)
                 expr = { type: 'successor', operand: expr };
-            } else {
-                throw new Error('Successor can only be applied to ordinal values');
             }
         }
 
         return expr;
     }
 
-    // Apply variable substitutions to an expression recursively
-    _applySubstitutions(expr, substitutions) {
-        if (!expr || typeof expr !== 'object') {
-            return expr;
-        }
-
-        // Handle variables
-        if (expr.type === 'variable') {
-            if (substitutions.has(expr.name)) {
-                return substitutions.get(expr.name);
-            } else {
-                // Return the variable unchanged if not in substitutions
-                return expr;
-            }
-        }
-
-        // Handle ordinal objects - they don't contain variables, so return as-is
-        if (this._isOrdinal(expr)) {
-            return expr;
-        }
-
-        // Handle function call trees
-        if (expr.type === 'function') {
-            const substitutedArgs = expr.args.map(arg => this._applySubstitutions(arg, substitutions));
-
-            // Check if all arguments are now resolved (no variables or operation trees)
-            const hasUnresolved = substitutedArgs.some(arg => arg && (arg.type === 'variable' || arg.type === 'operation'));
-
-            if (!hasUnresolved) {
-                // All arguments resolved, execute the function
-                return this._executeFunction(expr.name, substitutedArgs);
-            } else {
-                // Some arguments still unresolved, return updated function tree
-                return { type: 'function', name: expr.name, args: substitutedArgs };
-            }
-        }
-
-        // Handle comparison operation trees
-        if (expr.type === 'comparison_op') {
-            const left = this._applySubstitutions(expr.left, substitutions);
-            const right = this._applySubstitutions(expr.right, substitutions);
-
-            // If both sides are now resolved, evaluate the comparison
-            if (!this._hasUnresolvedElements(left) && !this._hasUnresolvedElements(right)) {
-                switch (expr.operator) {
-                    case 'EQ':
-                        return this._createBooleanResult(this._compareValues(left, right) === 0);
-                    case 'NEQ':
-                        return this._createBooleanResult(this._compareValues(left, right) !== 0);
-                    case 'LT':
-                        return this._createBooleanResult(this._compareValues(left, right) < 0);
-                    case 'GT':
-                        return this._createBooleanResult(this._compareValues(left, right) > 0);
-                    case 'LTE':
-                        return this._createBooleanResult(this._compareValues(left, right) <= 0);
-                    case 'GTE':
-                        return this._createBooleanResult(this._compareValues(left, right) >= 0);
-                    case 'COMPARE':
-                        const compResult = this._compareValues(left, right);
-                        return { type: 'comparison', value: compResult };
-                    default:
-                        throw new Error(`Unknown comparison operator: ${expr.operator}`);
-                }
-            } else {
-                // Some elements still unresolved, return updated comparison tree
-                return { type: 'comparison_op', operator: expr.operator, left: left, right: right };
-            }
-        }
-
-        // Handle epsilon expression trees
-        if (expr.type === 'epsilon') {
-            const substitutedIndex = this._applySubstitutions(expr.index, substitutions);
-
-            // If index is now resolved, create the appropriate epsilon object
-            if (!this._hasUnresolvedElements(substitutedIndex)) {
-                if (substitutedIndex.isZero()) {
-                    return new EpsilonZero();
-                } else {
-                    return new EpsilonNumber(substitutedIndex);
-                }
-            } else {
-                // Index still has unresolved elements, return updated epsilon tree
-                return { type: 'epsilon', index: substitutedIndex };
-            }
-        }
-
-        // Handle successor trees
-        if (expr.type === 'successor') {
-            const substitutedOperand = this._applySubstitutions(expr.operand, substitutions);
-
-            // If operand is now resolved, apply successor
-            if (this._isOrdinal(substitutedOperand)) {
-                return substitutedOperand.successor();
-            } else {
-                // Operand still has unresolved elements, return updated successor tree
-                return { type: 'successor', operand: substitutedOperand };
-            }
-        }
-
-        // Handle other value types (strings, booleans, comparisons) - return as-is
-        if (expr.type === 'string' || expr.type === 'boolean' || expr.type === 'comparison') {
-            return expr;
-        }
-
-        // Handle operation trees
-        if (expr.type === 'operation') {
-            const left = this._applySubstitutions(expr.left, substitutions);
-            const right = this._applySubstitutions(expr.right, substitutions);
-
-            // After substitution, evaluate the operation if both sides are fully resolved
-            if (this._isOrdinal(left) && this._isOrdinal(right)) {
-                switch (expr.operator) {
-                    case 'add':
-                        return left.add(right);
-                    case 'multiply':
-                        return left.multiply(right);
-                    case 'power':
-                        return left.power(right);
-                    case 'tetrate':
-                        return left.tetrate(right);
-                    default:
-                        throw new Error(`Unknown operation: ${expr.operator}`);
-                }
-            } else {
-                // If substitution didn't resolve both sides to ordinals, return the updated operation tree
-                return { type: 'operation', operator: expr.operator, left: left, right: right };
-            }
-        }
-
-        // For any other object types, return as-is
-        return expr;
-    }
 
     // Parse primary expressions (highest precedence)
     _parsePrimary() {
@@ -593,10 +675,10 @@ class SimpleParser {
 
     // Execute built-in functions
     _executeFunction(functionName, args) {
-        // Check if any arguments contain variables or operation trees
-        const hasVariables = args.some(arg => arg && (arg.type === 'variable' || arg.type === 'operation'));
+        // Check if any arguments contain unresolved elements
+        const hasUnresolved = args.some(arg => this._hasUnresolvedElements(arg));
 
-        if (hasVariables) {
+        if (hasUnresolved) {
             // Return a function call tree to be evaluated after substitution
             return { type: 'function', name: functionName, args: args };
         }
@@ -658,7 +740,7 @@ class SimpleParser {
 
     _hasUnresolvedElements(value) {
         return value && typeof value === 'object' &&
-            (value.type === 'variable' || value.type === 'operation' || value.type === 'function' || value.type === 'comparison_op' || value.type === 'epsilon' || value.type === 'successor');
+            (value.type === 'variable' || value.type === 'operation' || value.type === 'function' || value.type === 'comparison_op' || value.type === 'epsilon' || value.type === 'successor' || value.type === 'logical_op');
     }
 
     _isTruthy(value) {
@@ -766,8 +848,22 @@ class SimpleParser {
         } else if (value.type === 'successor') {
             const operandStr = this._valueToString(value.operand);
             return `${operandStr}'`;
+        } else if (value.type === 'logical_op') {
+            const leftStr = this._valueToString(value.left);
+            const rightStr = this._valueToString(value.right);
+            const opStr = this._logicalOperatorToString(value.operator);
+            return `(${leftStr} ${opStr} ${rightStr})`;
         } else {
             return String(value);
+        }
+    }
+
+    _logicalOperatorToString(operator) {
+        switch (operator) {
+            case 'AND': return '&&';
+            case 'OR': return '||';
+            case 'IMPLIES': return '->';
+            default: return operator;
         }
     }
 

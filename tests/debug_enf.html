@@ -177,6 +177,7 @@
                 // Method 1: Parse both expressions
                 log('<h4>Method 1: Parsing expressions:</h4>');
                 OperationTracer.reset(100000);
+                const value = new SimpleParser("a>0&&a>0/.{a:=0}").parse();
                 const e1_e0_parsed = new SimpleParser("e_1^e_0").parse();
 
                 OperationTracer.reset(100000);

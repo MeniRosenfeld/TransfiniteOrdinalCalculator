@@ -626,6 +626,66 @@ footer {
     content: "🔧 ";
 }
 
+.result-variable {
+    color: #e83e8c;
+    font-weight: bold;
+    font-family: 'Courier New', monospace;
+}
+
+.result-variable::before {
+    content: "📋 ";
+}
+
+.result-successor {
+    color: #20c997;
+    font-weight: bold;
+    font-family: 'Courier New', monospace;
+}
+
+.result-successor::before {
+    content: "➕ ";
+}
+
+.result-comparison_op {
+    color: #fd7e14;
+    font-weight: bold;
+    font-family: 'Courier New', monospace;
+}
+
+.result-comparison_op::before {
+    content: "🔍 ";
+}
+
+.result-function {
+    color: #6610f2;
+    font-weight: bold;
+    font-family: 'Courier New', monospace;
+}
+
+.result-function::before {
+    content: "⚙️ ";
+}
+
+.result-epsilon {
+    color: #0dcaf0;
+    font-weight: bold;
+    font-family: 'Courier New', monospace;
+}
+
+.result-epsilon::before {
+    content: "🔤 ";
+}
+
+.result-logical_op {
+    color: #17a2b8;
+    font-weight: bold;
+    font-family: 'Courier New', monospace;
+}
+
+.result-logical_op::before {
+    content: "🧠 ";
+}
+
 /* Enhanced parser test styles */
 .test-pass {
     background-color: #d4edda;

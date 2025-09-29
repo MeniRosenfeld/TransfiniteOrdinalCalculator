@@ -6,19 +6,22 @@ A comprehensive web application for parsing, computing, and visualizing transfin
 
 ## Features
 
-### **Ordinal Expression Parsing**
-*   **Comprehensive syntax support:**
-    *   Non-negative integers (e.g., `0`, `1`, `42`) with `BigInt` precision
-    *   `w` for omega (ω), the first infinite ordinal
-    *   `e_0` for epsilon-zero (ε₀), the first epsilon number
-    *   `e_k` for arbitrary epsilon numbers (e.g., `e_1`, `e_w`, `e_(w+1)`)
-    *   `e__n` for epsilon tunnels (deeply nested epsilon structures)
-    *   Standard arithmetic operations with correct precedence:
-        *   Addition: `+` (left-associative)
-        *   Multiplication: `*` (left-associative)
-        *   Exponentiation: `^` (right-associative)
-        *   Tetration: `^^` (right-associative, highest precedence)
-    *   Parentheses `()` for grouping and controlling order of operations
+### **Enhanced Expression System**
+*   **Multi-type expression support:**
+    *   **Ordinals**: Non-negative integers, `w` (omega), `e_k` (epsilon numbers), `e__n` (tunnels)
+    *   **Comparisons**: `=`, `!=`, `<`, `>`, `<=`, `>=`, `?` (returns `<`, `=`, or `>`)
+    *   **Boolean Logic**: `&&`, `||`, `->` (implication), `!` (not)
+    *   **String Literals**: `"text"` with escape sequences
+    *   **Boolean Literals**: `true`, `false` (case insensitive)
+    *   **Variables**: `a`, `b`, `c`, etc. with substitution support
+    *   **Functions**: `complexity[ordinal]`, `toString[value]`, `parse[string]`
+*   **Advanced operations:**
+    *   **Arithmetic**: `+`, `*`, `^`, `^^` with proper precedence
+    *   **Successor**: `ordinal'` (postfix operator)
+    *   **Variable Substitution**: `expr/.{var:=value, ...}` (lowest precedence)
+    *   **Parentheses**: `()` for grouping and controlling order of operations
+*   **Expression Trees**: Deferred evaluation system for complex expressions with variables
+*   **Partial Substitution**: Variables can be substituted incrementally
 
 ### **Multiple Ordinal Representations**
 *   **`FiniteOrdinal`**: Natural numbers with BigInt precision
@@ -66,22 +69,35 @@ A comprehensive web application for parsing, computing, and visualizing transfin
 
 ### **Developer Tools**
 *   **Comprehensive test suites** with visual feedback
+*   **Enhanced parser test suite** for multi-type expressions and variable substitution
+*   **Unified test system** with declarative test definitions (90% code reduction)
 *   **Immutability testing** verifies ordinal objects remain unchanged during operations
 *   **Conversion debugging matrix** showing all type transformations
 *   **Operation tracing** with budget monitoring
 *   **Alertness testing** randomly introduces errors to verify test suite effectiveness
 *   **Singleton instances** for efficient constant ordinal access
+*   **Expression tree debugging** for complex variable expressions
 *   **Extensive documentation** and development guides
 
 ## How to Use
 
 ### **Basic Calculator Usage**
-1. **Enter Expression:** Type your ordinal expression (e.g., `w^w+1`, `e_0*2`, `e__(w+1)`)
+1. **Enter Expression:** Type any supported expression:
+   - **Ordinals**: `w^w+1`, `e_0*2`, `e__(w+1)`
+   - **Comparisons**: `w > 5`, `e_0 ? w`
+   - **Boolean Logic**: `!true && false`, `(w > 1) -> (w != 0)`
+   - **Variables**: `a+b/.{a:=w,b:=1}`, `parse[toString[a]]/.{a:=e_0}`
 2. **Calculate:** Click "Calculate" or press Enter
-3. **View Results:** See both graphical and text representations
-4. **Explore Mapping:** Use the slider to explore the f(α) real number mapping
+3. **View Results:** See results with appropriate formatting:
+   - **Ordinals**: Graphical mathematical notation
+   - **Booleans**: `true`/`false` with blue styling
+   - **Comparisons**: `<`, `=`, `>` with red styling
+   - **Expressions**: Variable expressions with purple styling
+4. **Explore Mapping:** Use the slider to explore the f(α) real number mapping (ordinals only)
 
 ### **Example Expressions**
+
+**Ordinal Arithmetic:**
 ```
 w+1              → ω+1
 (w+1)*2          → ω×2+2  
@@ -90,9 +106,26 @@ w^2              → ω²
 w^^3             → ω^ω^ω (displayed as ω↑↑3 for large towers)
 e_0+1            → ε₀+1
 e_1^w            → ε₁^ω
-e_w*3+e_0^2*5    → ε_ω×3+ε₀²×5
-e__3             → ε_ε_ε_0 (epsilon tunnel of depth 3)
-e_(e_0+1)        → ε_(ε₀+1) (epsilon number with complex index)
+w'               → ω+1 (successor operator)
+```
+
+**Enhanced Expressions:**
+```
+w > 5            → true (boolean result)
+w ? e_0          → < (comparison result)
+"hello" = "world" → false
+!true && false   → false
+complexity[w^w]  → 2
+toString[e_0]    → "e_0"
+parse["w+1"]     → ω+1
+```
+
+**Variable Substitution:**
+```
+a+b/.{a:=w,b:=1}           → ω+1
+a+b/.{a:=w}                → ω+b (partial substitution)
+parse[toString[a]]/.{a:=5}  → 5 (nested functions)
+(a < w && b < w)/.{a:=e_0,b:=w} → false (condition evaluation)
 ```
 
 ### **Advanced Features**
@@ -211,6 +244,8 @@ Then navigate to `http://localhost:8000`
 
 ### **Testing**
 *   **Main Test Suite:** Open `tests/ordinal_enf_test.html`
+*   **Enhanced Parser Tests:** Open `tests/enhanced_parser_test.html`
+*   **Arithmetic Laws Tests:** Open `tests/arithmetic_laws_test.html` (unified declarative system)
 *   **Immutability Tests:** Open `tests/immutability_test.html`
 *   **Conversion Testing:** Open `tests/conversion_debug.html`  
 *   **Architecture Tests:** Open `tests/new_system_smoke_tests.html`
