@@ -355,4 +355,104 @@ const result = OPERATIONS.add(a, b);
 const comparison = OPERATIONS.compare(a, b);
 ```
 
+---
+
+## ES6 Module System & Build Process
+
+### **The New Architecture (Phase 2 Complete)**
+
+The project has migrated to ES6 modules with Vite bundling while maintaining backward compatibility.
+
+**Directory Structure:**
+- **`src/`**: ES6 module source code (active development)
+- **`dist/`**: Production builds (generated, not committed)
+- **`public/`**: Static assets (CSS, images)
+- **Root `.js files`**: Legacy code (maintained for compatibility)
+
+**Key Files:**
+- **`src/main.ts`**: Entry point that imports all modules and exports to `window`
+- **`index.html`**: Main calculator interface
+
+### **Development Commands**
+
+```bash
+npm run dev      # Start Vite dev server (hot reload)
+npm run build    # Build production bundle
+npm run preview  # Preview production build
+```
+
+### **Import/Export Patterns**
+
+**Correct module structure:**
+```javascript
+// src/types/FiniteOrdinal.js
+import { OrdinalBase } from './OrdinalBase.js';
+import { OperationTracer } from '../OperationTracer.js';
+
+export class FiniteOrdinal extends OrdinalBase {
+    // ... implementation
+}
+```
+
+**Key rules:**
+- Always use `.js` extension in imports (even for .ts files later)
+- Circular dependencies are OK if imports used at runtime, not module initialization
+- Export everything needed by other modules
+- `src/main.js` re-exports to `window` for test compatibility
+
+### **Testing the New System**
+
+**ES6 Module Tests:**
+- `tests/ordinal_enf_test_new.html` - loads `dist/assets/bundle.js`
+- `tests/ordinal_calculator_test_new.html` - loads `dist/assets/bundle.js`
+
+**Legacy Tests:**
+- Other test files load individual scripts from root
+
+**Important:** ES6 module scripts load asynchronously. Test files must wait for module initialization before accessing `window` globals.
+
+### **Guideline 15: Module Import Best Practices**
+
+**The Issue**: ES6 modules change how code is loaded and executed.
+
+**The Rules**:
+- **Use explicit imports**: Don't rely on `window` globals except for backward compatibility
+- **Import with .js extension**: Required for ES modules, even in TypeScript
+- **Avoid circular initialization**: Don't access imported values at module load time
+- **Export explicitly**: Use `export` keyword, don't assign to `window`
+
+**Example:**
+```javascript
+// CORRECT
+import { ZeroOrdinal } from './ZeroOrdinal.js';
+export class OneOrdinal extends OrdinalBase {
+    successor() {
+        return new FiniteOrdinal(2n); // Import used at runtime - OK
+    }
+}
+
+// INCORRECT (old style)
+class OneOrdinal extends OrdinalBase {
+    successor() {
+        return new window.FiniteOrdinal(2n); // Relies on global
+    }
+}
+window.OneOrdinal = OneOrdinal; // Manual global export
+```
+
+### **Build System Notes**
+
+**Vite Configuration:**
+- Entry: `index.html` → outputs to `dist/`
+- Bundle: `dist/assets/main.js` (with source maps)
+- Source maps: Generated for debugging
+- Public dir: `public/` for static assets
+
+**TypeScript Support:**
+- `tsconfig.json` configured with `allowJs: true` for gradual migration
+- Currently checking is disabled (`checkJs: false`)
+- Will enable strict checking in Phase 6
+
+---
+
 This document should be consulted alongside `COMPREHENSIVE_DOCUMENTATION.md` for complete understanding of the project.

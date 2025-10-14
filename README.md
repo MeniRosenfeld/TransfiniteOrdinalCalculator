@@ -166,74 +166,89 @@ parse[toString[a]]/.{a:=5}  → 5 (nested functions)
 
 ```
 TransfiniteOrdinalCalculator/
-├── index.html                          # Main calculator interface
-├── style.css                           # Styling and mathematical typography
-├── script.js                           # UI interaction logic
-├── types/                              # Ordinal type implementations
-│   ├── OrdinalBase.js                  # Base class defining ordinal contract
-│   ├── FiniteOrdinal.js               # Natural numbers
-│   ├── OmegaOrdinal.js                # The ordinal ω
-│   ├── CNFOrdinal.js                  # Cantor Normal Form
-│   ├── EpsilonZero.js                 # The ordinal ε₀
-│   ├── EpsilonNumber.js               # Epsilon numbers ε_k
-│   ├── ENFOrdinal.js                  # Epsilon Normal Form
-│   ├── ENFTerm.js                     # ENF terms
-│   ├── ENFFactor.js                   # ENF factors
-│   ├── WTowerOrdinal.js               # Omega towers ω↑↑n
-│   ├── EpsilonTowerOrdinal.js         # Epsilon towers ε_k↑↑n
-│   ├── EpsilonTunnelOrdinal.js        # Epsilon tunnels ε↓↓n
-│   ├── ZetaZero.js                    # The ordinal ζ₀
-│   ├── ZeroOrdinal.js                 # The ordinal 0
-│   └── OneOrdinal.js                  # The ordinal 1
-├── operations/                         # Arithmetic operation engines
-│   ├── Operations.js                   # Main operations registry
-│   ├── RuleEngine.js                   # Rule matching and application
-│   ├── AdditionRules.js               # Addition operation rules
-│   ├── MultiplicationRules.js         # Multiplication operation rules
-│   ├── ExponentiationRules.js         # Exponentiation operation rules
-│   ├── TetrationRules.js              # Tetration operation rules
-│   ├── Comparison.js                  # Comparison operation rules
-│   ├── Auxiliary.js                   # Helper functions
-│   └── NumericContexts.js             # Numeric computation contexts
-├── conversions/                        # Type conversion system
-│   ├── ConversionRegistry.js          # Conversion registry
-│   └── ConversionEngine.js            # Conversion path finding
-├── tests/                             # Test suites and debugging tools
-│   ├── ordinal_enf_test.html          # Main ENF test suite
-│   ├── immutability_test.html         # Immutability and sorting verification
-│   ├── debug_enf.html                 # Interactive ENF comparison debugging
-│   ├── ordinal_calculator_test.html   # Legacy calculator tests
-│   ├── conversion_debug.html          # Conversion matrix debugger
-│   ├── new_system_smoke_tests.html    # Architecture validation tests
-│   └── [various other test files]
-├── SimpleParser.js                     # Expression parser
-├── SimpleCalculator.js                # Calculator logic
-├── SimpleRenderer.js                  # Result rendering
-├── RenderingComponents.js             # Mathematical notation components
-├── OperationTracer.js                 # Operation budget and tracing
-├── ordinal_mapping.js                 # f(α) ordinal-to-real mapping
-├── ordinal_mapping_inverse.js         # fInverse(x) real-to-ordinal mapping
-├── COMPREHENSIVE_DOCUMENTATION.md     # Complete project documentation
-├── AGENT_DOCUMENTATION.md             # Development best practices
-└── README.md                          # This file
+├── src/                                # ES6 Module Source (New System)
+│   ├── main.js                         # Main entry point
+│   ├── types/                          # Ordinal type implementations
+│   │   ├── OrdinalBase.js              # Base class defining ordinal contract
+│   │   ├── FiniteOrdinal.js            # Natural numbers
+│   │   ├── CNFOrdinal.js               # Cantor Normal Form
+│   │   ├── ENFOrdinal.js               # Epsilon Normal Form
+│   │   └── [13 more type files]
+│   ├── operations/                     # Arithmetic operation engines
+│   │   ├── Operations.js               # Main operations registry
+│   │   ├── RuleEngine.js               # Rule matching and application
+│   │   ├── AdditionRules.js            # Addition operation rules
+│   │   └── [7 more operation files]
+│   ├── conversions/                    # Type conversion system
+│   │   ├── ConversionRegistry.js       # Conversion registry
+│   │   └── ConversionEngine.js         # Conversion path finding
+│   ├── SimpleParser.js                 # Expression parser
+│   ├── SimpleCalculator.js             # Calculator logic
+│   ├── SimpleRenderer.js               # Result rendering
+│   ├── ordinal_mapping.js              # f(α) ordinal-to-real mapping
+│   ├── ordinal_mapping_inverse.js      # fInverse(x) real-to-ordinal mapping
+│   └── script.js                       # UI interaction logic
+├── dist/                               # Production Build (Generated)
+│   ├── index.html                      # Built HTML
+│   └── assets/                         # Bundled JS, CSS, images
+│       ├── bundle.js                   # Optimized bundle (~118KB)
+│       ├── index-new.css               # Bundled styles
+│       └── epsilonOmega.png            # Favicon
+├── public/                             # Static Assets
+│   ├── style.css                       # Original CSS
+│   └── epsilonOmega.png                # Original favicon
+├── tests/                              # Test Suites
+│   ├── ordinal_enf_test_new.html       # ENF tests
+│   ├── ordinal_calculator_test_new.html # Calculator tests
+│   └── [15 more test files]
+├── src/                                # TypeScript source files
+│   ├── types/                          # Ordinal type classes
+│   ├── operations/                     # Arithmetic operations
+│   └── conversions/                    # Type conversion system
+├── index.html                          # Main calculator
+├── index-tests.html                    # Test loader
+├── package.json                        # npm configuration
+├── tsconfig.json                       # TypeScript configuration
+├── vite.config.ts                      # Vite build configuration
+├── COMPREHENSIVE_DOCUMENTATION.md      # Complete project documentation
+├── AGENT_DOCUMENTATION.md              # Development best practices
+└── README.md                           # This file
 ```
 
 ## Local Development
 
 ### **Setup**
-    ```bash
-    git clone https://github.com/MeniRosenfeld/TransfiniteOrdinalCalculator.git
-    cd TransfiniteOrdinalCalculator
-    ```
+
+Clone the repository and install dependencies:
+
+```bash
+git clone https://github.com/MeniRosenfeld/TransfiniteOrdinalCalculator.git
+cd TransfiniteOrdinalCalculator
+npm install
+```
 
 ### **Running Locally**
-The calculator works directly by opening `index.html` in a browser, but for full functionality (clipboard API, etc.), use a local server:
 
-    ```bash
+**⚡ Quick Start (For Development):**
+```bash
+npm run dev          # Start dev server → http://localhost:3000
+```
+Changes to `src/` files hot-reload instantly! See `DEVELOPMENT.md` for full workflow guide.
+
+**📦 Other Commands:**
+```bash
+npm run build        # Build production bundle → dist/
+npm run preview      # Preview production build → http://localhost:4173
+```
+
+**Legacy Method (Direct file access):**
+The original `index.html` still works by opening directly in a browser, or via a simple HTTP server:
+
+```bash
 # Using Python 3
 python -m http.server 8000
 
-# Using Node.js (if you have http-server installed)
+# Using Node.js
 npx http-server
 
 # Using PHP
@@ -242,10 +257,27 @@ php -S localhost:8000
 
 Then navigate to `http://localhost:8000`
 
+### **Project Structure**
+
+```
+├── src/                  # ES6 module source code (new system)
+├── dist/                 # Optimized production build (generated)
+├── public/               # Static assets (style.css, images)
+├── tests/                # Test suites
+├── [root .js files]      # Original source files (legacy)
+└── package.json          # npm configuration
+```
+
 ### **Testing**
+
+**New ES6 Module System:**
+*   **Main Test Suite:** Open `tests/ordinal_enf_test_new.html`
+*   **Calculator Tests:** Open `tests/ordinal_calculator_test_new.html`
+
+**Legacy System (for comparison):**
 *   **Main Test Suite:** Open `tests/ordinal_enf_test.html`
 *   **Enhanced Parser Tests:** Open `tests/enhanced_parser_test.html`
-*   **Arithmetic Laws Tests:** Open `tests/arithmetic_laws_test.html` (unified declarative system)
+*   **Arithmetic Laws Tests:** Open `tests/arithmetic_laws_test.html`
 *   **Immutability Tests:** Open `tests/immutability_test.html`
 *   **Conversion Testing:** Open `tests/conversion_debug.html`  
 *   **Architecture Tests:** Open `tests/new_system_smoke_tests.html`
@@ -255,8 +287,18 @@ Then navigate to `http://localhost:8000`
 
 *   **HTML5** with semantic markup
 *   **CSS3** with mathematical typography
-*   **Vanilla JavaScript** (ES2020+ for BigInt support)
+*   **ES6 Modules** with modern JavaScript (ES2020+ for BigInt support)
+*   **[Vite](https://vitejs.dev/)** for development and production builds
+*   **TypeScript** (configured for gradual migration)
 *   **[html2canvas](https://html2canvas.hertzen.com/)** for image export
+
+### **Build System**
+
+The project uses a modern build system with dual compatibility:
+
+*   **Development:** Fast hot-reload with Vite dev server
+*   **Production:** Optimized bundled builds (~118KB minified)
+*   **Legacy Support:** Original script-tag loading still works for backward compatibility
 
 ## Mathematical Background
 
@@ -284,6 +326,34 @@ Ordinal numbers extend natural numbers into the transfinite, representing well-o
 **Validation:** Results validated through comprehensive test suites and comparison with [Claudio Kressibucher's Ordinal Calculator](https://www.transfinite.ch/).
 
 **Learn More:** [The Unabashed Expanse of Ordinal Numbers](https://fieryspinningsword.com/2021/08/20/the-unabashed-expanse-of-ordinal-numbers/) by Meni Rosenfeld
+
+### **Development Workflow**
+
+The project currently maintains two parallel systems during migration:
+
+**New System (src/):**
+- ES6 modules with proper imports/exports
+- Vite for development and building
+- Optimized production bundles
+- Ready for TypeScript migration
+
+**Legacy System (root .js files):**
+- Original script-tag loading
+- Still functional for backward compatibility
+- Used by some test files
+
+**Making Changes:**
+1. Edit files in `src/` directory
+2. Run `npm run dev` to test with hot reload
+3. Run `npm run build` to create production bundle
+4. Test with `npm run preview`
+5. Verify tests pass: open `tests/ordinal_enf_test_new.html`
+
+**Migration Status:** 
+- ✅ Phase 1: Infrastructure setup (complete)
+- ✅ Phase 2: ES6 modules (complete)
+- 🔄 Phase 3: TypeScript migration (in progress)
+- ⏳ Phase 4-6: Advanced TypeScript, optimization (planned)
 
 ## Future Enhancements
 

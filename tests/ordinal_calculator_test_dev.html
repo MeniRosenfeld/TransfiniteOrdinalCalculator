@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Ordinal Calculator Test (DEV MODE - Hot Reload)</title>
+    <meta charset="utf-8">
+    <style>
+        body {
+            font-family: monospace;
+            white-space: pre;
+        }
+
+        .test-case {
+            margin-bottom: 10px;
+            padding: 10px;
+            border-radius: 4px;
+            background-color: white;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+        }
+
+        .status-passed {
+            color: green;
+        }
+
+        .status-failed {
+            color: red;
+            font-weight: bold;
+        }
+
+        summary {
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 1.1em;
+            padding: 10px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Ordinal Calculator Test (DEV MODE - Hot Reload)</h1>
+    <p style="background: #ffffcc; padding: 10px; border: 2px solid #ff9900; border-radius: 4px;">
+        <strong>⚡ DEVELOPMENT MODE</strong><br>
+        This file loads from <code>npm run dev</code> server at <code>http://localhost:3000</code><br>
+        Changes to <code>src/</code> files hot-reload instantly - no rebuild needed!<br>
+        <strong>Make sure</strong> <code>npm run dev</code> is running before opening this file.
+    </p>
+
+    <div id="overall-summary-container">
+        <h2>Overall Test Summary</h2>
+        <div id="overall-status-indicator" class="status-overall-pending">Overall Status: Running tests...</div>
+    </div>
+
+    <div id="test-details-container">
+        <details id="details-CNF" class="test-kind-section" open>
+            <summary>
+                <h2>CNF Tests</h2>
+                <div id="cnf-summary" class="kind-summary">Running...</div>
+            </summary>
+            <div id="cnf-results-output" class="test-results-output"></div>
+        </details>
+        <details id="details-WTOWER" class="test-kind-section">
+            <summary>
+                <h2>WTower Tests</h2>
+                <div id="wtower-summary" class="kind-summary">Running...</div>
+            </summary>
+            <div id="wtower-results-output" class="test-results-output"></div>
+        </details>
+        <details id="details-SIMPLIFY" class="test-kind-section">
+            <summary>
+                <h2>Simplify Tests</h2>
+                <div id="simplify-summary" class="kind-summary">Running...</div>
+            </summary>
+            <div id="simplify-results-output" class="test-results-output"></div>
+        </details>
+        <details id="details-COMPLEXITY" class="test-kind-section">
+            <summary>
+                <h2>Complexity Tests</h2>
+                <div id="complexity-summary" class="kind-summary">Running...</div>
+            </summary>
+            <div id="complexity-results-output" class="test-results-output"></div>
+        </details>
+        <details id="details-INVERSE_MAPPING" class="test-kind-section">
+            <summary>
+                <h2>Inverse Mapping Tests</h2>
+                <div id="inverse-mapping-summary" class="kind-summary">Running...</div>
+            </summary>
+            <div id="inverse-mapping-results-output" class="test-results-output"></div>
+        </details>
+    </div>
+
+    <!-- Load from Vite dev server (hot reload!) -->
+    <script type="module" src="http://localhost:3000/src/main.js"></script>
+
+    <script type="module">
+        // Load test code from original file and execute it
+        const response = await fetch('./ordinal_calculator_test.html');
+        const html = await response.text();
+
+        // Extract the test script section
+        const scriptMatch = html.match(/<script>\s*\/\/ Stats for each test kind([\s\S]*?)<\/script>/);
+        if (scriptMatch) {
+            const testCode = scriptMatch[1];
+            // Wait a moment for modules to initialize
+            await new Promise(resolve => setTimeout(resolve, 300));
+
+            // Verify globals
+            if (typeof OperationTracer === 'undefined') {
+                document.body.innerHTML = '<h1 style="color: red;">ERROR: Module not loaded. Is npm run dev running?</h1>';
+                throw new Error('Module loading failed - make sure npm run dev is running');
+            }
+
+            // Execute test code
+            eval(testCode);
+        }
+    </script>
+</body>
+
+</html>

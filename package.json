@@ -1,0 +1,43 @@
+{
+  "name": "transfiniteordinalcalculator",
+  "version": "1.0.0",
+  "description": "A comprehensive web application for parsing, computing, and visualizing transfinite ordinal numbers up to ζ₀ (zeta-naught). Built with a modular, rule-based architecture supporting multiple ordinal representations including Cantor Normal Form (CNF), Epsilon Normal Form (ENF), omega towers, epsilon towers, epsilon tunnels, and more.",
+  "main": "dist/assets/bundle.js",
+  "module": "src/main.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "build:open": "npm run build && start dist/index.html",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MeniRosenfeld/TransfiniteOrdinalCalculator.git"
+  },
+  "keywords": [
+    "ordinals",
+    "transfinite",
+    "mathematics",
+    "set-theory",
+    "calculator",
+    "cantor-normal-form",
+    "epsilon-normal-form"
+  ],
+  "author": "Meni Rosenfeld",
+  "license": "MIT",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/MeniRosenfeld/TransfiniteOrdinalCalculator/issues"
+  },
+  "homepage": "https://github.com/MeniRosenfeld/TransfiniteOrdinalCalculator#readme",
+  "devDependencies": {
+    "@types/html2canvas": "^0.5.35",
+    "@types/node": "^24.7.2",
+    "typescript": "^5.9.3",
+    "vite": "^7.1.9"
+  }
+}

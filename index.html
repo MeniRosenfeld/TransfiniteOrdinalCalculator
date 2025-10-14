@@ -30,7 +30,7 @@
                 Videos</a>
             <a href="ordinal_calculator_test.html"
                 style="color: #007bff; text-decoration: none; font-weight: bold; margin: 0 10px;">🧪 Test Suite</a>
-            <a href="ordinal_enf_test.html"
+            <a href="tests/ordinal_enf_test.html"
                 style="color: #007bff; text-decoration: none; font-weight: bold; margin: 0 10px;">🧪 ENF Test Suite</a>
         </div>
     </header>
@@ -224,70 +224,15 @@
                 target="_blank" rel="noopener noreferrer">Ordinal Calculator</a> to verify accuracy. There might still
             be mistakes - if you find any, please let me know!
         </p>
-        <!-- You can add more details, like your name/GitHub link if you wish -->
-        <!-- <p>Created by [Your Name/Handle]. Source code available on <a href="[Your GitHub Repo Link]" target="_blank" rel="noopener noreferrer">GitHub</a>.</p> -->
     </div>
 
     <footer>
         <p>Ordinal Arithmetic Calculator</p>
     </footer>
 
-    <!-- New Architecture System (finite ordinals + omega + addition) -->
-    <script src="OperationTracer.js"></script>
-    <script src="RenderingComponents.js"></script>
-    <script src="types/OrdinalBase.js"></script>
-    <script src="types/FiniteOrdinal.js"></script>
-    <script src="types/ZeroOrdinal.js"></script>
-    <script src="types/OneOrdinal.js"></script>
-    <script src="types/OmegaOrdinal.js"></script>
-    <script src="types/CNFOrdinal.js"></script>
-    <script src="types/WTowerOrdinal.js"></script>
-    <script src="types/EpsilonTowerOrdinal.js"></script>
-    <script src="types/EpsilonTunnelOrdinal.js"></script>
-    <script src="types/EpsilonZero.js"></script>
-    <script src="types/EpsilonNumber.js"></script>
-    <script src="types/ENFFactor.js"></script>
-    <script src="types/ENFTerm.js"></script>
-    <script src="types/ENFOrdinal.js"></script>
-    <!-- Conversions and Rule Engine -->
-    <script src="conversions/ConversionRegistry.js"></script>
-    <script src="conversions/ConversionEngine.js"></script>
-    <script src="operations/RuleEngine.js"></script>
-    <script src="operations/AdditionRules.js"></script>
-    <script src="operations/MultiplicationRules.js"></script>
-    <script src="operations/ExponentiationRules.js"></script>
-    <script src="operations/TetrationRules.js"></script>
-    <script src="operations/Auxiliary.js"></script>
-    <script src="operations/Comparison.js"></script>
-    <script src="operations/Operations.js"></script>
-    <script src="operations/Rational.js"></script>
-    <script src="operations/NumericContexts.js"></script>
-    <script src="ordinal_mapping.js"></script>
-    <script src="ordinal_mapping_inverse.js"></script>
-    <script src="SimpleParser.js"></script>
-    <script src="SimpleCalculator.js"></script>
-    <script src="SimpleRenderer.js"></script>
-
-    <!-- New UI Scripts -->
-    <script src="script.js"></script> <!-- Main UI interaction logic -->
-
-    <!-- Initialize global tracer and operations system -->
-    <script>
-        // Initialize global tracer for main calculator
-        OperationTracer.setGlobalTracer(10000000); // 10M operations budget
-        console.log('[GlobalTracer] Main calculator initialized with budget:', OperationTracer.getBudget());
-
-        // Initialize OPERATIONS system immediately for URL parameter support
-        if (typeof OPERATIONS !== 'undefined' && OPERATIONS.initialize) {
-            OPERATIONS.initialize();
-            console.log('[MainCalculator] OPERATIONS system initialized immediately');
-        } else {
-            console.error('[MainCalculator] OPERATIONS not available or missing initialize method');
-        }
-    </script>
+    <!-- Single module script instead of 60+ separate scripts -->
+    <script type="module" src="/src/main.js"></script>
 
 </body>
-
-</html>
 
 </html>
