@@ -348,6 +348,11 @@
             try {
                 OPERATIONS.initialize();
                 console.log('[Test] OPERATIONS initialized');
+                // Also reinitialize the singleton to point to this OPERATIONS instance
+                if (typeof initializeOperations === 'function') {
+                    initializeOperations(OPERATIONS);
+                    console.log('[Test] Operations singleton initialized');
+                }
             } catch (e) {
                 console.error('Failed to initialize OPERATIONS', e);
             }

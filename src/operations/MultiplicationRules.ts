@@ -10,6 +10,7 @@ import { ENFTerm } from '../types/ENFTerm.js';
 import { ENFFactor } from '../types/ENFFactor.js';
 import { FiniteOrdinal } from '../types/FiniteOrdinal.js';
 import { ZetaZero } from '../types/ZetaZero.js';
+import { getOperations } from './OperationsSingleton.js';
 
 
 function multiplyFinite(a: any, b: any): any {
@@ -96,8 +97,7 @@ function multiplyENFTerms(termA: any, termB: any): any {
     // Keep only factors of A where base >= leading base of B
     let foundEqualBase = false;
     for (const factorA of factorsA) {
-        // OPERATIONS available via window global
-        const baseCmp = window.OPERATIONS.compare(factorA.base, leadingBaseB);
+        const baseCmp = getOperations().compare(factorA.base, leadingBaseB);
 
         if (baseCmp > 0) {
             // Base of A > leading base of B: keep this factor

@@ -10,6 +10,7 @@ import { OmegaOrdinal } from './OmegaOrdinal.js';
 import { EpsilonZero } from './EpsilonZero.js';
 import { CNFOrdinal } from './CNFOrdinal.js';
 import { RenderingComponents } from '../RenderingComponents.js';
+import type { SimplifyResult } from '../parser-types.js';
 
 export class WTowerOrdinal extends OrdinalBase {
     readonly height: bigint;
@@ -114,7 +115,7 @@ export class WTowerOrdinal extends OrdinalBase {
         return this.convertTo('CNF');
     }
 
-    simplify(complexityBudget: any, skipMyOwnMPTFCheck = false): any {
+    simplify(complexityBudget: number, skipMyOwnMPTFCheck = false): SimplifyResult {
         OperationTracer.consume();
         const myComplexity = this.complexity();
         if (myComplexity <= complexityBudget) {
@@ -187,7 +188,7 @@ export class WTowerOrdinal extends OrdinalBase {
         return ['CNF'];
     }
 
-    convertTo(targetTypeName: any): any {
+    convertTo(targetTypeName: string): OrdinalBase {
         switch (targetTypeName) {
             case 'CNF': {
                 // height -1 -> 0 ; height 0 -> 1

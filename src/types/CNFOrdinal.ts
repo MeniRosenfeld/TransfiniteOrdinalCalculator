@@ -11,11 +11,16 @@ import { FiniteOrdinal } from './FiniteOrdinal.js';
 import { OmegaOrdinal } from './OmegaOrdinal.js';
 import { EpsilonZero } from './EpsilonZero.js';
 import { RenderingComponents } from '../RenderingComponents.js';
+import type { SimplifyResult } from '../parser-types.js';
+import { getTowerInfo } from '../operations/Auxiliary.js';
 
 export interface CNFTerm {
     exponent: OrdinalBase;
     coefficient: bigint;
 }
+
+// F-format representation types
+export type FFormat = bigint | { type: 'pow'; k: FFormat } | { type: 'sum'; beta: FFormat; c: number; delta: FFormat };
 
 /**
  * Represents an ordinal in Cantor Normal Form (CNF).
@@ -58,7 +63,7 @@ export class CNFOrdinal extends OrdinalBase {
                 OperationTracer.consume(cnf.terms.length || 0);
                 this.terms = cnf.terms.map(t => ({ exponent: t.exponent, coefficient: t.coefficient }));
             } else if (initVal instanceof WTowerOrdinal) {
-                const cnf = initVal.toCNFOrdinal();
+                const cnf = initVal.toCNFOrdinal() as CNFOrdinal;
                 OperationTracer.consume(cnf.terms.length || 0);
                 this.terms = cnf.terms;
             } else {
@@ -201,7 +206,7 @@ export class CNFOrdinal extends OrdinalBase {
     }
 
     // Helper method to check if terms represent a finite ordinal
-    _isFiniteTerms(terms: any) {
+    _isFiniteTerms(terms: Array<{exponent: OrdinalBase, coefficient: bigint}>): boolean {
         return terms.length === 0 || (terms.length === 1 && terms[0].exponent.isZero());
     }
 
@@ -303,12 +308,12 @@ export class CNFOrdinal extends OrdinalBase {
         return total;
     }
 
-    toGraphicalHTML() {
+    toGraphicalHTML(): string {
         if (this.isZero()) {
             return RenderingComponents.renderFinite(0);
         }
 
-        const termHTMLs = this.terms.map(term =>
+        const termHTMLs: string[] = this.terms.map((term): string =>
             RenderingComponents.renderCNFTerm(term.exponent, term.coefficient)
         );
 
@@ -351,7 +356,7 @@ export class CNFOrdinal extends OrdinalBase {
         return new CNFOrdinal(this);
     }
 
-    toFFormat(): any {
+    toFFormat(): FFormat {
         if (this.isZero()) return 0n;
         if (this.isFinite()) return this.getFinitePart();
 
@@ -432,7 +437,7 @@ export class CNFOrdinal extends OrdinalBase {
     }
 
     // Implement simplify method (extracted from existing CNFOrdinal.simplify)
-    simplify(complexityBudget: any, skipMyOwnMPTFCheck = false) {
+    simplify(complexityBudget: number, skipMyOwnMPTFCheck = false): SimplifyResult {
         OperationTracer.consume(); // For the simplify call itself
 
         // --- Top-Level MPT Fallback Check (only if not skipping) ---
@@ -440,28 +445,25 @@ export class CNFOrdinal extends OrdinalBase {
             if (!this.isZero() && !this.isFinite()) { // Only relevant for infinite ordinals
                 const E_this = this.terms[0].exponent; // Consider leading exponent for the MPT structure of 'this'
 
-                // getTowerInfo available via window global
-                if (typeof window !== 'undefined' && window.getTowerInfo) {
-                    const towerInfo_this = window.getTowerInfo(E_this);
-                    let mptStructureOfThis_expPart;
-                    if (E_this.isZero()) {
-                        mptStructureOfThis_expPart = CNFOrdinal.ZEROStatic();
-                    } else {
-                        mptStructureOfThis_expPart = (towerInfo_this as any).mptOrdinalForG;
-                    }
-                    // Check complexity of the exponent's tower structure w^(mpt_of_E_this)
-                    const mptExpTowerStructureOfThis = new CNFOrdinal([{ exponent: mptStructureOfThis_expPart, coefficient: 1n }]);
-                    const g_mptExpTowerStructureOfThis = mptExpTowerStructureOfThis.complexity();
+                const towerInfo_this = getTowerInfo(E_this);
+                let mptStructureOfThis_expPart;
+                if (E_this.isZero()) {
+                    mptStructureOfThis_expPart = CNFOrdinal.ZEROStatic();
+                } else {
+                    mptStructureOfThis_expPart = (towerInfo_this as any).mptOrdinalForG;
+                }
+                // Check complexity of the exponent's tower structure w^(mpt_of_E_this)
+                const mptExpTowerStructureOfThis = new CNFOrdinal([{ exponent: mptStructureOfThis_expPart, coefficient: 1n }]);
+                const g_mptExpTowerStructureOfThis = mptExpTowerStructureOfThis.complexity();
 
-                    const wTowerHeightForThisApprox = 1n + BigInt((towerInfo_this as any).numOmegas || 0);
+                const wTowerHeightForThisApprox = 1n + BigInt((towerInfo_this as any).numOmegas || 0);
 
-                    // If the MPT structure of the leading exponent itself is too costly
-                    if (g_mptExpTowerStructureOfThis > complexityBudget && wTowerHeightForThisApprox >= 0) {
-                        const wTowerApproxOfThis = new WTowerOrdinal(wTowerHeightForThisApprox);
-                        const g_wTowerApproxOfThis = wTowerApproxOfThis.complexity();
-                        if (g_wTowerApproxOfThis <= complexityBudget) {
-                            return { simplifiedOrdinal: wTowerApproxOfThis, remainingBudget: complexityBudget - g_wTowerApproxOfThis };
-                        }
+                // If the MPT structure of the leading exponent itself is too costly
+                if (g_mptExpTowerStructureOfThis > complexityBudget && wTowerHeightForThisApprox >= 0) {
+                    const wTowerApproxOfThis = new WTowerOrdinal(wTowerHeightForThisApprox);
+                    const g_wTowerApproxOfThis = wTowerApproxOfThis.complexity();
+                    if (g_wTowerApproxOfThis <= complexityBudget) {
+                        return { simplifiedOrdinal: wTowerApproxOfThis, remainingBudget: complexityBudget - g_wTowerApproxOfThis };
                     }
                 }
             }
@@ -580,7 +582,7 @@ export class CNFOrdinal extends OrdinalBase {
         }
     }
 
-    _simplifyCNFSingleTermRule(expB: any, coeffM: any, budgetForThisTerm: any, skipMPTFCheckForThisTerm = false, isPartOfSumContext = false) {
+    _simplifyCNFSingleTermRule(expB: OrdinalBase, coeffM: bigint, budgetForThisTerm: number, skipMPTFCheckForThisTerm = false, isPartOfSumContext = false): SimplifyResult {
         OperationTracer.consume();
 
         if (expB.isZero()) {
@@ -596,26 +598,24 @@ export class CNFOrdinal extends OrdinalBase {
 
         if (!skipMPTFCheckForThisTerm) {
             OperationTracer.consume();
-            if (typeof window !== 'undefined' && window.getTowerInfo) {
-                const towerInfo = window.getTowerInfo(expB);
-                const mptExponentPart = (towerInfo as any).mptOrdinalForG;
-                const mptExpTowerStructure = new CNFOrdinal([{ exponent: mptExponentPart, coefficient: 1n }]);
-                const g_mptExpTowerStructure = mptExpTowerStructure.complexity();
-                const wTowerHeightForApproximation = 1n + BigInt((towerInfo as any).numOmegas || 0);
+            const towerInfo = getTowerInfo(expB);
+            const mptExponentPart = (towerInfo as any).mptOrdinalForG;
+            const mptExpTowerStructure = new CNFOrdinal([{ exponent: mptExponentPart, coefficient: 1n }]);
+            const g_mptExpTowerStructure = mptExpTowerStructure.complexity();
+            const wTowerHeightForApproximation = 1n + BigInt((towerInfo as any).numOmegas || 0);
 
-                if (g_mptExpTowerStructure > budgetForThisTerm) {
-                    const zeroOrd = ZeroOrdinal.instance();
-                    const g_zero = zeroOrd.complexity();
-                    if (isPartOfSumContext) {
-                        return { simplifiedOrdinal: zeroOrd, remainingBudget: (g_zero <= budgetForThisTerm) ? budgetForThisTerm - g_zero : 0 };
-                    } else if (wTowerHeightForApproximation >= 0) {
-                        const wTowerApproximation = new WTowerOrdinal(wTowerHeightForApproximation);
-                        const g_wTowerApproximation = wTowerApproximation.complexity();
-                        if (g_wTowerApproximation <= budgetForThisTerm) {
-                            return { simplifiedOrdinal: wTowerApproximation, remainingBudget: budgetForThisTerm - g_wTowerApproximation };
-                        }
-                        return { simplifiedOrdinal: zeroOrd, remainingBudget: (g_zero <= budgetForThisTerm) ? budgetForThisTerm - g_zero : 0 };
+            if (g_mptExpTowerStructure > budgetForThisTerm) {
+                const zeroOrd = ZeroOrdinal.instance();
+                const g_zero = zeroOrd.complexity();
+                if (isPartOfSumContext) {
+                    return { simplifiedOrdinal: zeroOrd, remainingBudget: (g_zero <= budgetForThisTerm) ? budgetForThisTerm - g_zero : 0 };
+                } else if (wTowerHeightForApproximation >= 0) {
+                    const wTowerApproximation = new WTowerOrdinal(wTowerHeightForApproximation);
+                    const g_wTowerApproximation = wTowerApproximation.complexity();
+                    if (g_wTowerApproximation <= budgetForThisTerm) {
+                        return { simplifiedOrdinal: wTowerApproximation, remainingBudget: budgetForThisTerm - g_wTowerApproximation };
                     }
+                    return { simplifiedOrdinal: zeroOrd, remainingBudget: (g_zero <= budgetForThisTerm) ? budgetForThisTerm - g_zero : 0 };
                 }
             }
         }

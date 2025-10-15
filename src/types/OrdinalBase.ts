@@ -2,6 +2,15 @@
 // Base contract that all ordinal types must implement
 
 import { OperationTracer } from '../OperationTracer.js';
+import { getOperations } from '../operations/OperationsSingleton.js';
+import { 
+    createFiniteOrdinal,
+    getZeroOrdinal,
+    getOneOrdinal,
+    createEpsilonNumber,
+    createZetaZero,
+    createEpsilonTunnelOrdinal
+} from './OrdinalFactory.js';
 
 /**
  * Base class defining the contract for all ordinal types.
@@ -93,10 +102,7 @@ export abstract class OrdinalBase {
         }
         if (this.isFinite()) {
             const n = this.getFiniteBigInt();
-            if (typeof window !== 'undefined' && window.FiniteOrdinal) {
-                return new window.FiniteOrdinal(n - 1n);
-            }
-            throw new Error('FiniteOrdinal not available');
+            return createFiniteOrdinal(n - 1n);
         }
         return this;
     }
@@ -105,10 +111,7 @@ export abstract class OrdinalBase {
      * Returns the successor of this ordinal (this + 1).
      */
     successor(): OrdinalBase {
-        if (typeof window !== 'undefined' && window.OneOrdinal && window.OneOrdinal.instance) {
-            return this.add(window.OneOrdinal.instance());
-        }
-        throw new Error('OneOrdinal not available for successor operation');
+        return this.add(getOneOrdinal());
     }
 
     /**
@@ -116,36 +119,24 @@ export abstract class OrdinalBase {
      */
     tunnel(): OrdinalBase {
         if (!this.isFinite()) {
-            if (typeof window !== 'undefined' && window.ZetaZero) {
-                return new window.ZetaZero();
-            }
-            throw new Error('ZetaZero not available');
+            return createZetaZero();
         }
 
         const n = this.getFiniteBigInt();
 
         if (n === 0n) {
-            if (typeof window !== 'undefined' && window.ZeroOrdinal && window.ZeroOrdinal.instance) {
-                return window.ZeroOrdinal.instance();
-            }
-            throw new Error('ZeroOrdinal not available');
+            return getZeroOrdinal();
         }
 
         if (n > 0n && n <= 10n) {
-            if (typeof window !== 'undefined' && window.ZeroOrdinal && window.EpsilonNumber) {
-                let result: OrdinalBase = window.ZeroOrdinal.instance();
-                for (let i = 0n; i < n; i++) {
-                    result = new window.EpsilonNumber(result) as OrdinalBase;
-                }
-                return result;
+            let result: OrdinalBase = getZeroOrdinal();
+            for (let i = 0n; i < n; i++) {
+                result = createEpsilonNumber(result);
             }
-            throw new Error('EpsilonNumber or ZeroOrdinal not available');
+            return result;
         }
 
-        if (typeof window !== 'undefined' && window.EpsilonTunnelOrdinal) {
-            return new window.EpsilonTunnelOrdinal(n);
-        }
-        throw new Error('EpsilonTunnelOrdinal not available');
+        return createEpsilonTunnelOrdinal(n);
     }
 
     /**
@@ -158,45 +149,27 @@ export abstract class OrdinalBase {
     // === ARITHMETIC OPERATIONS ===
 
     equals(other: OrdinalBase): boolean {
-        if (typeof window !== 'undefined' && window.OPERATIONS) {
-            return window.OPERATIONS.compare(this, other) === 0;
-        }
-        throw new Error('Comparison engine not available');
+        return getOperations().compare(this, other) === 0;
     }
 
     compareTo(other: OrdinalBase): number {
-        if (typeof window !== 'undefined' && window.OPERATIONS) {
-            return window.OPERATIONS.compare(this, other);
-        }
-        throw new Error('Comparison engine not available');
+        return getOperations().compare(this, other);
     }
 
     add(other: OrdinalBase): OrdinalBase {
-        if (typeof window !== 'undefined' && window.OPERATIONS) {
-            return window.OPERATIONS.add(this, other);
-        }
-        throw new Error('Addition engine not available');
+        return getOperations().add(this, other);
     }
 
     multiply(other: OrdinalBase): OrdinalBase {
-        if (typeof window !== 'undefined' && window.OPERATIONS) {
-            return window.OPERATIONS.multiply(this, other);
-        }
-        throw new Error('Multiplication engine not available');
+        return getOperations().multiply(this, other);
     }
 
     power(other: OrdinalBase): OrdinalBase {
-        if (typeof window !== 'undefined' && window.OPERATIONS) {
-            return window.OPERATIONS.power(this, other);
-        }
-        throw new Error('Exponentiation engine not available');
+        return getOperations().power(this, other);
     }
 
     tetrate(other: OrdinalBase): OrdinalBase {
-        if (typeof window !== 'undefined' && window.OPERATIONS) {
-            return window.OPERATIONS.tetrate(this, other);
-        }
-        throw new Error('Tetration engine not available');
+        return getOperations().tetrate(this, other);
     }
 
     // === STATIC METHODS ===

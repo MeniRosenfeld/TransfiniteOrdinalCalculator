@@ -8,10 +8,12 @@ import { ZeroOrdinal } from './ZeroOrdinal.js';
 import { OneOrdinal } from './OneOrdinal.js';
 import { FiniteOrdinal } from './FiniteOrdinal.js';
 import { OmegaOrdinal } from './OmegaOrdinal.js';
+import type { SimplifyResult } from '../parser-types.js';
 import { EpsilonZero } from './EpsilonZero.js';
 import { EpsilonNumber } from './EpsilonNumber.js';
 import { CNFOrdinal } from './CNFOrdinal.js';
 import { RenderingComponents } from '../RenderingComponents.js';
+import { getOperations } from '../operations/OperationsSingleton.js';
 
 /**
  * Represents an ordinal in Epsilon Normal Form (ENF).
@@ -160,7 +162,7 @@ export class ENFOrdinal extends OrdinalBase {
         return new ENFOrdinal(limitTerms);
     }
 
-    ordinalDivision(k: any) {
+    ordinalDivision(k: OrdinalBase): {quotient: ENFOrdinal, remainder: ENFOrdinal} {
         // Simplified ordinal division - only works for basic ordinals (ω or ε_k)
         if (k.isZero() || !k.isBasic()) {
             throw new Error("Divisor k must be a non-finite basic ordinal (w or e_k).");
@@ -177,29 +179,26 @@ export class ENFOrdinal extends OrdinalBase {
             }
 
             const leadingFactor = term.factors[0];
-            // OPERATIONS available via window global
-            if (typeof window !== 'undefined' && window.OPERATIONS) {
-                const comparison = window.OPERATIONS.compare(leadingFactor.base, k);
+            const comparison = getOperations().compare(leadingFactor.base, k);
 
-                if (comparison > 0) {
-                    // term.factors[0].base > k: Add term as is to the quotient
-                    quotientTerms.push(term);
-                } else if (comparison === 0) {
-                    // term.factors[0].base = k: Add term to quotient with leftPredecessor applied to leading factor's exponent
-                    let newTermFactors = term.factors.map(t => t.clone());
-                    const newExp = leadingFactor.exponent.leftPredecessor();
-                    if (newExp.isZero()) {
-                        // Remove the leading factor entirely
-                        newTermFactors.shift();
-                    } else {
-                        // Replace the leading factor with updated exponent (readonly)
-                        newTermFactors[0] = new ENFFactor(newTermFactors[0].base, newExp);
-                    }
-                    quotientTerms.push(new ENFTerm(newTermFactors, term.coefficient));
+            if (comparison > 0) {
+                // term.factors[0].base > k: Add term as is to the quotient
+                quotientTerms.push(term);
+            } else if (comparison === 0) {
+                // term.factors[0].base = k: Add term to quotient with leftPredecessor applied to leading factor's exponent
+                let newTermFactors = term.factors.map(t => t.clone());
+                const newExp = leadingFactor.exponent.leftPredecessor();
+                if (newExp.isZero()) {
+                    // Remove the leading factor entirely
+                    newTermFactors.shift();
                 } else {
-                    // term.factors[0].base < k: Add term to remainder
-                    remainderTerms.push(term);
+                    // Replace the leading factor with updated exponent (readonly)
+                    newTermFactors[0] = new ENFFactor(newTermFactors[0].base, newExp);
                 }
+                quotientTerms.push(new ENFTerm(newTermFactors, term.coefficient));
+            } else {
+                // term.factors[0].base < k: Add term to remainder
+                remainderTerms.push(term);
             }
         }
 
@@ -263,7 +262,7 @@ export class ENFOrdinal extends OrdinalBase {
 
     // === STATIC CONSTRUCTORS ===
 
-    static fromCNF(ord: any) {
+    static fromCNF(ord: OrdinalBase): ENFOrdinal {
         if (ord instanceof ENFOrdinal) return ord;
 
         // Handle new arch basic types
@@ -293,17 +292,20 @@ export class ENFOrdinal extends OrdinalBase {
 
         if (!(ord instanceof CNFOrdinal)) {
             // Fallback for types that can convert to CNF
-            if (typeof window !== 'undefined' && window.OPERATIONS && ord && typeof ord.convertTo === 'function' && window.OPERATIONS.canConvert(ord, 'CNF')) {
-                ord = window.OPERATIONS.convert(ord, 'CNF');
+            if (ord && typeof ord.convertTo === 'function' && getOperations().canConvert(ord, 'CNF')) {
+                ord = getOperations().convert(ord, 'CNF') as CNFOrdinal;
             } else {
                 throw new Error("ENFOrdinal.fromCNF: unsupported type " + (ord ? ord.constructor.name : ord));
             }
         }
 
-        if (ord.isZero()) return new ENFOrdinal([]);
+        // TypeScript now knows ord is CNFOrdinal
+        const cnfOrd = ord as CNFOrdinal;
+        
+        if (cnfOrd.isZero()) return new ENFOrdinal([]);
 
         const terms = [];
-        for (const t of ord.terms) {
+        for (const t of cnfOrd.terms) {
             const exp = t.exponent;
             if (exp.isZero()) {
                 // Finite term

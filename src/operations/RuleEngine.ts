@@ -73,7 +73,7 @@ export class RuleEngine {
  * Executes the operation by finding the first matching rule.
  * Rules are tried in the order they were added.
  */
-    execute(a: any, b: any, operationName = 'operation'): any {
+    execute(a: OrdinalBase, b: OrdinalBase, operationName = 'operation'): OrdinalBase | number {
         // Ensure both operands are valid ordinals
         if (!a || !a.isOrdinal || !a.isOrdinal()) {
             throw new Error(`${operationName}: First operand is not a valid ordinal`);

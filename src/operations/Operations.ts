@@ -101,48 +101,48 @@ export class Operations {
     /**
      * Adds two ordinals using rule-based system.
      */
-    add(a: any, b: any): any {
+    add(a: OrdinalBase, b: OrdinalBase): OrdinalBase {
         this.ensureInitialized();
-        return this.additionEngine.execute(a, b, 'addition');
+        return this.additionEngine.execute(a, b, 'addition') as OrdinalBase;
     }
 
     /**
      * Multiplies two ordinals using rule-based system.
      */
-    multiply(a: any, b: any): any {
+    multiply(a: OrdinalBase, b: OrdinalBase): OrdinalBase {
         this.ensureInitialized();
-        return this.multiplicationEngine.execute(a, b, 'multiplication');
+        return this.multiplicationEngine.execute(a, b, 'multiplication') as OrdinalBase;
     }
 
     /**
      * Exponentiates two ordinals using rule-based system.
      */
-    power(a: any, b: any): any {
+    power(a: OrdinalBase, b: OrdinalBase): OrdinalBase {
         this.ensureInitialized();
-        return this.exponentiationEngine.execute(a, b, 'exponentiation');
+        return this.exponentiationEngine.execute(a, b, 'exponentiation') as OrdinalBase;
     }
 
     /**
      * Tetrates two ordinals using rule-based system.
      */
-    tetrate(a: any, b: any): any {
+    tetrate(a: OrdinalBase, b: OrdinalBase): OrdinalBase {
         this.ensureInitialized();
-        return this.tetrationEngine.execute(a, b, 'tetration');
+        return this.tetrationEngine.execute(a, b, 'tetration') as OrdinalBase;
     }
 
     /**
      * Compares two ordinals using rule-based system.
      * Returns -1 (a < b), 0 (a = b), or 1 (a > b).
      */
-    compare(a: any, b: any): number {
+    compare(a: OrdinalBase, b: OrdinalBase): number {
         this.ensureInitialized();
-        return this.comparisonEngine.execute(a, b, 'comparison');
+        return this.comparisonEngine.execute(a, b, 'comparison') as number;
     }
 
     /**
      * Converts an ordinal to the specified target type.
      */
-    convert(ordinal: any, targetTypeName: any): any {
+    convert(ordinal: OrdinalBase, targetTypeName: string): OrdinalBase {
         this.ensureInitialized();
         return this.conversionEngine.convert(ordinal, targetTypeName);
     }
@@ -150,7 +150,7 @@ export class Operations {
     /**
      * Returns true if conversion is possible.
      */
-    canConvert(ordinal: any, targetTypeName: any): boolean {
+    canConvert(ordinal: OrdinalBase, targetTypeName: string): boolean {
         this.ensureInitialized();
         return this.conversionEngine.canConvert(ordinal, targetTypeName);
     }
@@ -179,16 +179,5 @@ export class Operations {
 // Global instance
 export const OPERATIONS = new Operations();
 
-// Auto-initialize when DOM is ready (in browser)
-if (typeof document !== 'undefined') {
-    document.addEventListener('DOMContentLoaded', () => {
-        // Delay initialization to ensure all ordinal types are loaded
-        setTimeout(() => {
-            try {
-                OPERATIONS.initialize();
-            } catch (e) {
-                console.error('[Operations] Failed to initialize:', e);
-            }
-        }, 100);
-    });
-}
+// Note: OPERATIONS is explicitly initialized in main.ts after all types are loaded.
+// Do not auto-initialize here to avoid race conditions.

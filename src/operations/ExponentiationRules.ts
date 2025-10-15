@@ -16,6 +16,7 @@ import { EpsilonNumber } from '../types/EpsilonNumber.js';
 import { WTowerOrdinal } from '../types/WTowerOrdinal.js';
 import { EpsilonTowerOrdinal } from '../types/EpsilonTowerOrdinal.js';
 import { ZetaZero } from '../types/ZetaZero.js';
+import { getOperations } from './OperationsSingleton.js';
 
 function powerFinite(a: any, b: any): any {
     const base = a.getFiniteBigInt();
@@ -177,7 +178,7 @@ function powerENF(a: any, b: any): any {
 
             // If rank(b) > rank(a)=ω, use rank-based decomposition: b = k*X + r, return k^X * ω^r
             const rank_b = b.rank();
-            if (window.OPERATIONS.compare(rank_b, a) > 0) {
+            if (getOperations().compare(rank_b, a) > 0) {
                 const k = rank_b;
                 const { quotient: x, remainder: r } = b.ordinalDivision(k);
                 // Build k^x
@@ -217,7 +218,7 @@ function powerENF(a: any, b: any): any {
             const idx = a.epsilonIndex();
             // If exponent outranks base, decompose by rank(b)
             const rank_b = b.rank();
-            if (window.OPERATIONS.compare(rank_b, a) > 0) {
+            if (getOperations().compare(rank_b, a) > 0) {
                 const k = rank_b;
                 const { quotient: x, remainder: r } = b.ordinalDivision(k);
                 // Build k^x
@@ -247,7 +248,7 @@ function powerENF(a: any, b: any): any {
     const rank_b = b.rank();
 
     // Case A: rank(b) > rank(a)
-    if (window.OPERATIONS.compare(rank_b, rank_a) > 0) {
+    if (getOperations().compare(rank_b, rank_a) > 0) {
         const k = rank_b;
         const { quotient: x, remainder: r } = b.ordinalDivision(k);
         // Build k^x directly: if k = ω, create ω^x; if k=ε_t, create ε_t^x

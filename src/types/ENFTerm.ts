@@ -11,6 +11,7 @@ import { OmegaOrdinal } from './OmegaOrdinal.js';
 import { EpsilonZero } from './EpsilonZero.js';
 import { EpsilonNumber } from './EpsilonNumber.js';
 import { RenderingComponents } from '../RenderingComponents.js';
+import { getOperations } from '../operations/OperationsSingleton.js';
 
 /**
  * Represents a single additive term in an ENF expression.
@@ -86,16 +87,13 @@ export class ENFTerm extends OrdinalBase {
             // Rank(exponent) <= base
             try {
                 const expRank = f.exponent.rank();
-                // OPERATIONS will be available via window global
-                if (typeof window !== 'undefined' && window.OPERATIONS && window.OPERATIONS.compare(expRank, f.base) > 0) return false;
+                if (getOperations().compare(expRank, f.base) > 0) return false;
             } catch (_) { return false; }
             // Strictly descending by base
             if (i + 1 < this.factors.length) {
                 const next = this.factors[i + 1];
-                if (typeof window !== 'undefined' && window.OPERATIONS) {
-                    const baseCmp = window.OPERATIONS.compare(f.base, next.base);
-                    if (!(baseCmp > 0)) return false;
-                }
+                const baseCmp = getOperations().compare(f.base, next.base);
+                if (!(baseCmp > 0)) return false;
             }
         }
         return true;
@@ -187,24 +185,20 @@ export class ENFTerm extends OrdinalBase {
             const logResult = currentTerm.factors[0].exponent;
 
             // Stop when we reach a base smaller than the original base
-            if (typeof window !== 'undefined' && window.OPERATIONS) {
-                if (logResult.isFinite() || window.OPERATIONS.compare(logResult, originalBase) < 0) {
+            if (logResult.isFinite() || getOperations().compare(logResult, originalBase) < 0) {
+                break;
+            } else if (logResult instanceof ENFTerm) {
+                currentTerm = logResult as this;
+            } else if (logResult instanceof ENFOrdinal) {
+                // If log returns an ENFOrdinal, get its leading term
+                if (logResult.isZero()) {
                     break;
-                } else if (logResult instanceof ENFTerm) {
-                    currentTerm = logResult as this;
-                } else if (logResult instanceof ENFOrdinal) {
-                    // If log returns an ENFOrdinal, get its leading term
-                    if (logResult.isZero()) {
-                        break;
-                    } else {
-                        currentTerm = logResult.terms[0] as this;
-                    }
                 } else {
-                    // For other types, delegate to their logStar implementation
-                    return BigInt(count) + logResult.logStar();
+                    currentTerm = logResult.terms[0] as this;
                 }
             } else {
-                break;
+                // For other types, delegate to their logStar implementation
+                return BigInt(count) + logResult.logStar();
             }
 
             // Safety break
@@ -285,7 +279,7 @@ export class ENFTerm extends OrdinalBase {
      * Structural comparison ignoring coefficient.
      * Returns 1 if this > other, 0 if equal structure, -1 if less.
      */
-    compareStructureTo(other: any) {
+    compareStructureTo(other: ENFTerm): number {
         if (!(other instanceof ENFTerm)) throw new Error('compareStructureTo expects ENFTerm');
         const aFactors = this.factors;
         const bFactors = other.factors;
@@ -302,13 +296,11 @@ export class ENFTerm extends OrdinalBase {
             const af = aFactors[i];
             const bf = bFactors[i];
             // Compare bases (both basic)
-            if (typeof window !== 'undefined' && window.OPERATIONS) {
-                const baseCmp = window.OPERATIONS.compare(af.base, bf.base);
-                if (baseCmp !== 0) return baseCmp;
-                // Compare exponents (ordinals)
-                const expCmp = window.OPERATIONS.compare(af.exponent, bf.exponent);
-                if (expCmp !== 0) return expCmp;
-            }
+            const baseCmp = getOperations().compare(af.base, bf.base);
+            if (baseCmp !== 0) return baseCmp;
+            // Compare exponents (ordinals)
+            const expCmp = getOperations().compare(af.exponent, bf.exponent);
+            if (expCmp !== 0) return expCmp;
         }
         // Longer factor list is considered greater
         if (aFactors.length > bFactors.length) return 1;
@@ -319,7 +311,7 @@ export class ENFTerm extends OrdinalBase {
     /**
      * Full term comparison including coefficient when structures match.
      */
-    compareTermTo(other: any) {
+    compareTermTo(other: ENFTerm): number {
         const structCmp = this.compareStructureTo(other);
         if (structCmp !== 0) return structCmp;
         // Same structure; compare coefficients
@@ -331,7 +323,7 @@ export class ENFTerm extends OrdinalBase {
     }
 
     // Backward-compat alias used by comparison rules
-    compareTo(other: any) { return this.compareTermTo(other); }
+    compareTo(other: ENFTerm): number { return this.compareTermTo(other); }
 
     // === CONVERSION SYSTEM ===
     static getTypeName() { return 'ENFTerm'; }

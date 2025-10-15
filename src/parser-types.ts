@@ -111,3 +111,8 @@ export function isVariable(result: ParseResult): result is Variable {
     return result && typeof result === 'object' && (result as any).type === 'variable';
 }
 
+// Simplify result type
+export interface SimplifyResult {
+    simplifiedOrdinal: OrdinalBase;
+    remainingBudget: number;
+}

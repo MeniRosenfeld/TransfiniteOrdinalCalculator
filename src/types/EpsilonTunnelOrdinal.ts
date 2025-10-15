@@ -11,6 +11,8 @@ import { EpsilonZero } from './EpsilonZero.js';
 import { EpsilonNumber } from './EpsilonNumber.js';
 import { ENFOrdinal } from './ENFOrdinal.js';
 import { RenderingComponents } from '../RenderingComponents.js';
+import type { SimplifyResult } from '../parser-types.js';
+import { getOperations } from '../operations/OperationsSingleton.js';
 
 export class EpsilonTunnelOrdinal extends OrdinalBase {
     readonly depth: bigint;
@@ -116,7 +118,7 @@ export class EpsilonTunnelOrdinal extends OrdinalBase {
         return result;
     }
 
-    simplify(complexityBudget: any, skipMyOwnMPTFCheck = false) {
+    simplify(complexityBudget: number, skipMyOwnMPTFCheck = false): SimplifyResult {
         OperationTracer.consume();
         const myComplexity = this.complexity();
         if (myComplexity <= complexityBudget) {
@@ -173,7 +175,7 @@ export class EpsilonTunnelOrdinal extends OrdinalBase {
         return ['ENF'];
     }
 
-    convertTo(targetTypeName: any) {
+    convertTo(targetTypeName: string): OrdinalBase {
         switch (targetTypeName) {
             case 'ENF': {
                 if (this.depth === 0n) {
@@ -183,19 +185,14 @@ export class EpsilonTunnelOrdinal extends OrdinalBase {
                 // Convert to the expanded epsilon number structure
                 const expanded = this.expand();
                 // Use the conversion engine to find a path to ENF
-                if (typeof window !== 'undefined' && window.OPERATIONS && window.OPERATIONS.conversionEngine) {
-                    return window.OPERATIONS.conversionEngine.convert(expanded, 'ENF');
-                } else {
-                    // Fallback: try direct conversion
-                    return expanded.convertTo('ENF');
-                }
+                return getOperations().conversionEngine.convert(expanded, 'ENF');
             }
             default:
                 throw new Error(`EpsilonTunnelOrdinal cannot convert directly to ${targetTypeName}`);
         }
     }
 
-    nextRank() {
+    nextRank(): OrdinalBase {
         if (this.depth === 0n) {
             return OneOrdinal.instance();
         }

@@ -5,6 +5,7 @@ import { OperationTracer } from '../OperationTracer.js';
 import { Rule } from './RuleEngine.js';
 import type { ConversionEngine } from '../conversions/ConversionEngine.js';
 import { ZetaZero } from '../types/ZetaZero.js';
+import { getOperations } from './OperationsSingleton.js';
 
 // Comparison-specific implementations
 function compareCNF(a: any, b: any): number {
@@ -101,13 +102,13 @@ export function createComparisonRules(conversionEngine: ConversionEngine): Rule[
                 (a.isEpsilonNumber() && b.isEpsilonNumber())
             ),
             (a, b) => {
-                return window.OPERATIONS.compare(a.epsilonIndex(), b.epsilonIndex());
+                return getOperations().compare(a.epsilonIndex(), b.epsilonIndex());
             }
         ),
 
         new Rule("Different rank",
-            (a, b) => window.OPERATIONS.compare(a.rank(), b.rank()) != 0,
-            (a, b) => window.OPERATIONS.compare(a.rank(), b.rank())
+            (a, b) => getOperations().compare(a.rank(), b.rank()) != 0,
+            (a, b) => getOperations().compare(a.rank(), b.rank())
         ),
 
         new Rule("Different log*",

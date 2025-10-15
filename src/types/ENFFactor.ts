@@ -2,8 +2,8 @@
 // Helper class representing a factor a^b in an ENF term.
 
 import type { OrdinalBase } from './OrdinalBase.js';
-import type { OmegaOrdinal } from './OmegaOrdinal.js';
-import type { EpsilonNumber } from './EpsilonNumber.js';
+import { OmegaOrdinal } from './OmegaOrdinal.js';
+import { EpsilonNumber } from './EpsilonNumber.js';
 import { RenderingComponents } from '../RenderingComponents.js';
 
 /**
@@ -25,9 +25,9 @@ export class ENFFactor {
         }
         this.exponent = exponent;
         if (base.isOmega()) {
-            this.base = new (window as any).OmegaOrdinal();
+            this.base = new OmegaOrdinal();
         } else if (base.isEpsilonNumber()) {
-            this.base = new (window as any).EpsilonNumber(base.epsilonIndex());
+            this.base = new EpsilonNumber(base.epsilonIndex());
         } else {
             throw new Error("ENFFactor base must be omega or an Epsilon Number.");
         }

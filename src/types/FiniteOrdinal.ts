@@ -3,11 +3,11 @@
 
 import { OrdinalBase } from './OrdinalBase.js';
 import { OperationTracer } from '../OperationTracer.js';
-import type { ZeroOrdinal } from './ZeroOrdinal.js';
-import type { OneOrdinal } from './OneOrdinal.js';
-import type { OmegaOrdinal } from './OmegaOrdinal.js';
+import { ZeroOrdinal } from './ZeroOrdinal.js';
+import { OneOrdinal } from './OneOrdinal.js';
+import { OmegaOrdinal } from './OmegaOrdinal.js';
 import { RenderingComponents } from '../RenderingComponents.js';
-import type { CNFOrdinal } from './CNFOrdinal.js';
+import { CNFOrdinal } from './CNFOrdinal.js';
 
 /**
  * Represents a finite ordinal number.
@@ -59,7 +59,7 @@ export class FiniteOrdinal extends OrdinalBase {
         if (this.isZero()) {
             throw new Error('Log of 0 is undefined.');
         }
-        return (window as any).ZeroOrdinal.instance();
+        return ZeroOrdinal.instance();
     }
 
     logStar(): bigint {
@@ -81,9 +81,9 @@ export class FiniteOrdinal extends OrdinalBase {
 
     nextRank(): OrdinalBase {
         if (this.isZero()) {
-            return (window as any).OneOrdinal.instance();
+            return OneOrdinal.instance();
         }
-        return new (window as any).OmegaOrdinal();
+        return new OmegaOrdinal();
     }
 
     complexity(): number {
@@ -117,7 +117,7 @@ export class FiniteOrdinal extends OrdinalBase {
             };
         }
 
-        const zero = (window as any).ZeroOrdinal.instance();
+        const zero = ZeroOrdinal.instance();
         const zeroComplexity = zero.complexity();
         if (zeroComplexity <= complexityBudget) {
             return {
@@ -147,7 +147,7 @@ export class FiniteOrdinal extends OrdinalBase {
         switch (targetTypeName) {
             case 'CNF':
                 // Finite n as CNF is just n (ω^0 * n)
-                return new (window as any).CNFOrdinal(this.value);
+                return new CNFOrdinal(this.value);
             default:
                 throw new Error(`FiniteOrdinal cannot convert directly to ${targetTypeName}`);
         }

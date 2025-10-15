@@ -1602,7 +1602,12 @@
         // Ensure operations initialized before running tests
         (function ensureOpsInit() {
             if (window.OPERATIONS) {
-                try { OPERATIONS.initialize(); } catch (e) { console.error(e); }
+                try { 
+                    OPERATIONS.initialize();
+                    if (typeof initializeOperations === 'function') {
+                        initializeOperations(OPERATIONS);
+                    }
+                } catch (e) { console.error(e); }
             }
         })();
 
@@ -1645,6 +1650,11 @@
         if (typeof OPERATIONS !== 'undefined' && OPERATIONS.initialize) {
             OPERATIONS.initialize();
             console.log('[CalculatorTest] OPERATIONS system initialized immediately');
+            // Also reinitialize the singleton to point to this OPERATIONS instance
+            if (typeof initializeOperations === 'function') {
+                initializeOperations(OPERATIONS);
+                console.log('[CalculatorTest] Operations singleton initialized');
+            }
         } else {
             console.error('[CalculatorTest] OPERATIONS not available or missing initialize method');
         }

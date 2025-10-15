@@ -1,5 +1,21 @@
 // globals.d.ts
 // TypeScript declarations for browser globals
+//
+// NOTE: These window globals are maintained for BACKWARD COMPATIBILITY ONLY.
+// New code should use ES6 imports instead:
+//
+// Modern approach (recommended):
+//   import { getOperations } from './operations/OperationsSingleton.js';
+//   import { CNFOrdinal } from './types/CNFOrdinal.js';
+//
+// Legacy approach (deprecated for new code):
+//   window.OPERATIONS
+//   window.CNFOrdinal
+//
+// The window globals will continue to work indefinitely for:
+// - Test files
+// - Browser console debugging
+// - External code that depends on them
 
 import type { OperationTracer } from './OperationTracer';
 import type { OrdinalBase } from './types/OrdinalBase';
@@ -54,8 +70,10 @@ declare global {
         RuleEngine: typeof RuleEngine;
         
         // Operations system
+        // DEPRECATED: Use getOperations() from './operations/OperationsSingleton.js' instead
         Operations: typeof Operations;
         OPERATIONS: Operations;
+        initializeOperations: (operations: Operations) => void;
         
         // Operation rule creators
         createAdditionRules: (conversionEngine: ConversionEngine) => Rule[];
@@ -87,6 +105,7 @@ declare global {
         convertFFormatToOrdinalInstance: any;
         
         // Helper functions
+        // DEPRECATED: Import getTowerInfo from './operations/Auxiliary.js' instead
         getTowerInfo?: (exponent: OrdinalBase) => TowerInfo;
     }
 }

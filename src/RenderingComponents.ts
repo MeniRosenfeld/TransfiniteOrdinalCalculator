@@ -2,6 +2,7 @@
 // Shared rendering components for all ordinal types
 
 import type { OrdinalBase } from './types/OrdinalBase.js';
+import { CNFOrdinal } from './types/CNFOrdinal.js';
 
 /**
  * Shared rendering functions that all ordinal types can use.
@@ -147,7 +148,7 @@ export class RenderingComponents {
     /**
      * Renders a CNF term (ω^a*c).
      */
-    static renderCNFTerm(exponent: any, coefficient: any) {
+    static renderCNFTerm(exponent: OrdinalBase, coefficient: bigint): string {
         const parts = [];
 
         if (exponent.isZero()) {
@@ -156,8 +157,8 @@ export class RenderingComponents {
         }
 
         // Check if exponent equals 1 
-        if (exponent.constructor.name === 'CNFOrdinal' && exponent.equals && typeof window !== 'undefined' && window.CNFOrdinal && window.CNFOrdinal.ONEStatic) {
-            const one = window.CNFOrdinal.ONEStatic();
+        if (exponent instanceof CNFOrdinal && exponent.equals) {
+            const one = CNFOrdinal.ONEStatic();
             if (exponent.equals(one)) {
                 // ω^1 = ω
                 parts.push(RenderingComponents.renderOmega());

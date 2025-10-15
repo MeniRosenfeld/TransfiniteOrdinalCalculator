@@ -12,6 +12,7 @@ import { ENFOrdinal } from './ENFOrdinal.js';
 import { ENFTerm } from './ENFTerm.js';
 import { ENFFactor } from './ENFFactor.js';
 import { RenderingComponents } from '../RenderingComponents.js';
+import type { SimplifyResult } from '../parser-types.js';
 
 export class EpsilonTowerOrdinal extends OrdinalBase {
     readonly baseIndex: OrdinalBase;
@@ -135,7 +136,7 @@ export class EpsilonTowerOrdinal extends OrdinalBase {
         return this.convertTo('ENF');
     }
 
-    simplify(complexityBudget: any, skipMyOwnMPTFCheck = false) {
+    simplify(complexityBudget: number, skipMyOwnMPTFCheck = false): SimplifyResult {
         OperationTracer.consume();
         const myComplexity = this.complexity();
         if (myComplexity <= complexityBudget) {

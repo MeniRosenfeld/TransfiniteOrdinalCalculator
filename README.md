@@ -162,6 +162,15 @@ parse[toString[a]]/.{a:=5}  → 5 (nested functions)
 *   **Efficient algorithms**: Optimized implementations for common operations
 *   **Caching**: Results cached where appropriate to avoid recomputation
 
+### **Modern Architecture (TypeScript + ES6 Modules)**
+*   **TypeScript migration**: Full type safety with strict mode enabled
+*   **ES6 modules**: Proper dependency management and imports
+*   **No window dependencies**: Internal code uses modern imports (see `WINDOW_DEPENDENCIES_REMOVED.md`)
+*   **Factory pattern**: Circular dependency resolution via `OrdinalFactory`
+*   **Singleton pattern**: Operations accessible via `getOperations()` from `OperationsSingleton`
+*   **Backward compatible**: Window globals maintained for test files and console debugging
+*   **Migration guide**: See `MIGRATION_GUIDE.md` for upgrading existing code
+
 ## File Structure
 
 ```

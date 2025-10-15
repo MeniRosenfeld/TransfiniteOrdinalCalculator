@@ -38,6 +38,8 @@ import { createExponentiationRules } from './operations/ExponentiationRules.js';
 import { createTetrationRules } from './operations/TetrationRules.js';
 import { createComparisonRules } from './operations/Comparison.js';
 import { Operations, OPERATIONS } from './operations/Operations.js';
+import { initializeOperations } from './operations/OperationsSingleton.js';
+import { initializeOrdinalFactory } from './types/OrdinalFactory.js';
 
 // Parser and calculator
 import { SimpleParser } from './SimpleParser.js';
@@ -51,8 +53,23 @@ import { fInverse, convertFFormatToOrdinalInstance } from './ordinal_mapping_inv
 // UI
 import { initializeUI } from './script.js';
 
-// Make key classes and functions globally available for backward compatibility
-// This allows the existing test files to continue working
+// =============================================================================
+// WINDOW EXPORTS - BACKWARD COMPATIBILITY
+// =============================================================================
+// These window exports are maintained for backward compatibility with:
+// - Test files that rely on window globals
+// - Browser console debugging
+// - External code that depends on these globals
+//
+// NEW CODE SHOULD USE ES6 IMPORTS INSTEAD:
+//   import { getOperations } from './operations/OperationsSingleton.js';
+//   import { CNFOrdinal } from './types/CNFOrdinal.js';
+//
+// See MIGRATION_GUIDE.md for migration instructions.
+//
+// Note: These exports are safe to keep indefinitely. There's no plan to remove them.
+// =============================================================================
+
 window.OperationTracer = OperationTracer;
 window.OrdinalBase = OrdinalBase;
 window.ZeroOrdinal = ZeroOrdinal;
@@ -84,6 +101,7 @@ window.createTetrationRules = createTetrationRules;
 window.createComparisonRules = createComparisonRules;
 window.Operations = Operations;
 window.OPERATIONS = OPERATIONS;
+window.initializeOperations = initializeOperations;
 window.SimpleParser = SimpleParser;
 window.calculateSimple = calculateSimple;
 window.renderOrdinalSimple = renderOrdinalSimple;
@@ -98,14 +116,64 @@ window.f = f;
 window.fInverse = fInverse;
 window.convertFFormatToOrdinalInstance = convertFFormatToOrdinalInstance;
 
+// =============================================================================
+// OPTIONAL DEPRECATION WARNINGS
+// =============================================================================
+// Uncomment to show deprecation warnings when window globals are accessed.
+// Useful for identifying code that should be migrated to ES6 imports.
+// 
+// WARNING: This will spam the console in test files!
+// Only enable during active migration efforts.
+// =============================================================================
+
+// const ENABLE_DEPRECATION_WARNINGS = false;
+//
+// if (ENABLE_DEPRECATION_WARNINGS) {
+//     const deprecatedGlobals = ['OPERATIONS', 'getTowerInfo'];
+//     
+//     deprecatedGlobals.forEach(name => {
+//         if (name in window) {
+//             const original = (window as any)[name];
+//             Object.defineProperty(window, name, {
+//                 get() {
+//                     console.warn(
+//                         `[DEPRECATED] window.${name} is deprecated. ` +
+//                         `Use ES6 imports instead. See MIGRATION_GUIDE.md`
+//                     );
+//                     return original;
+//                 },
+//                 configurable: true
+//             });
+//         }
+//     });
+//     console.log('[Main] Deprecation warnings enabled');
+// }
+
+// =============================================================================
+
 // Initialize global tracer
 OperationTracer.setGlobalTracer(10000000); // 10M operations budget
 console.log('[GlobalTracer] Main initialized with budget:', OperationTracer.getBudget());
+
+// Initialize OrdinalFactory to avoid circular dependencies
+initializeOrdinalFactory({
+    FiniteOrdinal,
+    ZeroOrdinal,
+    OneOrdinal,
+    EpsilonNumber,
+    ZetaZero,
+    EpsilonTunnelOrdinal
+});
+console.log('[Main] OrdinalFactory initialized');
 
 // Initialize OPERATIONS system
 if (OPERATIONS && OPERATIONS.initialize) {
     OPERATIONS.initialize();
     console.log('[Main] OPERATIONS system initialized immediately');
+    
+    // Initialize the modern singleton pattern
+    initializeOperations(OPERATIONS);
+    console.log('[Main] Operations singleton initialized');
 } else {
     console.error('[Main] OPERATIONS not available or missing initialize method');
 }
