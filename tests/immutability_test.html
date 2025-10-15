@@ -172,49 +172,42 @@
         </div>
     </div>
 
-    <!-- Load all ordinal system scripts -->
-    <script src="../OperationTracer.js"></script>
-    <script src="../RenderingComponents.js"></script>
-    <script src="../types/OrdinalBase.js"></script>
-    <script src="../types/FiniteOrdinal.js"></script>
-    <script src="../types/ZeroOrdinal.js"></script>
-    <script src="../types/OneOrdinal.js"></script>
-    <script src="../types/OmegaOrdinal.js"></script>
-    <script src="../types/CNFOrdinal.js"></script>
-    <script src="../types/WTowerOrdinal.js"></script>
-    <script src="../types/EpsilonTowerOrdinal.js"></script>
-    <script src="../types/EpsilonTunnelOrdinal.js"></script>
-    <script src="../types/EpsilonZero.js"></script>
-    <script src="../types/EpsilonNumber.js"></script>
-    <script src="../types/ENFFactor.js"></script>
-    <script src="../types/ENFTerm.js"></script>
-    <script src="../types/ENFOrdinal.js"></script>
-    <script src="../conversions/ConversionRegistry.js"></script>
-    <script src="../conversions/ConversionEngine.js"></script>
-    <script src="../operations/RuleEngine.js"></script>
-    <script src="../operations/AdditionRules.js"></script>
-    <script src="../operations/MultiplicationRules.js"></script>
-    <script src="../operations/ExponentiationRules.js"></script>
-    <script src="../operations/TetrationRules.js"></script>
-    <script src="../operations/Auxiliary.js"></script>
-    <script src="../operations/Comparison.js"></script>
-    <script src="../operations/Operations.js"></script>
-    <script src="../operations/Rational.js"></script>
-    <script src="../operations/NumericContexts.js"></script>
-    <script src="../SimpleParser.js"></script>
-    <script src="../SimpleCalculator.js"></script>
+    <!-- Load ES6 Module Bundle (exports everything to window globals) -->
+    <script type="module" src="/src/main.js"></script>
 
-    <script>
+    <script type="module">
+        // Wait for module to finish loading and exporting to window
+        await new Promise(resolve => setTimeout(resolve, 200));
+
+        // Verify globals are available
+        if (typeof OperationTracer === 'undefined' || typeof OPERATIONS === 'undefined' || typeof SimpleParser === 'undefined') {
+            document.body.innerHTML = '<h1 style="color: red;">ERROR: Module not loaded. Required globals missing!</h1>' +
+                '<p>OperationTracer: ' + typeof OperationTracer + '</p>' +
+                '<p>OPERATIONS: ' + typeof OPERATIONS + '</p>' +
+                '<p>SimpleParser: ' + typeof SimpleParser + '</p>';
+            throw new Error('Module loading failed');
+        }
+
+        console.log('[Test] Module loaded successfully, starting Immutability tests...');
+
+        // Initialize the new operations system
+        if (window.OPERATIONS) {
+            try {
+                OPERATIONS.initialize();
+                console.log('[Test] OPERATIONS initialized');
+                // Also reinitialize the singleton to point to this OPERATIONS instance
+                if (typeof initializeOperations === 'function') {
+                    initializeOperations(OPERATIONS);
+                    console.log('[Test] Operations singleton initialized');
+                }
+            } catch (e) {
+                console.error('Failed to initialize OPERATIONS', e);
+            }
+        }
+
         // Initialize global tracer
         OperationTracer.setGlobalTracer(1000000); // 1M operations budget
-
-        // Initialize OPERATIONS system immediately
-        if (typeof OPERATIONS !== 'undefined' && OPERATIONS.initialize) {
-            OPERATIONS.initialize();
-            console.log('[ImmutabilityTest] OPERATIONS system initialized immediately');
-        } else {
-            console.error('[ImmutabilityTest] OPERATIONS not available or missing initialize method');
-        }
+        console.log('[GlobalTracer] Immutability test suite initialized with budget:', OperationTracer.getBudget());
 
         // Import mutability array from ordinal_enf_expected_results.js
         const mutabilityArray = [
@@ -603,11 +596,13 @@
             }
         }
 
-        // Start the test when the page loads
-        document.addEventListener('DOMContentLoaded', () => {
-            const tester = new ImmutabilityTester();
-            tester.runTest();
-        });
+        // Start the test automatically
+        // Wait a bit to ensure all initialization is complete
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        console.log('[Test] Starting ImmutabilityTester...');
+        const tester = new ImmutabilityTester();
+        tester.runTest();
     </script>
 </body>
 

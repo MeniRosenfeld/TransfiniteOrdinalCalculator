@@ -2,6 +2,8 @@
 
 This document provides practical development guidance and lessons learned for working with the Transfinite Ordinal Calculator. It supplements the main `COMPREHENSIVE_DOCUMENTATION.md` with implementation-specific tips and common pitfalls.
 
+**Important**: Whenever you encounter a bug or a difficult-to-solve problem, add documentation (Either in the relevant code file or in the documentation files) that will help handling such problems in the future.
+
 **Note**: For complete project documentation, architecture overview, and mathematical background, see `COMPREHENSIVE_DOCUMENTATION.md`.
 
 ---

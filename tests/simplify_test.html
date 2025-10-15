@@ -346,23 +346,35 @@
 
     </div>
 
-    <!-- Load Ordinal Scripts (ensure paths are correct) -->
-    <script src="ordinal_types.js"></script>
-    <script src="ordinal_comparison.js"></script>
-    <script src="ordinal_auxiliary_ops.js"></script>
-    <script src="ordinal_addition.js"></script>
-    <script src="ordinal_multiplication.js"></script>
-    <script src="ordinal_exponentiation.js"></script>
-    <script src="ordinal_tetration.js"></script>
-    <script src="ordinal_parser.js"></script>
-    <script src="ordinal_calculator.js"></script>
-    <!-- For mapped values -->
-    <script src="ordinal_mapping.js"></script> <!-- Defines f() -->
-    <script src="ordinal_mapping_inverse.js"></script> <!-- Defines fInverse() -->
-    <!-- For convertOrdinalInstanceToFFormat -->
-    <script src="script.js"></script> <!-- Defines convertOrdinalInstanceToFFormat() -->
+    <!-- Load ES6 Module Bundle (exports everything to window globals) -->
+    <script type="module" src="/src/main.js"></script>
 
-    <script>
+    <script type="module">
+        // Wait for module to finish loading and exporting to window
+        await new Promise(resolve => setTimeout(resolve, 200));
+
+        // Verify globals are available
+        if (typeof SimpleParser === 'undefined' || typeof OPERATIONS === 'undefined') {
+            document.body.innerHTML = '<h1 style="color: red;">ERROR: Module not loaded. Required globals missing!</h1>' +
+                '<p>SimpleParser: ' + typeof SimpleParser + '</p>' +
+                '<p>OPERATIONS: ' + typeof OPERATIONS + '</p>';
+            throw new Error('Module loading failed');
+        }
+
+        console.log('[Test] Module loaded successfully, starting simplify tests...');
+
+        // Initialize the operations system
+        if (window.OPERATIONS) {
+            try {
+                if (typeof initializeOperations === 'function') {
+                    initializeOperations(OPERATIONS);
+                    console.log('[Test] Operations singleton initialized');
+                }
+            } catch (e) {
+                console.error('Failed to initialize OPERATIONS', e);
+            }
+        }
+
         // Stats for each test kind
         const testStats = {
             SIMPLIFY: { total: 0, passed: 0, failed: 0, containerId: 'simplify-results-output', previewId: 'simplify-failed-preview', summaryId: 'simplify-summary', results: [] },

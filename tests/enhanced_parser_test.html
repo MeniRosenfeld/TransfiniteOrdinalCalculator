@@ -162,33 +162,44 @@
         </div>
     </div>
 
-    <!-- Load required files in same order as working ENF test -->
-    <script src="../OperationTracer.js"></script>
-    <script src="../types/OrdinalBase.js"></script>
-    <script src="../types/FiniteOrdinal.js"></script>
-    <script src="../types/ZeroOrdinal.js"></script>
-    <script src="../types/OneOrdinal.js"></script>
-    <script src="../types/OmegaOrdinal.js"></script>
-    <script src="../types/CNFOrdinal.js"></script>
-    <script src="../types/WTowerOrdinal.js"></script>
-    <script src="../types/EpsilonTowerOrdinal.js"></script>
-    <script src="../types/EpsilonTunnelOrdinal.js"></script>
-    <script src="../types/EpsilonZero.js"></script>
-    <script src="../types/EpsilonNumber.js"></script>
-    <script src="../types/ZetaZero.js"></script>
-    <script src="../types/ENFFactor.js"></script>
-    <script src="../types/ENFTerm.js"></script>
-    <script src="../types/ENFOrdinal.js"></script>
-    <script src="../conversions/ConversionRegistry.js"></script>
-    <script src="../conversions/ConversionEngine.js"></script>
-    <script src="../operations/RuleEngine.js"></script>
-    <script src="../operations/AdditionRules.js"></script>
-    <script src="../operations/MultiplicationRules.js"></script>
-    <script src="../operations/ExponentiationRules.js"></script>
-    <script src="../operations/TetrationRules.js"></script>
-    <script src="../operations/Comparison.js"></script>
-    <script src="../operations/Operations.js"></script>
-    <script src="../SimpleParser.js"></script>
+    <!-- Load ES6 Module Bundle (exports everything to window globals) -->
+    <script type="module" src="/src/main.js"></script>
+
+    <script type="module">
+        // Wait for module to finish loading and exporting to window
+        await new Promise(resolve => setTimeout(resolve, 200));
+
+        // Verify globals are available
+        if (typeof OperationTracer === 'undefined' || typeof OPERATIONS === 'undefined' || typeof SimpleParser === 'undefined') {
+            document.body.innerHTML = '<h1 style="color: red;">ERROR: Module not loaded. Required globals missing!</h1>' +
+                '<p>OperationTracer: ' + typeof OperationTracer + '</p>' +
+                '<p>OPERATIONS: ' + typeof OPERATIONS + '</p>' +
+                '<p>SimpleParser: ' + typeof SimpleParser + '</p>';
+            throw new Error('Module loading failed');
+        }
+
+        console.log('[Test] Module loaded successfully, starting Enhanced Parser tests...');
+
+        // Initialize the new operations system
+        if (window.OPERATIONS) {
+            try {
+                OPERATIONS.initialize();
+                console.log('[Test] OPERATIONS initialized');
+                // Also reinitialize the singleton to point to this OPERATIONS instance
+                if (typeof initializeOperations === 'function') {
+                    initializeOperations(OPERATIONS);
+                    console.log('[Test] Operations singleton initialized');
+                }
+            } catch (e) {
+                console.error('Failed to initialize OPERATIONS', e);
+            }
+        }
+
+        // Initialize global tracer
+        OperationTracer.setGlobalTracer(100000); // 100K operations budget
+        console.log('[GlobalTracer] Enhanced Parser test suite initialized with budget:', OperationTracer.getBudget());
+
+    </script>
 
     <script>
         // Global variables and functions
@@ -562,29 +573,10 @@
             }
         }
 
-        // Wait for DOM to be ready and all scripts to load
+        // Wait for DOM to be ready
+        // OPERATIONS and OperationTracer are already initialized by the module script above
         document.addEventListener('DOMContentLoaded', function () {
-            console.log('[Enhanced Parser Test] DOM loaded, initializing systems...');
-
-            // Initialize the operations system
-            if (typeof OPERATIONS !== 'undefined' && OPERATIONS.initialize) {
-                try {
-                    OPERATIONS.initialize();
-                    console.log('[Enhanced Parser Test] OPERATIONS system initialized successfully');
-                } catch (error) {
-                    console.error('[Enhanced Parser Test] Error initializing OPERATIONS:', error);
-                }
-            } else {
-                console.error('[Enhanced Parser Test] OPERATIONS not found or no initialize method');
-            }
-
-            // Initialize global tracer
-            if (typeof OperationTracer !== 'undefined') {
-                OperationTracer.setGlobalTracer(100000);
-                console.log('[Enhanced Parser Test] Global tracer initialized');
-            } else {
-                console.error('[Enhanced Parser Test] OperationTracer not found');
-            }
+            console.log('[Enhanced Parser Test] DOM loaded');
 
             // Allow Enter key in interactive input
             document.getElementById('interactive-input').addEventListener('keypress', function (e) {

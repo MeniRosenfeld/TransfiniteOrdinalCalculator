@@ -40,23 +40,36 @@
     <div id="results"></div>
     <div id="summary" class="summary"></div>
 
-    <!-- Core new-architecture runtime (relative from tests/) -->
-    <script src="../OperationTracer.js"></script>
-    <script src="../types/OrdinalBase.js"></script>
-    <script src="../types/FiniteOrdinal.js"></script>
-    <script src="../types/ZeroOrdinal.js"></script>
-    <script src="../types/OneOrdinal.js"></script>
-    <script src="../types/OmegaOrdinal.js"></script>
-    <script src="../types/CNFOrdinal.js"></script>
-    <script src="../types/WTowerOrdinal.js"></script>
-    <script src="../types/EpsilonZero.js"></script>
-    <script src="../conversions/ConversionRegistry.js"></script>
-    <script src="../conversions/ConversionEngine.js"></script>
-    <script src="../operations/RuleEngine.js"></script>
-    <script src="../operations/Comparison.js"></script>
-    <script src="../operations/Operations.js"></script>
+    <!-- Load ES6 Module Bundle (exports everything to window globals) -->
+    <script type="module" src="/src/main.js"></script>
 
-    <script>
+    <script type="module">
+        // Wait for module to finish loading and exporting to window
+        await new Promise(resolve => setTimeout(resolve, 200));
+
+        // Verify globals are available
+        if (typeof CNFOrdinal === 'undefined' || typeof EpsilonZero === 'undefined' || typeof OPERATIONS === 'undefined') {
+            document.body.innerHTML = '<h1 style="color: red;">ERROR: Module not loaded. Required globals missing!</h1>' +
+                '<p>CNFOrdinal: ' + typeof CNFOrdinal + '</p>' +
+                '<p>EpsilonZero: ' + typeof EpsilonZero + '</p>' +
+                '<p>OPERATIONS: ' + typeof OPERATIONS + '</p>';
+            throw new Error('Module loading failed');
+        }
+
+        console.log('[Test] Module loaded successfully, starting isWellFormed tests...');
+
+        // Initialize the operations system
+        if (window.OPERATIONS) {
+            try {
+                if (typeof initializeOperations === 'function') {
+                    initializeOperations(OPERATIONS);
+                    console.log('[Test] Operations singleton initialized');
+                }
+            } catch (e) {
+                console.error('Failed to initialize OPERATIONS', e);
+            }
+        }
+
         function addCase(desc, got, expected) {
             const div = document.createElement('div');
             div.className = 'case ' + (got === expected ? 'pass' : 'fail');
@@ -66,9 +79,7 @@
         }
 
         (function runTests() {
-            if (window.OPERATIONS) {
-                try { OPERATIONS.initialize(); } catch (e) { console.error('[init] OPERATIONS.initialize failed:', e); }
-            }
+            // OPERATIONS already initialized above
             const resultsEl = document.getElementById('results');
             const summaryEl = document.getElementById('summary');
             let passed = 0, total = 0;
