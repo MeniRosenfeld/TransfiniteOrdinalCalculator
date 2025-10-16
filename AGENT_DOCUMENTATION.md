@@ -2,7 +2,7 @@
 
 This document provides practical development guidance and lessons learned for working with the Transfinite Ordinal Calculator. It supplements the main `COMPREHENSIVE_DOCUMENTATION.md` with implementation-specific tips and common pitfalls.
 
-**Important**: Whenever you encounter a bug or a difficult-to-solve problem, add documentation (Either in the relevant code file or in the documentation files) that will help handling such problems in the future.
+**Important**: Whenever you encounter a bug or a difficult-to-solve problem, add documentation (Either in the relevant code file or in the documentation files) that will help handling such problems in the future. Also, whenever making a change, make sure to document it properly.
 
 **Note**: For complete project documentation, architecture overview, and mathematical background, see `COMPREHENSIVE_DOCUMENTATION.md`.
 
@@ -454,6 +454,93 @@ window.OneOrdinal = OneOrdinal; // Manual global export
 - `tsconfig.json` configured with `allowJs: true` for gradual migration
 - Currently checking is disabled (`checkJs: false`)
 - Will enable strict checking in Phase 6
+
+---
+
+### **Guideline 16: ES6 Module Migration for Test Files**
+
+**The Pattern**: All test files use ES6 modules with window globals exported from `main.ts`.
+
+**Test File Structure**:
+```html
+<!-- Load ES6 Module Bundle -->
+<script type="module" src="/src/main.js"></script>
+
+<script type="module">
+    // 1. Wait for module loading (200ms)
+    await new Promise(resolve => setTimeout(resolve, 200));
+
+    // 2. Verify critical globals are available
+    if (typeof OperationTracer === 'undefined' || 
+        typeof OPERATIONS === 'undefined') {
+        // Display error and abort
+        throw new Error('Module loading failed');
+    }
+
+    // 3. Initialize OPERATIONS singleton
+    if (window.OPERATIONS && typeof initializeOperations === 'function') {
+        initializeOperations(OPERATIONS);
+    }
+
+    // 4. Initialize global tracer
+    OperationTracer.setGlobalTracer(1000000);
+
+    // 5. Run test code (directly, not in DOMContentLoaded)
+    // Module scripts are automatically deferred
+</script>
+```
+
+**Critical Points**:
+- **Module scripts are deferred**: They run after DOM is ready
+- **DOMContentLoaded already fired**: Don't use `addEventListener('DOMContentLoaded')`
+- **Run code directly**: Place test execution directly in module script
+- **Multiple module scripts**: Use for sequencing (second script runs after first)
+- **Window globals needed**: Test files rely on `window.OperationTracer`, `window.OPERATIONS`, etc.
+
+**SimpleParser Usage**:
+```javascript
+// Parse returns ParseResult (union type)
+const parser = new SimpleParser(inputStr);
+const parseResult = parser.parse();
+
+// For ordinals, result IS the ordinal (not wrapped)
+// Check if it's an ordinal by checking for ordinal methods
+if (!parseResult || typeof parseResult.complexity !== 'function') {
+    throw new Error('Expected ordinal');
+}
+let ordinal = parseResult; // It's an OrdinalBase
+
+// NOT like this (wrong - no .type or .value for ordinals):
+// if (parseResult.type === 'ordinal') { ... }
+```
+
+**Common Mistakes**:
+- ❌ Using `DOMContentLoaded` listener (event already fired)
+- ❌ Expecting `parseResult.type` and `parseResult.value` for ordinals
+- ❌ Forgetting to wait 200ms for module loading
+- ❌ Not initializing global tracer
+- ❌ Putting test code in separate regular `<script>` blocks
+
+### **Guideline 17: Window Globals vs ES6 Imports**
+
+**Current Architecture**: Hybrid approach for practical reasons.
+
+**Window Globals (`main.ts` exports)**:
+- **Purpose**: Test file compatibility and browser console debugging
+- **Usage**: `window.OperationTracer`, `window.CNFOrdinal`, `window.OPERATIONS`
+- **Keep them**: All 40+ exports are actively used by test files
+
+**Why Keep Window Exports**:
+1. **Test files depend on them**: All 9 test files use globals extensively
+2. **Console debugging**: Access via `window.DEBUG.CNFOrdinal(...)` in browser
+3. **No bundling needed**: Tests run directly without build step
+4. **Backward compatibility**: No breaking changes needed
+5. **Simpler debugging**: Globals visible in console for quick testing
+
+**Design Philosophy**:
+- ES6 modules for source code (`src/`)
+- Window globals for tests and debugging
+- Both maintained indefinitely
 
 ---
 

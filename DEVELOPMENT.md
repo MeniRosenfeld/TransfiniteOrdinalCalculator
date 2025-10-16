@@ -407,5 +407,33 @@ npm run preview                   # Verify
 
 ---
 
+## Test Suite Structure
+
+### Active Test Files (All ES6 Modules)
+
+**Comprehensive Test Suites** (7 tests):
+1. `tests/ordinal_enf_test.html` - ENF (Epsilon Normal Form) comprehensive tests
+2. `tests/ordinal_calculator_test.html` - Basic calculator functionality
+3. `tests/arithmetic_laws_test.html` - Mathematical properties (associativity, commutativity, etc.)
+4. `tests/immutability_test.html` - Verify ordinals remain unchanged during operations
+5. `tests/enhanced_parser_test.html` - Multi-type expressions and variable substitution
+6. `tests/simplify_test.html` - Ordinal simplification with budget constraints
+7. `tests/is_well_formed_test.html` - Validate ordinal structure correctness
+
+**Debug & Diagnostic Tools** (2 tools):
+1. `tests/conversion_debug.html` - Visual conversion matrix and dependency graph
+2. `tests/finverse_debug.html` - Debug ordinal-to-real mapping inverse function
+
+All test files load from `/src/main.js` using ES6 modules via the Vite dev server.
+
+### Test Index
+
+Access all tests via: `http://localhost:3000/index-tests.html`
+
+This provides a visual interface to launch any test file with descriptions.
+
+---
+
 **The key insight:** Use `npm run dev` for development (instant feedback), `npm run build` only for production (rare).
+
 

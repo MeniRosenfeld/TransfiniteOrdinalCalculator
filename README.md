@@ -207,8 +207,8 @@ TransfiniteOrdinalCalculator/
 │   ├── style.css                       # Original CSS
 │   └── epsilonOmega.png                # Original favicon
 ├── tests/                              # Test Suites
-│   ├── ordinal_enf_test_new.html       # ENF tests
-│   ├── ordinal_calculator_test_new.html # Calculator tests
+│   ├── ordinal_enf_test.html           # ENF tests
+│   ├── ordinal_calculator_test.html    # Calculator tests
 │   └── [15 more test files]
 ├── src/                                # TypeScript source files
 │   ├── types/                          # Ordinal type classes
@@ -280,8 +280,9 @@ Then navigate to `http://localhost:8000`
 ### **Testing**
 
 **New ES6 Module System:**
-*   **Main Test Suite:** Open `tests/ordinal_enf_test_new.html`
-*   **Calculator Tests:** Open `tests/ordinal_calculator_test_new.html`
+*   **Test Index:** Open `index-tests.html` for all test links
+*   **Main Test Suite:** Open `tests/ordinal_enf_test.html`
+*   **Calculator Tests:** Open `tests/ordinal_calculator_test.html`
 
 **Legacy System (for comparison):**
 *   **Main Test Suite:** Open `tests/ordinal_enf_test.html`
@@ -356,7 +357,7 @@ The project currently maintains two parallel systems during migration:
 2. Run `npm run dev` to test with hot reload
 3. Run `npm run build` to create production bundle
 4. Test with `npm run preview`
-5. Verify tests pass: open `tests/ordinal_enf_test_new.html`
+5. Verify tests pass: open `index-tests.html` or `tests/ordinal_enf_test.html`
 
 **Migration Status:** 
 - ✅ Phase 1: Infrastructure setup (complete)
