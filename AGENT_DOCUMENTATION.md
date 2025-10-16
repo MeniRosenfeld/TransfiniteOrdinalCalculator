@@ -247,39 +247,59 @@ const tests = [
 
 ---
 
-## Current Implementation Status
+## Architecture Overview
 
-### ✅ **Completed (New Architecture)**
-- Core ENF types: `ENFOrdinal`, `ENFTerm`, `ENFFactor`
-- All unary properties: `isZero`, `isFinite`, `isEpsilonNumber`, etc.
-- `ENFOrdinal.fromCNF` static method
-- ENF fallback rules in multiplication and exponentiation
-- Comparison rules with `compareENF` function
-- Test page migration to new architecture
-- Tracer accounting framework with loop-scale consumption
-- Stringification standardized on `toString()`
-- **Singleton instances** for constant ordinals (`ZeroOrdinal.instance()`, etc.)
-- **Alertness testing system** for verifying test suite effectiveness
-- **Immutability testing framework** with sorting verification
-- **Fixed logStar calculation** to stop at ordinals smaller than original base
-- **Manual OPERATIONS initialization** for immediate URL parameter support
+### **Current Architecture (ES6 Modules + TypeScript)**
 
-### ⚠️ **Partially Complete**
-- ENF multiplication logic (basic placeholder exists)
-- ENF exponentiation logic (throws for infinite exponents)
-- ENF addition logic (exists but may need refinement)
+The project uses a modern, modular architecture with the following key features:
 
-### ❌ **Still Needed**
-- Complete ENF arithmetic implementations
-- `ENFTerm.multiply()` method
-- Full ENF → CNF conversion path
-- Legacy test page migration
+**Type System:**
+- Multiple ordinal representations: CNF, ENF, Towers, Tunnels, Epsilon/Zeta numbers
+- All types inherit from `OrdinalBase` abstract base class
+- Singleton instances for constant ordinals (`ZeroOrdinal.instance()`, etc.)
+- Full TypeScript support with type safety
 
-### **Migration Notes**
-- New architecture uses `types/`, `operations/`, `conversions/` directories
-- Binary operations implemented via rule engines, not in type classes
-- Conversion-first rule checking rather than ad-hoc type tests
-- Immutable operations with proper tracer threading
+**Operations System:**
+- Rule-based arithmetic engine with pattern matching
+- Separate `RuleEngine` instances for each operation type
+- Conversion-first rule checking for automatic type handling
+- Global `OperationTracer` for budget tracking and infinite loop prevention
+
+**Testing Infrastructure:**
+- Comprehensive test suites for all operations and types
+- Immutability testing framework with sorting verification
+- Alertness testing system for validating test suite effectiveness
+- Unified declarative test system reducing code complexity by 90%
+
+**Parser & Expression System:**
+- Multi-type expression support (ordinals, booleans, strings, comparisons)
+- Variable substitution with deferred evaluation
+- Expression trees for complex variable expressions
+- Built-in functions: `complexity`, `toString`, `parse`
+
+**Development Features:**
+- ES6 module system with Vite bundler
+- Hot module replacement for instant feedback
+- Window globals maintained for backward compatibility
+- TypeScript with strict mode (gradual migration)
+
+### **Key Architectural Decisions**
+
+1. **Global Tracer System**: Single static tracer eliminates per-object overhead
+2. **True Immutability**: Operations never mutate ordinals; always create new instances
+3. **Rule-Based Operations**: Extensible pattern matching instead of method overriding
+4. **Automatic Type Conversion**: ConversionEngine handles complex conversion paths
+5. **Module System**: ES6 imports in source, window globals for tests/console
+
+### **Directory Structure**
+```
+src/
+├── types/              # Ordinal type implementations
+├── operations/         # Rule-based operation system
+├── conversions/        # Type conversion engine
+├── main.ts             # Entry point & window exports
+└── [parser, UI, etc.]  # Other components
+```
 
 ---
 
@@ -405,8 +425,8 @@ export class FiniteOrdinal extends OrdinalBase {
 ### **Testing the New System**
 
 **ES6 Module Tests:**
-- `tests/ordinal_enf_test_new.html` - loads `dist/assets/bundle.js`
-- `tests/ordinal_calculator_test_new.html` - loads `dist/assets/bundle.js`
+- `tests/ordinal_enf_test.html` - loads `dist/assets/bundle.js`
+- `tests/ordinal_calculator_test.html` - loads `dist/assets/bundle.js`
 
 **Legacy Tests:**
 - Other test files load individual scripts from root

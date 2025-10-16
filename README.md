@@ -365,6 +365,25 @@ The project currently maintains two parallel systems during migration:
 - 🔄 Phase 3: TypeScript migration (in progress)
 - ⏳ Phase 4-6: Advanced TypeScript, optimization (planned)
 
+## Documentation
+
+Comprehensive documentation is available:
+
+### **For Users**
+- **[README.md](README.md)** (this file) - Project overview and quick start
+- **[ENHANCED_PARSER_EXAMPLES.md](ENHANCED_PARSER_EXAMPLES.md)** - Examples of parser capabilities
+
+### **For Developers**
+- **[API_REFERENCE.md](API_REFERENCE.md)** - Complete API documentation for all classes and methods
+- **[COMPREHENSIVE_DOCUMENTATION.md](COMPREHENSIVE_DOCUMENTATION.md)** - Technical architecture and design
+- **[DEVELOPMENT.md](DEVELOPMENT.md)** - Development workflow and testing guide
+- **[AGENT_DOCUMENTATION.md](AGENT_DOCUMENTATION.md)** - Common pitfalls and best practices
+- **[CONTRIBUTING.md](CONTRIBUTING.md)** - Contribution guidelines
+
+### **Specialized Topics**
+- **[MIGRATION_GUIDE.md](MIGRATION_GUIDE.md)** - ES6 module migration patterns
+- **[UNIFIED_TEST_SYSTEM.md](UNIFIED_TEST_SYSTEM.md)** - Declarative test framework
+
 ## Future Enhancements
 
 *   Support for larger ordinals (Γ₀, Veblen functions)

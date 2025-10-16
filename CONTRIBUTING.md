@@ -98,8 +98,8 @@ Before making changes, read:
 ### Running Tests
 
 **ES6 Module System (New):**
-- Open `tests/ordinal_enf_test_new.html` in browser
-- Open `tests/ordinal_calculator_test_new.html` in browser
+- Open `tests/ordinal_enf_test.html` in browser
+- Open `tests/ordinal_calculator_test.html` in browser
 
 **Legacy System (For Comparison):**
 - Open `tests/ordinal_enf_test.html` in browser
@@ -117,7 +117,7 @@ Tests follow the existing patterns in test files. For new features:
 Before submitting changes:
 - [ ] Code works in `npm run dev`
 - [ ] Production build succeeds: `npm run build`
-- [ ] Tests pass: check `tests/ordinal_enf_test_new.html`
+- [ ] Tests pass: check `tests/ordinal_enf_test.html`
 - [ ] No console errors in browser
 - [ ] Original `index.html` still works (backward compatibility)
 
