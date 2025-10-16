@@ -2,7 +2,7 @@
 <html>
 
 <head>
-    <title>Ordinal Calculator Test</title>
+    <title>Ordinal Calculator Test (ES6 Modules)</title>
     <meta charset="utf-8">
     <style>
         body {
@@ -322,7 +322,12 @@
 </head>
 
 <body>
-    <h1>Ordinal Calculator Output</h1>
+    <h1>Ordinal Calculator Output (ES6 Modules - Testing NEW System)</h1>
+    <p style="background: #e8f4f8; padding: 10px; border-radius: 4px;">
+        <strong>Note:</strong> This test file uses the NEW ES6 module bundle from <code>dist/assets/bundle.js</code>.
+        To compare with the old system, open <code>ordinal_calculator_test.html</code> (loads individual .js files from
+        root).
+    </p>
 
     <div id="overall-summary-container">
         <h2>Overall Test Summary</h2>
@@ -404,37 +409,24 @@
         <div id="monotonicity-failed-preview" class="failed-tests-preview" style="display: none;"></div>
     </div>
 
-    <!-- Load New Architecture Scripts -->
-    <script src="../OperationTracer.js"></script>
-    <script src="../types/OrdinalBase.js"></script>
-    <script src="../types/FiniteOrdinal.js"></script>
-    <script src="../types/ZeroOrdinal.js"></script>
-    <script src="../types/OneOrdinal.js"></script>
-    <script src="../types/OmegaOrdinal.js"></script>
-    <script src="../types/CNFOrdinal.js"></script>
-    <script src="../types/WTowerOrdinal.js"></script>
-    <script src="../types/EpsilonZero.js"></script>
-    <script src="../types/EpsilonNumber.js"></script>
-    <script src="../types/ENFFactor.js"></script>
-    <script src="../types/ENFTerm.js"></script>
-    <script src="../types/ENFOrdinal.js"></script>
-    <script src="../conversions/ConversionRegistry.js"></script>
-    <script src="../conversions/ConversionEngine.js"></script>
-    <script src="../operations/RuleEngine.js"></script>
-    <script src="../operations/AdditionRules.js"></script>
-    <script src="../operations/MultiplicationRules.js"></script>
-    <script src="../operations/ExponentiationRules.js"></script>
-    <script src="../operations/TetrationRules.js"></script>
-    <script src="../operations/Comparison.js"></script>
-    <script src="../operations/Auxiliary.js"></script>
-    <script src="../operations/Rational.js"></script>
-    <script src="../operations/NumericContexts.js"></script>
-    <script src="../operations/Operations.js"></script>
-    <script src="../SimpleParser.js"></script>
-    <script src="../ordinal_mapping.js"></script>
-    <script src="../ordinal_mapping_inverse.js"></script>
+    <!-- Load ES6 Module Bundle (exports everything to window globals) -->
+    <script type="module" src="/src/main.js"></script>
 
-    <script>
+    <script type="module">
+        // Wait for module to finish loading and exporting to window
+        await new Promise(resolve => setTimeout(resolve, 200));
+
+        // Verify globals are available
+        if (typeof OperationTracer === 'undefined' || typeof OPERATIONS === 'undefined') {
+            document.body.innerHTML = '<h1 style="color: red;">ERROR: Module not loaded. Required globals missing!</h1>' +
+                '<p>OperationTracer: ' + typeof OperationTracer + '</p>' +
+                '<p>OPERATIONS: ' + typeof OPERATIONS + '</p>' +
+                '<p>CNFOrdinal: ' + typeof CNFOrdinal + '</p>';
+            throw new Error('Module loading failed');
+        }
+
+        console.log('[Test] Module loaded successfully, starting tests...');
+
         // Stats for each test kind
         const testStats = {
             CNF: { total: 0, passed: 0, failed: 0, containerId: 'cnf-results-output', previewId: 'cnf-failed-preview', summaryId: 'cnf-summary', results: [] },
@@ -1610,7 +1602,12 @@
         // Ensure operations initialized before running tests
         (function ensureOpsInit() {
             if (window.OPERATIONS) {
-                try { OPERATIONS.initialize(); } catch (e) { console.error(e); }
+                try { 
+                    OPERATIONS.initialize();
+                    if (typeof initializeOperations === 'function') {
+                        initializeOperations(OPERATIONS);
+                    }
+                } catch (e) { console.error(e); }
             }
         })();
 
@@ -1653,6 +1650,11 @@
         if (typeof OPERATIONS !== 'undefined' && OPERATIONS.initialize) {
             OPERATIONS.initialize();
             console.log('[CalculatorTest] OPERATIONS system initialized immediately');
+            // Also reinitialize the singleton to point to this OPERATIONS instance
+            if (typeof initializeOperations === 'function') {
+                initializeOperations(OPERATIONS);
+                console.log('[CalculatorTest] Operations singleton initialized');
+            }
         } else {
             console.error('[CalculatorTest] OPERATIONS not available or missing initialize method');
         }

@@ -375,6 +375,10 @@
             }
         }
 
+        // Initialize global tracer for tests
+        OperationTracer.setGlobalTracer(1000000); // 1M operations budget
+        console.log('[GlobalTracer] Simplify test suite initialized with budget:', OperationTracer.getBudget());
+
         // Stats for each test kind
         const testStats = {
             SIMPLIFY: { total: 0, passed: 0, failed: 0, containerId: 'simplify-results-output', previewId: 'simplify-failed-preview', summaryId: 'simplify-summary', results: [] },
@@ -657,11 +661,20 @@
             let actCNF = '', actRem = -1, sMsg = '', sCls = '', currentTestPassed = true, notes = [], simpG = 'N/A', originalOrdinalStr = 'N/A';
 
             try {
-                const p = new OrdinalParser(inputStr, tr);
-                let origOrd = p.parse();
+                // Use SimpleParser instead of OrdinalParser
+                const parser = new SimpleParser(inputStr);
+                const parseResult = parser.parse();
+                
+                // ParseResult is a union type - check if it's an OrdinalBase
+                if (!parseResult || typeof parseResult.complexity !== 'function') {
+                    throw new Error(`Expected ordinal, got ${typeof parseResult}`);
+                }
+                
+                let origOrd = parseResult;
                 originalOrdinalStr = toCnfString(origOrd); // Get string form for comparison
                 addDetailElement(`Input Ordinal: "${inputStr}" (g=${origOrd.complexity()})`);
-                const simpRes = origOrd.simplify(budget, false);
+                
+                const simpRes = origOrd.simplify(budget);
                 let simpOrd = simpRes.simplifiedOrdinal;
                 actRem = simpRes.remainingBudget;
                 actCNF = toCnfString(simpOrd);
