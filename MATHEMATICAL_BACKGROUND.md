@@ -80,9 +80,9 @@ A well-order satisfies the following properties:
 
 Two well-ordered sets have the same **order type** (represented by the same ordinal) if they are isomorphic (have a one-to-one correspondence which preserves ordering).
 
-The standard construction for ordinal numbers is: An ordinal number is the set of all smaller ordinal numbers. Then 0 = {}, 1 = {{}}, 2 = {{},{{}}} etc.
+The standard construction for ordinal numbers is: An ordinal number is the set of all smaller ordinal numbers. Then 0 = {}, 1 = {{}}, 2 = {{}, {{}}} etc.
 
-The class of all ordinal numbers is itself well-ordered by set membership. The following statements are all equivalent for ordinals α and β: α<β, α∈β, α⊊β.
+The class of all ordinal numbers is itself well-ordered by set membership. The following statements are all equivalent for ordinals α and β: α < β, α ∈ β, α ⊊ β.
 
 ### Key Properties
 
@@ -120,7 +120,7 @@ For finite ordinals, arithmetic works exactly as you'd expect:
 - **Multiplication:** 2 × 3 = 6
 - **Exponentiation:** 2³ = 8
 
-.Finite ordinal arithmetic is commutative and associative.
+**Key insight:** Finite ordinal arithmetic is commutative and associative.
 - Commutative: a + b = b + a
 - Associative: (a + b) + c = a + (b + c)
 
@@ -218,7 +218,7 @@ Let's understand why...
   ```
   The star is genuinely "after infinity" - it's larger than all finite numbers!
 
-  Any attemt for an order-preserving one-to-one correspondence will fail to find a match for ★ within the natural numbers.
+  Any attempt at an order-preserving one-to-one correspondence will fail to find a match for ★ within the natural numbers.
 
 **Key examples:**
 ```
@@ -238,9 +238,9 @@ Ordinal addition is associative.
 
 α + 0 = α
 α + β' = (α + β)'
-α + lim(β_n) = lim(α + β_n)
+α + lim(βₙ) = lim(α + βₙ)
 
-The last statements means that addition, like many ordinal operations, is *continuous* in the second operand.
+The last statement means that addition, like many ordinal operations, is *continuous* in the second operand.
 
 ### Multiplication
 
@@ -279,9 +279,9 @@ n × β = β
 ```
 
 **Inductive definition of multiplication:**
-α * 0 = 0
-α * (β+1) = α * β + α
-α * lim(β_n) = lim(α * β_n)
+α × 0 = 0
+α × (β+1) = α × β + α
+α × lim(βₙ) = lim(α × βₙ)
 
 ### Exponentiation
 
@@ -339,27 +339,27 @@ w^^3        → w^w^w  (can be displayed as ω↑↑3)
 
 ### Left-subtraction
 
-Given ordinals β<=α, there is a unique ordinal α-β such that β + (α-β) = α.
+Given ordinals β ≤ α, there is a unique ordinal α-β such that β + (α-β) = α.
 
 Subtraction can also be defined recursively:
 
 β - β = 0
 α' - β = (α - β)'
-lim(α_n) - β = lim(α_n - β)
+lim(αₙ) - β = lim(αₙ - β)
 
 Subtraction can behave different than you'd expect. For example, (ω + 5) - 5 is not ω. It is ω + 5, because 5 + (ω + 5) = ω + 5.
 
 Another example: ω - 4 = ω.
 
-Left subtraction is not currently implemented in the calculator; however, left-successor, α-1, is used as an auxillary function.
+Left subtraction is not currently implemented in the calculator; however, left-predecessor, α-1, is used as an auxiliary function.
 
 Right-subtraction is not guaranteed to either exist or be unique.
 
 ### Left-division with remainder
 
-Given ordinals α and β, there are unique ordinals ξ and r<β such that β*ξ+r = α.
+Given ordinals α and β, there are unique ordinals ξ and ρ < β such that β×ξ + ρ = α.
 
-For example: Dividing (w^w + w^4*3 + w*2 + 5) by (w+1) gives (w^w+w^3*3+2) with remainder 4.
+For example: Dividing (ω^ω + ω^4×3 + ω×2 + 5) by (ω+1) gives (ω^ω + ω^3×3 + 2) with remainder 4.
 
 Left-division is not currently implemented in the calculator; however, a limited version is used as an auxillary function.
 
@@ -536,9 +536,9 @@ Where:
 - β_finite is the finite part of β
 
 **Why this works:**
-- Decomposes using x^(y+z) = x^y*x^z rule
-- When exponentiating by a limit ordinal, only the leading factor  ω^a₁ survives absorption
-- Calculated with the rule (x^y)^z = x^(y*z)
+- Decomposes using α^(β+γ) = α^β × α^γ rule
+- When exponentiating by a limit ordinal, only the leading factor ω^a₁ survives absorption
+- Calculated with the rule (α^β)^γ = α^(β×γ)
 - The finite remainder acts as a "tail" multiplier
 
 **Example:**
@@ -554,16 +554,16 @@ Where:
 **Case 4: Finite base, infinite exponent**
 - k^β where k>1 is finite, β is infinite
 
-**Key insight:** Finite ^ ω = ω. We can extract an ω factor from β, and use k ^ (ω + γ) = (k^ω)^γ = ω^γ
+**Key insight:** Finite^ω = ω. We can extract an ω factor from β, and use k^(ω+γ) = (k^ω)^γ = ω^γ
 
-**Formula:** k^β = ω^ξ × k^r
+**Formula:** k^β = ω^ξ × k^ρ
 
-Where β = ω×ξ + r (β divided by ω gives quotient ξ and remainder r)
+Where β = ω×ξ + ρ (β divided by ω gives quotient ξ and remainder ρ)
 
 **Why this works:**
 - k^ω = ω (finite base to infinite power reaches ω)
 - k^(ω×ξ) = (k^ω)^ξ = ω^ξ
-- The finite remainder r contributes a finite multiplier k^r
+- The finite remainder ρ contributes a finite multiplier k^ρ
 
 **Example:**
 ```
@@ -572,16 +572,16 @@ Where β = ω×ξ + r (β divided by ω gives quotient ξ and remainder r)
 
 **Division by ω (helper operation):**
 
-To divide a CNF ordinal by ω, subtract 1 from each term's exponent, *from the left*. This keeps infinite infinite exponents unchanged. Only finite exponents get diminished.
+To divide a CNF ordinal by ω, subtract 1 from each term's exponent, *from the left*. This keeps infinite exponents unchanged. Only finite exponents get diminished.
 ```
 (ω^a₁×c₁ + ω^a₂×c₂ + ...) / ω = ω^(a₁-1)×c₁ + ω^(a₂-1)×c₂ + ...
 ```
 
-This implements the quotient in the ordinal division α = ω×q + r.
+This implements the quotient in the ordinal division α = ω×ξ + ρ.
 
 Example:
 
-(w^w^2*5 + w^w*3 + w^6 + w^2*2 + w*5 + 7) / w = (w^w^2*5 + w^w*3 + w^5 + w*2 + 5), with remainder 7.
+(ω^ω²×5 + ω^ω×3 + ω^6 + ω²×2 + ω×5 + 7) / ω = (ω^ω²×5 + ω^ω×3 + ω^5 + ω×2 + 5), with remainder 7.
 
 ### The Limit of CNF
 
@@ -805,7 +805,7 @@ Step 3: Combine ε₁ exponents: 2 + 1 = 3, so we get ε₁^3
 
 Step 4: Append remaining factors and coefficient from second term: ω² × 3
 
-**Result:** ε₁^3 × ω² × 3
+**Result:** ε₁³ × ω² × 3
 
 **Multiplication of full ENF ordinals:**
 
@@ -813,7 +813,7 @@ For α × β where both are sums of terms:
 
 1. **If β is finite:** Multiply β into α's leading term coefficient, keep other terms without changing their coefficient (only one copy of the tail survives absorption).
    ```
-   (ε₀ + ω + 5) × 3 = ε₀×3 + ω + 5
+   (ε₀ + ω + 5) × 3 = ε₀ × 3 + ω + 5
    ```
 
 2. **If β is infinite:**
@@ -829,12 +829,12 @@ Leading term of α: ε₀
 Terms of β: ε₀, ω, finite part 3
 
 Results:
-- ε₀ × ε₀ = ε₀^2
-- ε₀ × ω = ε₀×ω 
-- ε₀ × 3 = ε₀×3
-- Since β has finite part 3, keep α's remaining terms: ω×2
+- ε₀ × ε₀ = ε₀²
+- ε₀ × ω = ε₀ × ω 
+- ε₀ × 3 = ε₀ × 3
+- Since β has finite part 3, keep α's remaining terms: ω × 2
 
-**Result:** ε₀^2 + ε₀×ω + ε₀×3 + ω×2
+**Result:** ε₀² + ε₀ × ω + ε₀ × 3 + ω × 2
 
 **Exponentiation in ENF:**
 
@@ -847,18 +847,18 @@ ENF exponentiation uses rank-based decomposition to handle the complex interacti
 
 Several subcases:
 
-**2a. ω^(ε_k) = ε_k** (a fundamental identity!)
+**2a. ω^ε_k = ε_k** (a fundamental identity!)
 ```
 ω^ε₀ = ε₀
 ω^ε₁ = ε₁
 ```
-This is because ε_k is defined as the kth fixed point where ω^(ε_k) = ε_k.
+This is because ε_k is defined as the kth fixed point where ω^ε_k = ε_k.
 
 **2b. Rank-based decomposition when rank(β) > rank(α):**
 
-If β has rank k > α, decompose: β = k×x + r
+If β has rank k > α, decompose: β = k×χ + ρ
 
-Then: α^β = k^x × α^r
+Then: α^β = k^χ × α^ρ
 
 **Why this works:**
 - The highest-ranked part of β dominates
@@ -871,16 +871,16 @@ Then: α^β = k^x × α^r
 ```
 - Rank of exponent is ε₀
 - Decompose: ε₀×2 + (ω + 5)
-- Result: ε₀^2 × ω^(ω+5)
+- Result: ε₀² × ω^(ω+5)
 
 **2c. For ω with mixed exponent:**
 
-If exponent β = ε_k + r (epsilon number + remainder):
+If exponent β = ε_k + ρ (epsilon number + remainder):
 ```
-ω^(ε_k + r) = ε_k × ω^r
+ω^(ε_k + ρ) = ε_k × ω^ρ
 ```
 
-The epsilon number is the fixed point, so ω^(ε_k) = ε_k, and we multiply by ω^r.
+The epsilon number is the fixed point, so ω^ε_k = ε_k, and we multiply by ω^ρ.
 
 **Case 3: Epsilon number base**
 
@@ -899,14 +899,14 @@ For arbitrary α^β:
 
 **If rank(β) > rank(α):**
 - k = rank(β)
-- Decompose β = k×x + r
-- Result: k^x × α^r
+- Decompose β = k×χ + ρ
+- Result: k^χ × α^ρ
 
 **If rank(β) ≤ rank(α):**
 - k = rank(α)
 - c = log of α (the exponent of α's leading factor)
-- Split β into limit part d and finite part r
-- Result: k^(c×d) × α^r
+- Split β into limit part δ and finite part ρ
+- Result: k^(c×δ) × α^ρ
 
 **Definitions:**
 - **rank(α):** The leading base of α (ω for CNF ordinals, ε_k for ENF with epsilon factors)
@@ -922,21 +922,21 @@ Step 1: Rank of base is ε₁, rank of exponent is ε₁ (equal)
 Step 2: Use Case 4, second subcase  
 - k = ε₁
 - log of base: c = 1 (since base = ε₁^1 × ω)
-- Split exponent: d = ε₁ + ω (limit part), r = 2 (finite part)
+- Split exponent: δ = ε₁ + ω (limit part), ρ = 2 (finite part)
 
-Step 3: Compute k^(c×d):
-- c × d = 1 × (ε₁ + ω) = ε₁ + ω
-- k^(c×d) = ε₁^(ε₁ + ω)
+Step 3: Compute k^(c×δ):
+- c × δ = 1 × (ε₁ + ω) = ε₁ + ω
+- k^(c×δ) = ε₁^(ε₁ + ω)
 
-Step 4: Compute α^r:
-- (ε₁ × ω)^2 = ε₁^2 × ω (using exponentiation by squaring. One copy of ω is absorbed!)
+Step 4: Compute α^ρ:
+- (ε₁ × ω)² = ε₁² × ω (using exponentiation by squaring. One copy of ω is absorbed!)
 
 Step 5: Multiply:
-- Result: ε₁^(ε₁ + ω) × ε₁^2 × ω = ε₁^(ε₁ + ω + 2) × ω
+- Result: ε₁^(ε₁ + ω) × ε₁² × ω = ε₁^(ε₁ + ω + 2) × ω
 
 **Ordinal Division (helper for exponentiation):**
 
-To compute β = k×x + r (β divided by basic ordinal k):
+To compute β = k×χ + ρ (β divided by basic ordinal k):
 
 For each term in β:
 - **If term's leading factor base > k:** Add to quotient
