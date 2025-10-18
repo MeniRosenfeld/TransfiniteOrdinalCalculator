@@ -3,8 +3,8 @@
 **A comprehensive introduction to ordinal arithmetic for the Transfinite Ordinal Calculator**
 
 **Author:** Claude Sonnet 4.5 and Meni Rosenfeld
-**Date:** October 17, 2025  
-**Audience:** Anyone interested in understanding transfinite ordinals, from advanced high school students to researchers
+**Date (First version):** October 17, 2025  
+**Audience:** Anyone interested in understanding transfinite ordinals, from advanced high school students to developers and researchers
 
 ---
 
@@ -30,10 +30,12 @@
 
 This document provides the mathematical foundation needed to understand and use the Transfinite Ordinal Calculator. We'll build up the theory of ordinal numbers from scratch, starting with the natural numbers you already know and progressing to exotic transfinite ordinals like ε₀ (epsilon-zero) and ζ₀ (zeta-zero).
 
+The document should be considered a reference, and does not aspire to be the best educational resource.
+
 **Who is this for?**
 
+- Programmers and LLM agents implementing ordinal arithmetic
 - Students learning about infinity in mathematics
-- Programmers implementing ordinal arithmetic
 - Mathematicians needing a quick reference
 - Anyone curious about "counting past infinity"
 
@@ -68,18 +70,29 @@ For finite collections, **cardinal numbers** (how many) and **ordinal numbers** 
 
 ### Formal Definition (Simplified)
 
-An **ordinal number** represents the order type of a well-ordered set. More intuitively:
-- Ordinals describe patterns of counting
-- Each ordinal has a unique **successor** (the next one)
-- Some ordinals are **limit ordinals** (they can't be reached by taking successors)
+An **ordinal number** represents the order type of a well-ordered set. Intuitively, they describe patterns of listing items in a specific order.
+
+A well-order satisfies the following properties:
+
+1. **Transitivity:** If α < β and β < γ, then α < γ
+2. **Totality:** For any two elements α and β, exactly one is true: α < β, α = β, or α > β
+3. **Least element:** Every nonempty set has a least element (lesser than every other element of the set)
+
+Two well-ordered sets have the same **order type** (represented by the same ordinal) if they are isomorphic (have a one-to-one correspondence which preserves ordering).
+
+The standard construction for ordinal numbers is: An ordinal number is the set of all smaller ordinal numbers. Then 0 = {}, 1 = {{}}, 2 = {{},{{}}} etc.
+
+The class of all ordinal numbers is itself well-ordered by set membership. The following statements are all equivalent for ordinals α and β: α<β, α∈β, α⊊β.
 
 ### Key Properties
 
-1. **Well-ordering:** Every non-empty class of ordinals has a least element
-2. **Transitivity:** If α < β and β < γ, then α < γ
-3. **Total Order:** For any two ordinals α and β, exactly one is true: α < β, α = β, or α > β
-4. **Successor property:** Every ordinal α has a unique successor, written α+1
-5. **Unsetly many:** Every set of ordinals has an upper bound
+1. **Well-ordering:** Every non-empty class of ordinals has a least element ("There is always a smallest ordinal").
+2. **Unsetly many:** Every set of ordinals has an upper bound, an ordinal greater than all its elements. There is no set of all ordinals. ("There is always a bigger ordinal")
+3. **Successors:** Every ordinal α has a unique successor, written α+1 or α' - the smallest ordinal bigger than it.
+4. **Limits:** Every strictly increasing infinite sequence has a unique limit, the smallest ordinal bigger than all ordinals in the sequence.
+5. **Trichotomy:** Every ordinal is either 0, a successor, or a limit.
+6. **Transfinite induction:** If a property holds for 0, successors, and limits, it holds for all ordinals.
+7. **Inductive definitions:** Functions and operations can be defined by specifying their value for 0, for successors, and for limits.
 
 ---
 
@@ -107,11 +120,11 @@ For finite ordinals, arithmetic works exactly as you'd expect:
 - **Multiplication:** 2 × 3 = 6
 - **Exponentiation:** 2³ = 8
 
-**Key insight:** Finite ordinal arithmetic is commutative and associative.
+.Finite ordinal arithmetic is commutative and associative.
 - Commutative: a + b = b + a
 - Associative: (a + b) + c = a + (b + c)
 
-**Important:** This will NOT be true for infinite ordinals!
+**Important:** For infinite ordinals, addition will not be commutative! It is still associative, though.
 
 ---
 
@@ -123,8 +136,10 @@ For finite ordinals, arithmetic works exactly as you'd expect:
 
 Intuitively, ω represents the order type of the natural numbers:
 ```
-0, 1, 2, 3, 4, 5, 6, ..., ω
+0, 1, 2, 3, 4, 5, 6, ...,
 ```
+
+In the standard construction, ω *is* the (ordered) set of natural numbers.
 
 ### Key Properties of ω
 
@@ -154,16 +169,6 @@ And this pattern continues:
 ω×3, ω×4, ω×5, ..., ω×ω (= ω²), ..., ω³, ω⁴, ..., ω^ω, ..., ω^ω^ω, ...
 ```
 
-### Visualization
-
-Think of ω as "after all finite numbers":
-
-```
-Finite:     0  1  2  3  4  5  ...
-            ↓  ↓  ↓  ↓  ↓  ↓
-Infinite:                      ω  ω+1  ω+2  ω+3  ...
-```
-
 **Calculator notation:**
 ```
 w           # omega
@@ -171,6 +176,8 @@ w+1         # omega plus one
 w*2         # omega times two
 w^2         # omega squared
 w^w         # omega to the omega
+w^(w*2)     # omega to the (omega times two) - equal to (w^w)^2
+w^w^2       # omega to the (omega squared) - bigger than (w^w)^2!
 ```
 
 ---
@@ -197,9 +204,9 @@ Let's understand why...
 **Think about it as sequences:**
 - **1 + ω:** One element, then infinitely many elements
   ```
-  [1] followed by [0, 1, 2, 3, ...]
-  = [1, 0, 1, 2, 3, ...]
-  ≈ [0, 1, 2, 3, ...]  (reorder)
+  [★] followed by [0, 1, 2, 3, ...]
+  = [★, 0, 1, 2, 3, ...]
+  ≈ [0, 1, 2, 3, ...]  (relabel)
   = ω
   ```
   The single element at the start doesn't change the order type!
@@ -210,6 +217,8 @@ Let's understand why...
   = [0, 1, 2, 3, ..., ★]
   ```
   The star is genuinely "after infinity" - it's larger than all finite numbers!
+
+  Any attemt for an order-preserving one-to-one correspondence will fail to find a match for ★ within the natural numbers.
 
 **Key examples:**
 ```
@@ -222,6 +231,16 @@ n + ω = ω   (for any finite n)
 ```
 
 **General rule:** When adding to infinity on the right, finite parts on the left "disappear". When adding to infinity on the left, we genuinely extend it.
+
+Ordinal addition is associative.
+
+**Inductive definition of addition:**
+
+α + 0 = α
+α + β' = (α + β)'
+α + lim(β_n) = lim(α + β_n)
+
+The last statements means that addition, like many ordinal operations, is *continuous* in the second operand.
 
 ### Multiplication
 
@@ -251,11 +270,18 @@ Combined:  [0, 1, 2, 3, ..., ω, ω+1, ω+2, ω+3, ...]
 ω × 2 = ω + ω ≠ ω
 ```
 
+Multiplication is associative.
+
 **Absorption rule:** For infinite ordinals β and finite n:
 ```
 n × β = β
 β × n = β + β + ... + β  (n times)
 ```
+
+**Inductive definition of multiplication:**
+α * 0 = 0
+α * (β+1) = α * β + α
+α * lim(β_n) = lim(α * β_n)
 
 ### Exponentiation
 
@@ -300,14 +326,6 @@ The calculator supports **tetration** (α^^n):
 
 **Important:** ω^^ω (infinite tower) equals ε₀ (see below)!
 
-### Summary Table
-
-| Operation | Finite | Infinite | Commutative? |
-|-----------|--------|----------|--------------|
-| Addition | a+b | α+β | ❌ No |
-| Multiplication | a×b | α×β | ❌ No |
-| Exponentiation | a^b | α^β | ❌ No |
-
 **Calculator examples:**
 ```
 1+w         → w
@@ -319,7 +337,33 @@ w^2         → w^2
 w^^3        → w^w^w  (can be displayed as ω↑↑3)
 ```
 
----
+### Left-subtraction
+
+Given ordinals β<=α, there is a unique ordinal α-β such that β + (α-β) = α.
+
+Subtraction can also be defined recursively:
+
+β - β = 0
+α' - β = (α - β)'
+lim(α_n) - β = lim(α_n - β)
+
+Subtraction can behave different than you'd expect. For example, (ω + 5) - 5 is not ω. It is ω + 5, because 5 + (ω + 5) = ω + 5.
+
+Another example: ω - 4 = ω.
+
+Left subtraction is not currently implemented in the calculator; however, left-successor, α-1, is used as an auxillary function.
+
+Right-subtraction is not guaranteed to either exist or be unique.
+
+### Left-division with remainder
+
+Given ordinals α and β, there are unique ordinals ξ and r<β such that β*ξ+r = α.
+
+For example: Dividing (w^w + w^4*3 + w*2 + 5) by (w+1) gives (w^w+w^3*3+2) with remainder 4.
+
+Left-division is not currently implemented in the calculator; however, a limited version is used as an auxillary function.
+
+Right-division is not guaranteed to either exist or be unique.
 
 ## Cantor Normal Form (CNF)
 
@@ -399,6 +443,145 @@ To compute α + β:
 w^3+w^2+w*3+5           # First ordinal
 w^2*2+w+2           # Second ordinal
 ```
+
+**Multiplication in CNF:**
+
+To compute α × β where α = ω^a₁×c₁ + ... + ω^aₖ×cₖ + n and β = ω^b₁×m₁ + ... + ω^bⱼ×mⱼ + m:
+
+The key insight: **Only the leading term of α interacts with the infinite part of β.** All other terms of α are "absorbed" except when β has a finite remainder.
+
+**Algorithm:**
+1. Extract the leading term of α: ω^a₁ × c₁
+2. Split β into its limit part (infinite terms) and finite part m
+3. For each infinite term ω^bⱼ×mⱼ in β:
+   - Create a new term: ω^(a₁+bⱼ) × mⱼ
+   - The exponents add: a₁ + bⱼ
+4. If β has a finite part m > 0:
+   - Create term: ω^a₁ × (c₁ × m)
+   - Append all remaining terms of α unchanged
+
+**Why this works:**
+- **Ordinal multiplication is concatenation:** α × β means "β copies of α in sequence"
+- **Lower-order terms are absorbed:** When you have infinitely many copies (β's limit part), every lower-order term of α is absorbed in the next copy of the leading term
+- **Finite remainder preserves tail:** If β = (infinite part) + m, the last copy of α preserves α's full structure
+
+**Detailed Example:**
+
+```
+(ω² + ω×3 + 5) × (ω² × 2 + ω + 2)
+```
+
+Step 1: Leading term of first operand: ω² × 1  
+Step 2: Split second operand:
+- Limit part: ω² × 2 + ω  
+- Finite part: 2
+
+Step 3: Multiply leading term by limit part:
+```
+ω^(2 + 2) × 2 = ω⁴ × 2     (from ω² term)
+ω^(2 + 1) × 1 = ω³ × 1     (from ω term)
+```
+
+Step 4: Handle finite part (m = 2):
+```
+ω² × (1 × 2) = ω² × 2      (leading term times finite part)
+ω × 3                       (second term of α unchanged)
+5                           (third term of α unchanged)
+```
+
+**Result:**
+```
+ω⁴×2 + ω³ + ω²×2 + ω×3 + 5
+```
+
+**Special cases:**
+- **Finite × infinite:** n × β = β (the n copies collapse into β's order type)
+- **Infinite × finite:** α × n = α + α + ... + α (n times) - genuinely different!
+
+**Exponentiation in CNF:**
+
+Exponentiation is more complex, with several cases based on whether base and exponent are finite or infinite.
+
+**Case 1: Both finite**
+- Use standard exponentiation: k^m
+
+**Case 2: Infinite base, finite exponent**
+- α^m where α = ω^a₁×c₁ + ... (infinite)
+
+**Special subcase:** If α = ω^a₁ (single term, coefficient 1):
+```
+(ω^a₁)^m = ω^(a₁ × m)
+```
+The exponents multiply!
+
+**General case:** Use exponentiation by squaring:
+```
+To compute α^m:
+  result = 1
+  while m > 0:
+    if m is odd: result = result × α
+    α = α × α
+    m = m / 2
+  return result
+```
+
+**Case 3: Infinite base, infinite exponent**
+- α^β where both are infinite
+
+**Formula:** α^β = ω^(a₁ × β_limit) × α^(β_finite)
+
+Where:
+- a₁ is the exponent of α's leading term
+- β_limit is β with its finite part removed
+- β_finite is the finite part of β
+
+**Why this works:**
+- Decomposes using x^(y+z) = x^y*x^z rule
+- When exponentiating by a limit ordinal, only the leading factor  ω^a₁ survives absorption
+- Calculated with the rule (x^y)^z = x^(y*z)
+- The finite remainder acts as a "tail" multiplier
+
+**Example:**
+```
+(ω² + ω + 1)^(ω + 3)
+```
+
+- Leading exponent of α: a₁ = 2
+- β_limit = ω, β_finite = 3
+- Result: ω^(2 × ω) × (ω² + ω + 1)³ = ω^ω × (ω^6 + ω^5 + ω^4 + ω^3 + ω^2 + ω + 1) =
+ω^(ω+6) + ω^(ω+5) + ω^(ω+4) + ω^(ω+3) + ω^(ω+2) + ω^(ω+1) + ω^ω
+
+**Case 4: Finite base, infinite exponent**
+- k^β where k>1 is finite, β is infinite
+
+**Key insight:** Finite ^ ω = ω. We can extract an ω factor from β, and use k ^ (ω + γ) = (k^ω)^γ = ω^γ
+
+**Formula:** k^β = ω^ξ × k^r
+
+Where β = ω×ξ + r (β divided by ω gives quotient ξ and remainder r)
+
+**Why this works:**
+- k^ω = ω (finite base to infinite power reaches ω)
+- k^(ω×ξ) = (k^ω)^ξ = ω^ξ
+- The finite remainder r contributes a finite multiplier k^r
+
+**Example:**
+```
+2^(ω×3 + 5) = ω³ × 2⁵ = ω³ × 32
+```
+
+**Division by ω (helper operation):**
+
+To divide a CNF ordinal by ω, subtract 1 from each term's exponent, *from the left*. This keeps infinite infinite exponents unchanged. Only finite exponents get diminished.
+```
+(ω^a₁×c₁ + ω^a₂×c₂ + ...) / ω = ω^(a₁-1)×c₁ + ω^(a₂-1)×c₂ + ...
+```
+
+This implements the quotient in the ordinal division α = ω×q + r.
+
+Example:
+
+(w^w^2*5 + w^w*3 + w^6 + w^2*2 + w*5 + 7) / w = (w^w^2*5 + w^w*3 + w^5 + w*2 + 5), with remainder 7.
 
 ### The Limit of CNF
 
@@ -568,10 +751,199 @@ For every factor ε_γ^δ, δ itself must be lesser than ε_(γ+1). Likewise, fo
 
 ### ENF Arithmetic
 
-Arithmetic in ENF is more complex than CNF:
+Arithmetic in ENF is more complex than CNF because we're working with multiple levels of structure: epsilon factors, omega factors, and coefficients.
 
-**Addition:** Similar to CNF - leading term of β absorbs smaller terms of α
-**Multiplication:** Smaller factors are absorbed in leading factor of second multiplicand
+**Addition in ENF:**
+
+Similar to CNF - the leading term of β dominates and absorbs smaller terms of α:
+1. Compare leading terms of α and β
+2. If β's leading term is larger, drop smaller terms of α
+3. If equal, combine coefficients
+4. Append all of β
+
+**Multiplication in ENF:**
+
+Multiplication of ENF ordinals follows the same principle as CNF, but with factor-based absorption.
+
+**Key principle:** When multiplying α × β, factors of α are absorbed by higher-ranked factors in β's leading term.
+
+**Algorithm for multiplying two ENFTerms:**
+
+Given termA × termB:
+
+1. **If termB is finite:** Multiply coefficients and keep all of termA's factors
+   ```
+   (ε₁^ε₀ × ω² × 5) × 3 = ε₁^ε₀ × ω² × 15
+   ```
+
+2. **If termB is infinite:** 
+   - Let k be the leading (highest-ranked) base in termB's factors
+   - **Drop all factors of termA with base < k**
+   - **If termA has a factor with base = k:** Combine exponents additively
+   - **Keep all factors of termA with base > k**
+   - Append remaining factors of termB
+   - Use termB's coefficient (not termA's)
+
+**Why this works:**
+- Higher-ranked bases dominate lower-ranked ones in multiplication
+- When bases match, exponents add (just like ω^a × ω^b = ω^(a+b))
+- The coefficient comes from the right operand when it's infinite
+
+**Detailed Example:**
+
+```
+(ε₁^2 × ε₀^ω × ω³ × 7) × (ε₁ × ω² × 3)
+```
+
+Step 1: Leading base of second term is ε₁ (rank: ε₁)  
+Step 2: First term factors with base ≥ ε₁:
+- ε₁^2 has base = ε₁ (equal)
+- ε₀^ω has base < ε₁ (will be dropped)
+- ω³ has base < ε₁ (will be dropped)
+
+Step 3: Combine ε₁ exponents: 2 + 1 = 3, so we get ε₁^3
+
+Step 4: Append remaining factors and coefficient from second term: ω² × 3
+
+**Result:** ε₁^3 × ω² × 3
+
+**Multiplication of full ENF ordinals:**
+
+For α × β where both are sums of terms:
+
+1. **If β is finite:** Multiply β into α's leading term coefficient, keep other terms without changing their coefficient (only one copy of the tail survives absorption).
+   ```
+   (ε₀ + ω + 5) × 3 = ε₀×3 + ω + 5
+   ```
+
+2. **If β is infinite:**
+   - Multiply α's leading term by each term of β - including the finite part
+   - If β has a finite part, append α's remaining terms
+   
+**Example:**
+```
+(ε₀ + ω×2) × (ε₀ + ω + 3)
+```
+
+Leading term of α: ε₀  
+Terms of β: ε₀, ω, finite part 3
+
+Results:
+- ε₀ × ε₀ = ε₀^2
+- ε₀ × ω = ε₀×ω 
+- ε₀ × 3 = ε₀×3
+- Since β has finite part 3, keep α's remaining terms: ω×2
+
+**Result:** ε₀^2 + ε₀×ω + ε₀×3 + ω×2
+
+**Exponentiation in ENF:**
+
+ENF exponentiation uses rank-based decomposition to handle the complex interaction of epsilon numbers.
+
+**Case 1: Finite exponent**
+- Use exponentiation by squaring (same as CNF)
+
+**Case 2: Base is basic (ω or ε_k), exponent is infinite**
+
+Several subcases:
+
+**2a. ω^(ε_k) = ε_k** (a fundamental identity!)
+```
+ω^ε₀ = ε₀
+ω^ε₁ = ε₁
+```
+This is because ε_k is defined as the kth fixed point where ω^(ε_k) = ε_k.
+
+**2b. Rank-based decomposition when rank(β) > rank(α):**
+
+If β has rank k > α, decompose: β = k×x + r
+
+Then: α^β = k^x × α^r
+
+**Why this works:**
+- The highest-ranked part of β dominates
+- k^x creates the leading structure
+- α^r is a "remainder" multiplier
+
+**Example:**
+```
+ω^(ε₀×2 + ω + 5)
+```
+- Rank of exponent is ε₀
+- Decompose: ε₀×2 + (ω + 5)
+- Result: ε₀^2 × ω^(ω+5)
+
+**2c. For ω with mixed exponent:**
+
+If exponent β = ε_k + r (epsilon number + remainder):
+```
+ω^(ε_k + r) = ε_k × ω^r
+```
+
+The epsilon number is the fixed point, so ω^(ε_k) = ε_k, and we multiply by ω^r.
+
+**Case 3: Epsilon number base**
+
+For ε_j^β:
+
+If rank(β) > rank(ε_j), use rank decomposition as in Case 2b.
+
+Otherwise, the result is directly:
+```
+ε_j^β (represented as ENFFactor with base ε_j and exponent β)
+```
+
+**Case 4: General rank-based algorithm**
+
+For arbitrary α^β:
+
+**If rank(β) > rank(α):**
+- k = rank(β)
+- Decompose β = k×x + r
+- Result: k^x × α^r
+
+**If rank(β) ≤ rank(α):**
+- k = rank(α)
+- c = log of α (the exponent of α's leading factor)
+- Split β into limit part d and finite part r
+- Result: k^(c×d) × α^r
+
+**Definitions:**
+- **rank(α):** The leading base of α (ω for CNF ordinals, ε_k for ENF with epsilon factors)
+- **log(α):** The exponent of α's leading factor (if α = k^c × ..., log is c)
+
+**Complete Example:**
+
+```
+(ε₁ × ω)^(ε₁ + ω + 2)
+```
+
+Step 1: Rank of base is ε₁, rank of exponent is ε₁ (equal)  
+Step 2: Use Case 4, second subcase  
+- k = ε₁
+- log of base: c = 1 (since base = ε₁^1 × ω)
+- Split exponent: d = ε₁ + ω (limit part), r = 2 (finite part)
+
+Step 3: Compute k^(c×d):
+- c × d = 1 × (ε₁ + ω) = ε₁ + ω
+- k^(c×d) = ε₁^(ε₁ + ω)
+
+Step 4: Compute α^r:
+- (ε₁ × ω)^2 = ε₁^2 × ω (using exponentiation by squaring. One copy of ω is absorbed!)
+
+Step 5: Multiply:
+- Result: ε₁^(ε₁ + ω) × ε₁^2 × ω = ε₁^(ε₁ + ω + 2) × ω
+
+**Ordinal Division (helper for exponentiation):**
+
+To compute β = k×x + r (β divided by basic ordinal k):
+
+For each term in β:
+- **If term's leading factor base > k:** Add to quotient
+- **If term's leading factor base = k:** Reduce exponent by 1, add to quotient
+- **If term's leading factor base < k:** Add to remainder
+
+This decomposition is essential for the exponentiation algorithm.
 
 ### The Limit of ENF: ζ₀
 
