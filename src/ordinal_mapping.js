@@ -1,4 +1,14 @@
 // ordinal_mapping.js
+// Forward mapping from ordinal numbers to real numbers
+//
+// This module implements the function f(α) that maps ordinals α < ζ₀ to real numbers in [0, f(ε₀)].
+// The mapping is strictly increasing and continuous, allowing exploration of the ordinal hierarchy
+// through real number representations.
+//
+// Key components:
+// - FParams: Parameterizable scaling factors for the mapping
+// - f(α): Main mapping function with memoization
+// - Internal representation format for ordinals (BigInt, objects with type/structure)
 
 import { DoubleFloatContext, RationalContext } from './operations/NumericContexts.js';
 
@@ -143,7 +153,8 @@ function bigIntReplacer(key, value) {
 }
 
 // NEW: Custom function to generate a canonical string key for memoization
-function generateOrdinalMemoKey(val) {
+// Exported for use in ordinal_mapping_inverse.js for debugging/error messages
+export function generateOrdinalMemoKey(val) {
     const type = typeof val;
     if (type === 'bigint') return val.toString() + 'n';
     if (val === null) return 'null'; // Important to handle null explicitly
@@ -344,53 +355,3 @@ export function f(alphaRep, params) {
 // module.exports = { f, ORDINAL_ZERO, ORDINAL_ONE };
 // For ES6 modules in browser/Node.js:
 // export { f, ORDINAL_ZERO, ORDINAL_ONE };
-
-// Test cases (can be run in Node.js or a browser console if the file is loaded)
-if (typeof require !== 'undefined' && require.main === module) { // Basic check if running as main script in Node.js
-    console.log("Running test cases for ordinal_mapping.f (JavaScript)...");
-
-    // Use OLD_F_PARAMS for these original test cases to match expected values.
-    const testParams = OLD_F_PARAMS;
-    const ctx = testParams.ctx;
-
-    console.log(`f(0) = ${ctx.toNumber(f(ORDINAL_ZERO, testParams))}`);
-    console.log(`f(1) = ${ctx.toNumber(f(ORDINAL_ONE, testParams))}`);
-    console.log(`f(2) = ${ctx.toNumber(f(2n, testParams))}`);
-
-    const epsilon0Rep = { type: 'epsilon', index: ORDINAL_ZERO };
-    console.log(`f(ε₀) = ${ctx.toNumber(f(epsilon0Rep, testParams))}`);
-
-    console.log(`f(ω^0) = ${ctx.toNumber(f({ type: 'pow', k: ORDINAL_ZERO }, testParams))}`);
-
-    const omegaRep = { type: 'pow', k: ORDINAL_ONE };
-    console.log(`f(ω) = ${ctx.toNumber(f(omegaRep, testParams))}`);
-
-    const omegaSqRep = { type: 'pow', k: 2n };
-    console.log(`f(ω^2) = ${ctx.toNumber(f(omegaSqRep, testParams))}`);
-
-    const omegaCbRep = { type: 'pow', k: 3n };
-    console.log(`f(ω^3) = ${ctx.toNumber(f(omegaCbRep, testParams))}`);
-
-    const omegaOmegaRep = { type: 'pow', k: omegaRep };
-    console.log(`f(ω^ω) = ${ctx.toNumber(f(omegaOmegaRep, testParams))}`);
-
-    const omegaOmegaOmegaRep = { type: 'pow', k: omegaOmegaRep };
-    console.log(`f(ω^ω^ω) = ${ctx.toNumber(f(omegaOmegaOmegaRep, testParams))}`);
-
-    const omegaTimes2Rep = { type: 'sum', beta: ORDINAL_ONE, c: 2, delta: ORDINAL_ZERO };
-    console.log(`f(ω*2) = ${ctx.toNumber(f(omegaTimes2Rep, testParams))}`);
-
-    const omegaTimes3Rep = { type: 'sum', beta: ORDINAL_ONE, c: 3, delta: ORDINAL_ZERO };
-    console.log(`f(ω*3) = ${ctx.toNumber(f(omegaTimes3Rep, testParams))}`);
-
-    const omegaTimes2Plus1Rep = { type: 'sum', beta: ORDINAL_ONE, c: 2, delta: ORDINAL_ONE };
-    console.log(`f(ω*2+1) = ${ctx.toNumber(f(omegaTimes2Plus1Rep, testParams))}`);
-
-    const omegaSqTimes2Rep = { type: 'sum', beta: 2n, c: 2, delta: ORDINAL_ZERO };
-    console.log(`f(ω^2*2) = ${ctx.toNumber(f(omegaSqTimes2Rep, testParams))}`);
-
-    const omegaSqPlusOmegaRep = { type: 'sum', beta: 2n, c: 1, delta: omegaRep };
-    console.log(`f(ω^2+ω) = ${ctx.toNumber(f(omegaSqPlusOmegaRep, testParams))}`);
-
-    console.log("Test cases finished.");
-}

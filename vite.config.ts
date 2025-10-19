@@ -19,8 +19,8 @@ export default defineConfig({
             input: {
                 main: './index.html',
                 // Include test pages in build
-                'tests/ordinal_enf_test_new': './tests/ordinal_enf_test_new.html',
-                'tests/ordinal_calculator_test_new': './tests/ordinal_calculator_test_new.html'
+                'tests/ordinal_enf_test': './tests/ordinal_enf_test.html',
+                'tests/ordinal_calculator_test': './tests/ordinal_calculator_test.html'
             },
             output: {
                 entryFileNames: 'assets/bundle.js',

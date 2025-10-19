@@ -1,9 +1,21 @@
 // ordinal_mapping_inverse.js
+// Inverse mapping from real numbers to ordinal numbers
+//
+// This module provides the inverse function f⁻¹(x) that maps real numbers back to ordinals.
+// Given a real number x in the range [0, f(ε₀)], it finds the ordinal α such that f(α) ≈ x.
+//
+// Dependencies:
+// - ordinal_mapping.js: Core mapping functions and utilities
+// - types/: Ordinal type constructors (CNFOrdinal, WTowerOrdinal, EpsilonZero, etc.)
+// - OperationTracer: Global operation budget tracking system
 
-import { f, DEFAULT_F_PARAMS, ORDINAL_ZERO, ORDINAL_ONE, fFinite, addOneToOrdinal, isFiniteOrdinal } from './ordinal_mapping.js';
+import { f, DEFAULT_F_PARAMS, ORDINAL_ZERO, ORDINAL_ONE, fFinite, addOneToOrdinal, isFiniteOrdinal, generateOrdinalMemoKey } from './ordinal_mapping.js';
 import { CNFOrdinal } from './types/CNFOrdinal.js';
 import { EpsilonNumber } from './types/EpsilonNumber.js';
 import { ZeroOrdinal } from './types/ZeroOrdinal.js';
+import { WTowerOrdinal } from './types/WTowerOrdinal.js';
+import { EpsilonZero } from './types/EpsilonZero.js';
+import { OperationTracer } from './OperationTracer.js';
 
 function findFiniteOrdinal(ctx, x, threshold, scale) {
     if (ctx.compare(x, threshold) < 0) { // x is approximately 0
@@ -405,100 +417,7 @@ function DisplayfInverse(x, params = DEFAULT_F_PARAMS, threshold = 1e-14, depth 
     return CNFString;
 }
 
-// Test cases
-function runTests() {
-    console.log("Running test cases for ordinal_mapping_inverse.fInverse (JavaScript)...");
-
-    let testCount = 0;
-    let completedTests = 0;
-
-    function runTest(input, description) {
-        testCount++;
-        try {
-            const result = fInverse(input);
-            // Convert f() format to ordinal instance for display
-            let displayResult = result;
-            if (typeof result === 'object' && result !== null && result.type) {
-                displayResult = convertFFormatToOrdinalInstance(result);
-            } else if (result === "E0_TYPE") {
-                displayResult = EpsilonOrdinal.E_ZEROStatic();
-            } else if (typeof result === 'bigint') {
-                displayResult = new CNFOrdinal(result);
-            }
-            console.log(`fInverse(${description})`, displayResult);
-            completedTests++;
-        } catch (e) {
-            console.log(`fInverse(${description})`, `Error: ${e.message}`);
-            completedTests++;
-        }
-    }
-
-    // Test finite ordinals
-    runTest(0, "0");
-    runTest(0.5, "0.5");
-    runTest(2 / 3, "0.666...");
-
-    // Test ω and its multiples
-    runTest(1, "1");
-    runTest(1.5, "1.5");
-    runTest(5 / 3, "1.666...");
-
-    // Test ω^2 and its multiples
-    runTest(2, "2");
-    runTest(13 / 6, "2.166...");
-
-    // Test ω^ω
-    runTest(3, "3");
-
-    // Test higher powers
-    runTest(11 / 3, "3.666...");
-
-    // Test ε₀
-    runTest(5, "5");
-
-    // Test threshold behavior
-    runTest(0.99999999999999, "0.99999999999999");
-    runTest(1.00000000000001, "1.00000000000001");
-
-    // Test error cases
-    try {
-        fInverse(-0.1);
-        console.log("Error test: fInverse(-0.1)", "Should have thrown for negative input");
-        testCount++;
-        completedTests++;
-    } catch (e) {
-        console.log("Error test: fInverse(-0.1)", "Correctly caught negative input error");
-        testCount++;
-        completedTests++;
-    }
-
-    try {
-        fInverse(5.1);
-        console.log("Error test: fInverse(5.1)", "Should have thrown for input > 5");
-        testCount++;
-        completedTests++;
-    } catch (e) {
-        console.log("Error test: fInverse(5.1)", "Correctly caught input > 5 error");
-        testCount++;
-        completedTests++;
-    }
-
-    // Add a summary
-    console.log("Test Summary", `Completed ${completedTests} of ${testCount} tests`);
-    console.log("Test cases finished.");
-}
-
-// Run tests if this file is being run directly
-if (typeof window === 'undefined' && typeof require !== 'undefined' && require.main === module) {
-    // Node.js environment
-    runTests();
-} else if (typeof window !== 'undefined' && window.location.pathname.endsWith('ordinal_mapping_inverse.js')) {
-    // Browser environment, only if this file is loaded directly
-    runTests();
-}
-
 // Remove ES6 export and replace with global variable
-// export { fInverse, runTests };
+// export { fInverse };
 window.fInverse = fInverse;
-window.runTests = runTests;
 window.convertFFormatToOrdinalInstance = convertFFormatToOrdinalInstance; // Expose globally 
