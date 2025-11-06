@@ -43,7 +43,7 @@ declare global {
     interface Window {
         // Tracer
         OperationTracer: typeof OperationTracer;
-        
+
         // Type classes
         OrdinalBase: typeof OrdinalBase;
         ZeroOrdinal: typeof ZeroOrdinal;
@@ -64,46 +64,53 @@ declare global {
         // Conversion system
         ConversionRegistry: typeof ConversionRegistry;
         ConversionEngine: typeof ConversionEngine;
-        
+
         // Rule engine
         Rule: typeof Rule;
         RuleEngine: typeof RuleEngine;
-        
+
         // Operations system
         // DEPRECATED: Use getOperations() from './operations/OperationsSingleton.js' instead
         Operations: typeof Operations;
         OPERATIONS: Operations;
         initializeOperations: (operations: Operations) => void;
-        
+
         // Operation rule creators
         createAdditionRules: (conversionEngine: ConversionEngine) => Rule[];
         createMultiplicationRules: (conversionEngine: ConversionEngine) => Rule[];
         createExponentiationRules: (conversionEngine: ConversionEngine) => Rule[];
         createTetrationRules: (conversionEngine: ConversionEngine) => Rule[];
         createComparisonRules: (conversionEngine: ConversionEngine) => Rule[];
-        
+
         // Numeric contexts and helpers
         Rational: any; // Complex rational number class
         DoubleFloatContext: any;
         RationalContext: any;
-        
+
         // Parser and calculator
         SimpleParser: any; // Still .js, type as any for now
         calculateSimple: any;
         renderOrdinalSimple: any;
         RenderingComponents: any;
-        
-        // Ordinal-to-real mapping
+
+        // Ordinal-to-real mapping (new typed implementation)
+        fTyped: any;
+        fInverseTyped: any;
         FParams: any;
-        DEFAULT_F_PARAMS: any;
-        OLD_F_PARAMS: any;
+        DoubleContext: any;
+        Interval: any;
+        addOneToOrdinal: any;
         ORDINAL_ZERO: any;
         ORDINAL_ONE: any;
+
+        // Legacy ordinal-to-real mapping (compatibility layer)
+        DEFAULT_F_PARAMS: any;
+        OLD_F_PARAMS: any;
         convertOrdinalInstanceToFFormat: any;
         f: any;
         fInverse: any;
         convertFFormatToOrdinalInstance: any;
-        
+
         // Helper functions
         // DEPRECATED: Import getTowerInfo from './operations/Auxiliary.js' instead
         getTowerInfo?: (exponent: OrdinalBase) => TowerInfo;

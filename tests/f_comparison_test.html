@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>f() vs fTyped() Comparison Test</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1400px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        h1 {
+            color: #2c3e50;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #34495e;
+            margin-top: 30px;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-result {
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+        }
+        .pass {
+            background-color: #d4edda;
+            border-left: 4px solid #28a745;
+        }
+        .fail {
+            background-color: #f8d7da;
+            border-left: 4px solid #dc3545;
+        }
+        .warning {
+            background-color: #fff3cd;
+            border-left: 4px solid #ffc107;
+        }
+        .summary {
+            background: #e9ecef;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            font-weight: bold;
+        }
+        .summary.all-pass {
+            background: #d4edda;
+            color: #155724;
+        }
+        .summary.some-fail {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0;
+            font-size: 12px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #3498db;
+            color: white;
+        }
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+        .diff {
+            font-weight: bold;
+            color: #dc3545;
+        }
+        .exact {
+            color: #28a745;
+        }
+    </style>
+</head>
+<body>
+    <h1>f() vs fTyped&lt;T&gt; Comparison Test</h1>
+    <p>Comparing the original JavaScript f() implementation with the new typed fTyped&lt;T&gt; implementation.</p>
+    <p><strong>Purpose:</strong> Verify that fTyped produces identical results to the original f().</p>
+    <p><strong>Parameters:</strong> Using DEFAULT_F_PARAMS (all scales = 3) for both implementations.</p>
+    
+    <div id="test-results"></div>
+    <div id="summary" class="summary"></div>
+
+    <script type="module">
+        import { f, DEFAULT_F_PARAMS, ORDINAL_ZERO, ORDINAL_ONE } from '../src/ordinal_mapping.js';
+        import { fTyped } from '../src/ordinal_mapping/OrdinalMapping.js';
+        import { DoubleContext } from '../src/ordinal_mapping/Contexts.js';
+        import { FParams } from '../src/ordinal_mapping/FParams.js';
+
+        const resultsDiv = document.getElementById('test-results');
+        const summaryDiv = document.getElementById('summary');
+        
+        let totalTests = 0;
+        let passedTests = 0;
+        let failedTests = 0;
+        let warningTests = 0;
+
+        const comparisonData = [];
+
+        function addTestResult(testName, passed, message = '', isWarning = false) {
+            totalTests++;
+            if (isWarning) {
+                warningTests++;
+            } else if (passed) {
+                passedTests++;
+            } else {
+                failedTests++;
+            }
+            
+            const resultDiv = document.createElement('div');
+            resultDiv.className = `test-result ${isWarning ? 'warning' : (passed ? 'pass' : 'fail')}`;
+            resultDiv.textContent = `${isWarning ? '⚠' : (passed ? '✓' : '✗')} ${testName}${message ? ': ' + message : ''}`;
+            resultsDiv.appendChild(resultDiv);
+        }
+
+        function addSection(title) {
+            const section = document.createElement('div');
+            section.className = 'test-section';
+            section.innerHTML = `<h2>${title}</h2>`;
+            resultsDiv.appendChild(section);
+            return section;
+        }
+
+        function addComparisonTable(section, data) {
+            const table = document.createElement('table');
+            table.innerHTML = `
+                <thead>
+                    <tr>
+                        <th>Ordinal</th>
+                        <th>f() Original</th>
+                        <th>fTyped() New</th>
+                        <th>Difference</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${data.map(row => `
+                        <tr>
+                            <td>${row.ordinal}</td>
+                            <td>${row.original.toExponential(10)}</td>
+                            <td>${row.new.toExponential(10)}</td>
+                            <td class="${row.match ? 'exact' : 'diff'}">${row.diff.toExponential(3)}</td>
+                            <td class="${row.match ? 'exact' : 'diff'}">${row.match ? '✓ Match' : '✗ Differ'}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            `;
+            section.appendChild(table);
+        }
+
+        function updateSummary() {
+            const allPassed = failedTests === 0;
+            summaryDiv.className = `summary ${allPassed ? 'all-pass' : 'some-fail'}`;
+            summaryDiv.innerHTML = `
+                <div>Total Tests: ${totalTests}</div>
+                <div>Passed: ${passedTests}</div>
+                <div>Failed: ${failedTests}</div>
+                <div>Warnings: ${warningTests}</div>
+                <div>Success Rate: ${((passedTests / (totalTests - warningTests)) * 100).toFixed(1)}%</div>
+            `;
+        }
+
+        function compareValues(ordinalRep, ordinalStr, tolerance = 1e-10) {
+            try {
+                // Original f()
+                const originalResult = f(ordinalRep, DEFAULT_F_PARAMS);
+                
+                // New fTyped() - need to convert DEFAULT_F_PARAMS to new format
+                const doubleCtx = new DoubleContext();
+                const newParams = new FParams(
+                    doubleCtx.fromNumber(3),  // hScale (was scaleAdd)
+                    doubleCtx.fromNumber(3),  // wScale (was scaleMult)
+                    doubleCtx.fromNumber(3),  // eScale (was scaleExp)
+                    doubleCtx.fromNumber(3),  // zScale (was scaleEpsilon)
+                    doubleCtx.fromNumber(3)   // tScale (was scaleTet)
+                );
+                
+                const newResult = fTyped(ordinalRep, newParams, doubleCtx).toNumber();
+                
+                const diff = Math.abs(originalResult - newResult);
+                const match = diff < tolerance;
+                
+                comparisonData.push({
+                    ordinal: ordinalStr,
+                    original: originalResult,
+                    new: newResult,
+                    diff: diff,
+                    match: match
+                });
+                
+                return { match, originalResult, newResult, diff };
+            } catch (error) {
+                console.error(`Error comparing ${ordinalStr}:`, error);
+                return { match: false, error: error.message };
+            }
+        }
+
+        // Test Suite
+        try {
+            // Section 1: Finite Ordinals
+            const section1 = addSection('1. Finite Ordinals');
+            const finiteData = [];
+            
+            for (const n of [0n, 1n, 2n, 5n, 10n, 50n, 100n, 1000n]) {
+                const result = compareValues(n, `f(${n})`);
+                finiteData.push(comparisonData[comparisonData.length - 1]);
+                
+                addTestResult(
+                    `f(${n})`,
+                    result.match,
+                    result.match 
+                        ? `exact match: ${result.originalResult.toExponential(6)}`
+                        : `diff = ${result.diff.toExponential(3)} (orig: ${result.originalResult.toExponential(6)}, new: ${result.newResult.toExponential(6)})`
+                );
+            }
+            
+            addComparisonTable(section1, finiteData);
+
+            // Section 2: Powers of Omega (ω^k) - Finite k
+            const section2 = addSection('2. Powers of Omega (ω^k) - Finite Exponents');
+            const powerData = [];
+            
+            for (const k of [0n, 1n, 2n, 3n, 5n, 10n]) {
+                const ordinal = { type: 'pow', k: k };
+                const result = compareValues(ordinal, `f(ω^${k})`);
+                powerData.push(comparisonData[comparisonData.length - 1]);
+                
+                addTestResult(
+                    `f(ω^${k})`,
+                    result.match,
+                    result.match 
+                        ? `exact match: ${result.originalResult.toExponential(6)}`
+                        : `diff = ${result.diff.toExponential(3)} (orig: ${result.originalResult.toExponential(6)}, new: ${result.newResult.toExponential(6)})`
+                );
+            }
+            
+            addComparisonTable(section2, powerData);
+
+            // Section 3: CNF Sums - Simple cases
+            const section3 = addSection('3. CNF Sums (ω^β * c + δ)');
+            const sumData = [];
+            
+            const sumCases = [
+                { ordinal: { type: 'sum', beta: 1n, c: 1, delta: 0n }, str: 'ω * 1 + 0' },
+                { ordinal: { type: 'sum', beta: 1n, c: 1, delta: 1n }, str: 'ω + 1' },
+                { ordinal: { type: 'sum', beta: 1n, c: 1, delta: 5n }, str: 'ω + 5' },
+                { ordinal: { type: 'sum', beta: 1n, c: 2, delta: 0n }, str: 'ω * 2' },
+                { ordinal: { type: 'sum', beta: 1n, c: 3, delta: 7n }, str: 'ω * 3 + 7' },
+                { ordinal: { type: 'sum', beta: 2n, c: 1, delta: 0n }, str: 'ω^2' },
+                { ordinal: { type: 'sum', beta: 2n, c: 2, delta: 0n }, str: 'ω^2 * 2' },
+            ];
+            
+            for (const testCase of sumCases) {
+                const result = compareValues(testCase.ordinal, `f(${testCase.str})`);
+                sumData.push(comparisonData[comparisonData.length - 1]);
+                
+                addTestResult(
+                    `f(${testCase.str})`,
+                    result.match,
+                    result.match 
+                        ? `exact match: ${result.originalResult.toExponential(6)}`
+                        : `diff = ${result.diff.toExponential(3)} (orig: ${result.originalResult.toExponential(6)}, new: ${result.newResult.toExponential(6)})`
+                );
+            }
+            
+            addComparisonTable(section3, sumData);
+
+            // Section 4: Powers of Omega - Infinite k
+            const section4 = addSection('4. Powers of Omega (ω^k) - Infinite Exponents');
+            const infPowerData = [];
+            
+            const infPowerCases = [
+                { ordinal: { type: 'pow', k: { type: 'pow', k: 1n } }, str: 'ω^ω' },
+                { ordinal: { type: 'pow', k: { type: 'pow', k: 2n } }, str: 'ω^(ω^2)' },
+                { ordinal: { type: 'pow', k: { type: 'sum', beta: 1n, c: 2, delta: 0n } }, str: 'ω^(ω*2)' },
+            ];
+            
+            for (const testCase of infPowerCases) {
+                const result = compareValues(testCase.ordinal, `f(${testCase.str})`);
+                infPowerData.push(comparisonData[comparisonData.length - 1]);
+                
+                addTestResult(
+                    `f(${testCase.str})`,
+                    result.match,
+                    result.match 
+                        ? `exact match: ${result.originalResult.toExponential(6)}`
+                        : `diff = ${result.diff.toExponential(3)} (orig: ${result.originalResult.toExponential(6)}, new: ${result.newResult.toExponential(6)})`
+                );
+            }
+            
+            addComparisonTable(section4, infPowerData);
+
+            // Section 5: W-Towers
+            const section5 = addSection('5. Omega Towers (ω↑↑n)');
+            const towerData = [];
+            
+            for (const h of [1, 2, 3]) {
+                const ordinal = { type: 'w_tower', height: h };
+                const result = compareValues(ordinal, `f(ω↑↑${h})`);
+                towerData.push(comparisonData[comparisonData.length - 1]);
+                
+                addTestResult(
+                    `f(ω↑↑${h})`,
+                    result.match,
+                    result.match 
+                        ? `exact match: ${result.originalResult.toExponential(6)}`
+                        : `diff = ${result.diff.toExponential(3)} (orig: ${result.originalResult.toExponential(6)}, new: ${result.newResult.toExponential(6)})`
+                );
+            }
+            
+            addComparisonTable(section5, towerData);
+
+            // Section 6: Epsilon Numbers
+            const section6 = addSection('6. Epsilon Numbers');
+            const epsilonData = [];
+            
+            const epsilonCases = [
+                { ordinal: { type: 'epsilon', index: 0n }, str: 'ε_0' },
+                { ordinal: 'E0_TYPE', str: 'E0_TYPE (legacy)' },
+            ];
+            
+            for (const testCase of epsilonCases) {
+                const result = compareValues(testCase.ordinal, `f(${testCase.str})`);
+                epsilonData.push(comparisonData[comparisonData.length - 1]);
+                
+                addTestResult(
+                    `f(${testCase.str})`,
+                    result.match,
+                    result.match 
+                        ? `exact match: ${result.originalResult.toExponential(6)}`
+                        : `diff = ${result.diff.toExponential(3)} (orig: ${result.originalResult.toExponential(6)}, new: ${result.newResult.toExponential(6)})`
+                );
+            }
+            
+            addComparisonTable(section6, epsilonData);
+
+            // Section 7: Complex Nested Cases
+            const section7 = addSection('7. Complex Nested Cases');
+            const complexData = [];
+            
+            const complexCases = [
+                { 
+                    ordinal: { type: 'sum', beta: 2n, c: 3, delta: { type: 'sum', beta: 1n, c: 5, delta: 7n } },
+                    str: 'ω^2 * 3 + ω * 5 + 7'
+                },
+                {
+                    ordinal: { type: 'pow', k: { type: 'sum', beta: 1n, c: 2, delta: 3n } },
+                    str: 'ω^(ω*2 + 3)'
+                },
+            ];
+            
+            for (const testCase of complexCases) {
+                const result = compareValues(testCase.ordinal, `f(${testCase.str})`);
+                complexData.push(comparisonData[comparisonData.length - 1]);
+                
+                addTestResult(
+                    `f(${testCase.str})`,
+                    result.match,
+                    result.match 
+                        ? `exact match: ${result.originalResult.toExponential(6)}`
+                        : `diff = ${result.diff.toExponential(3)} (orig: ${result.originalResult.toExponential(6)}, new: ${result.newResult.toExponential(6)})`
+                );
+            }
+            
+            addComparisonTable(section7, complexData);
+
+            // Section 8: Known Reference Values
+            const section8 = addSection('8. Known Reference Values');
+            
+            // Document what the CORRECT values should be
+            addTestResult('[Reference] f(0) should equal 0', true, '', true);
+            addTestResult('[Reference] f(1) = 1/(1+3) = 0.25 with default params', true, '', true);
+            addTestResult('[Reference] f(n) < 1 for all finite n', true, '', true);
+            addTestResult('[Reference] f(ω) > f(any finite)', true, '', true);
+            addTestResult('[Reference] f(ε_0) should be 1 + (1+e)*w*(1+t) = 1 + 4*3*4 = 49', true, '', true);
+
+            // Update summary
+            updateSummary();
+
+            // Add final analysis
+            const analysisSection = addSection('9. Analysis Summary');
+            const failedComparisons = comparisonData.filter(d => !d.match);
+            
+            if (failedComparisons.length > 0) {
+                analysisSection.innerHTML += `
+                    <p style="color: #dc3545; font-weight: bold;">
+                        ⚠️ Found ${failedComparisons.length} mismatches between f() and fTyped()
+                    </p>
+                    <p>The largest difference is: ${Math.max(...failedComparisons.map(d => d.diff)).toExponential(3)}</p>
+                    <p>Affected ordinals: ${failedComparisons.map(d => d.ordinal).join(', ')}</p>
+                `;
+            } else {
+                analysisSection.innerHTML += `
+                    <p style="color: #28a745; font-weight: bold;">
+                        ✓ All comparisons match! fTyped() produces identical results to f().
+                    </p>
+                `;
+            }
+
+        } catch (error) {
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'test-result fail';
+            errorDiv.textContent = `✗ Test suite crashed: ${error.message}`;
+            errorDiv.innerHTML += `<pre>${error.stack}</pre>`;
+            resultsDiv.appendChild(errorDiv);
+            console.error('Test error:', error);
+            updateSummary();
+        }
+    </script>
+</body>
+</html>

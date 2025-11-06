@@ -3,8 +3,23 @@
 import { OperationTracer } from './OperationTracer.js';
 import { calculateSimple } from './SimpleCalculator.js';
 import { renderOrdinalSimple, renderOrdinalGraphicalFromStringSimple } from './SimpleRenderer.js';
-import { f, DEFAULT_F_PARAMS, convertOrdinalInstanceToFFormat } from './ordinal_mapping.js';
-import { fInverse, convertFFormatToOrdinalInstance } from './ordinal_mapping_inverse.js';
+
+// New typed ordinal mapping implementation
+import { fTyped, type OrdinalRepresentation } from './ordinal_mapping/OrdinalMapping.js';
+import { fInverseTyped } from './ordinal_mapping/OrdinalMappingInverse.js';
+import { FParams } from './ordinal_mapping/FParams.js';
+import { DoubleContext } from './ordinal_mapping/Contexts.js';
+import { Interval } from './ordinal_mapping/Interval.js';
+
+// Conversion utilities (from new implementation)
+import {
+    convertOrdinalInstanceToFFormat,
+    convertFFormatToOrdinalInstance
+} from './ordinal_mapping/OrdinalMappingCompat.js';
+
+// Create a shared context and params for all f/fInverse operations
+const doubleContext = new DoubleContext();
+const fParams = FParams.default(doubleContext);
 
 /**
  * Initializes the UI event handlers and interactive elements.
@@ -143,17 +158,20 @@ export function initializeUI() {
         console.log('Tooltip trigger element NOT found.');
     }
 
-    // --- Set slider max based on DEFAULT_F_PARAMS --- BEGIN
-    if (mappedValueSliderElement && typeof DEFAULT_F_PARAMS !== 'undefined' && DEFAULT_F_PARAMS.precomputed && typeof DEFAULT_F_PARAMS.precomputed[5] === 'number') {
-        const sliderMaxValue = DEFAULT_F_PARAMS.precomputed[5];
-        mappedValueSliderElement.max = String(sliderMaxValue);
-        // If you have a text element displaying the max range, update it here too.
-        // For example: document.getElementById('sliderMaxRangeDisplay').textContent = sliderMaxValue.toFixed(3);
-        console.log(`Slider max attribute set to: ${sliderMaxValue}`);
+    // --- Set slider max based on fParams --- BEGIN
+    if (mappedValueSliderElement && fParams.precomputed && fParams.precomputed.length > 5) {
+        const omegaPow5Value = fParams.precomputed[5]; // This is a numeric value in the context
+        if (omegaPow5Value) {
+            const sliderMaxValue = omegaPow5Value.toNumber();
+            mappedValueSliderElement.max = String(sliderMaxValue);
+            // If you have a text element displaying the max range, update it here too.
+            // For example: document.getElementById('sliderMaxRangeDisplay').textContent = sliderMaxValue.toFixed(3);
+            console.log(`Slider max attribute set to: ${sliderMaxValue}`);
+        }
     } else {
-        console.warn('Could not set slider max value dynamically. DEFAULT_F_PARAMS or precomputed[5] is not available or not a number. Slider will use its HTML default max.');
+        console.warn('Could not set slider max value dynamically. fParams.precomputed[5] is not available. Slider will use its HTML default max.');
     }
-    // --- Set slider max based on DEFAULT_F_PARAMS --- END
+    // --- Set slider max based on fParams --- END
 
     function calculateAndDisplay() {
         // Ensure elements exist before proceeding, especially ordinalInputElement
@@ -328,9 +346,10 @@ export function initializeUI() {
                     const fFormattedOrdinal = convertOrdinalInstanceToFFormat(originalResultObject);
                     console.log("[fCalc] convertOrdinalInstanceToFFormat returned:", fFormattedOrdinal);
 
-                    console.log("[fCalc] Calling f with:", fFormattedOrdinal, "and params:", DEFAULT_F_PARAMS);
-                    const mappedValue = f(fFormattedOrdinal, DEFAULT_F_PARAMS);
-                    console.log("[fCalc] f returned mappedValue:", mappedValue, "(type:", typeof mappedValue, ")");
+                    console.log("[fCalc] Calling fTyped with:", fFormattedOrdinal, "and params:", fParams);
+                    const mappedValueTyped = fTyped(fFormattedOrdinal as OrdinalRepresentation, fParams);
+                    const mappedValue = mappedValueTyped.toNumber();
+                    console.log("[fCalc] fTyped returned mappedValue:", mappedValue, "(type:", typeof mappedValue, ")");
 
                     if (typeof mappedValue === 'number' && !isNaN(mappedValue)) {
                         const str = formatFloat13(mappedValue);
@@ -634,8 +653,8 @@ export function initializeUI() {
         });
     }
 
-    // Event listener for the main slider (to call fInverse etc.)
-    if (mappedValueSliderElement && ordinalInputElement && typeof fInverse === 'function' && typeof convertFFormatToOrdinalInstance === 'function') {
+    // Event listener for the main slider (to call fInverseTyped etc.)
+    if (mappedValueSliderElement && ordinalInputElement && typeof convertFFormatToOrdinalInstance === 'function') {
         mappedValueSliderElement.addEventListener('input', function () {
             const sliderValue = parseFloat(this.value);
             if (isNaN(sliderValue)) return;
@@ -643,9 +662,24 @@ export function initializeUI() {
             console.log(`Slider moved to: ${sliderValue}`);
 
             try {
-                console.log("[fInverseCalc] Calling fInverse with sliderValue:", sliderValue, "and params:", DEFAULT_F_PARAMS);
-                const ordinalRepFromInverse = fInverse(sliderValue, DEFAULT_F_PARAMS);
-                console.log("[fInverseCalc] fInverse returned:", ordinalRepFromInverse);
+                console.log("[fInverseCalc] Starting with sliderValue:", sliderValue);
+                console.log("[fInverseCalc] doubleContext:", doubleContext);
+                console.log("[fInverseCalc] fParams:", fParams);
+                console.log("[fInverseCalc] Interval:", Interval);
+
+                // Wrap the slider value in a small interval [value - 1e-14, value + 1e-14]
+                // This provides tolerance for the inverse calculation
+                const epsilon = 1e-14;
+                const lowerValue = doubleContext.fromNumber(Math.max(0, sliderValue - epsilon));
+                const upperValue = doubleContext.fromNumber(sliderValue + epsilon);
+                console.log("[fInverseCalc] lowerValue:", lowerValue, "upperValue:", upperValue);
+
+                const sliderInterval = new Interval(lowerValue, upperValue);
+                console.log("[fInverseCalc] sliderInterval:", sliderInterval);
+
+                console.log("[fInverseCalc] Calling fInverseTyped...");
+                const ordinalRepFromInverse = fInverseTyped(sliderInterval, fParams);
+                console.log("[fInverseCalc] fInverseTyped returned:", ordinalRepFromInverse);
 
                 const ordinalInstanceFromInverse = convertFFormatToOrdinalInstance(ordinalRepFromInverse); // Uses global tracer
                 console.log("[fInverseCalc] convertFFormatToOrdinalInstance returned:", ordinalInstanceFromInverse);
@@ -677,9 +711,10 @@ export function initializeUI() {
 
                 // Update the f(α) text for the new ordinal from slider
                 const fFormattedOrdinalFromInverse = convertOrdinalInstanceToFFormat(ordinalInstanceFromInverse);
-                console.log("[fInverseCalc] Recalculating f for verification. Calling f with:", fFormattedOrdinalFromInverse, "and params:", DEFAULT_F_PARAMS);
-                const mappedValueVerify = f(fFormattedOrdinalFromInverse, DEFAULT_F_PARAMS);
-                console.log("[fInverseCalc] f returned for verification:", mappedValueVerify);
+                console.log("[fInverseCalc] Recalculating f for verification. Calling fTyped with:", fFormattedOrdinalFromInverse, "and params:", fParams);
+                const mappedValueVerifyTyped = fTyped(fFormattedOrdinalFromInverse as OrdinalRepresentation, fParams);
+                const mappedValueVerify = mappedValueVerifyTyped.toNumber();
+                console.log("[fInverseCalc] fTyped returned for verification:", mappedValueVerify);
                 if (mappedValueTextElement) {
                     mappedValueTextElement.textContent = typeof mappedValueVerify === 'number' && !isNaN(mappedValueVerify) ? formatFloat13(mappedValueVerify) : "N/A";
                     mappedValueTextElement.classList.remove('placeholder-text');

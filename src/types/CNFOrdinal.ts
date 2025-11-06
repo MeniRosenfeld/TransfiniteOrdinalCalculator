@@ -20,7 +20,7 @@ export interface CNFTerm {
 }
 
 // F-format representation types
-export type FFormat = bigint | { type: 'pow'; k: FFormat } | { type: 'sum'; beta: FFormat; c: number; delta: FFormat };
+export type FFormat = bigint | { type: 'pow'; k: FFormat } | { type: 'sum'; beta: FFormat; c: bigint; delta: FFormat };
 
 /**
  * Represents an ordinal in Cantor Normal Form (CNF).
@@ -206,7 +206,7 @@ export class CNFOrdinal extends OrdinalBase {
     }
 
     // Helper method to check if terms represent a finite ordinal
-    _isFiniteTerms(terms: Array<{exponent: OrdinalBase, coefficient: bigint}>): boolean {
+    _isFiniteTerms(terms: Array<{ exponent: OrdinalBase, coefficient: bigint }>): boolean {
         return terms.length === 0 || (terms.length === 1 && terms[0].exponent.isZero());
     }
 
@@ -361,17 +361,28 @@ export class CNFOrdinal extends OrdinalBase {
         if (this.isFinite()) return this.getFinitePart();
 
         const terms = this.terms;
+
+        // Validate: should have at least one term if not zero/finite
+        if (terms.length === 0) {
+            throw new Error('CNFOrdinal.toFFormat(): Non-finite ordinal has no terms');
+        }
+
+        // Single term with coefficient 1: ω^k
         if (terms.length === 1 && terms[0].coefficient === 1n && !terms[0].exponent.isZero()) {
             const k_rep_for_f = terms[0].exponent.toFFormat();
             return { type: 'pow', k: k_rep_for_f };
         }
+
+        // Multiple terms or coefficient != 1: ω^β * c + δ
         const firstTerm = terms[0];
         const beta_rep_for_f = firstTerm.exponent.toFFormat();
-        const c_from_ordinal = firstTerm.coefficient;
-        let c_num_for_f = Number(c_from_ordinal);
-        if (c_from_ordinal > BigInt(Number.MAX_SAFE_INTEGER) || c_from_ordinal < BigInt(Number.MIN_SAFE_INTEGER)) {
-            // Outside safe range; Number() still yields a number (possibly Infinity), which f() already handles
+        const c_from_ordinal = firstTerm.coefficient; // Keep as bigint
+
+        // Validate coefficient
+        if (typeof c_from_ordinal !== 'bigint' || c_from_ordinal <= 0n) {
+            throw new Error(`CNFOrdinal.toFFormat(): Invalid coefficient ${c_from_ordinal} (type: ${typeof c_from_ordinal})`);
         }
+
         let delta_rep_for_f;
         if (terms.length === 1) {
             delta_rep_for_f = 0n;
@@ -380,7 +391,7 @@ export class CNFOrdinal extends OrdinalBase {
             const remainderOrdinal = new CNFOrdinal(remainderTerms);
             delta_rep_for_f = remainderOrdinal.toFFormat();
         }
-        return { type: 'sum', beta: beta_rep_for_f, c: c_num_for_f, delta: delta_rep_for_f };
+        return { type: 'sum', beta: beta_rep_for_f, c: c_from_ordinal, delta: delta_rep_for_f };
     }
 
     isEpsilonNumber() { return false; }

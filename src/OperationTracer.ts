@@ -92,7 +92,7 @@ export class OperationTracer {
      */
     static setGlobalTracer(budget: number): void {
         OperationTracer._globalTracer = new OperationTracer(budget);
-        console.log(`[GlobalTracer] Set global tracer with budget: ${budget}`);
+        //console.log(`[GlobalTracer] Set global tracer with budget: ${budget}`);
     }
 
     /**

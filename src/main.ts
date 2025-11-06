@@ -31,7 +31,7 @@ import { ConversionEngine } from './conversions/ConversionEngine.js';
 import { Rule, RuleEngine } from './operations/RuleEngine.js';
 import { getTowerInfo } from './operations/Auxiliary.js';
 import { Rational } from './operations/Rational.js';
-import { DoubleFloatContext, RationalContext } from './operations/NumericContexts.js';
+import { DoubleFloatContext } from './operations/NumericContexts.js';
 import { createAdditionRules } from './operations/AdditionRules.js';
 import { createMultiplicationRules } from './operations/MultiplicationRules.js';
 import { createExponentiationRules } from './operations/ExponentiationRules.js';
@@ -46,9 +46,41 @@ import { SimpleParser } from './SimpleParser.js';
 import { calculateSimple } from './SimpleCalculator.js';
 import { renderOrdinalSimple } from './SimpleRenderer.js';
 
-// Ordinal mapping
-import { FParams, DEFAULT_F_PARAMS, OLD_F_PARAMS, ORDINAL_ZERO, ORDINAL_ONE, convertOrdinalInstanceToFFormat, f } from './ordinal_mapping.js';
-import { fInverse, convertFFormatToOrdinalInstance } from './ordinal_mapping_inverse.js';
+// Ordinal mapping - New typed implementation
+import {
+    fTyped,
+    addOneToOrdinal,
+    ORDINAL_ZERO,
+    ORDINAL_ONE,
+    type OrdinalRepresentation
+} from './ordinal_mapping/OrdinalMapping.js';
+
+import {
+    fInverseTyped
+} from './ordinal_mapping/OrdinalMappingInverse.js';
+
+import {
+    FParams
+} from './ordinal_mapping/FParams.js';
+
+import {
+    DoubleContext,
+    RationalContext
+} from './ordinal_mapping/Contexts.js';
+
+import {
+    Interval
+} from './ordinal_mapping/Interval.js';
+
+// Legacy compatibility layer (for tests and old code)
+import {
+    DEFAULT_F_PARAMS,
+    OLD_F_PARAMS,
+    convertOrdinalInstanceToFFormat,
+    convertFFormatToOrdinalInstance,
+    f,
+    fInverse
+} from './ordinal_mapping/OrdinalMappingCompat.js';
 
 // UI
 import { initializeUI } from './script.js';
@@ -106,11 +138,20 @@ window.SimpleParser = SimpleParser;
 window.calculateSimple = calculateSimple;
 window.renderOrdinalSimple = renderOrdinalSimple;
 window.RenderingComponents = RenderingComponents;
+
+// New typed ordinal mapping
+window.fTyped = fTyped;
+window.fInverseTyped = fInverseTyped;
 window.FParams = FParams;
-window.DEFAULT_F_PARAMS = DEFAULT_F_PARAMS;
-window.OLD_F_PARAMS = OLD_F_PARAMS;
+window.DoubleContext = DoubleContext;
+window.Interval = Interval;
+window.addOneToOrdinal = addOneToOrdinal;
 window.ORDINAL_ZERO = ORDINAL_ZERO;
 window.ORDINAL_ONE = ORDINAL_ONE;
+
+// Legacy ordinal mapping (for backward compatibility)
+window.DEFAULT_F_PARAMS = DEFAULT_F_PARAMS;
+window.OLD_F_PARAMS = OLD_F_PARAMS;
 window.convertOrdinalInstanceToFFormat = convertOrdinalInstanceToFFormat;
 window.f = f;
 window.fInverse = fInverse;
@@ -170,7 +211,7 @@ console.log('[Main] OrdinalFactory initialized');
 if (OPERATIONS && OPERATIONS.initialize) {
     OPERATIONS.initialize();
     console.log('[Main] OPERATIONS system initialized immediately');
-    
+
     // Initialize the modern singleton pattern
     initializeOperations(OPERATIONS);
     console.log('[Main] Operations singleton initialized');

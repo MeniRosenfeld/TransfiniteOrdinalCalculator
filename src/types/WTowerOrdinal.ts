@@ -104,10 +104,9 @@ export class WTowerOrdinal extends OrdinalBase {
 
     toFFormat() {
         if (this.height === -1n) return 0n;
-        // Represent as { type: 'w_tower', height: Number }
-        const h = this.height;
-        const asNum = Number(h);
-        return { type: 'w_tower', height: asNum };
+        // Represent as { type: 'w_tower', height: bigint }
+        // Keep as bigint to avoid precision loss for large heights
+        return { type: 'w_tower', height: this.height };
     }
 
     // Convenience method used by legacy tests: produce CNF directly
