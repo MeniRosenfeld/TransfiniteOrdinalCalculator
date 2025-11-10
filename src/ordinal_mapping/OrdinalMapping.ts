@@ -30,6 +30,14 @@ export const ORDINAL_ZERO = 0n;
 export const ORDINAL_ONE = 1n;
 
 /**
+ * Global memoization cache for fTyped results.
+ * Maps ordinal+params string to computed value.
+ * This dramatically improves performance for recursive calculations
+ * by avoiding redundant computation of the same ordinals.
+ */
+const globalMemo = new Map<string, any>();
+
+/**
  * Checks if an ordinal representation is a finite ordinal (BigInt).
  */
 export function isFiniteOrdinal(ordinalRep: OrdinalRepresentation): ordinalRep is bigint {
@@ -348,8 +356,9 @@ export function fTyped<T extends NumericValue<T>>(
   // Validate parameters
   params.validateOrThrow();
 
-  // Create fresh memo for this call
-  const memo = new Map<string, T>();
+  // Use global memo for cross-call memoization
+  // Cast to Map<string, T> since TypeScript can't infer the type narrowing
+  const memo = globalMemo as Map<string, T>;
 
   return fTypedInternal(alphaRep, params, memo);
 }

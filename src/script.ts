@@ -662,26 +662,25 @@ export function initializeUI() {
             console.log(`Slider moved to: ${sliderValue}`);
 
             try {
+                const perfStart = performance.now();
                 console.log("[fInverseCalc] Starting with sliderValue:", sliderValue);
-                console.log("[fInverseCalc] doubleContext:", doubleContext);
-                console.log("[fInverseCalc] fParams:", fParams);
-                console.log("[fInverseCalc] Interval:", Interval);
 
                 // Wrap the slider value in a small interval [value - 1e-14, value + 1e-14]
                 // This provides tolerance for the inverse calculation
                 const epsilon = 1e-14;
                 const lowerValue = doubleContext.fromNumber(Math.max(0, sliderValue - epsilon));
                 const upperValue = doubleContext.fromNumber(sliderValue + epsilon);
-                console.log("[fInverseCalc] lowerValue:", lowerValue, "upperValue:", upperValue);
-
                 const sliderInterval = new Interval(lowerValue, upperValue);
-                console.log("[fInverseCalc] sliderInterval:", sliderInterval);
 
-                console.log("[fInverseCalc] Calling fInverseTyped...");
+                const t0 = performance.now();
                 const ordinalRepFromInverse = fInverseTyped(sliderInterval, fParams);
+                const t1 = performance.now();
+                console.log(`[PERF] fInverseTyped took ${(t1 - t0).toFixed(2)}ms`);
                 console.log("[fInverseCalc] fInverseTyped returned:", ordinalRepFromInverse);
 
                 const ordinalInstanceFromInverse = convertFFormatToOrdinalInstance(ordinalRepFromInverse); // Uses global tracer
+                const t2 = performance.now();
+                console.log(`[PERF] convertFFormatToOrdinalInstance took ${(t2 - t1).toFixed(2)}ms`);
                 console.log("[fInverseCalc] convertFFormatToOrdinalInstance returned:", ordinalInstanceFromInverse);
 
                 const sliderDisplayString = ordinalInstanceFromInverse.toString();
@@ -710,11 +709,16 @@ export function initializeUI() {
                 }
 
                 // Update the f(α) text for the new ordinal from slider
+                const t3 = performance.now();
                 const fFormattedOrdinalFromInverse = convertOrdinalInstanceToFFormat(ordinalInstanceFromInverse);
-                console.log("[fInverseCalc] Recalculating f for verification. Calling fTyped with:", fFormattedOrdinalFromInverse, "and params:", fParams);
+                const t4 = performance.now();
+                console.log(`[PERF] convertOrdinalInstanceToFFormat took ${(t4 - t3).toFixed(2)}ms`);
+
                 const mappedValueVerifyTyped = fTyped(fFormattedOrdinalFromInverse as OrdinalRepresentation, fParams);
                 const mappedValueVerify = mappedValueVerifyTyped.toNumber();
-                console.log("[fInverseCalc] fTyped returned for verification:", mappedValueVerify);
+                const t5 = performance.now();
+                console.log(`[PERF] fTyped (verification) took ${(t5 - t4).toFixed(2)}ms`);
+                console.log(`[PERF] Total slider operation took ${(t5 - perfStart).toFixed(2)}ms`);
                 if (mappedValueTextElement) {
                     mappedValueTextElement.textContent = typeof mappedValueVerify === 'number' && !isNaN(mappedValueVerify) ? formatFloat13(mappedValueVerify) : "N/A";
                     mappedValueTextElement.classList.remove('placeholder-text');
