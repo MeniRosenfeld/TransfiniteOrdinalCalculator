@@ -1,1720 +1,2096 @@
 <!DOCTYPE html>
 <html lang="en">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Arithmetic Laws Test Suite</title>
     <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            margin: 20px;
-            background-color: #f8f9fa;
-            color: #333;
-        }
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        margin: 20px;
+        background-color: #f8f9fa;
+        color: #333;
+      }
 
-        .header {
-            text-align: center;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 20px;
-            border-radius: 10px;
-            margin-bottom: 30px;
-        }
+      .header {
+        text-align: center;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 20px;
+        border-radius: 10px;
+        margin-bottom: 30px;
+      }
 
-        .config-section {
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-        }
+      .config-section {
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
 
-        .config-row {
-            display: flex;
-            align-items: center;
-            margin-bottom: 15px;
-            flex-wrap: wrap;
-        }
+      .config-row {
+        display: flex;
+        align-items: center;
+        margin-bottom: 15px;
+        flex-wrap: wrap;
+      }
 
-        .config-label {
-            min-width: 150px;
-            font-weight: bold;
-            margin-right: 10px;
-        }
+      .config-label {
+        min-width: 150px;
+        font-weight: bold;
+        margin-right: 10px;
+      }
 
-        .config-input {
-            padding: 5px 10px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            margin-right: 10px;
-            width: 80px;
-        }
+      .config-input {
+        padding: 5px 10px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        margin-right: 10px;
+        width: 80px;
+      }
 
-        .config-input.range-input {
-            width: 120px;
-        }
+      .config-input.range-input {
+        width: 120px;
+      }
 
-        .preset-buttons {
-            display: flex;
-            gap: 5px;
-            flex-wrap: wrap;
-        }
+      .preset-buttons {
+        display: flex;
+        gap: 5px;
+        flex-wrap: wrap;
+      }
 
-        .preset-btn {
-            padding: 5px 10px;
-            background: #e9ecef;
-            border: 1px solid #ced4da;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 12px;
-        }
+      .preset-btn {
+        padding: 5px 10px;
+        background: #e9ecef;
+        border: 1px solid #ced4da;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 12px;
+      }
 
-        .preset-btn:hover {
-            background: #dee2e6;
-        }
+      .preset-btn:hover {
+        background: #dee2e6;
+      }
 
-        .control-section {
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            text-align: center;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-        }
+      .control-section {
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+        text-align: center;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
 
-        .control-btn {
-            padding: 12px 24px;
-            margin: 0 10px;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
+      .control-btn {
+        padding: 12px 24px;
+        margin: 0 10px;
+        border: none;
+        border-radius: 8px;
+        font-size: 16px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: all 0.3s;
+      }
 
-        .start-btn {
-            background: #28a745;
-            color: white;
-        }
+      .start-btn {
+        background: #28a745;
+        color: white;
+      }
 
-        .start-btn:hover:not(:disabled) {
-            background: #218838;
-        }
+      .start-btn:hover:not(:disabled) {
+        background: #218838;
+      }
 
-        .pause-btn {
-            background: #ffc107;
-            color: #212529;
-        }
+      .pause-btn {
+        background: #ffc107;
+        color: #212529;
+      }
 
-        .pause-btn:hover:not(:disabled) {
-            background: #e0a800;
-        }
+      .pause-btn:hover:not(:disabled) {
+        background: #e0a800;
+      }
 
-        .reset-btn {
-            background: #dc3545;
-            color: white;
-        }
+      .reset-btn {
+        background: #dc3545;
+        color: white;
+      }
 
-        .reset-btn:hover:not(:disabled) {
-            background: #c82333;
-        }
+      .reset-btn:hover:not(:disabled) {
+        background: #c82333;
+      }
 
-        .step-btn {
-            background: #17a2b8;
-            color: white;
-        }
+      .step-btn {
+        background: #17a2b8;
+        color: white;
+      }
 
-        .step-btn:hover:not(:disabled) {
-            background: #138496;
-        }
+      .step-btn:hover:not(:disabled) {
+        background: #138496;
+      }
 
-        .control-btn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-        }
+      .control-btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
 
-        .results-section {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-            gap: 20px;
-            margin-bottom: 20px;
-        }
+      .results-section {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+        gap: 20px;
+        margin-bottom: 20px;
+      }
 
-        .test-category {
-            background: white;
-            border-radius: 10px;
-            padding: 20px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-        }
+      .test-category {
+        background: white;
+        border-radius: 10px;
+        padding: 20px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
 
-        .category-title {
-            font-size: 18px;
-            font-weight: bold;
-            margin-bottom: 15px;
-            color: #495057;
-            border-bottom: 2px solid #e9ecef;
-            padding-bottom: 5px;
-        }
+      .category-title {
+        font-size: 18px;
+        font-weight: bold;
+        margin-bottom: 15px;
+        color: #495057;
+        border-bottom: 2px solid #e9ecef;
+        padding-bottom: 5px;
+      }
 
-        .stats-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            margin-bottom: 15px;
-        }
+      .stats-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        margin-bottom: 15px;
+      }
 
-        .stat-item {
-            display: flex;
-            justify-content: space-between;
-            padding: 8px;
-            background: #f8f9fa;
-            border-radius: 5px;
-        }
+      .stat-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 8px;
+        background: #f8f9fa;
+        border-radius: 5px;
+      }
 
-        .stat-value {
-            font-weight: bold;
-        }
+      .stat-value {
+        font-weight: bold;
+      }
 
-        .stat-value.passed {
-            color: #28a745;
-        }
+      .stat-value.passed {
+        color: #28a745;
+      }
 
-        .stat-value.aborted {
-            color: #ffc107;
-        }
+      .stat-value.aborted {
+        color: #ffc107;
+      }
 
-        .stat-value.failed {
-            color: #dc3545;
-        }
+      .stat-value.failed {
+        color: #dc3545;
+      }
 
-        .examples-section {
-            margin-top: 15px;
-        }
+      .examples-section {
+        margin-top: 15px;
+      }
 
-        .example-group {
-            margin-bottom: 10px;
-        }
+      .example-group {
+        margin-bottom: 10px;
+      }
 
-        .example-title {
-            font-weight: bold;
-            font-size: 14px;
-            color: #6c757d;
-            margin-bottom: 5px;
-        }
+      .example-title {
+        font-weight: bold;
+        font-size: 14px;
+        color: #6c757d;
+        margin-bottom: 5px;
+      }
 
-        .example-item {
-            background: #f8f9fa;
-            padding: 8px;
-            border-radius: 5px;
-            margin-bottom: 5px;
-            font-family: 'Courier New', monospace;
-            font-size: 12px;
-            word-break: break-all;
-        }
+      .example-item {
+        background: #f8f9fa;
+        padding: 8px;
+        border-radius: 5px;
+        margin-bottom: 5px;
+        font-family: "Courier New", monospace;
+        font-size: 12px;
+        word-break: break-all;
+      }
 
-        .example-item.passed {
-            border-left: 4px solid #28a745;
-        }
+      .example-item.passed {
+        border-left: 4px solid #28a745;
+      }
 
-        .example-item.aborted {
-            border-left: 4px solid #ffc107;
-        }
+      .example-item.aborted {
+        border-left: 4px solid #ffc107;
+      }
 
-        .example-item.failed {
-            border-left: 4px solid #dc3545;
-        }
+      .example-item.failed {
+        border-left: 4px solid #dc3545;
+      }
 
-        .status-bar {
-            background: white;
-            padding: 15px;
-            border-radius: 10px;
-            text-align: center;
-            font-weight: bold;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-        }
+      .status-bar {
+        background: white;
+        padding: 15px;
+        border-radius: 10px;
+        text-align: center;
+        font-weight: bold;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
 
-        .status-running {
-            color: #007bff;
-        }
+      .status-running {
+        color: #007bff;
+      }
 
-        .status-paused {
-            color: #ffc107;
-        }
+      .status-paused {
+        color: #ffc107;
+      }
 
-        .status-stopped {
-            color: #6c757d;
-        }
+      .status-stopped {
+        color: #6c757d;
+      }
 
-        .tests-list-section {
-            margin: 15px 0;
-            background: #f8f9fa;
-            padding: 15px;
-            border-radius: 8px;
-            border: 1px solid #dee2e6;
-        }
+      .tests-list-section {
+        margin: 15px 0;
+        background: #f8f9fa;
+        padding: 15px;
+        border-radius: 8px;
+        border: 1px solid #dee2e6;
+      }
 
-        .tests-list-title {
-            font-weight: bold;
-            font-size: 14px;
-            color: #495057;
-            margin-bottom: 10px;
-        }
+      .tests-list-title {
+        font-weight: bold;
+        font-size: 14px;
+        color: #495057;
+        margin-bottom: 10px;
+      }
 
-        .tests-list {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 8px;
-        }
+      .tests-list {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 8px;
+      }
 
-        .test-item {
-            background: white;
-            padding: 8px 12px;
-            border-radius: 5px;
-            border: 1px solid #dee2e6;
-            font-family: 'Courier New', monospace;
-            font-size: 12px;
-        }
+      .test-item {
+        background: white;
+        padding: 8px 12px;
+        border-radius: 5px;
+        border: 1px solid #dee2e6;
+        font-family: "Courier New", monospace;
+        font-size: 12px;
+      }
 
-        .test-item .test-name {
-            font-weight: bold;
-            color: #495057;
-            margin-bottom: 3px;
-        }
+      .test-item .test-name {
+        font-weight: bold;
+        color: #495057;
+        margin-bottom: 3px;
+      }
 
-        .test-item .test-expressions {
-            color: #6c757d;
-            font-size: 11px;
-        }
+      .test-item .test-expressions {
+        color: #6c757d;
+        font-size: 11px;
+      }
 
-        .test-item .test-condition {
-            color: #28a745;
-            font-size: 10px;
-            font-style: italic;
-            margin-top: 2px;
-        }
+      .test-item .test-condition {
+        color: #28a745;
+        font-size: 10px;
+        font-style: italic;
+        margin-top: 2px;
+      }
     </style>
-</head>
+  </head>
 
-<body>
+  <body>
     <div class="header">
-        <h1>🧮 Arithmetic Laws Test Suite</h1>
-        <p>Testing ordinal arithmetic laws using random ordinals generated from f-inverse mapping</p>
+      <h1>🧮 Arithmetic Laws Test Suite</h1>
+      <p>
+        Testing ordinal arithmetic laws using random ordinals generated from
+        f-inverse mapping
+      </p>
     </div>
 
     <div class="config-section">
-        <h2>Configuration</h2>
+      <h2>Configuration</h2>
 
-        <div class="config-row">
-            <span class="config-label">Scale Parameters:</span>
-            <span style="margin-right: 15px;">Add: <input type="number" id="scaleAdd" class="config-input" value="3"
-                    step="0.1" min="0.1"></span>
-            <span style="margin-right: 15px;">Mult: <input type="number" id="scaleMult" class="config-input" value="3"
-                    step="0.1" min="0.1"></span>
-            <span style="margin-right: 15px;">Exp: <input type="number" id="scaleExp" class="config-input" value="3"
-                    step="0.1" min="0.1"></span>
-            <span style="margin-right: 15px;">Tet: <input type="number" id="scaleTet" class="config-input" value="3"
-                    step="0.1" min="0.1"></span>
-        </div>
+      <div class="config-row">
+        <span class="config-label">Scale Parameters:</span>
+        <span style="margin-right: 15px"
+          >Add:
+          <input
+            type="number"
+            id="scaleAdd"
+            class="config-input"
+            value="3"
+            step="0.1"
+            min="0.1"
+        /></span>
+        <span style="margin-right: 15px"
+          >Mult:
+          <input
+            type="number"
+            id="scaleMult"
+            class="config-input"
+            value="3"
+            step="0.1"
+            min="0.1"
+        /></span>
+        <span style="margin-right: 15px"
+          >Exp:
+          <input
+            type="number"
+            id="scaleExp"
+            class="config-input"
+            value="3"
+            step="0.1"
+            min="0.1"
+        /></span>
+        <span style="margin-right: 15px"
+          >Tet:
+          <input
+            type="number"
+            id="scaleTet"
+            class="config-input"
+            value="3"
+            step="0.1"
+            min="0.1"
+        /></span>
+      </div>
 
-        <div class="config-row">
-            <span class="config-label">f-value Range:</span>
-            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-                <div>
-                    Min: <input type="number" id="minRange" class="config-input range-input" value="0" step="0.001"
-                        min="0">
-                    <div class="preset-buttons" style="margin-top: 5px;">
-                        <button class="preset-btn" onclick="setMinRange(0)">0</button>
-                        <button class="preset-btn" onclick="setMinRange(1)">1</button>
-                        <button class="preset-btn" onclick="setMinRangeToOmegaSquared()">f(ω²)</button>
-                        <button class="preset-btn" onclick="setMinRangeToOmegaOmega()">f(ω^ω)</button>
-                    </div>
-                </div>
-                <div>
-                    Max: <input type="number" id="maxRange" class="config-input range-input" value="91" step="0.001"
-                        min="0">
-                    <div class="preset-buttons" style="margin-top: 5px;">
-                        <button class="preset-btn" onclick="setMaxRange(1)">1</button>
-                        <button class="preset-btn" onclick="setMaxRangeToOmegaSquared()">f(ω²)</button>
-                        <button class="preset-btn" onclick="setMaxRangeToOmegaOmega()">f(ω^ω)</button>
-                        <button class="preset-btn" onclick="setMaxRangeToEpsilonZero()">f(ε₀)</button>
-                    </div>
-                </div>
+      <div class="config-row">
+        <span class="config-label">f-value Range:</span>
+        <div
+          style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap"
+        >
+          <div>
+            Min:
+            <input
+              type="number"
+              id="minRange"
+              class="config-input range-input"
+              value="0"
+              step="0.001"
+              min="0"
+            />
+            <div class="preset-buttons" style="margin-top: 5px">
+              <button class="preset-btn" onclick="setMinRange(0)">0</button>
+              <button class="preset-btn" onclick="setMinRange(1)">1</button>
+              <button class="preset-btn" onclick="setMinRangeToOmegaSquared()">
+                f(ω²)
+              </button>
+              <button class="preset-btn" onclick="setMinRangeToOmegaOmega()">
+                f(ω^ω)
+              </button>
             </div>
+          </div>
+          <div>
+            Max:
+            <input
+              type="number"
+              id="maxRange"
+              class="config-input range-input"
+              value="91"
+              step="0.001"
+              min="0"
+            />
+            <div class="preset-buttons" style="margin-top: 5px">
+              <button class="preset-btn" onclick="setMaxRange(1)">1</button>
+              <button class="preset-btn" onclick="setMaxRangeToOmegaSquared()">
+                f(ω²)
+              </button>
+              <button class="preset-btn" onclick="setMaxRangeToOmegaOmega()">
+                f(ω^ω)
+              </button>
+              <button class="preset-btn" onclick="setMaxRangeToEpsilonZero()">
+                f(ε₀)
+              </button>
+            </div>
+          </div>
         </div>
+      </div>
 
-        <div class="config-row">
-            <span class="config-label">Sampling Exponent:</span>
-            <input type="number" id="samplingExponent" class="config-input" value="1" step="0.1" min="0.1" max="10">
-            <span style="font-size: 12px; color: #6c757d;">r=1: uniform, r&lt;1: skewed toward max</span>
-        </div>
+      <div class="config-row">
+        <span class="config-label">Sampling Exponent:</span>
+        <input
+          type="number"
+          id="samplingExponent"
+          class="config-input"
+          value="1"
+          step="0.1"
+          min="0.1"
+          max="10"
+        />
+        <span style="font-size: 12px; color: #6c757d"
+          >r=1: uniform, r&lt;1: skewed toward max</span
+        >
+      </div>
 
-        <div class="config-row">
-            <span class="config-label">Random Seed:</span>
-            <input type="number" id="randomSeed" class="config-input" value="12345" step="1" min="1" max="2147483647">
-            <button class="preset-btn" onclick="generateNewSeed()" style="margin-left: 10px;">New Seed</button>
-            <span style="font-size: 12px; color: #6c757d; margin-left: 10px;">For reproducible testing</span>
-        </div>
+      <div class="config-row">
+        <span class="config-label">Random Seed:</span>
+        <input
+          type="number"
+          id="randomSeed"
+          class="config-input"
+          value="12345"
+          step="1"
+          min="1"
+          max="2147483647"
+        />
+        <button
+          class="preset-btn"
+          onclick="generateNewSeed()"
+          style="margin-left: 10px"
+        >
+          New Seed
+        </button>
+        <span style="font-size: 12px; color: #6c757d; margin-left: 10px"
+          >For reproducible testing</span
+        >
+      </div>
 
-        <div class="config-row">
-            <span class="config-label">Skip Cycles:</span>
-            <input type="number" id="skipCycles" class="config-input" value="0" step="1" min="0" max="1000000">
-            <span style="font-size: 12px; color: #6c757d; margin-left: 10px;">Number of RNG cycles to skip before
-                testing (for debugging)</span>
-        </div>
+      <div class="config-row">
+        <span class="config-label">Skip Cycles:</span>
+        <input
+          type="number"
+          id="skipCycles"
+          class="config-input"
+          value="0"
+          step="1"
+          min="0"
+          max="1000000"
+        />
+        <span style="font-size: 12px; color: #6c757d; margin-left: 10px"
+          >Number of RNG cycles to skip before testing (for debugging)</span
+        >
+      </div>
     </div>
 
     <div class="control-section">
-        <button id="startBtn" class="control-btn start-btn">Start Testing</button>
-        <button id="pauseBtn" class="control-btn pause-btn" disabled>Pause</button>
-        <button id="stepBtn" class="control-btn step-btn">Step (1 Triple)</button>
-        <button id="resetBtn" class="control-btn reset-btn">Reset</button>
+      <button id="startBtn" class="control-btn start-btn">Start Testing</button>
+      <button id="pauseBtn" class="control-btn pause-btn" disabled>
+        Pause
+      </button>
+      <button id="stepBtn" class="control-btn step-btn">Step (1 Triple)</button>
+      <button id="resetBtn" class="control-btn reset-btn">Reset</button>
     </div>
 
     <div class="status-bar">
-        <span id="statusText" class="status-stopped">Ready to start testing</span>
+      <span id="statusText" class="status-stopped">Ready to start testing</span>
     </div>
 
     <div class="results-section">
-        <div class="test-category">
-            <div class="category-title">Single Ordinal Tests</div>
-            <div class="stats-grid">
-                <div class="stat-item">
-                    <span>Examined:</span>
-                    <span class="stat-value" id="singleExamined">0</span>
-                </div>
-                <div class="stat-item">
-                    <span>Passed:</span>
-                    <span class="stat-value passed" id="singlePassed">0</span>
-                </div>
-                <div class="stat-item">
-                    <span>Aborted:</span>
-                    <span class="stat-value aborted" id="singleAborted">0</span>
-                </div>
-                <div class="stat-item">
-                    <span>Failed:</span>
-                    <span class="stat-value failed" id="singleFailed">0</span>
-                </div>
-            </div>
-            <div class="examples-section">
-                <div class="example-group">
-                    <div class="example-title">Passing Examples (up to 1):</div>
-                    <div id="singlePassingExamples"></div>
-                </div>
-                <div class="example-group">
-                    <div class="example-title">Aborted Examples (up to 3):</div>
-                    <div id="singleAbortedExamples"></div>
-                </div>
-                <div class="example-group">
-                    <div class="example-title">Failed Examples (up to 10):</div>
-                    <div id="singleFailedExamples"></div>
-                </div>
-            </div>
-            <div class="tests-list-section">
-                <div class="tests-list-title">Tests Being Run:</div>
-                <div id="singleTestsList" class="tests-list"></div>
-            </div>
+      <div class="test-category">
+        <div class="category-title">Single Ordinal Tests</div>
+        <div class="stats-grid">
+          <div class="stat-item">
+            <span>Examined:</span>
+            <span class="stat-value" id="singleExamined">0</span>
+          </div>
+          <div class="stat-item">
+            <span>Passed:</span>
+            <span class="stat-value passed" id="singlePassed">0</span>
+          </div>
+          <div class="stat-item">
+            <span>Aborted:</span>
+            <span class="stat-value aborted" id="singleAborted">0</span>
+          </div>
+          <div class="stat-item">
+            <span>Failed:</span>
+            <span class="stat-value failed" id="singleFailed">0</span>
+          </div>
         </div>
+        <div class="examples-section">
+          <div class="example-group">
+            <div class="example-title">Passing Examples (up to 1):</div>
+            <div id="singlePassingExamples"></div>
+          </div>
+          <div class="example-group">
+            <div class="example-title">Aborted Examples (up to 3):</div>
+            <div id="singleAbortedExamples"></div>
+          </div>
+          <div class="example-group">
+            <div class="example-title">Failed Examples (up to 10):</div>
+            <div id="singleFailedExamples"></div>
+          </div>
+        </div>
+        <div class="tests-list-section">
+          <div class="tests-list-title">Tests Being Run:</div>
+          <div id="singleTestsList" class="tests-list"></div>
+        </div>
+      </div>
 
-        <div class="test-category">
-            <div class="category-title">Pair Tests</div>
-            <div class="stats-grid">
-                <div class="stat-item">
-                    <span>Examined:</span>
-                    <span class="stat-value" id="pairExamined">0</span>
-                </div>
-                <div class="stat-item">
-                    <span>Passed:</span>
-                    <span class="stat-value passed" id="pairPassed">0</span>
-                </div>
-                <div class="stat-item">
-                    <span>Aborted:</span>
-                    <span class="stat-value aborted" id="pairAborted">0</span>
-                </div>
-                <div class="stat-item">
-                    <span>Failed:</span>
-                    <span class="stat-value failed" id="pairFailed">0</span>
-                </div>
-            </div>
-            <div class="examples-section">
-                <div class="example-group">
-                    <div class="example-title">Passing Examples (up to 1):</div>
-                    <div id="pairPassingExamples"></div>
-                </div>
-                <div class="example-group">
-                    <div class="example-title">Aborted Examples (up to 3):</div>
-                    <div id="pairAbortedExamples"></div>
-                </div>
-                <div class="example-group">
-                    <div class="example-title">Failed Examples (up to 10):</div>
-                    <div id="pairFailedExamples"></div>
-                </div>
-            </div>
-            <div class="tests-list-section">
-                <div class="tests-list-title">Tests Being Run:</div>
-                <div id="pairTestsList" class="tests-list"></div>
-            </div>
+      <div class="test-category">
+        <div class="category-title">Pair Tests</div>
+        <div class="stats-grid">
+          <div class="stat-item">
+            <span>Examined:</span>
+            <span class="stat-value" id="pairExamined">0</span>
+          </div>
+          <div class="stat-item">
+            <span>Passed:</span>
+            <span class="stat-value passed" id="pairPassed">0</span>
+          </div>
+          <div class="stat-item">
+            <span>Aborted:</span>
+            <span class="stat-value aborted" id="pairAborted">0</span>
+          </div>
+          <div class="stat-item">
+            <span>Failed:</span>
+            <span class="stat-value failed" id="pairFailed">0</span>
+          </div>
         </div>
+        <div class="examples-section">
+          <div class="example-group">
+            <div class="example-title">Passing Examples (up to 1):</div>
+            <div id="pairPassingExamples"></div>
+          </div>
+          <div class="example-group">
+            <div class="example-title">Aborted Examples (up to 3):</div>
+            <div id="pairAbortedExamples"></div>
+          </div>
+          <div class="example-group">
+            <div class="example-title">Failed Examples (up to 10):</div>
+            <div id="pairFailedExamples"></div>
+          </div>
+        </div>
+        <div class="tests-list-section">
+          <div class="tests-list-title">Tests Being Run:</div>
+          <div id="pairTestsList" class="tests-list"></div>
+        </div>
+      </div>
 
-        <div class="test-category">
-            <div class="category-title">Triple Tests</div>
-            <div class="stats-grid">
-                <div class="stat-item">
-                    <span>Examined:</span>
-                    <span class="stat-value" id="tripleExamined">0</span>
-                </div>
-                <div class="stat-item">
-                    <span>Passed:</span>
-                    <span class="stat-value passed" id="triplePassed">0</span>
-                </div>
-                <div class="stat-item">
-                    <span>Aborted:</span>
-                    <span class="stat-value aborted" id="tripleAborted">0</span>
-                </div>
-                <div class="stat-item">
-                    <span>Failed:</span>
-                    <span class="stat-value failed" id="tripleFailed">0</span>
-                </div>
-            </div>
-            <div class="examples-section">
-                <div class="example-group">
-                    <div class="example-title">Passing Examples (up to 1):</div>
-                    <div id="triplePassingExamples"></div>
-                </div>
-                <div class="example-group">
-                    <div class="example-title">Aborted Examples (up to 3):</div>
-                    <div id="tripleAbortedExamples"></div>
-                </div>
-                <div class="example-group">
-                    <div class="example-title">Failed Examples (up to 10):</div>
-                    <div id="tripleFailedExamples"></div>
-                </div>
-            </div>
-            <div class="tests-list-section">
-                <div class="tests-list-title">Tests Being Run:</div>
-                <div id="tripleTestsList" class="tests-list"></div>
-            </div>
+      <div class="test-category">
+        <div class="category-title">Triple Tests</div>
+        <div class="stats-grid">
+          <div class="stat-item">
+            <span>Examined:</span>
+            <span class="stat-value" id="tripleExamined">0</span>
+          </div>
+          <div class="stat-item">
+            <span>Passed:</span>
+            <span class="stat-value passed" id="triplePassed">0</span>
+          </div>
+          <div class="stat-item">
+            <span>Aborted:</span>
+            <span class="stat-value aborted" id="tripleAborted">0</span>
+          </div>
+          <div class="stat-item">
+            <span>Failed:</span>
+            <span class="stat-value failed" id="tripleFailed">0</span>
+          </div>
         </div>
+        <div class="examples-section">
+          <div class="example-group">
+            <div class="example-title">Passing Examples (up to 1):</div>
+            <div id="triplePassingExamples"></div>
+          </div>
+          <div class="example-group">
+            <div class="example-title">Aborted Examples (up to 3):</div>
+            <div id="tripleAbortedExamples"></div>
+          </div>
+          <div class="example-group">
+            <div class="example-title">Failed Examples (up to 10):</div>
+            <div id="tripleFailedExamples"></div>
+          </div>
+        </div>
+        <div class="tests-list-section">
+          <div class="tests-list-title">Tests Being Run:</div>
+          <div id="tripleTestsList" class="tests-list"></div>
+        </div>
+      </div>
     </div>
 
     <!-- Load ES6 Module Bundle (exports everything to window globals) -->
     <script type="module" src="/src/main.js"></script>
 
     <script type="module">
-        // Wait for module to finish loading and exporting to window
-        await new Promise(resolve => setTimeout(resolve, 200));
+      // Import functions directly from source files for IDE navigation support (F12 Go to Definition)
+      import {
+        f,
+        fInverse,
+        DEFAULT_F_PARAMS,
+        convertFFormatToOrdinalInstance,
+      } from "/src/ordinal_mapping/OrdinalMappingCompat.js";
+      import { FParams } from "/src/ordinal_mapping/FParams.js";
+      import { DoubleContext } from "/src/ordinal_mapping/Contexts.js";
+      import { OperationTracer } from "/src/OperationTracer.js";
+      import { OPERATIONS } from "/src/operations/Operations.js";
+      import { initializeOperations } from "/src/operations/OperationsSingleton.js";
+      import { ZeroOrdinal } from "/src/types/ZeroOrdinal.js";
+      import { OneOrdinal } from "/src/types/OneOrdinal.js";
+      import { FiniteOrdinal } from "/src/types/FiniteOrdinal.js";
+      import { OmegaOrdinal } from "/src/types/OmegaOrdinal.js";
+      import { CNFOrdinal } from "/src/types/CNFOrdinal.js";
+      import { EpsilonZero } from "/src/types/EpsilonZero.js";
+      import { SimpleParser } from "/src/SimpleParser.js";
 
-        // Verify globals are available
-        if (typeof OperationTracer === 'undefined' || typeof OPERATIONS === 'undefined') {
-            document.body.innerHTML = '<h1 style="color: red;">ERROR: Module not loaded. Required globals missing!</h1>' +
-                '<p>OperationTracer: ' + typeof OperationTracer + '</p>' +
-                '<p>OPERATIONS: ' + typeof OPERATIONS + '</p>' +
-                '<p>DEFAULT_F_PARAMS: ' + typeof DEFAULT_F_PARAMS + '</p>';
-            throw new Error('Module loading failed');
-        }
+      // Make available globally for non-module script blocks
+      window.f = f;
+      window.fInverse = fInverse;
+      window.DEFAULT_F_PARAMS = DEFAULT_F_PARAMS;
+      window.OperationTracer = OperationTracer;
+      window.OPERATIONS = OPERATIONS;
+      window.initializeOperations = initializeOperations;
+      window.ZeroOrdinal = ZeroOrdinal;
+      window.OneOrdinal = OneOrdinal;
+      window.FiniteOrdinal = FiniteOrdinal;
+      window.OmegaOrdinal = OmegaOrdinal;
+      window.CNFOrdinal = CNFOrdinal;
+      window.EpsilonZero = EpsilonZero;
+      window.SimpleParser = SimpleParser;
+      window.DoubleContext = DoubleContext;
+      window.FParams = FParams;
+      window.convertFFormatToOrdinalInstance = convertFFormatToOrdinalInstance;
 
-        console.log('[Test] Module loaded successfully, starting Arithmetic Laws tests...');
+      console.log(
+        "[Test] Module loaded successfully, starting Arithmetic Laws tests..."
+      );
 
-        // Initialize the new operations system
-        if (window.OPERATIONS) {
-            try {
-                OPERATIONS.initialize();
-                console.log('[Test] OPERATIONS initialized');
-                // Also reinitialize the singleton to point to this OPERATIONS instance
-                if (typeof initializeOperations === 'function') {
-                    initializeOperations(OPERATIONS);
-                    console.log('[Test] Operations singleton initialized');
-                }
-            } catch (e) {
-                console.error('Failed to initialize OPERATIONS', e);
-            }
-        }
+      // Initialize the new operations system
+      OPERATIONS.initialize();
+      console.log("[Test] OPERATIONS initialized");
+      initializeOperations(OPERATIONS);
+      console.log("[Test] Operations singleton initialized");
 
-        // Initialize global tracer BEFORE defining tests
-        OperationTracer.setGlobalTracer(10000000); // 10M operations budget
-        console.log('[GlobalTracer] Arithmetic Laws test suite initialized with budget:', OperationTracer.getBudget());
-
+      // Initialize global tracer BEFORE defining tests
+      OperationTracer.setGlobalTracer(10000000); // 10M operations budget
+      console.log(
+        "[GlobalTracer] Arithmetic Laws test suite initialized with budget:",
+        OperationTracer.getBudget()
+      );
     </script>
 
     <script>
-        // Pseudo-random number generator (Linear Congruential Generator)
-        class SeededRandom {
-            constructor(seed) {
-                this.seed = seed % 2147483647;
-                if (this.seed <= 0) this.seed += 2147483646;
-            }
-
-            next() {
-                this.seed = (this.seed * 16807) % 2147483647;
-                return (this.seed - 1) / 2147483646;
-            }
-
-            setSeed(seed) {
-                this.seed = seed % 2147483647;
-                if (this.seed <= 0) this.seed += 2147483646;
-            }
+      // Pseudo-random number generator (Linear Congruential Generator)
+      class SeededRandom {
+        constructor(seed) {
+          this.seed = seed % 2147483647;
+          if (this.seed <= 0) this.seed += 2147483646;
         }
 
-        // Global test state
-        let testState = {
-            running: false,
-            paused: false,
+        next() {
+          this.seed = (this.seed * 16807) % 2147483647;
+          return (this.seed - 1) / 2147483646;
+        }
 
-            // Configuration
-            scaleParams: null,
-            minRange: 0,
-            maxRange: 5,
-            samplingExponent: 1,
-            randomSeed: 12345,
-            skipCycles: 0,
+        setSeed(seed) {
+          this.seed = seed % 2147483647;
+          if (this.seed <= 0) this.seed += 2147483646;
+        }
+      }
 
-            // Random number generator
-            rng: new SeededRandom(12345),
+      // Global test state
+      let testState = {
+        running: false,
+        paused: false,
 
-            // Statistics
-            stats: {
-                single: { examined: 0, passed: 0, aborted: 0, failed: 0 },
-                pair: { examined: 0, passed: 0, aborted: 0, failed: 0 },
-                triple: { examined: 0, passed: 0, aborted: 0, failed: 0 }
-            },
+        // Configuration
+        scaleParams: null,
+        minRange: 0,
+        maxRange: 5,
+        samplingExponent: 1,
+        randomSeed: 12345,
+        skipCycles: 0,
 
-            // Examples
-            examples: {
-                single: { passing: [], aborted: [], failed: [] },
-                pair: { passing: [], aborted: [], failed: [] },
-                triple: { passing: [], aborted: [], failed: [] }
-            }
+        // Random number generator
+        rng: new SeededRandom(12345),
+
+        // Statistics
+        stats: {
+          single: { examined: 0, passed: 0, aborted: 0, failed: 0 },
+          pair: { examined: 0, passed: 0, aborted: 0, failed: 0 },
+          triple: { examined: 0, passed: 0, aborted: 0, failed: 0 },
+        },
+
+        // Examples
+        examples: {
+          single: { passing: [], aborted: [], failed: [] },
+          pair: { passing: [], aborted: [], failed: [] },
+          triple: { passing: [], aborted: [], failed: [] },
+        },
+      };
+
+      // UI Elements
+      const startBtn = document.getElementById("startBtn");
+      const pauseBtn = document.getElementById("pauseBtn");
+      const stepBtn = document.getElementById("stepBtn");
+      const resetBtn = document.getElementById("resetBtn");
+      const statusText = document.getElementById("statusText");
+
+      // Configuration inputs
+      const scaleAddInput = document.getElementById("scaleAdd");
+      const scaleMultInput = document.getElementById("scaleMult");
+      const scaleExpInput = document.getElementById("scaleExp");
+      const scaleTetInput = document.getElementById("scaleTet");
+      const minRangeInput = document.getElementById("minRange");
+      const maxRangeInput = document.getElementById("maxRange");
+      const samplingExponentInput = document.getElementById("samplingExponent");
+      const randomSeedInput = document.getElementById("randomSeed");
+      const skipCyclesInput = document.getElementById("skipCycles");
+
+      // Initialize when page loads
+      window.addEventListener("load", () => {
+        console.log("Arithmetic Laws Test Suite loaded");
+        initializeDefaults();
+        updateUI();
+        calculatePresetRanges();
+      });
+
+      function initializeDefaults() {
+        // Set max range to DEFAULT_F_PARAMS.precomputed[5] value (f(ε₀))
+        try {
+          const defaultMaxValue = DEFAULT_F_PARAMS.precomputed[5];
+          maxRangeInput.value = defaultMaxValue;
+          console.log("Set default max range to:", defaultMaxValue);
+        } catch (error) {
+          console.error("Error setting default max range:", error);
+          maxRangeInput.value = 91; // fallback
+        }
+
+        // Initialize random seed to a random value
+        //generateNewSeed();
+        randomSeedInput.value = 1761031719;
+      }
+
+      function generateNewSeed() {
+        const newSeed = Math.floor(Math.random() * 2147483647) + 1;
+        randomSeedInput.value = newSeed;
+        console.log("Generated new random seed:", newSeed);
+      }
+
+      // Control button handlers
+      startBtn.addEventListener("click", startTesting);
+      pauseBtn.addEventListener("click", pauseTesting);
+      stepBtn.addEventListener("click", stepTesting);
+      resetBtn.addEventListener("click", resetTesting);
+
+      function startTesting() {
+        if (testState.paused) {
+          // Resume testing
+          testState.paused = false;
+          testState.running = true;
+        } else {
+          // Start fresh testing
+          testState.running = true;
+          testState.paused = false;
+
+          // Update configuration from UI
+          updateConfiguration();
+        }
+
+        updateUI();
+        runTestLoop();
+      }
+
+      function pauseTesting() {
+        testState.running = false;
+        testState.paused = true;
+        updateUI();
+      }
+
+      async function stepTesting() {
+        console.log("[STEP] Step button pressed");
+
+        // Always update configuration to ensure RNG is in correct state
+        console.log("[STEP] Updating configuration and RNG state");
+        updateConfiguration();
+
+        console.log("[STEP] Before step - Stats:", {
+          single: testState.stats.single.examined,
+          pair: testState.stats.pair.examined,
+          triple: testState.stats.triple.examined,
+        });
+
+        // Execute a single triple test and wait for it to complete
+        await runSingleTripleStep();
+
+        console.log("[STEP] After step - Stats:", {
+          single: testState.stats.single.examined,
+          pair: testState.stats.pair.examined,
+          triple: testState.stats.triple.examined,
+        });
+
+        // Update UI to show results
+        updateUI();
+      }
+
+      function resetTesting() {
+        testState.running = false;
+        testState.paused = false;
+
+        // Reset all statistics
+        testState.stats = {
+          single: { examined: 0, passed: 0, aborted: 0, failed: 0 },
+          pair: { examined: 0, passed: 0, aborted: 0, failed: 0 },
+          triple: { examined: 0, passed: 0, aborted: 0, failed: 0 },
         };
 
-        // UI Elements
-        const startBtn = document.getElementById('startBtn');
-        const pauseBtn = document.getElementById('pauseBtn');
-        const stepBtn = document.getElementById('stepBtn');
-        const resetBtn = document.getElementById('resetBtn');
-        const statusText = document.getElementById('statusText');
+        // Reset all examples
+        testState.examples = {
+          single: { passing: [], aborted: [], failed: [] },
+          pair: { passing: [], aborted: [], failed: [] },
+          triple: { passing: [], aborted: [], failed: [] },
+        };
 
-        // Configuration inputs
-        const scaleAddInput = document.getElementById('scaleAdd');
-        const scaleMultInput = document.getElementById('scaleMult');
-        const scaleExpInput = document.getElementById('scaleExp');
-        const scaleTetInput = document.getElementById('scaleTet');
-        const minRangeInput = document.getElementById('minRange');
-        const maxRangeInput = document.getElementById('maxRange');
-        const samplingExponentInput = document.getElementById('samplingExponent');
-        const randomSeedInput = document.getElementById('randomSeed');
-        const skipCyclesInput = document.getElementById('skipCycles');
+        updateUI();
+      }
 
-        // Initialize when page loads
-        window.addEventListener('load', () => {
-            console.log('Arithmetic Laws Test Suite loaded');
-            initializeDefaults();
-            updateUI();
-            calculatePresetRanges();
+      function updateConfiguration() {
+        // Create FParams object with current scale values using DoubleContext
+        const ctx = new DoubleContext();
+        testState.scaleParams = new FParams(
+          ctx,
+          ctx.fromNumber(parseFloat(scaleAddInput.value)),
+          ctx.fromNumber(parseFloat(scaleMultInput.value)),
+          ctx.fromNumber(parseFloat(scaleExpInput.value)),
+          ctx.fromNumber(parseFloat(scaleTetInput.value)),
+          ctx.fromNumber(3) // scaleEpsilon default
+        );
+
+        testState.minRange = parseFloat(minRangeInput.value);
+        testState.maxRange = parseFloat(maxRangeInput.value);
+        testState.samplingExponent = parseFloat(samplingExponentInput.value);
+
+        // Update random seed and reinitialize RNG
+        testState.randomSeed = parseInt(randomSeedInput.value);
+        testState.skipCycles = parseInt(skipCyclesInput.value);
+        testState.rng.setSeed(testState.randomSeed);
+
+        // Skip the specified number of cycles
+        if (testState.skipCycles > 0) {
+          console.log(`Skipping ${testState.skipCycles} RNG cycles...`);
+          for (let i = 0; i < testState.skipCycles; i++) {
+            testState.rng.next();
+          }
+          console.log(
+            `Skipped ${testState.skipCycles} cycles, RNG ready for testing`
+          );
+        }
+
+        console.log("Updated random seed to:", testState.randomSeed);
+      }
+
+      function updateUI() {
+        // Update control buttons
+        startBtn.disabled = testState.running;
+        pauseBtn.disabled = !testState.running;
+        stepBtn.disabled = testState.running;
+        resetBtn.disabled = testState.running;
+
+        // Update status
+        if (testState.running) {
+          statusText.textContent = "Testing in progress...";
+          statusText.className = "status-running";
+        } else if (testState.paused) {
+          statusText.textContent = "Testing paused";
+          statusText.className = "status-paused";
+        } else {
+          statusText.textContent = "Ready to start testing";
+          statusText.className = "status-stopped";
+        }
+
+        // Update statistics
+        updateStats("single");
+        updateStats("pair");
+        updateStats("triple");
+
+        // Update examples
+        updateExamples("single");
+        updateExamples("pair");
+        updateExamples("triple");
+      }
+
+      function updateStats(category) {
+        const stats = testState.stats[category];
+        document.getElementById(`${category}Examined`).textContent =
+          stats.examined;
+        document.getElementById(`${category}Passed`).textContent = stats.passed;
+        document.getElementById(`${category}Aborted`).textContent =
+          stats.aborted;
+        document.getElementById(`${category}Failed`).textContent = stats.failed;
+      }
+
+      function updateExamples(category) {
+        const examples = testState.examples[category];
+
+        // Update passing examples (up to 1)
+        const passingDiv = document.getElementById(
+          `${category}PassingExamples`
+        );
+        passingDiv.innerHTML = "";
+        examples.passing.slice(0, 1).forEach((example) => {
+          const div = document.createElement("div");
+          div.className = "example-item passed";
+          div.textContent = example;
+          passingDiv.appendChild(div);
         });
 
-        function initializeDefaults() {
-            // Set max range to DEFAULT_F_PARAMS.precomputed[5] value (f(ε₀))
-            try {
-                const defaultMaxValue = DEFAULT_F_PARAMS.precomputed[5];
-                maxRangeInput.value = defaultMaxValue;
-                console.log('Set default max range to:', defaultMaxValue);
-            } catch (error) {
-                console.error('Error setting default max range:', error);
-                maxRangeInput.value = 91; // fallback
-            }
+        // Update aborted examples (up to 3)
+        const abortedDiv = document.getElementById(
+          `${category}AbortedExamples`
+        );
+        abortedDiv.innerHTML = "";
+        examples.aborted.slice(0, 3).forEach((example) => {
+          const div = document.createElement("div");
+          div.className = "example-item aborted";
+          div.textContent = example;
+          abortedDiv.appendChild(div);
+        });
 
-            // Initialize random seed to a random value
-            //generateNewSeed();
-            randomSeedInput.value = 1761031719;
+        // Update failed examples (up to 10)
+        const failedDiv = document.getElementById(`${category}FailedExamples`);
+        failedDiv.innerHTML = "";
+        examples.failed.slice(0, 10).forEach((example) => {
+          const div = document.createElement("div");
+          div.className = "example-item failed";
+          div.textContent = example;
+          failedDiv.appendChild(div);
+        });
+      }
+
+      // Range preset functions
+      function setMinRange(value) {
+        minRangeInput.value = value;
+      }
+
+      function setMaxRange(value) {
+        maxRangeInput.value = value;
+      }
+
+      function calculatePresetRanges() {
+        // Calculate f-values for common ordinals using current scale parameters
+        updateConfiguration();
+
+        try {
+          // These will be calculated when preset buttons are clicked
+          console.log("Preset ranges will be calculated on demand");
+        } catch (error) {
+          console.error("Error calculating preset ranges:", error);
         }
+      }
 
-        function generateNewSeed() {
-            const newSeed = Math.floor(Math.random() * 2147483647) + 1;
-            randomSeedInput.value = newSeed;
-            console.log('Generated new random seed:', newSeed);
+      function setMinRangeToOmegaSquared() {
+        updateConfiguration();
+        try {
+          const omegaSquared = new CNFOrdinal(
+            [{ exponent: new FiniteOrdinal(2n, null), coefficient: 1n }],
+            null
+          );
+          const fRep = omegaSquared.toFFormat();
+          const fValue = f(fRep, testState.scaleParams);
+          setMinRange(fValue);
+        } catch (error) {
+          console.error("Error calculating f(ω²):", error);
+          setMinRange(2); // fallback
         }
+      }
 
-        // Control button handlers
-        startBtn.addEventListener('click', startTesting);
-        pauseBtn.addEventListener('click', pauseTesting);
-        stepBtn.addEventListener('click', stepTesting);
-        resetBtn.addEventListener('click', resetTesting);
-
-        function startTesting() {
-            if (testState.paused) {
-                // Resume testing
-                testState.paused = false;
-                testState.running = true;
-            } else {
-                // Start fresh testing
-                testState.running = true;
-                testState.paused = false;
-
-                // Update configuration from UI
-                updateConfiguration();
-            }
-
-            updateUI();
-            runTestLoop();
+      function setMinRangeToOmegaOmega() {
+        updateConfiguration();
+        try {
+          const omegaOmega = new CNFOrdinal(
+            [{ exponent: new OmegaOrdinal(null), coefficient: 1n }],
+            null
+          );
+          const fRep = omegaOmega.toFFormat();
+          const fValue = f(fRep, testState.scaleParams);
+          setMinRange(fValue);
+        } catch (error) {
+          console.error("Error calculating f(ω^ω):", error);
+          setMinRange(3); // fallback
         }
+      }
 
-        function pauseTesting() {
-            testState.running = false;
-            testState.paused = true;
-            updateUI();
+      function setMaxRangeToOmegaSquared() {
+        updateConfiguration();
+        try {
+          const omegaSquared = new CNFOrdinal(
+            [{ exponent: new FiniteOrdinal(2n, null), coefficient: 1n }],
+            null
+          );
+          const fRep = omegaSquared.toFFormat();
+          const fValue = f(fRep, testState.scaleParams);
+          setMaxRange(fValue);
+        } catch (error) {
+          console.error("Error calculating f(ω²):", error);
+          setMaxRange(2); // fallback
         }
+      }
 
-        async function stepTesting() {
-            console.log('[STEP] Step button pressed');
+      function setMaxRangeToOmegaOmega() {
+        updateConfiguration();
+        try {
+          const omegaOmega = new CNFOrdinal(
+            [{ exponent: new OmegaOrdinal(null), coefficient: 1n }],
+            null
+          );
+          const fRep = omegaOmega.toFFormat();
+          const fValue = f(fRep, testState.scaleParams);
+          setMaxRange(fValue);
+        } catch (error) {
+          console.error("Error calculating f(ω^ω):", error);
+          setMaxRange(3); // fallback
+        }
+      }
 
-            // Always update configuration to ensure RNG is in correct state
-            console.log('[STEP] Updating configuration and RNG state');
-            updateConfiguration();
+      function setMaxRangeToEpsilonZero() {
+        updateConfiguration();
+        try {
+          const epsilonZero = new EpsilonZero(null);
+          const fRep = epsilonZero.toFFormat();
+          const fValue = f(fRep, testState.scaleParams);
+          setMaxRange(fValue);
+        } catch (error) {
+          console.error("Error calculating f(ε₀):", error);
+          setMaxRange(91); // fallback - DEFAULT_F_PARAMS.precomputed[5] value
+        }
+      }
 
-            console.log('[STEP] Before step - Stats:', {
-                single: testState.stats.single.examined,
-                pair: testState.stats.pair.examined,
-                triple: testState.stats.triple.examined
-            });
+      // Random ordinal generation
+      function generateRandomFValue() {
+        const r = testState.samplingExponent;
+        const min = testState.minRange;
+        const max = testState.maxRange;
 
-            // Execute a single triple test and wait for it to complete
+        // Generate uniform random in [0,1] using seeded RNG
+        const u = testState.rng.next();
+
+        // Transform to get desired distribution
+        const minPowered = Math.pow(min, 1 / r);
+        const maxPowered = Math.pow(max, 1 / r);
+        const sampledPowered = minPowered + u * (maxPowered - minPowered);
+
+        return Math.pow(sampledPowered, r);
+      }
+
+      function generateRandomOrdinal() {
+        const fValue = generateRandomFValue();
+        try {
+          const fFormat = fInverse(fValue, testState.scaleParams);
+          const ordinal = convertFFormatToOrdinalInstance(fFormat);
+          return ordinal;
+        } catch (error) {
+          console.error("Error in fInverse or conversion:", error);
+          // Fallback to a simple ordinal
+          return new FiniteOrdinal(
+            BigInt(Math.floor(testState.rng.next() * 100))
+          );
+        }
+      }
+
+      function generateTriple() {
+        return [
+          generateRandomOrdinal(),
+          generateRandomOrdinal(),
+          generateRandomOrdinal(),
+        ];
+      }
+
+      // Single triple step function for debugging
+      async function runSingleTripleStep() {
+        try {
+          console.log("[STEP] Starting runSingleTripleStep");
+
+          // Generate a random triple
+          const triple = generateTriple();
+          console.log(
+            `[STEP] Generated triple: (${triple[0].toString()}, ${triple[1].toString()}, ${triple[2].toString()})`
+          );
+
+          console.log("[STEP] Running single ordinal tests...");
+          // Run single ordinal tests (3 tests)
+          for (let i = 0; i < 3; i++) {
+            console.log(
+              `[STEP] Single test ${i + 1}/3 for ordinal: ${triple[
+                i
+              ].toString()}`
+            );
+            await runSingleOrdinalTests(triple[i], i);
+          }
+
+          console.log("[STEP] Running pair tests...");
+          // Run pair tests (6 tests - all ordered pairs)
+          const pairs = [
+            [triple[0], triple[1]],
+            [triple[0], triple[2]],
+            [triple[1], triple[0]],
+            [triple[1], triple[2]],
+            [triple[2], triple[0]],
+            [triple[2], triple[1]],
+          ];
+
+          for (let i = 0; i < pairs.length; i++) {
+            console.log(
+              `[STEP] Pair test ${i + 1}/6 for pair: (${pairs[
+                i
+              ][0].toString()}, ${pairs[i][1].toString()})`
+            );
+            await runPairTests(pairs[i][0], pairs[i][1], i);
+          }
+
+          console.log("[STEP] Running triple tests...");
+          // Run triple tests (6 tests - all permutations, but we'll do ordered selection)
+          const triplePerms = [
+            [triple[0], triple[1], triple[2]],
+            [triple[0], triple[2], triple[1]],
+            [triple[1], triple[0], triple[2]],
+            [triple[1], triple[2], triple[0]],
+            [triple[2], triple[0], triple[1]],
+            [triple[2], triple[1], triple[0]],
+          ];
+
+          for (let i = 0; i < triplePerms.length; i++) {
+            console.log(
+              `[STEP] Triple test ${i + 1}/6 for triple: (${triplePerms[
+                i
+              ][0].toString()}, ${triplePerms[i][1].toString()}, ${triplePerms[
+                i
+              ][2].toString()})`
+            );
+            await runTripleTests(
+              triplePerms[i][0],
+              triplePerms[i][1],
+              triplePerms[i][2],
+              i
+            );
+          }
+
+          console.log(
+            `[STEP] Completed triple step. Stats - Single: ${testState.stats.single.examined}, Pair: ${testState.stats.pair.examined}, Triple: ${testState.stats.triple.examined}`
+          );
+        } catch (error) {
+          console.error("Error in single triple step:", error);
+        }
+      }
+
+      // Test execution functions
+      async function runTestLoop() {
+        while (testState.running) {
+          try {
             await runSingleTripleStep();
 
-            console.log('[STEP] After step - Stats:', {
-                single: testState.stats.single.examined,
-                pair: testState.stats.pair.examined,
-                triple: testState.stats.triple.examined
-            });
-
-            // Update UI to show results
+            // Update UI periodically
             updateUI();
+
+            // Small delay to prevent UI freezing
+            await new Promise((resolve) => setTimeout(resolve, 10));
+          } catch (error) {
+            console.error("Error in test loop:", error);
+            // Continue testing despite errors
+          }
         }
+      }
 
-        function resetTesting() {
-            testState.running = false;
-            testState.paused = false;
+      async function runSingleOrdinalTests(ordinal, index) {
+        // Placeholder for single ordinal tests
+        // For now, all tests pass vacuously
+        const testResult = runSingleOrdinalTestsImpl(ordinal);
 
-            // Reset all statistics
-            testState.stats = {
-                single: { examined: 0, passed: 0, aborted: 0, failed: 0 },
-                pair: { examined: 0, passed: 0, aborted: 0, failed: 0 },
-                triple: { examined: 0, passed: 0, aborted: 0, failed: 0 }
-            };
+        testState.stats.single.examined++;
 
-            // Reset all examples
-            testState.examples = {
-                single: { passing: [], aborted: [], failed: [] },
-                pair: { passing: [], aborted: [], failed: [] },
-                triple: { passing: [], aborted: [], failed: [] }
-            };
-
-            updateUI();
+        if (testResult.status === "passed") {
+          testState.stats.single.passed++;
+          if (testState.examples.single.passing.length < 1) {
+            testState.examples.single.passing.push(
+              `Test ${testState.stats.single.examined}: ${ordinal.toString()}`
+            );
+          }
+        } else if (testResult.status === "aborted") {
+          testState.stats.single.aborted++;
+          if (testState.examples.single.aborted.length < 3) {
+            testState.examples.single.aborted.push(
+              `Test ${
+                testState.stats.single.examined
+              }: ${ordinal.toString()} - ${
+                testResult.reason || "Budget exceeded"
+              }`
+            );
+          }
+        } else if (testResult.status === "failed") {
+          testState.stats.single.failed++;
+          if (testState.examples.single.failed.length < 10) {
+            testState.examples.single.failed.push(
+              `Test ${
+                testState.stats.single.examined
+              }: ${ordinal.toString()} - ${testResult.reason || "Test failed"}`
+            );
+          }
         }
+      }
 
-        function updateConfiguration() {
-            // Create FParams object with current scale values using DoubleFloatContext
-            testState.scaleParams = new FParams(
-                DoubleFloatContext,
-                parseFloat(scaleAddInput.value),
-                parseFloat(scaleMultInput.value),
-                parseFloat(scaleExpInput.value),
-                parseFloat(scaleTetInput.value),
-                3 // scaleEpsilon default
+      async function runPairTests(ordinal1, ordinal2, index) {
+        // Placeholder for pair tests
+        // For now, all tests pass vacuously
+        const testResult = runPairTestsImpl(ordinal1, ordinal2);
+
+        testState.stats.pair.examined++;
+
+        if (testResult.status === "passed") {
+          testState.stats.pair.passed++;
+          if (testState.examples.pair.passing.length < 1) {
+            testState.examples.pair.passing.push(
+              `Test ${
+                testState.stats.pair.examined
+              }: (${ordinal1.toString()}, ${ordinal2.toString()})`
+            );
+          }
+        } else if (testResult.status === "aborted") {
+          testState.stats.pair.aborted++;
+          if (testState.examples.pair.aborted.length < 3) {
+            testState.examples.pair.aborted.push(
+              `Test ${
+                testState.stats.pair.examined
+              }: (${ordinal1.toString()}, ${ordinal2.toString()}) - ${
+                testResult.reason || "Budget exceeded"
+              }`
+            );
+          }
+        } else if (testResult.status === "failed") {
+          testState.stats.pair.failed++;
+          if (testState.examples.pair.failed.length < 10) {
+            testState.examples.pair.failed.push(
+              `Test ${
+                testState.stats.pair.examined
+              }: (${ordinal1.toString()}, ${ordinal2.toString()}) - ${
+                testResult.reason || "Test failed"
+              }`
+            );
+          }
+        }
+      }
+
+      async function runTripleTests(ordinal1, ordinal2, ordinal3, index) {
+        // Placeholder for triple tests
+        // For now, all tests pass vacuously
+        const testResult = runTripleTestsImpl(ordinal1, ordinal2, ordinal3);
+
+        testState.stats.triple.examined++;
+
+        if (testResult.status === "passed") {
+          testState.stats.triple.passed++;
+          if (testState.examples.triple.passing.length < 1) {
+            testState.examples.triple.passing.push(
+              `Test ${
+                testState.stats.triple.examined
+              }: (${ordinal1.toString()}, ${ordinal2.toString()}, ${ordinal3.toString()})`
+            );
+          }
+        } else if (testResult.status === "aborted") {
+          testState.stats.triple.aborted++;
+          if (testState.examples.triple.aborted.length < 3) {
+            testState.examples.triple.aborted.push(
+              `Test ${
+                testState.stats.triple.examined
+              }: (${ordinal1.toString()}, ${ordinal2.toString()}, ${ordinal3.toString()}) - ${
+                testResult.reason || "Budget exceeded"
+              }`
+            );
+          }
+        } else if (testResult.status === "failed") {
+          testState.stats.triple.failed++;
+          if (testState.examples.triple.failed.length < 10) {
+            testState.examples.triple.failed.push(
+              `Test ${
+                testState.stats.triple.examined
+              }: (${ordinal1.toString()}, ${ordinal2.toString()}, ${ordinal3.toString()}) - ${
+                testResult.reason || "Test failed"
+              }`
+            );
+          }
+        }
+      }
+
+      // Test implementation functions (currently vacuous)
+      function runSingleOrdinalTestsImpl(ordinal) {
+        try {
+          console.log(`[SINGLE] Testing with a=${ordinal.toString()}`);
+
+          // Create substitution map with direct object
+          const substitutions = new Map([["a", ordinal]]);
+
+          // Run single ordinal tests
+          const results = runTestList(SINGLE_ORDINAL_TESTS, substitutions);
+
+          // Check if any tests failed
+          for (const result of results) {
+            if (result.status === "failed") {
+              return {
+                status: "failed",
+                reason: `${result.name}: ${result.reason}`,
+              };
+            } else if (result.status === "aborted") {
+              return {
+                status: "aborted",
+                reason: `${result.name}: ${result.reason}`,
+              };
+            }
+            // Log passed and skipped tests
+            if (result.status === "passed") {
+              console.log(`[SINGLE] ✓ ${result.name}`);
+            } else if (result.status === "skipped") {
+              console.log(`[SINGLE] ⊘ ${result.name} (${result.reason})`);
+            }
+          }
+
+          return { status: "passed" };
+        } catch (error) {
+          return {
+            status: "failed",
+            reason: `Single ordinal test error: ${error.message}`,
+          };
+        }
+      }
+
+      function runPairTestsImpl(ordinal1, ordinal2) {
+        try {
+          console.log(
+            `[PAIR] Testing with a=${ordinal1.toString()}, b=${ordinal2.toString()}`
+          );
+
+          // Create substitution map with direct objects
+          const substitutions = new Map([
+            ["a", ordinal1],
+            ["b", ordinal2],
+          ]);
+
+          // Run pair ordinal tests
+          const results = runTestList(PAIR_ORDINAL_TESTS, substitutions);
+
+          // Check if any tests failed
+          for (const result of results) {
+            if (result.status === "failed") {
+              return {
+                status: "failed",
+                reason: `${result.name}: ${result.reason}`,
+              };
+            } else if (result.status === "aborted") {
+              return {
+                status: "aborted",
+                reason: `${result.name}: ${result.reason}`,
+              };
+            }
+            // Log passed and skipped tests
+            if (result.status === "passed") {
+              console.log(`[PAIR] ✓ ${result.name}`);
+            } else if (result.status === "skipped") {
+              console.log(`[PAIR] ⊘ ${result.name} (${result.reason})`);
+            }
+          }
+
+          return { status: "passed" };
+        } catch (error) {
+          return {
+            status: "failed",
+            reason: `Pair ordinal test error: ${error.message}`,
+          };
+        }
+      }
+
+      // Unified test definition system
+      // To add a new test, simply add an object with:
+      // - name: descriptive name for the test
+      // - lhs: left-hand side expression (can use variable a for single, a,b for pairs, a,b,c for triples)
+      // - rhs: right-hand side expression
+      // - condition: optional condition that must be true for test to run
+      //
+      // Examples:
+      // {name: "Identity", lhs: "a+0", rhs: "a"}  // Single ordinal test
+      // {name: "Commutativity", lhs: "a+b", rhs: "b+a"}  // Pair test
+      // {name: "Associativity", lhs: "(a+b)+c", rhs: "a+(b+c)"}  // Triple test
+
+      // Single ordinal tests (use variable 'a')
+      const SINGLE_ORDINAL_TESTS = [
+        {
+          name: "Less than successor",
+          lhs: "a < a'",
+          rhs: "true",
+        },
+        {
+          name: "Parsing Round-Trip",
+          lhs: "parse[toString[a]]",
+          rhs: "a",
+        },
+      ];
+
+      // Pair ordinal tests (use variables 'a' and 'b')
+      const PAIR_ORDINAL_TESTS = [
+        {
+          name: "Successor Monotonicity",
+          lhs: "a' ? b'",
+          rhs: "a ? b",
+        },
+        {
+          name: "Successor addition",
+          lhs: "a+(b')",
+          rhs: "(a+b)'",
+        },
+        {
+          name: "Successor multiplication",
+          lhs: "a*(b')",
+          rhs: "(a*b)+a",
+        },
+        {
+          name: "Successor exponentiation",
+          lhs: "a^(b')",
+          rhs: "(a^b)*a",
+        },
+      ];
+
+      // Triple ordinal tests (use variables 'a', 'b', and 'c')
+      const TRIPLE_ORDINAL_TESTS = [
+        {
+          name: "Associativity of Addition",
+          lhs: "(a+b)+c",
+          rhs: "a+(b+c)",
+        },
+        {
+          name: "Associativity of Multiplication",
+          lhs: "(a*b)*c",
+          rhs: "a*(b*c)",
+        },
+        {
+          name: "Left Distributivity",
+          lhs: "a*(b+c)",
+          rhs: "a*b+a*c",
+        },
+
+        {
+          name: "Addition Monotonicity",
+          lhs: "a+b ? a+c",
+          rhs: "b ? c",
+        },
+        {
+          name: "Multiplication Monotonicity",
+          lhs: "a*b ? a*c",
+          rhs: "b ? c",
+          condition: "a > 0",
+        },
+        {
+          name: "Exponentiation Monotonicity",
+          lhs: "a^b ? a^c",
+          rhs: "b ? c",
+          condition: "a > 1",
+        },
+        {
+          name: "Addition Weak Monotonicity",
+          lhs: "b+a <= c+a",
+          rhs: "true",
+          condition: "b < c",
+        },
+        {
+          name: "Multiplication Weak Monotonicity",
+          lhs: "b*a <= c*a",
+          rhs: "true",
+          condition: "b < c",
+        },
+        {
+          name: "Exponentiation Weak Monotonicity",
+          lhs: "b^a <= c^a",
+          rhs: "true",
+          condition: "b < c",
+        },
+        {
+          name: "Exponent Addition",
+          lhs: "a^(b+c)",
+          rhs: "a^b*a^c",
+        },
+        {
+          name: "Exponent Multiplication",
+          lhs: "a^(b*c)",
+          rhs: "(a^b)^c",
+        },
+      ];
+
+      // Generic test runner for any test list and substitution map
+      function runTestList(testList, substitutions) {
+        const results = [];
+
+        for (const test of testList) {
+          try {
+            OperationTracer.reset(1000000);
+
+            // Check condition if present
+            if (test.condition) {
+              console.log(`[DEBUG] Evaluating condition: ${test.condition}`);
+              const conditionParser = new SimpleParser(test.condition);
+              const conditionResult =
+                conditionParser.parseWithSubstitution(substitutions);
+              console.log(`[DEBUG] Condition result:`, conditionResult);
+              console.log(
+                `[DEBUG] Condition result type:`,
+                conditionResult?.type
+              );
+              console.log(
+                `[DEBUG] Condition result value:`,
+                conditionResult?.value
+              );
+
+              // Skip test if condition is false
+              if (
+                !conditionResult ||
+                (conditionResult.type === "boolean" && !conditionResult.value)
+              ) {
+                results.push({
+                  name: test.name,
+                  status: "skipped",
+                  reason: `Condition not met: ${test.condition}`,
+                });
+                continue;
+              }
+            }
+
+            // Parse and evaluate LHS with direct substitution
+            console.log(`[DEBUG] Parsing LHS: ${test.lhs}`);
+            const lhsParser = new SimpleParser(test.lhs);
+            const lhsResult = lhsParser.parseWithSubstitution(substitutions);
+            console.log(
+              `[DEBUG] LHS result:`,
+              lhsResult,
+              `formatted: ${_formatTestResult(lhsResult)}`
             );
 
-            testState.minRange = parseFloat(minRangeInput.value);
-            testState.maxRange = parseFloat(maxRangeInput.value);
-            testState.samplingExponent = parseFloat(samplingExponentInput.value);
+            // Parse and evaluate RHS with direct substitution
+            console.log(`[DEBUG] Parsing RHS: ${test.rhs}`);
+            const rhsParser = new SimpleParser(test.rhs);
+            const rhsResult = rhsParser.parseWithSubstitution(substitutions);
+            console.log(
+              `[DEBUG] RHS result:`,
+              rhsResult,
+              `formatted: ${_formatTestResult(rhsResult)}`
+            );
 
-            // Update random seed and reinitialize RNG
-            testState.randomSeed = parseInt(randomSeedInput.value);
-            testState.skipCycles = parseInt(skipCyclesInput.value);
-            testState.rng.setSeed(testState.randomSeed);
-
-            // Skip the specified number of cycles
-            if (testState.skipCycles > 0) {
-                console.log(`Skipping ${testState.skipCycles} RNG cycles...`);
-                for (let i = 0; i < testState.skipCycles; i++) {
-                    testState.rng.next();
-                }
-                console.log(`Skipped ${testState.skipCycles} cycles, RNG ready for testing`);
+            // Check if results are still unresolved
+            if (_hasUnresolvedElements(lhsResult)) {
+              throw new Error(
+                `LHS expression not fully resolved: ${_formatTestResult(
+                  lhsResult
+                )} from ${test.lhs}`
+              );
+            }
+            if (_hasUnresolvedElements(rhsResult)) {
+              throw new Error(
+                `RHS expression not fully resolved: ${_formatTestResult(
+                  rhsResult
+                )} from ${test.rhs}`
+              );
             }
 
-            console.log('Updated random seed to:', testState.randomSeed);
-        }
+            // Compare results using unified comparison function
+            const comparison = _compareTestValues(lhsResult, rhsResult);
 
-        function updateUI() {
-            // Update control buttons
-            startBtn.disabled = testState.running;
-            pauseBtn.disabled = !testState.running;
-            stepBtn.disabled = testState.running;
-            resetBtn.disabled = testState.running;
-
-            // Update status
-            if (testState.running) {
-                statusText.textContent = 'Testing in progress...';
-                statusText.className = 'status-running';
-            } else if (testState.paused) {
-                statusText.textContent = 'Testing paused';
-                statusText.className = 'status-paused';
+            if (comparison === 0) {
+              results.push({
+                name: test.name,
+                status: "passed",
+              });
             } else {
-                statusText.textContent = 'Ready to start testing';
-                statusText.className = 'status-stopped';
+              // Format variable values for error message
+              const varValues = Array.from(substitutions.entries())
+                .map(([name, value]) => `${name}=${value.toString()}`)
+                .join(", ");
+
+              results.push({
+                name: test.name,
+                status: "failed",
+                reason: `${test.lhs} = ${_formatTestResult(lhsResult)} ≠ ${
+                  test.rhs
+                } = ${_formatTestResult(rhsResult)} (with ${varValues})`,
+              });
             }
-
-            // Update statistics
-            updateStats('single');
-            updateStats('pair');
-            updateStats('triple');
-
-            // Update examples
-            updateExamples('single');
-            updateExamples('pair');
-            updateExamples('triple');
-        }
-
-        function updateStats(category) {
-            const stats = testState.stats[category];
-            document.getElementById(`${category}Examined`).textContent = stats.examined;
-            document.getElementById(`${category}Passed`).textContent = stats.passed;
-            document.getElementById(`${category}Aborted`).textContent = stats.aborted;
-            document.getElementById(`${category}Failed`).textContent = stats.failed;
-        }
-
-        function updateExamples(category) {
-            const examples = testState.examples[category];
-
-            // Update passing examples (up to 1)
-            const passingDiv = document.getElementById(`${category}PassingExamples`);
-            passingDiv.innerHTML = '';
-            examples.passing.slice(0, 1).forEach(example => {
-                const div = document.createElement('div');
-                div.className = 'example-item passed';
-                div.textContent = example;
-                passingDiv.appendChild(div);
-            });
-
-            // Update aborted examples (up to 3)
-            const abortedDiv = document.getElementById(`${category}AbortedExamples`);
-            abortedDiv.innerHTML = '';
-            examples.aborted.slice(0, 3).forEach(example => {
-                const div = document.createElement('div');
-                div.className = 'example-item aborted';
-                div.textContent = example;
-                abortedDiv.appendChild(div);
-            });
-
-            // Update failed examples (up to 10)
-            const failedDiv = document.getElementById(`${category}FailedExamples`);
-            failedDiv.innerHTML = '';
-            examples.failed.slice(0, 10).forEach(example => {
-                const div = document.createElement('div');
-                div.className = 'example-item failed';
-                div.textContent = example;
-                failedDiv.appendChild(div);
-            });
-        }
-
-        // Range preset functions
-        function setMinRange(value) {
-            minRangeInput.value = value;
-        }
-
-        function setMaxRange(value) {
-            maxRangeInput.value = value;
-        }
-
-        function calculatePresetRanges() {
-            // Calculate f-values for common ordinals using current scale parameters
-            updateConfiguration();
-
-            try {
-                // These will be calculated when preset buttons are clicked
-                console.log('Preset ranges will be calculated on demand');
-            } catch (error) {
-                console.error('Error calculating preset ranges:', error);
-            }
-        }
-
-        function setMinRangeToOmegaSquared() {
-            updateConfiguration();
-            try {
-                const omegaSquared = new CNFOrdinal([{ exponent: new FiniteOrdinal(2n, null), coefficient: 1n }], null);
-                const fRep = omegaSquared.toFFormat();
-                const fValue = f(fRep, testState.scaleParams);
-                setMinRange(fValue);
-            } catch (error) {
-                console.error('Error calculating f(ω²):', error);
-                setMinRange(2); // fallback
-            }
-        }
-
-        function setMinRangeToOmegaOmega() {
-            updateConfiguration();
-            try {
-                const omegaOmega = new CNFOrdinal([{ exponent: new OmegaOrdinal(null), coefficient: 1n }], null);
-                const fRep = omegaOmega.toFFormat();
-                const fValue = f(fRep, testState.scaleParams);
-                setMinRange(fValue);
-            } catch (error) {
-                console.error('Error calculating f(ω^ω):', error);
-                setMinRange(3); // fallback
-            }
-        }
-
-        function setMaxRangeToOmegaSquared() {
-            updateConfiguration();
-            try {
-                const omegaSquared = new CNFOrdinal([{ exponent: new FiniteOrdinal(2n, null), coefficient: 1n }], null);
-                const fRep = omegaSquared.toFFormat();
-                const fValue = f(fRep, testState.scaleParams);
-                setMaxRange(fValue);
-            } catch (error) {
-                console.error('Error calculating f(ω²):', error);
-                setMaxRange(2); // fallback
-            }
-        }
-
-        function setMaxRangeToOmegaOmega() {
-            updateConfiguration();
-            try {
-                const omegaOmega = new CNFOrdinal([{ exponent: new OmegaOrdinal(null), coefficient: 1n }], null);
-                const fRep = omegaOmega.toFFormat();
-                const fValue = f(fRep, testState.scaleParams);
-                setMaxRange(fValue);
-            } catch (error) {
-                console.error('Error calculating f(ω^ω):', error);
-                setMaxRange(3); // fallback
-            }
-        }
-
-        function setMaxRangeToEpsilonZero() {
-            updateConfiguration();
-            try {
-                const epsilonZero = new EpsilonZero(null);
-                const fRep = epsilonZero.toFFormat();
-                const fValue = f(fRep, testState.scaleParams);
-                setMaxRange(fValue);
-            } catch (error) {
-                console.error('Error calculating f(ε₀):', error);
-                setMaxRange(91); // fallback - DEFAULT_F_PARAMS.precomputed[5] value
-            }
-        }
-
-        // Random ordinal generation
-        function generateRandomFValue() {
-            const r = testState.samplingExponent;
-            const min = testState.minRange;
-            const max = testState.maxRange;
-
-            // Generate uniform random in [0,1] using seeded RNG
-            const u = testState.rng.next();
-
-            // Transform to get desired distribution
-            const minPowered = Math.pow(min, 1 / r);
-            const maxPowered = Math.pow(max, 1 / r);
-            const sampledPowered = minPowered + u * (maxPowered - minPowered);
-
-            return Math.pow(sampledPowered, r);
-        }
-
-        function generateRandomOrdinal() {
-            const fValue = generateRandomFValue();
-            try {
-                const fFormat = fInverse(fValue, testState.scaleParams);
-                const ordinal = convertFFormatToOrdinalInstance(fFormat);
-                return ordinal;
-            } catch (error) {
-                console.error('Error in fInverse or conversion:', error);
-                // Fallback to a simple ordinal
-                return new FiniteOrdinal(BigInt(Math.floor(testState.rng.next() * 100)));
-            }
-        }
-
-        function generateTriple() {
-            return [
-                generateRandomOrdinal(),
-                generateRandomOrdinal(),
-                generateRandomOrdinal()
-            ];
-        }
-
-        // Single triple step function for debugging
-        async function runSingleTripleStep() {
-            try {
-                console.log('[STEP] Starting runSingleTripleStep');
-
-                // Generate a random triple
-                const triple = generateTriple();
-                console.log(`[STEP] Generated triple: (${triple[0].toString()}, ${triple[1].toString()}, ${triple[2].toString()})`);
-
-                console.log('[STEP] Running single ordinal tests...');
-                // Run single ordinal tests (3 tests)
-                for (let i = 0; i < 3; i++) {
-                    console.log(`[STEP] Single test ${i + 1}/3 for ordinal: ${triple[i].toString()}`);
-                    await runSingleOrdinalTests(triple[i], i);
-                }
-
-                console.log('[STEP] Running pair tests...');
-                // Run pair tests (6 tests - all ordered pairs)
-                const pairs = [
-                    [triple[0], triple[1]],
-                    [triple[0], triple[2]],
-                    [triple[1], triple[0]],
-                    [triple[1], triple[2]],
-                    [triple[2], triple[0]],
-                    [triple[2], triple[1]]
-                ];
-
-                for (let i = 0; i < pairs.length; i++) {
-                    console.log(`[STEP] Pair test ${i + 1}/6 for pair: (${pairs[i][0].toString()}, ${pairs[i][1].toString()})`);
-                    await runPairTests(pairs[i][0], pairs[i][1], i);
-                }
-
-                console.log('[STEP] Running triple tests...');
-                // Run triple tests (6 tests - all permutations, but we'll do ordered selection)
-                const triplePerms = [
-                    [triple[0], triple[1], triple[2]],
-                    [triple[0], triple[2], triple[1]],
-                    [triple[1], triple[0], triple[2]],
-                    [triple[1], triple[2], triple[0]],
-                    [triple[2], triple[0], triple[1]],
-                    [triple[2], triple[1], triple[0]]
-                ];
-
-                for (let i = 0; i < triplePerms.length; i++) {
-                    console.log(`[STEP] Triple test ${i + 1}/6 for triple: (${triplePerms[i][0].toString()}, ${triplePerms[i][1].toString()}, ${triplePerms[i][2].toString()})`);
-                    await runTripleTests(triplePerms[i][0], triplePerms[i][1], triplePerms[i][2], i);
-                }
-
-                console.log(`[STEP] Completed triple step. Stats - Single: ${testState.stats.single.examined}, Pair: ${testState.stats.pair.examined}, Triple: ${testState.stats.triple.examined}`);
-
-            } catch (error) {
-                console.error('Error in single triple step:', error);
-            }
-        }
-
-        // Test execution functions
-        async function runTestLoop() {
-            while (testState.running) {
-                try {
-                    await runSingleTripleStep();
-
-                    // Update UI periodically
-                    updateUI();
-
-                    // Small delay to prevent UI freezing
-                    await new Promise(resolve => setTimeout(resolve, 10));
-
-                } catch (error) {
-                    console.error('Error in test loop:', error);
-                    // Continue testing despite errors
-                }
-            }
-        }
-
-        async function runSingleOrdinalTests(ordinal, index) {
-            // Placeholder for single ordinal tests
-            // For now, all tests pass vacuously
-            const testResult = runSingleOrdinalTestsImpl(ordinal);
-
-            testState.stats.single.examined++;
-
-            if (testResult.status === 'passed') {
-                testState.stats.single.passed++;
-                if (testState.examples.single.passing.length < 1) {
-                    testState.examples.single.passing.push(`Test ${testState.stats.single.examined}: ${ordinal.toString()}`);
-                }
-            } else if (testResult.status === 'aborted') {
-                testState.stats.single.aborted++;
-                if (testState.examples.single.aborted.length < 3) {
-                    testState.examples.single.aborted.push(`Test ${testState.stats.single.examined}: ${ordinal.toString()} - ${testResult.reason || 'Budget exceeded'}`);
-                }
-            } else if (testResult.status === 'failed') {
-                testState.stats.single.failed++;
-                if (testState.examples.single.failed.length < 10) {
-                    testState.examples.single.failed.push(`Test ${testState.stats.single.examined}: ${ordinal.toString()} - ${testResult.reason || 'Test failed'}`);
-                }
-            }
-        }
-
-        async function runPairTests(ordinal1, ordinal2, index) {
-            // Placeholder for pair tests
-            // For now, all tests pass vacuously
-            const testResult = runPairTestsImpl(ordinal1, ordinal2);
-
-            testState.stats.pair.examined++;
-
-            if (testResult.status === 'passed') {
-                testState.stats.pair.passed++;
-                if (testState.examples.pair.passing.length < 1) {
-                    testState.examples.pair.passing.push(`Test ${testState.stats.pair.examined}: (${ordinal1.toString()}, ${ordinal2.toString()})`);
-                }
-            } else if (testResult.status === 'aborted') {
-                testState.stats.pair.aborted++;
-                if (testState.examples.pair.aborted.length < 3) {
-                    testState.examples.pair.aborted.push(`Test ${testState.stats.pair.examined}: (${ordinal1.toString()}, ${ordinal2.toString()}) - ${testResult.reason || 'Budget exceeded'}`);
-                }
-            } else if (testResult.status === 'failed') {
-                testState.stats.pair.failed++;
-                if (testState.examples.pair.failed.length < 10) {
-                    testState.examples.pair.failed.push(`Test ${testState.stats.pair.examined}: (${ordinal1.toString()}, ${ordinal2.toString()}) - ${testResult.reason || 'Test failed'}`);
-                }
-            }
-        }
-
-        async function runTripleTests(ordinal1, ordinal2, ordinal3, index) {
-            // Placeholder for triple tests
-            // For now, all tests pass vacuously
-            const testResult = runTripleTestsImpl(ordinal1, ordinal2, ordinal3);
-
-            testState.stats.triple.examined++;
-
-            if (testResult.status === 'passed') {
-                testState.stats.triple.passed++;
-                if (testState.examples.triple.passing.length < 1) {
-                    testState.examples.triple.passing.push(`Test ${testState.stats.triple.examined}: (${ordinal1.toString()}, ${ordinal2.toString()}, ${ordinal3.toString()})`);
-                }
-            } else if (testResult.status === 'aborted') {
-                testState.stats.triple.aborted++;
-                if (testState.examples.triple.aborted.length < 3) {
-                    testState.examples.triple.aborted.push(`Test ${testState.stats.triple.examined}: (${ordinal1.toString()}, ${ordinal2.toString()}, ${ordinal3.toString()}) - ${testResult.reason || 'Budget exceeded'}`);
-                }
-            } else if (testResult.status === 'failed') {
-                testState.stats.triple.failed++;
-                if (testState.examples.triple.failed.length < 10) {
-                    testState.examples.triple.failed.push(`Test ${testState.stats.triple.examined}: (${ordinal1.toString()}, ${ordinal2.toString()}, ${ordinal3.toString()}) - ${testResult.reason || 'Test failed'}`);
-                }
-            }
-        }
-
-        // Test implementation functions (currently vacuous)
-        function runSingleOrdinalTestsImpl(ordinal) {
-            try {
-                console.log(`[SINGLE] Testing with a=${ordinal.toString()}`);
-
-                // Create substitution map with direct object
-                const substitutions = new Map([['a', ordinal]]);
-
-                // Run single ordinal tests
-                const results = runTestList(SINGLE_ORDINAL_TESTS, substitutions);
-
-                // Check if any tests failed
-                for (const result of results) {
-                    if (result.status === 'failed') {
-                        return {
-                            status: 'failed',
-                            reason: `${result.name}: ${result.reason}`
-                        };
-                    } else if (result.status === 'aborted') {
-                        return {
-                            status: 'aborted',
-                            reason: `${result.name}: ${result.reason}`
-                        };
-                    }
-                    // Log passed and skipped tests
-                    if (result.status === 'passed') {
-                        console.log(`[SINGLE] ✓ ${result.name}`);
-                    } else if (result.status === 'skipped') {
-                        console.log(`[SINGLE] ⊘ ${result.name} (${result.reason})`);
-                    }
-                }
-
-                return { status: 'passed' };
-
-            } catch (error) {
-                return { status: 'failed', reason: `Single ordinal test error: ${error.message}` };
-            }
-        }
-
-        function runPairTestsImpl(ordinal1, ordinal2) {
-            try {
-                console.log(`[PAIR] Testing with a=${ordinal1.toString()}, b=${ordinal2.toString()}`);
-
-                // Create substitution map with direct objects
-                const substitutions = new Map([
-                    ['a', ordinal1],
-                    ['b', ordinal2]
-                ]);
-
-                // Run pair ordinal tests
-                const results = runTestList(PAIR_ORDINAL_TESTS, substitutions);
-
-                // Check if any tests failed
-                for (const result of results) {
-                    if (result.status === 'failed') {
-                        return {
-                            status: 'failed',
-                            reason: `${result.name}: ${result.reason}`
-                        };
-                    } else if (result.status === 'aborted') {
-                        return {
-                            status: 'aborted',
-                            reason: `${result.name}: ${result.reason}`
-                        };
-                    }
-                    // Log passed and skipped tests
-                    if (result.status === 'passed') {
-                        console.log(`[PAIR] ✓ ${result.name}`);
-                    } else if (result.status === 'skipped') {
-                        console.log(`[PAIR] ⊘ ${result.name} (${result.reason})`);
-                    }
-                }
-
-                return { status: 'passed' };
-
-            } catch (error) {
-                return { status: 'failed', reason: `Pair ordinal test error: ${error.message}` };
-            }
-        }
-
-        // Unified test definition system
-        // To add a new test, simply add an object with:
-        // - name: descriptive name for the test
-        // - lhs: left-hand side expression (can use variable a for single, a,b for pairs, a,b,c for triples)
-        // - rhs: right-hand side expression 
-        // - condition: optional condition that must be true for test to run
-        //
-        // Examples:
-        // {name: "Identity", lhs: "a+0", rhs: "a"}  // Single ordinal test
-        // {name: "Commutativity", lhs: "a+b", rhs: "b+a"}  // Pair test
-        // {name: "Associativity", lhs: "(a+b)+c", rhs: "a+(b+c)"}  // Triple test
-
-        // Single ordinal tests (use variable 'a')
-        const SINGLE_ORDINAL_TESTS = [
-            {
-                name: "Less than successor",
-                lhs: "a < a'",
-                rhs: "true"
-            },
-            {
-                name: "Parsing Round-Trip",
-                lhs: "parse[toString[a]]",
-                rhs: "a",
-            }
-        ];
-
-        // Pair ordinal tests (use variables 'a' and 'b')
-        const PAIR_ORDINAL_TESTS = [
-            {
-                name: "Successor Monotonicity",
-                lhs: "a' ? b'",
-                rhs: "a ? b"
-            },
-            {
-                name: "Successor addition",
-                lhs: "a+(b')",
-                rhs: "(a+b)'",
-            },
-            {
-                name: "Successor multiplication",
-                lhs: "a*(b')",
-                rhs: "(a*b)+a",
-            },
-            {
-                name: "Successor exponentiation",
-                lhs: "a^(b')",
-                rhs: "(a^b)*a",
-            },
-
-        ];
-
-        // Triple ordinal tests (use variables 'a', 'b', and 'c')
-        const TRIPLE_ORDINAL_TESTS = [
-            {
-                name: "Associativity of Addition",
-                lhs: "(a+b)+c",
-                rhs: "a+(b+c)"
-            },
-            {
-                name: "Associativity of Multiplication",
-                lhs: "(a*b)*c",
-                rhs: "a*(b*c)"
-            },
-            {
-                name: "Left Distributivity",
-                lhs: "a*(b+c)",
-                rhs: "a*b+a*c"
-            },
-
-            {
-                name: "Addition Monotonicity",
-                lhs: "a+b ? a+c",
-                rhs: "b ? c"
-            },
-            {
-                name: "Multiplication Monotonicity",
-                lhs: "a*b ? a*c",
-                rhs: "b ? c",
-                condition: "a > 0"
-            },
-            {
-                name: "Exponentiation Monotonicity",
-                lhs: "a^b ? a^c",
-                rhs: "b ? c",
-                condition: "a > 1"
-            },
-            {
-                name: "Addition Weak Monotonicity",
-                lhs: "b+a <= c+a",
-                rhs: "true",
-                condition: "b < c"
-            },
-            {
-                name: "Multiplication Weak Monotonicity",
-                lhs: "b*a <= c*a",
-                rhs: "true",
-                condition: "b < c"
-            },
-            {
-                name: "Exponentiation Weak Monotonicity",
-                lhs: "b^a <= c^a",
-                rhs: "true",
-                condition: "b < c"
-            },
-            {
-                name: "Exponent Addition",
-                lhs: "a^(b+c)",
-                rhs: "a^b*a^c",
-            },
-            {
-                name: "Exponent Multiplication",
-                lhs: "a^(b*c)",
-                rhs: "(a^b)^c",
-            }
-        ];
-
-        // Generic test runner for any test list and substitution map
-        function runTestList(testList, substitutions) {
-            const results = [];
-
-            for (const test of testList) {
-                try {
-                    OperationTracer.reset(1000000);
-
-                    // Check condition if present
-                    if (test.condition) {
-                        console.log(`[DEBUG] Evaluating condition: ${test.condition}`);
-                        const conditionParser = new SimpleParser(test.condition);
-                        const conditionResult = conditionParser.parseWithSubstitution(substitutions);
-                        console.log(`[DEBUG] Condition result:`, conditionResult);
-                        console.log(`[DEBUG] Condition result type:`, conditionResult?.type);
-                        console.log(`[DEBUG] Condition result value:`, conditionResult?.value);
-
-                        // Skip test if condition is false
-                        if (!conditionResult || (conditionResult.type === 'boolean' && !conditionResult.value)) {
-                            results.push({
-                                name: test.name,
-                                status: 'skipped',
-                                reason: `Condition not met: ${test.condition}`
-                            });
-                            continue;
-                        }
-                    }
-
-                    // Parse and evaluate LHS with direct substitution
-                    console.log(`[DEBUG] Parsing LHS: ${test.lhs}`);
-                    const lhsParser = new SimpleParser(test.lhs);
-                    const lhsResult = lhsParser.parseWithSubstitution(substitutions);
-                    console.log(`[DEBUG] LHS result:`, lhsResult, `formatted: ${_formatTestResult(lhsResult)}`);
-
-                    // Parse and evaluate RHS with direct substitution
-                    console.log(`[DEBUG] Parsing RHS: ${test.rhs}`);
-                    const rhsParser = new SimpleParser(test.rhs);
-                    const rhsResult = rhsParser.parseWithSubstitution(substitutions);
-                    console.log(`[DEBUG] RHS result:`, rhsResult, `formatted: ${_formatTestResult(rhsResult)}`);
-
-                    // Check if results are still unresolved
-                    if (_hasUnresolvedElements(lhsResult)) {
-                        throw new Error(`LHS expression not fully resolved: ${_formatTestResult(lhsResult)} from ${test.lhs}`);
-                    }
-                    if (_hasUnresolvedElements(rhsResult)) {
-                        throw new Error(`RHS expression not fully resolved: ${_formatTestResult(rhsResult)} from ${test.rhs}`);
-                    }
-
-                    // Compare results using unified comparison function
-                    const comparison = _compareTestValues(lhsResult, rhsResult);
-
-                    if (comparison === 0) {
-                        results.push({
-                            name: test.name,
-                            status: 'passed'
-                        });
-                    } else {
-                        // Format variable values for error message
-                        const varValues = Array.from(substitutions.entries())
-                            .map(([name, value]) => `${name}=${value.toString()}`)
-                            .join(', ');
-
-                        results.push({
-                            name: test.name,
-                            status: 'failed',
-                            reason: `${test.lhs} = ${_formatTestResult(lhsResult)} ≠ ${test.rhs} = ${_formatTestResult(rhsResult)} (with ${varValues})`
-                        });
-                    }
-
-                } catch (error) {
-                    if (error.message && (error.message.includes('budget exceeded') || error.message.includes('too much recursion') || error.message.includes('Maximum call stack'))) {
-                        results.push({
-                            name: test.name,
-                            status: 'aborted',
-                            reason: error.message
-                        });
-                    } else {
-                        results.push({
-                            name: test.name,
-                            status: 'failed',
-                            reason: `Error: ${error.message}`
-                        });
-                    }
-                }
-            }
-
-            return results;
-        }
-
-        function _isOrdinal(value) {
-            return value && typeof value === 'object' &&
-                typeof value.isZero === 'function' &&
-                typeof value.add === 'function';
-        }
-
-        function _hasUnresolvedElements(value) {
-            return value && typeof value === 'object' &&
-                (value.type === 'variable' || value.type === 'operation' || value.type === 'function' || value.type === 'comparison_op' || value.type === 'epsilon' || value.type === 'successor');
-        }
-
-        function _compareTestValues(left, right) {
-            // Both are ordinals
-            if (_isOrdinal(left) && _isOrdinal(right)) {
-                return OPERATIONS.compare(left, right);
-            }
-
-            // Both are strings
-            if (left.type === 'string' && right.type === 'string') {
-                if (left.value < right.value) return -1;
-                if (left.value > right.value) return 1;
-                return 0;
-            }
-
-            // Both are booleans
-            if (left.type === 'boolean' && right.type === 'boolean') {
-                if (left.value === right.value) return 0;
-                return left.value ? 1 : -1;
-            }
-
-            // Both are comparison results
-            if (left.type === 'comparison' && right.type === 'comparison') {
-                if (left.value < right.value) return -1;
-                if (left.value > right.value) return 1;
-                return 0;
-            }
-
-            // Mixed types - convert to strings for comparison
-            const leftStr = _formatTestResult(left);
-            const rightStr = _formatTestResult(right);
-            if (leftStr < rightStr) return -1;
-            if (leftStr > rightStr) return 1;
-            return 0;
-        }
-
-        function _formatTestResult(result) {
-            if (result && typeof result.toString === 'function' && typeof result.isZero === 'function') {
-                return result.toString();
-            } else if (result && result.type === 'boolean') {
-                return result.value.toString();
-            } else if (result && result.type === 'comparison') {
-                switch (result.value) {
-                    case -1: return '<';
-                    case 0: return '=';
-                    case 1: return '>';
-                    default: return result.value.toString();
-                }
+          } catch (error) {
+            if (
+              error.message &&
+              (error.message.includes("budget exceeded") ||
+                error.message.includes("too much recursion") ||
+                error.message.includes("Maximum call stack"))
+            ) {
+              results.push({
+                name: test.name,
+                status: "aborted",
+                reason: error.message,
+              });
             } else {
-                return String(result);
+              results.push({
+                name: test.name,
+                status: "failed",
+                reason: `Error: ${error.message}`,
+              });
             }
+          }
         }
 
-        function runTripleTestsImpl(a, b, c) {
-            try {
-                console.log(`[TRIPLE] Testing with a=${a.toString()}, b=${b.toString()}, c=${c.toString()}`);
+        return results;
+      }
 
-                // Create substitution map with direct objects
-                const substitutions = new Map([
-                    ['a', a],
-                    ['b', b],
-                    ['c', c]
-                ]);
+      function _isOrdinal(value) {
+        return (
+          value &&
+          typeof value === "object" &&
+          typeof value.isZero === "function" &&
+          typeof value.add === "function"
+        );
+      }
 
-                // Run triple ordinal tests
-                const results = runTestList(TRIPLE_ORDINAL_TESTS, substitutions);
+      function _hasUnresolvedElements(value) {
+        return (
+          value &&
+          typeof value === "object" &&
+          (value.type === "variable" ||
+            value.type === "operation" ||
+            value.type === "function" ||
+            value.type === "comparison_op" ||
+            value.type === "epsilon" ||
+            value.type === "successor")
+        );
+      }
 
-                // Check if any tests failed
-                for (const result of results) {
-                    if (result.status === 'failed') {
-                        return {
-                            status: 'failed',
-                            reason: `${result.name}: ${result.reason}`
-                        };
-                    } else if (result.status === 'aborted') {
-                        return {
-                            status: 'aborted',
-                            reason: `${result.name}: ${result.reason}`
-                        };
-                    }
-                    // Log passed and skipped tests
-                    if (result.status === 'passed') {
-                        console.log(`[TRIPLE] ✓ ${result.name}`);
-                    } else if (result.status === 'skipped') {
-                        console.log(`[TRIPLE] ⊘ ${result.name} (${result.reason})`);
-                    }
-                }
+      function _compareTestValues(left, right) {
+        // Both are ordinals
+        if (_isOrdinal(left) && _isOrdinal(right)) {
+          return OPERATIONS.compare(left, right);
+        }
 
-                // All unified tests passed, now run legacy tests for comparison
-                OperationTracer.setGlobalTracer(1000000);
+        // Both are strings
+        if (left.type === "string" && right.type === "string") {
+          if (left.value < right.value) return -1;
+          if (left.value > right.value) return 1;
+          return 0;
+        }
 
-                // Test 1: Associativity of addition: (a+b)+c = a+(b+c) [LEGACY]
-                try {
-                    // Add debugging info about the ordinals
-                    console.log(`[DEBUG] Testing associativity with a=${a.toString()}, b=${b.toString()}, c=${c.toString()}`);
-                    console.log(`[DEBUG] a type: ${a.constructor.name}, b type: ${b.constructor.name}, c type: ${c.constructor.name}`);
+        // Both are booleans
+        if (left.type === "boolean" && right.type === "boolean") {
+          if (left.value === right.value) return 0;
+          return left.value ? 1 : -1;
+        }
 
-                    const ab = OPERATIONS.add(a, b);
-                    console.log(`[DEBUG] a+b = ${ab.toString()} (${ab.constructor.name})`);
+        // Both are comparison results
+        if (left.type === "comparison" && right.type === "comparison") {
+          if (left.value < right.value) return -1;
+          if (left.value > right.value) return 1;
+          return 0;
+        }
 
-                    const bc = OPERATIONS.add(b, c);
-                    console.log(`[DEBUG] b+c = ${bc.toString()} (${bc.constructor.name})`);
+        // Mixed types - convert to strings for comparison
+        const leftStr = _formatTestResult(left);
+        const rightStr = _formatTestResult(right);
+        if (leftStr < rightStr) return -1;
+        if (leftStr > rightStr) return 1;
+        return 0;
+      }
 
-                    const lhs1 = OPERATIONS.add(ab, c);
-                    console.log(`[DEBUG] (a+b)+c = ${lhs1.toString()} (${lhs1.constructor.name})`);
+      function _formatTestResult(result) {
+        if (
+          result &&
+          typeof result.toString === "function" &&
+          typeof result.isZero === "function"
+        ) {
+          return result.toString();
+        } else if (result && result.type === "boolean") {
+          return result.value.toString();
+        } else if (result && result.type === "comparison") {
+          switch (result.value) {
+            case -1:
+              return "<";
+            case 0:
+              return "=";
+            case 1:
+              return ">";
+            default:
+              return result.value.toString();
+          }
+        } else {
+          return String(result);
+        }
+      }
 
-                    const rhs1 = OPERATIONS.add(a, bc);
-                    console.log(`[DEBUG] a+(b+c) = ${rhs1.toString()} (${rhs1.constructor.name})`);
+      function runTripleTestsImpl(a, b, c) {
+        try {
+          console.log(
+            `[TRIPLE] Testing with a=${a.toString()}, b=${b.toString()}, c=${c.toString()}`
+          );
 
-                    const cmp1 = OPERATIONS.compare(lhs1, rhs1);
-                    console.log(`[DEBUG] Comparison result: ${cmp1}`);
+          // Create substitution map with direct objects
+          const substitutions = new Map([
+            ["a", a],
+            ["b", b],
+            ["c", c],
+          ]);
 
-                    if (cmp1 !== 0) {
-                        return {
-                            status: 'failed',
-                            reason: `Addition associativity failed: (${a}+${b})+${c} = ${lhs1} ≠ ${a}+(${b}+${c}) = ${rhs1}`
-                        };
-                    }
-                } catch (error) {
-                    if (error.message && (error.message.includes('budget exceeded') || error.message.includes('too much recursion') || error.message.includes('Maximum call stack'))) {
-                        return { status: 'aborted', reason: 'Addition associativity: ' + error.message };
-                    }
-                    return { status: 'failed', reason: 'Addition associativity error: ' + error.message };
-                }
+          // Run triple ordinal tests
+          const results = runTestList(TRIPLE_ORDINAL_TESTS, substitutions);
 
-                OperationTracer.reset(1000000);
-
-                // Test 2: Associativity of multiplication: (a*b)*c = a*(b*c)
-                try {
-                    const lhs2 = OPERATIONS.multiply(OPERATIONS.multiply(a, b), c);
-                    const rhs2 = OPERATIONS.multiply(a, OPERATIONS.multiply(b, c));
-                    const cmp2 = OPERATIONS.compare(lhs2, rhs2);
-                    if (cmp2 !== 0) {
-                        return {
-                            status: 'failed',
-                            reason: `Multiplication associativity failed: (${a}*${b})*${c} = ${lhs2} ≠ ${a}*(${b}*${c}) = ${rhs2}`
-                        };
-                    }
-                } catch (error) {
-                    if (error.message && (error.message.includes('budget exceeded') || error.message.includes('too much recursion') || error.message.includes('Maximum call stack'))) {
-                        return { status: 'aborted', reason: 'Multiplication associativity: ' + error.message };
-                    }
-                    return { status: 'failed', reason: 'Multiplication associativity error: ' + error.message };
-                }
-
-                OperationTracer.reset(1000000);
-
-                // Test 3: Left distributivity: a*(b+c) = a*b+a*c
-                try {
-                    const lhs3 = OPERATIONS.multiply(a, OPERATIONS.add(b, c));
-                    const rhs3 = OPERATIONS.add(OPERATIONS.multiply(a, b), OPERATIONS.multiply(a, c));
-                    const cmp3 = OPERATIONS.compare(lhs3, rhs3);
-                    if (cmp3 !== 0) {
-                        return {
-                            status: 'failed',
-                            reason: `Left distributivity failed: ${a}*(${b}+${c}) = ${lhs3} ≠ ${a}*${b}+${a}*${c} = ${rhs3}`
-                        };
-                    }
-                } catch (error) {
-                    if (error.message && (error.message.includes('budget exceeded') || error.message.includes('too much recursion') || error.message.includes('Maximum call stack'))) {
-                        return { status: 'aborted', reason: 'Left distributivity: ' + error.message };
-                    }
-                    return { status: 'failed', reason: 'Left distributivity error: ' + error.message };
-                }
-
-                OperationTracer.reset(1000000);
-
-                // Test 4: Exponent addition: a^(b+c) = a^b*a^c
-                try {
-                    const lhs4 = OPERATIONS.power(a, OPERATIONS.add(b, c));
-                    const rhs4 = OPERATIONS.multiply(OPERATIONS.power(a, b), OPERATIONS.power(a, c));
-                    const cmp4 = OPERATIONS.compare(lhs4, rhs4);
-                    if (cmp4 !== 0) {
-                        return {
-                            status: 'failed',
-                            reason: `Exponent addition failed: ${a}^(${b}+${c}) = ${lhs4} ≠ ${a}^${b}*${a}^${c} = ${rhs4}`
-                        };
-                    }
-                } catch (error) {
-                    if (error.message && (error.message.includes('budget exceeded') || error.message.includes('too much recursion') || error.message.includes('Maximum call stack'))) {
-                        return { status: 'aborted', reason: 'Exponent addition: ' + error.message };
-                    }
-                    return { status: 'failed', reason: 'Exponent addition error: ' + error.message };
-                }
-
-                OperationTracer.reset(1000000);
-
-                // Test 5: Exponent multiplication: a^(b*c) = (a^b)^c
-                try {
-                    const lhs5 = OPERATIONS.power(a, OPERATIONS.multiply(b, c));
-                    const rhs5 = OPERATIONS.power(OPERATIONS.power(a, b), c);
-                    const cmp5 = OPERATIONS.compare(lhs5, rhs5);
-                    if (cmp5 !== 0) {
-                        return {
-                            status: 'failed',
-                            reason: `Exponent multiplication failed: ${a}^(${b}*${c}) = ${lhs5} ≠ (${a}^${b})^${c} = ${rhs5}`
-                        };
-                    }
-                } catch (error) {
-                    if (error.message && (error.message.includes('budget exceeded') || error.message.includes('too much recursion') || error.message.includes('Maximum call stack'))) {
-                        return { status: 'aborted', reason: 'Exponent multiplication: ' + error.message };
-                    }
-                    return { status: 'failed', reason: 'Exponent multiplication error: ' + error.message };
-                }
-
-                OperationTracer.reset(1000000);
-                // Test 6: Addition monotonicity: a+b ? a+c = b ? c
-                try {
-                    const sum_ab = OPERATIONS.add(a, b);
-                    const sum_ac = OPERATIONS.add(a, c);
-                    const cmp_sums = OPERATIONS.compare(sum_ab, sum_ac);
-                    const cmp_bc = OPERATIONS.compare(b, c);
-                    if (cmp_sums !== cmp_bc) {
-                        const sumRelation = cmp_sums > 0 ? '>' : (cmp_sums < 0 ? '<' : '=');
-                        const bcRelation = cmp_bc > 0 ? '>' : (cmp_bc < 0 ? '<' : '=');
-                        return {
-                            status: 'failed',
-                            reason: `Addition monotonicity failed: ${a}+${b} ${sumRelation} ${a}+${c} but ${b} ${bcRelation} ${c}`
-                        };
-                    }
-                } catch (error) {
-                    if (error.message && (error.message.includes('budget exceeded') || error.message.includes('too much recursion') || error.message.includes('Maximum call stack'))) {
-                        return { status: 'aborted', reason: 'Addition monotonicity: ' + error.message };
-                    }
-                    return { status: 'failed', reason: 'Addition monotonicity error: ' + error.message };
-                }
-
-                OperationTracer.reset(1000000);
-                // Test 7: Multiplication monotonicity: a*b ? a*c = b ? c (if a > 0)
-                try {
-                    const zero = ZeroOrdinal.instance();
-                    if (OPERATIONS.compare(a, zero) > 0) {
-                        const prod_ab = OPERATIONS.multiply(a, b);
-                        const prod_ac = OPERATIONS.multiply(a, c);
-                        const cmp_prods = OPERATIONS.compare(prod_ab, prod_ac);
-                        const cmp_bc = OPERATIONS.compare(b, c);
-                        if (cmp_prods !== cmp_bc) {
-                            const prodRelation = cmp_prods > 0 ? '>' : (cmp_prods < 0 ? '<' : '=');
-                            const bcRelation = cmp_bc > 0 ? '>' : (cmp_bc < 0 ? '<' : '=');
-                            return {
-                                status: 'failed',
-                                reason: `Multiplication monotonicity failed: ${a}*${b} ${prodRelation} ${a}*${c} but ${b} ${bcRelation} ${c} (with ${a} > 0)`
-                            };
-                        }
-                    }
-                } catch (error) {
-                    if (error.message && (error.message.includes('budget exceeded') || error.message.includes('too much recursion') || error.message.includes('Maximum call stack'))) {
-                        return { status: 'aborted', reason: 'Multiplication monotonicity: ' + error.message };
-                    }
-                    return { status: 'failed', reason: 'Multiplication monotonicity error: ' + error.message };
-                }
-
-                OperationTracer.reset(1000000);
-                // Test 8: Exponentiation monotonicity: a^b ? a^c = b ? c (if a > 1)
-                try {
-                    const one = OneOrdinal.instance();
-                    if (OPERATIONS.compare(a, one) > 0) {
-                        const pow_ab = OPERATIONS.power(a, b);
-                        const pow_ac = OPERATIONS.power(a, c);
-                        const cmp_pows = OPERATIONS.compare(pow_ab, pow_ac);
-                        const cmp_bc = OPERATIONS.compare(b, c);
-                        if (cmp_pows !== cmp_bc) {
-                            const powRelation = cmp_pows > 0 ? '>' : (cmp_pows < 0 ? '<' : '=');
-                            const bcRelation = cmp_bc > 0 ? '>' : (cmp_bc < 0 ? '<' : '=');
-                            return {
-                                status: 'failed',
-                                reason: `Exponentiation monotonicity failed: ${a}^${b} ${powRelation} ${a}^${c} but ${b} ${bcRelation} ${c} (with ${a} > 1)`
-                            };
-                        }
-                    }
-                } catch (error) {
-                    if (error.message && (error.message.includes('budget exceeded') || error.message.includes('too much recursion') || error.message.includes('Maximum call stack'))) {
-                        return { status: 'aborted', reason: 'Exponentiation monotonicity: ' + error.message };
-                    }
-                    return { status: 'failed', reason: 'Exponentiation monotonicity error: ' + error.message };
-                }
-
-                // All tests passed
-                return { status: 'passed' };
-
-            } catch (error) {
-                if (error.message && error.message.includes('budget exceeded')) {
-                    return { status: 'aborted', reason: 'Overall budget exceeded: ' + error.message };
-                }
-                return { status: 'failed', reason: 'Unexpected error: ' + error.message };
+          // Check if any tests failed
+          for (const result of results) {
+            if (result.status === "failed") {
+              return {
+                status: "failed",
+                reason: `${result.name}: ${result.reason}`,
+              };
+            } else if (result.status === "aborted") {
+              return {
+                status: "aborted",
+                reason: `${result.name}: ${result.reason}`,
+              };
             }
+            // Log passed and skipped tests
+            if (result.status === "passed") {
+              console.log(`[TRIPLE] ✓ ${result.name}`);
+            } else if (result.status === "skipped") {
+              console.log(`[TRIPLE] ⊘ ${result.name} (${result.reason})`);
+            }
+          }
+
+          // All unified tests passed, now run legacy tests for comparison
+          OperationTracer.setGlobalTracer(1000000);
+
+          // Test 1: Associativity of addition: (a+b)+c = a+(b+c) [LEGACY]
+          try {
+            // Add debugging info about the ordinals
+            console.log(
+              `[DEBUG] Testing associativity with a=${a.toString()}, b=${b.toString()}, c=${c.toString()}`
+            );
+            console.log(
+              `[DEBUG] a type: ${a.constructor.name}, b type: ${b.constructor.name}, c type: ${c.constructor.name}`
+            );
+
+            const ab = OPERATIONS.add(a, b);
+            console.log(
+              `[DEBUG] a+b = ${ab.toString()} (${ab.constructor.name})`
+            );
+
+            const bc = OPERATIONS.add(b, c);
+            console.log(
+              `[DEBUG] b+c = ${bc.toString()} (${bc.constructor.name})`
+            );
+
+            const lhs1 = OPERATIONS.add(ab, c);
+            console.log(
+              `[DEBUG] (a+b)+c = ${lhs1.toString()} (${lhs1.constructor.name})`
+            );
+
+            const rhs1 = OPERATIONS.add(a, bc);
+            console.log(
+              `[DEBUG] a+(b+c) = ${rhs1.toString()} (${rhs1.constructor.name})`
+            );
+
+            const cmp1 = OPERATIONS.compare(lhs1, rhs1);
+            console.log(`[DEBUG] Comparison result: ${cmp1}`);
+
+            if (cmp1 !== 0) {
+              return {
+                status: "failed",
+                reason: `Addition associativity failed: (${a}+${b})+${c} = ${lhs1} ≠ ${a}+(${b}+${c}) = ${rhs1}`,
+              };
+            }
+          } catch (error) {
+            if (
+              error.message &&
+              (error.message.includes("budget exceeded") ||
+                error.message.includes("too much recursion") ||
+                error.message.includes("Maximum call stack"))
+            ) {
+              return {
+                status: "aborted",
+                reason: "Addition associativity: " + error.message,
+              };
+            }
+            return {
+              status: "failed",
+              reason: "Addition associativity error: " + error.message,
+            };
+          }
+
+          OperationTracer.reset(1000000);
+
+          // Test 2: Associativity of multiplication: (a*b)*c = a*(b*c)
+          try {
+            const lhs2 = OPERATIONS.multiply(OPERATIONS.multiply(a, b), c);
+            const rhs2 = OPERATIONS.multiply(a, OPERATIONS.multiply(b, c));
+            const cmp2 = OPERATIONS.compare(lhs2, rhs2);
+            if (cmp2 !== 0) {
+              return {
+                status: "failed",
+                reason: `Multiplication associativity failed: (${a}*${b})*${c} = ${lhs2} ≠ ${a}*(${b}*${c}) = ${rhs2}`,
+              };
+            }
+          } catch (error) {
+            if (
+              error.message &&
+              (error.message.includes("budget exceeded") ||
+                error.message.includes("too much recursion") ||
+                error.message.includes("Maximum call stack"))
+            ) {
+              return {
+                status: "aborted",
+                reason: "Multiplication associativity: " + error.message,
+              };
+            }
+            return {
+              status: "failed",
+              reason: "Multiplication associativity error: " + error.message,
+            };
+          }
+
+          OperationTracer.reset(1000000);
+
+          // Test 3: Left distributivity: a*(b+c) = a*b+a*c
+          try {
+            const lhs3 = OPERATIONS.multiply(a, OPERATIONS.add(b, c));
+            const rhs3 = OPERATIONS.add(
+              OPERATIONS.multiply(a, b),
+              OPERATIONS.multiply(a, c)
+            );
+            const cmp3 = OPERATIONS.compare(lhs3, rhs3);
+            if (cmp3 !== 0) {
+              return {
+                status: "failed",
+                reason: `Left distributivity failed: ${a}*(${b}+${c}) = ${lhs3} ≠ ${a}*${b}+${a}*${c} = ${rhs3}`,
+              };
+            }
+          } catch (error) {
+            if (
+              error.message &&
+              (error.message.includes("budget exceeded") ||
+                error.message.includes("too much recursion") ||
+                error.message.includes("Maximum call stack"))
+            ) {
+              return {
+                status: "aborted",
+                reason: "Left distributivity: " + error.message,
+              };
+            }
+            return {
+              status: "failed",
+              reason: "Left distributivity error: " + error.message,
+            };
+          }
+
+          OperationTracer.reset(1000000);
+
+          // Test 4: Exponent addition: a^(b+c) = a^b*a^c
+          try {
+            const lhs4 = OPERATIONS.power(a, OPERATIONS.add(b, c));
+            const rhs4 = OPERATIONS.multiply(
+              OPERATIONS.power(a, b),
+              OPERATIONS.power(a, c)
+            );
+            const cmp4 = OPERATIONS.compare(lhs4, rhs4);
+            if (cmp4 !== 0) {
+              return {
+                status: "failed",
+                reason: `Exponent addition failed: ${a}^(${b}+${c}) = ${lhs4} ≠ ${a}^${b}*${a}^${c} = ${rhs4}`,
+              };
+            }
+          } catch (error) {
+            if (
+              error.message &&
+              (error.message.includes("budget exceeded") ||
+                error.message.includes("too much recursion") ||
+                error.message.includes("Maximum call stack"))
+            ) {
+              return {
+                status: "aborted",
+                reason: "Exponent addition: " + error.message,
+              };
+            }
+            return {
+              status: "failed",
+              reason: "Exponent addition error: " + error.message,
+            };
+          }
+
+          OperationTracer.reset(1000000);
+
+          // Test 5: Exponent multiplication: a^(b*c) = (a^b)^c
+          try {
+            const lhs5 = OPERATIONS.power(a, OPERATIONS.multiply(b, c));
+            const rhs5 = OPERATIONS.power(OPERATIONS.power(a, b), c);
+            const cmp5 = OPERATIONS.compare(lhs5, rhs5);
+            if (cmp5 !== 0) {
+              return {
+                status: "failed",
+                reason: `Exponent multiplication failed: ${a}^(${b}*${c}) = ${lhs5} ≠ (${a}^${b})^${c} = ${rhs5}`,
+              };
+            }
+          } catch (error) {
+            if (
+              error.message &&
+              (error.message.includes("budget exceeded") ||
+                error.message.includes("too much recursion") ||
+                error.message.includes("Maximum call stack"))
+            ) {
+              return {
+                status: "aborted",
+                reason: "Exponent multiplication: " + error.message,
+              };
+            }
+            return {
+              status: "failed",
+              reason: "Exponent multiplication error: " + error.message,
+            };
+          }
+
+          OperationTracer.reset(1000000);
+          // Test 6: Addition monotonicity: a+b ? a+c = b ? c
+          try {
+            const sum_ab = OPERATIONS.add(a, b);
+            const sum_ac = OPERATIONS.add(a, c);
+            const cmp_sums = OPERATIONS.compare(sum_ab, sum_ac);
+            const cmp_bc = OPERATIONS.compare(b, c);
+            if (cmp_sums !== cmp_bc) {
+              const sumRelation = cmp_sums > 0 ? ">" : cmp_sums < 0 ? "<" : "=";
+              const bcRelation = cmp_bc > 0 ? ">" : cmp_bc < 0 ? "<" : "=";
+              return {
+                status: "failed",
+                reason: `Addition monotonicity failed: ${a}+${b} ${sumRelation} ${a}+${c} but ${b} ${bcRelation} ${c}`,
+              };
+            }
+          } catch (error) {
+            if (
+              error.message &&
+              (error.message.includes("budget exceeded") ||
+                error.message.includes("too much recursion") ||
+                error.message.includes("Maximum call stack"))
+            ) {
+              return {
+                status: "aborted",
+                reason: "Addition monotonicity: " + error.message,
+              };
+            }
+            return {
+              status: "failed",
+              reason: "Addition monotonicity error: " + error.message,
+            };
+          }
+
+          OperationTracer.reset(1000000);
+          // Test 7: Multiplication monotonicity: a*b ? a*c = b ? c (if a > 0)
+          try {
+            const zero = ZeroOrdinal.instance();
+            if (OPERATIONS.compare(a, zero) > 0) {
+              const prod_ab = OPERATIONS.multiply(a, b);
+              const prod_ac = OPERATIONS.multiply(a, c);
+              const cmp_prods = OPERATIONS.compare(prod_ab, prod_ac);
+              const cmp_bc = OPERATIONS.compare(b, c);
+              if (cmp_prods !== cmp_bc) {
+                const prodRelation =
+                  cmp_prods > 0 ? ">" : cmp_prods < 0 ? "<" : "=";
+                const bcRelation = cmp_bc > 0 ? ">" : cmp_bc < 0 ? "<" : "=";
+                return {
+                  status: "failed",
+                  reason: `Multiplication monotonicity failed: ${a}*${b} ${prodRelation} ${a}*${c} but ${b} ${bcRelation} ${c} (with ${a} > 0)`,
+                };
+              }
+            }
+          } catch (error) {
+            if (
+              error.message &&
+              (error.message.includes("budget exceeded") ||
+                error.message.includes("too much recursion") ||
+                error.message.includes("Maximum call stack"))
+            ) {
+              return {
+                status: "aborted",
+                reason: "Multiplication monotonicity: " + error.message,
+              };
+            }
+            return {
+              status: "failed",
+              reason: "Multiplication monotonicity error: " + error.message,
+            };
+          }
+
+          OperationTracer.reset(1000000);
+          // Test 8: Exponentiation monotonicity: a^b ? a^c = b ? c (if a > 1)
+          try {
+            const one = OneOrdinal.instance();
+            if (OPERATIONS.compare(a, one) > 0) {
+              const pow_ab = OPERATIONS.power(a, b);
+              const pow_ac = OPERATIONS.power(a, c);
+              const cmp_pows = OPERATIONS.compare(pow_ab, pow_ac);
+              const cmp_bc = OPERATIONS.compare(b, c);
+              if (cmp_pows !== cmp_bc) {
+                const powRelation =
+                  cmp_pows > 0 ? ">" : cmp_pows < 0 ? "<" : "=";
+                const bcRelation = cmp_bc > 0 ? ">" : cmp_bc < 0 ? "<" : "=";
+                return {
+                  status: "failed",
+                  reason: `Exponentiation monotonicity failed: ${a}^${b} ${powRelation} ${a}^${c} but ${b} ${bcRelation} ${c} (with ${a} > 1)`,
+                };
+              }
+            }
+          } catch (error) {
+            if (
+              error.message &&
+              (error.message.includes("budget exceeded") ||
+                error.message.includes("too much recursion") ||
+                error.message.includes("Maximum call stack"))
+            ) {
+              return {
+                status: "aborted",
+                reason: "Exponentiation monotonicity: " + error.message,
+              };
+            }
+            return {
+              status: "failed",
+              reason: "Exponentiation monotonicity error: " + error.message,
+            };
+          }
+
+          // All tests passed
+          return { status: "passed" };
+        } catch (error) {
+          if (error.message && error.message.includes("budget exceeded")) {
+            return {
+              status: "aborted",
+              reason: "Overall budget exceeded: " + error.message,
+            };
+          }
+          return {
+            status: "failed",
+            reason: "Unexpected error: " + error.message,
+          };
         }
+      }
 
-        // Display test lists in the UI
-        function displayTestLists() {
-            displayTestList('singleTestsList', SINGLE_ORDINAL_TESTS);
-            displayTestList('pairTestsList', PAIR_ORDINAL_TESTS);
-            displayTestList('tripleTestsList', TRIPLE_ORDINAL_TESTS);
-        }
+      // Display test lists in the UI
+      function displayTestLists() {
+        displayTestList("singleTestsList", SINGLE_ORDINAL_TESTS);
+        displayTestList("pairTestsList", PAIR_ORDINAL_TESTS);
+        displayTestList("tripleTestsList", TRIPLE_ORDINAL_TESTS);
+      }
 
-        function displayTestList(elementId, testList) {
-            const container = document.getElementById(elementId);
-            if (!container) return;
+      function displayTestList(elementId, testList) {
+        const container = document.getElementById(elementId);
+        if (!container) return;
 
-            container.innerHTML = '';
+        container.innerHTML = "";
 
-            testList.forEach(test => {
-                const testItem = document.createElement('div');
-                testItem.className = 'test-item';
+        testList.forEach((test) => {
+          const testItem = document.createElement("div");
+          testItem.className = "test-item";
 
-                const testName = document.createElement('div');
-                testName.className = 'test-name';
-                testName.textContent = test.name;
+          const testName = document.createElement("div");
+          testName.className = "test-name";
+          testName.textContent = test.name;
 
-                const testExpressions = document.createElement('div');
-                testExpressions.className = 'test-expressions';
-                testExpressions.textContent = `${test.lhs} = ${test.rhs}`;
+          const testExpressions = document.createElement("div");
+          testExpressions.className = "test-expressions";
+          testExpressions.textContent = `${test.lhs} = ${test.rhs}`;
 
-                testItem.appendChild(testName);
-                testItem.appendChild(testExpressions);
+          testItem.appendChild(testName);
+          testItem.appendChild(testExpressions);
 
-                if (test.condition) {
-                    const testCondition = document.createElement('div');
-                    testCondition.className = 'test-condition';
-                    testCondition.textContent = `Condition: ${test.condition}`;
-                    testItem.appendChild(testCondition);
-                }
+          if (test.condition) {
+            const testCondition = document.createElement("div");
+            testCondition.className = "test-condition";
+            testCondition.textContent = `Condition: ${test.condition}`;
+            testItem.appendChild(testCondition);
+          }
 
-                container.appendChild(testItem);
-            });
-        }
-
-        // Initialize test lists display when page loads
-        document.addEventListener('DOMContentLoaded', function () {
-            displayTestLists();
+          container.appendChild(testItem);
         });
-    </script>
-</body>
+      }
 
+      // Initialize test lists display when page loads
+      document.addEventListener("DOMContentLoaded", function () {
+        displayTestLists();
+      });
+    </script>
+  </body>
 </html>

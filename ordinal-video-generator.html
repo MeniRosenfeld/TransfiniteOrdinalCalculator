@@ -1,815 +1,931 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Ordinal Video Generator - Transfinite Ordinal Calculator</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css" />
     <!-- html2canvas library for frame capture -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" integrity="sha512-BNaRQnYJYiPSqHHDb58B0yaPfCu+Wgds8Gp/gU33kqBtgNS4tSPHuGibyoeqMV/TJlSKda6FXzoEyYGjTe+vXA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-    
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"
+      integrity="sha512-BNaRQnYJYiPSqHHDb58B0yaPfCu+Wgds8Gp/gU33kqBtgNS4tSPHuGibyoeqMV/TJlSKda6FXzoEyYGjTe+vXA=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    ></script>
+
     <style>
-        /* Video Generation Specific Styles */
-        .video-generation-container {
-            margin-top: 20px;
-            background-color: #fff;
-            border: 2px solid #007bff;
-            border-radius: 8px;
-            padding: 25px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-        }
+      /* Video Generation Specific Styles */
+      .video-generation-container {
+        margin-top: 20px;
+        background-color: #fff;
+        border: 2px solid #007bff;
+        border-radius: 8px;
+        padding: 25px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+      }
 
-        .video-generation-container h1,
-        .video-generation-container h2 {
-            margin-top: 0;
-            color: #007bff;
-            border-bottom: 2px solid #007bff;
-            padding-bottom: 10px;
-            margin-bottom: 20px;
-        }
+      .video-generation-container h1,
+      .video-generation-container h2 {
+        margin-top: 0;
+        color: #007bff;
+        border-bottom: 2px solid #007bff;
+        padding-bottom: 10px;
+        margin-bottom: 20px;
+      }
 
-        .video-controls {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-            margin-bottom: 25px;
-        }
+      .video-controls {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        margin-bottom: 25px;
+      }
 
+      .video-settings {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+        padding: 20px;
+        background-color: #f8f9fa;
+        border-radius: 6px;
+        border: 1px solid #dee2e6;
+      }
+
+      .setting-group {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .setting-group label {
+        font-weight: bold;
+        color: #495057;
+        margin-bottom: 5px;
+        font-size: 0.9em;
+      }
+
+      .setting-group input,
+      .setting-group select {
+        padding: 8px;
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+        font-size: 0.95em;
+        background-color: white;
+      }
+
+      .setting-group input:focus,
+      .setting-group select:focus {
+        outline: none;
+        border-color: #007bff;
+        box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+      }
+
+      .video-buttons {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+
+      .video-btn {
+        padding: 12px 20px;
+        border: none;
+        border-radius: 6px;
+        font-size: 1em;
+        font-weight: bold;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        min-width: 140px;
+      }
+
+      .preview-btn {
+        background-color: #17a2b8;
+        color: white;
+      }
+
+      .preview-btn:hover:not(:disabled) {
+        background-color: #138496;
+        transform: translateY(-1px);
+      }
+
+      .record-btn {
+        background-color: #dc3545;
+        color: white;
+      }
+
+      .record-btn:hover:not(:disabled) {
+        background-color: #c82333;
+        transform: translateY(-1px);
+      }
+
+      .frames-btn {
+        background-color: #28a745;
+        color: white;
+      }
+
+      .frames-btn:hover:not(:disabled) {
+        background-color: #218838;
+        transform: translateY(-1px);
+      }
+
+      .stop-btn {
+        background-color: #6c757d;
+        color: white;
+      }
+
+      .stop-btn:hover:not(:disabled) {
+        background-color: #5a6268;
+        transform: translateY(-1px);
+      }
+
+      .video-btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+      }
+
+      .video-progress {
+        margin-bottom: 20px;
+        padding: 15px;
+        background-color: #e9ecef;
+        border-radius: 6px;
+        border: 1px solid #dee2e6;
+      }
+
+      .progress-info {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+        font-size: 0.95em;
+      }
+
+      .current-ordinal-display {
+        font-family: "Times New Roman", Times, serif;
+        font-size: 1.1em;
+        color: #007bff;
+        font-weight: bold;
+      }
+
+      .progress-bar {
+        width: 100%;
+        height: 20px;
+        background-color: #f0f0f0;
+        border-radius: 10px;
+        border: 1px solid #ced4da;
+        overflow: hidden;
+      }
+
+      .progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #007bff, #0056b3);
+        border-radius: 10px;
+        transition: width 0.3s ease;
+        width: 0%;
+      }
+
+      .video-display {
+        margin-bottom: 20px;
+      }
+
+      .video-frame-display {
+        min-height: 200px;
+        padding: 20px;
+        background-color: #fff;
+        border: 2px solid #dee2e6;
+        border-radius: 6px;
+        text-align: left;
+        position: relative;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        font-size: 2.5em;
+      }
+
+      .video-frame-display .placeholder-text {
+        font-size: 0.3em;
+        text-align: center;
+        width: 100%;
+        color: #6c757d;
+        font-style: italic;
+      }
+
+      .video-frame-display.recording {
+        border-color: #dc3545;
+        background-color: #f8f9fa;
+      }
+
+      .video-frame-display.recording::before {
+        content: "🔴 RECORDING";
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background-color: #dc3545;
+        color: white;
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 0.8em;
+        font-weight: bold;
+      }
+
+      .video-output-display {
+        padding: 20px;
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 6px;
+      }
+
+      .video-output-display h3 {
+        margin-top: 0;
+        color: #28a745;
+        border-bottom: 1px solid #28a745;
+        padding-bottom: 8px;
+        margin-bottom: 15px;
+      }
+
+      .video-output-controls {
+        display: flex;
+        gap: 10px;
+        margin-top: 15px;
+        flex-wrap: wrap;
+      }
+
+      #videoOutputContent {
+        margin-bottom: 15px;
+      }
+
+      .frame-thumbnail {
+        display: inline-block;
+        margin: 5px;
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+        overflow: hidden;
+        position: relative;
+        vertical-align: top;
+      }
+
+      .frame-thumbnail img {
+        max-width: 120px;
+        max-height: 80px;
+        display: block;
+      }
+
+      .frame-thumbnail .frame-number {
+        position: absolute;
+        bottom: 2px;
+        left: 2px;
+        background-color: rgba(0, 0, 0, 0.7);
+        color: white;
+        padding: 2px 4px;
+        font-size: 0.7em;
+        border-radius: 2px;
+      }
+
+      .navigation-links {
+        text-align: center;
+        margin-bottom: 20px;
+        padding: 15px;
+        background-color: #e9ecef;
+        border-radius: 6px;
+      }
+
+      .navigation-links a {
+        color: #007bff;
+        text-decoration: none;
+        margin: 0 15px;
+        font-weight: bold;
+      }
+
+      .navigation-links a:hover {
+        text-decoration: underline;
+      }
+
+      /* Responsive adjustments */
+      @media (max-width: 768px) {
         .video-settings {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            padding: 20px;
-            background-color: #f8f9fa;
-            border-radius: 6px;
-            border: 1px solid #dee2e6;
-        }
-
-        .setting-group {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .setting-group label {
-            font-weight: bold;
-            color: #495057;
-            margin-bottom: 5px;
-            font-size: 0.9em;
-        }
-
-        .setting-group input,
-        .setting-group select {
-            padding: 8px;
-            border: 1px solid #ced4da;
-            border-radius: 4px;
-            font-size: 0.95em;
-            background-color: white;
-        }
-
-        .setting-group input:focus,
-        .setting-group select:focus {
-            outline: none;
-            border-color: #007bff;
-            box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+          grid-template-columns: 1fr;
         }
 
         .video-buttons {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-            justify-content: center;
+          flex-direction: column;
+          align-items: stretch;
         }
 
         .video-btn {
-            padding: 12px 20px;
-            border: none;
-            border-radius: 6px;
-            font-size: 1em;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            min-width: 140px;
-        }
-
-        .preview-btn {
-            background-color: #17a2b8;
-            color: white;
-        }
-
-        .preview-btn:hover:not(:disabled) {
-            background-color: #138496;
-            transform: translateY(-1px);
-        }
-
-        .record-btn {
-            background-color: #dc3545;
-            color: white;
-        }
-
-        .record-btn:hover:not(:disabled) {
-            background-color: #c82333;
-            transform: translateY(-1px);
-        }
-
-        .frames-btn {
-            background-color: #28a745;
-            color: white;
-        }
-
-        .frames-btn:hover:not(:disabled) {
-            background-color: #218838;
-            transform: translateY(-1px);
-        }
-
-        .stop-btn {
-            background-color: #6c757d;
-            color: white;
-        }
-
-        .stop-btn:hover:not(:disabled) {
-            background-color: #5a6268;
-            transform: translateY(-1px);
-        }
-
-        .video-btn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        .video-progress {
-            margin-bottom: 20px;
-            padding: 15px;
-            background-color: #e9ecef;
-            border-radius: 6px;
-            border: 1px solid #dee2e6;
+          min-width: auto;
         }
 
         .progress-info {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-            font-size: 0.95em;
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 5px;
         }
-
-        .current-ordinal-display {
-            font-family: 'Times New Roman', Times, serif;
-            font-size: 1.1em;
-            color: #007bff;
-            font-weight: bold;
-        }
-
-        .progress-bar {
-            width: 100%;
-            height: 20px;
-            background-color: #f0f0f0;
-            border-radius: 10px;
-            border: 1px solid #ced4da;
-            overflow: hidden;
-        }
-
-        .progress-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #007bff, #0056b3);
-            border-radius: 10px;
-            transition: width 0.3s ease;
-            width: 0%;
-        }
-
-        .video-display {
-            margin-bottom: 20px;
-        }
-
-        .video-frame-display {
-            min-height: 200px;
-            padding: 20px;
-            background-color: #fff;
-            border: 2px solid #dee2e6;
-            border-radius: 6px;
-            text-align: left;
-            position: relative;
-            overflow: hidden;
-            display: flex;
-            align-items: center;
-            font-size: 2.5em;
-        }
-
-        .video-frame-display .placeholder-text {
-            font-size: 0.3em;
-            text-align: center;
-            width: 100%;
-            color: #6c757d;
-            font-style: italic;
-        }
-
-        .video-frame-display.recording {
-            border-color: #dc3545;
-            background-color: #f8f9fa;
-        }
-
-        .video-frame-display.recording::before {
-            content: "🔴 RECORDING";
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            background-color: #dc3545;
-            color: white;
-            padding: 4px 8px;
-            border-radius: 12px;
-            font-size: 0.8em;
-            font-weight: bold;
-        }
-
-        .video-output-display {
-            padding: 20px;
-            background-color: #f8f9fa;
-            border: 1px solid #dee2e6;
-            border-radius: 6px;
-        }
-
-        .video-output-display h3 {
-            margin-top: 0;
-            color: #28a745;
-            border-bottom: 1px solid #28a745;
-            padding-bottom: 8px;
-            margin-bottom: 15px;
-        }
-
-        .video-output-controls {
-            display: flex;
-            gap: 10px;
-            margin-top: 15px;
-            flex-wrap: wrap;
-        }
-
-        #videoOutputContent {
-            margin-bottom: 15px;
-        }
-
-        .frame-thumbnail {
-            display: inline-block;
-            margin: 5px;
-            border: 1px solid #ced4da;
-            border-radius: 4px;
-            overflow: hidden;
-            position: relative;
-            vertical-align: top;
-        }
-
-        .frame-thumbnail img {
-            max-width: 120px;
-            max-height: 80px;
-            display: block;
-        }
-
-        .frame-thumbnail .frame-number {
-            position: absolute;
-            bottom: 2px;
-            left: 2px;
-            background-color: rgba(0, 0, 0, 0.7);
-            color: white;
-            padding: 2px 4px;
-            font-size: 0.7em;
-            border-radius: 2px;
-        }
-
-        .navigation-links {
-            text-align: center;
-            margin-bottom: 20px;
-            padding: 15px;
-            background-color: #e9ecef;
-            border-radius: 6px;
-        }
-
-        .navigation-links a {
-            color: #007bff;
-            text-decoration: none;
-            margin: 0 15px;
-            font-weight: bold;
-        }
-
-        .navigation-links a:hover {
-            text-decoration: underline;
-        }
-
-        /* Responsive adjustments */
-        @media (max-width: 768px) {
-            .video-settings {
-                grid-template-columns: 1fr;
-            }
-            
-            .video-buttons {
-                flex-direction: column;
-                align-items: stretch;
-            }
-            
-            .video-btn {
-                min-width: auto;
-            }
-            
-            .progress-info {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 5px;
-            }
-        }
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <header>
-        <h1>🎬 Ordinal Video Generator</h1>
-        <p>Create stunning videos of ordinal evolution through the f⁻¹(x) mapping</p>
+      <h1>🎬 Ordinal Video Generator</h1>
+      <p>
+        Create stunning videos of ordinal evolution through the f⁻¹(x) mapping
+      </p>
     </header>
 
     <div class="navigation-links">
-        <a href="index.html">← Back to Calculator</a>
-        <a href="ordinal_calculator_test.html">Test Suite</a>
-        <a href="#" onclick="window.open('https://github.com/MeniRosenfeld/TransfiniteOrdinalCalculator', '_blank')">GitHub</a>
+      <a href="index.html">← Back to Calculator</a>
+      <a href="ordinal_calculator_test.html">Test Suite</a>
+      <a
+        href="#"
+        onclick="window.open('https://github.com/MeniRosenfeld/TransfiniteOrdinalCalculator', '_blank')"
+        >GitHub</a
+      >
     </div>
 
     <main class="calculator-container">
-        <!-- Video Generation Section -->
-        <div class="video-generation-container">
-            <h2>Video Generation Settings</h2>
-            <p>Create videos where each frame shows the graphical representation of an ordinal as x progresses through the f⁻¹(x) mapping.</p>
-            
-            <div class="video-controls">
-                <div class="video-settings">
-                    <div class="setting-group">
-                        <label for="videoDuration">Duration (seconds):</label>
-                        <input type="number" id="videoDuration" min="1" max="60" value="10" step="0.1">
-                    </div>
-                    
-                    <div class="setting-group">
-                        <label for="videoFrameRate">Frame Rate (fps):</label>
-                        <select id="videoFrameRate">
-                            <option value="24">24 fps</option>
-                            <option value="30" selected>30 fps</option>
-                            <option value="60">60 fps</option>
-                        </select>
-                    </div>
-                    
-                    <div class="setting-group">
-                        <label for="videoStartX">Start X Value:</label>
-                        <input type="number" id="videoStartX" min="0" max="91" value="0" step="0.001">
-                    </div>
-                    
-                    <div class="setting-group">
-                        <label for="videoEndX">End X Value:</label>
-                        <input type="number" id="videoEndX" min="0" max="91" value="5" step="0.001">
-                    </div>
-                    
-                    <div class="setting-group">
-                        <label for="videoProgressionType">Time Progression:</label>
-                        <select id="videoProgressionType">
-                            <option value="linear" selected>Linear</option>
-                            <option value="exponential">Exponential</option>
-                            <option value="logarithmic">Logarithmic</option>
-                            <option value="sine">Sine Wave</option>
-                        </select>
-                    </div>
-                    
-                    <div class="setting-group">
-                        <label for="videoResolution">Resolution:</label>
-                        <select id="videoResolution">
-                            <option value="720p">720p (1280x720)</option>
-                            <option value="1080p" selected>1080p (1920x1080)</option>
-                            <option value="4k">4K (3840x2160)</option>
-                        </select>
-                    </div>
-                </div>
-                
-                <div class="video-buttons">
-                    <button id="previewVideoBtn" class="video-btn preview-btn">📺 Preview Animation</button>
-                    <button id="recordVideoBtn" class="video-btn record-btn">🎥 Record Video</button>
-                    <button id="generateFramesBtn" class="video-btn frames-btn">🖼️ Generate Frames</button>
-                    <button id="stopVideoBtn" class="video-btn stop-btn" disabled>⏹️ Stop</button>
-                </div>
+      <!-- Video Generation Section -->
+      <div class="video-generation-container">
+        <h2>Video Generation Settings</h2>
+        <p>
+          Create videos where each frame shows the graphical representation of
+          an ordinal as x progresses through the f⁻¹(x) mapping.
+        </p>
+
+        <div class="video-controls">
+          <div class="video-settings">
+            <div class="setting-group">
+              <label for="videoDuration">Duration (seconds):</label>
+              <input
+                type="number"
+                id="videoDuration"
+                min="1"
+                max="60"
+                value="10"
+                step="0.1"
+              />
             </div>
-            
-            <div class="video-progress">
-                <div class="progress-info">
-                    <span id="videoProgressText">Ready to generate</span>
-                    <span id="videoCurrentOrdinal" class="current-ordinal-display"></span>
-                </div>
-                <div class="progress-bar">
-                    <div id="videoProgressBar" class="progress-fill"></div>
-                </div>
+
+            <div class="setting-group">
+              <label for="videoFrameRate">Frame Rate (fps):</label>
+              <select id="videoFrameRate">
+                <option value="24">24 fps</option>
+                <option value="30" selected>30 fps</option>
+                <option value="60">60 fps</option>
+              </select>
             </div>
-            
-            <div class="video-display">
-                <div id="videoDisplayArea" class="video-frame-display">
-                    <span class="placeholder-text">Video frames will appear here</span>
-                </div>
+
+            <div class="setting-group">
+              <label for="videoStartX">Start X Value:</label>
+              <input
+                type="number"
+                id="videoStartX"
+                min="0"
+                max="91"
+                value="0"
+                step="0.001"
+              />
             </div>
-            
-            <div class="video-output">
-                <div id="videoOutputArea" class="video-output-display" style="display: none;">
-                    <h3>Generated Content:</h3>
-                    <div id="videoOutputContent"></div>
-                    <div class="video-output-controls">
-                        <button id="downloadVideoBtn" class="utility-button" style="display: none;">💾 Download Video</button>
-                        <button id="downloadFramesBtn" class="utility-button" style="display: none;">📦 Download All Frames</button>
-                    </div>
-                </div>
+
+            <div class="setting-group">
+              <label for="videoEndX">End X Value:</label>
+              <input
+                type="number"
+                id="videoEndX"
+                min="0"
+                max="91"
+                value="5"
+                step="0.001"
+              />
             </div>
+
+            <div class="setting-group">
+              <label for="videoProgressionType">Time Progression:</label>
+              <select id="videoProgressionType">
+                <option value="linear" selected>Linear</option>
+                <option value="exponential">Exponential</option>
+                <option value="logarithmic">Logarithmic</option>
+                <option value="sine">Sine Wave</option>
+              </select>
+            </div>
+
+            <div class="setting-group">
+              <label for="videoResolution">Resolution:</label>
+              <select id="videoResolution">
+                <option value="720p">720p (1280x720)</option>
+                <option value="1080p" selected>1080p (1920x1080)</option>
+                <option value="4k">4K (3840x2160)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="video-buttons">
+            <button id="previewVideoBtn" class="video-btn preview-btn">
+              📺 Preview Animation
+            </button>
+            <button id="recordVideoBtn" class="video-btn record-btn">
+              🎥 Record Video
+            </button>
+            <button id="generateFramesBtn" class="video-btn frames-btn">
+              🖼️ Generate Frames
+            </button>
+            <button id="stopVideoBtn" class="video-btn stop-btn" disabled>
+              ⏹️ Stop
+            </button>
+          </div>
         </div>
 
-        <!-- Quick Reference -->
-        <div class="instructions">
-            <h2>Quick Reference</h2>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
-                <div>
-                    <h3>🎯 Recommended Settings</h3>
-                    <ul>
-                        <li><strong>Quick Test:</strong> 3s, 30fps, 0→2</li>
-                        <li><strong>Educational:</strong> 10s, 30fps, 0→3</li>
-                        <li><strong>High Quality:</strong> 15s, 60fps, Generate Frames</li>
-                        <li><strong>Social Media:</strong> 8s, 30fps, Record Video</li>
-                    </ul>
-                </div>
-                <div>
-                    <h3>🔬 Interesting X Ranges</h3>
-                    <ul>
-                        <li><strong>0→1:</strong> Finite to infinite transition</li>
-                        <li><strong>1→2:</strong> Powers of omega (ω, ω², ω³...)</li>
-                        <li><strong>2→3:</strong> Exponential towers</li>
-                        <li><strong>3→4:</strong> Complex nested structures</li>
-                        <li><strong>4→5:</strong> Approaching ε₀</li>
-                    </ul>
-                </div>
-                <div>
-                    <h3>⚡ Performance Tips</h3>
-                    <ul>
-                        <li>Use Preview before generating</li>
-                        <li>Start with shorter durations</li>
-                        <li>720p for faster processing</li>
-                        <li>Generate Frames for highest quality</li>
-                        <li>Close other browser tabs</li>
-                    </ul>
-                </div>
-            </div>
+        <div class="video-progress">
+          <div class="progress-info">
+            <span id="videoProgressText">Ready to generate</span>
+            <span
+              id="videoCurrentOrdinal"
+              class="current-ordinal-display"
+            ></span>
+          </div>
+          <div class="progress-bar">
+            <div id="videoProgressBar" class="progress-fill"></div>
+          </div>
         </div>
+
+        <div class="video-display">
+          <div id="videoDisplayArea" class="video-frame-display">
+            <span class="placeholder-text">Video frames will appear here</span>
+          </div>
+        </div>
+
+        <div class="video-output">
+          <div
+            id="videoOutputArea"
+            class="video-output-display"
+            style="display: none"
+          >
+            <h3>Generated Content:</h3>
+            <div id="videoOutputContent"></div>
+            <div class="video-output-controls">
+              <button
+                id="downloadVideoBtn"
+                class="utility-button"
+                style="display: none"
+              >
+                💾 Download Video
+              </button>
+              <button
+                id="downloadFramesBtn"
+                class="utility-button"
+                style="display: none"
+              >
+                📦 Download All Frames
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Reference -->
+      <div class="instructions">
+        <h2>Quick Reference</h2>
+        <div
+          style="
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+          "
+        >
+          <div>
+            <h3>🎯 Recommended Settings</h3>
+            <ul>
+              <li><strong>Quick Test:</strong> 3s, 30fps, 0→2</li>
+              <li><strong>Educational:</strong> 10s, 30fps, 0→3</li>
+              <li>
+                <strong>High Quality:</strong> 15s, 60fps, Generate Frames
+              </li>
+              <li><strong>Social Media:</strong> 8s, 30fps, Record Video</li>
+            </ul>
+          </div>
+          <div>
+            <h3>🔬 Interesting X Ranges</h3>
+            <ul>
+              <li><strong>0→1:</strong> Finite to infinite transition</li>
+              <li><strong>1→2:</strong> Powers of omega (ω, ω², ω³...)</li>
+              <li><strong>2→3:</strong> Exponential towers</li>
+              <li><strong>3→4:</strong> Complex nested structures</li>
+              <li><strong>4→5:</strong> Approaching ε₀</li>
+            </ul>
+          </div>
+          <div>
+            <h3>⚡ Performance Tips</h3>
+            <ul>
+              <li>Use Preview before generating</li>
+              <li>Start with shorter durations</li>
+              <li>720p for faster processing</li>
+              <li>Generate Frames for highest quality</li>
+              <li>Close other browser tabs</li>
+            </ul>
+          </div>
+        </div>
+      </div>
     </main>
 
     <footer>
-        <p>Part of the Transfinite Ordinal Calculator Project</p>
+      <p>Part of the Transfinite Ordinal Calculator Project</p>
     </footer>
 
-    <!-- All the ordinal logic scripts -->
-    <script src="ordinal_types.js"></script>
-    <script src="ordinal_comparison.js"></script>
-    <script src="ordinal_auxiliary_ops.js"></script>
-    <script src="ordinal_addition.js"></script>
-    <script src="ordinal_multiplication.js"></script>
-    <script src="ordinal_exponentiation.js"></script>
-    <script src="ordinal_tetration.js"></script>
-    <script src="ordinal_parser.js"></script>
-    <script src="ordinal_calculator.js"></script>
-    <script src="ordinal_mapping.js"></script>
-    <script src="ordinal_mapping_inverse.js"></script>
-    <script src="ordinal_graphical_renderer.js"></script>
+    <!-- Modern bundled module - includes all ordinal logic with new typed implementation -->
+    <!-- The compatibility layer (window.fInverse, window.DEFAULT_F_PARAMS, etc.) is available -->
+    <script type="module" src="/src/main.js"></script>
 
     <script>
-        // Video Generation Feature
-        class OrdinalVideoGenerator {
-            constructor() {
-                this.isGenerating = false;
-                this.mediaRecorder = null;
-                this.recordedChunks = [];
-                this.animationFrameId = null;
-                this.generatedFrames = [];
-                this.currentFrame = 0;
-                this.totalFrames = 0;
-                
-                this.initializeElements();
-                this.setupEventListeners();
-            }
-            
-            initializeElements() {
-                this.elements = {
-                    // Settings
-                    duration: document.getElementById('videoDuration'),
-                    frameRate: document.getElementById('videoFrameRate'),
-                    startX: document.getElementById('videoStartX'),
-                    endX: document.getElementById('videoEndX'),
-                    progressionType: document.getElementById('videoProgressionType'),
-                    resolution: document.getElementById('videoResolution'),
-                    
-                    // Buttons
-                    previewBtn: document.getElementById('previewVideoBtn'),
-                    recordBtn: document.getElementById('recordVideoBtn'),
-                    generateFramesBtn: document.getElementById('generateFramesBtn'),
-                    stopBtn: document.getElementById('stopVideoBtn'),
-                    
-                    // Progress
-                    progressText: document.getElementById('videoProgressText'),
-                    progressBar: document.getElementById('videoProgressBar'),
-                    currentOrdinal: document.getElementById('videoCurrentOrdinal'),
-                    
-                    // Display
-                    displayArea: document.getElementById('videoDisplayArea'),
-                    outputArea: document.getElementById('videoOutputArea'),
-                    outputContent: document.getElementById('videoOutputContent'),
-                    downloadVideoBtn: document.getElementById('downloadVideoBtn'),
-                    downloadFramesBtn: document.getElementById('downloadFramesBtn')
-                };
-                
-                // Set up initial max values based on DEFAULT_F_PARAMS
-                if (typeof DEFAULT_F_PARAMS !== 'undefined' && DEFAULT_F_PARAMS.precomputed && typeof DEFAULT_F_PARAMS.precomputed[5] === 'number') {
-                    const maxValue = DEFAULT_F_PARAMS.precomputed[5];
-                    this.elements.startX.max = maxValue;
-                    this.elements.endX.max = maxValue;
-                    this.elements.endX.value = Math.min(5, maxValue);
-                }
-            }
-            
-            setupEventListeners() {
-                this.elements.previewBtn.addEventListener('click', () => this.startPreview());
-                this.elements.recordBtn.addEventListener('click', () => this.startRecording());
-                this.elements.generateFramesBtn.addEventListener('click', () => this.generateFrames());
-                this.elements.stopBtn.addEventListener('click', () => this.stopGeneration());
-                this.elements.downloadVideoBtn.addEventListener('click', () => this.downloadVideo());
-                this.elements.downloadFramesBtn.addEventListener('click', () => this.downloadFrames());
-            }
-            
-            getTimeProgressionValue(normalizedTime, type) {
-                switch (type) {
-                    case 'linear':
-                        return normalizedTime;
-                    case 'exponential':
-                        return (Math.exp(normalizedTime) - 1) / (Math.E - 1);
-                    case 'logarithmic':
-                        return Math.log(1 + normalizedTime * (Math.E - 1)) / Math.log(Math.E);
-                    case 'sine':
-                        return (Math.sin((normalizedTime - 0.5) * Math.PI) + 1) / 2;
-                    default:
-                        return normalizedTime;
-                }
-            }
-            
-            calculateXForFrame(frameIndex, totalFrames) {
-                const normalizedTime = frameIndex / (totalFrames - 1);
-                const progressionValue = this.getTimeProgressionValue(normalizedTime, this.elements.progressionType.value);
-                
-                const startX = parseFloat(this.elements.startX.value);
-                const endX = parseFloat(this.elements.endX.value);
-                
-                return startX + (endX - startX) * progressionValue;
-            }
-            
-            async renderOrdinalForX(x) {
-                try {
-                    console.log(`[VideoGen] Rendering ordinal for x=${x}`);
-                    
-                    // Use fInverse to get ordinal representation
-                    const ordinalRep = fInverse(x, DEFAULT_F_PARAMS);
-                    console.log(`[VideoGen] fInverse returned:`, ordinalRep);
-                    
-                    // Convert to ordinal instance
-                    const ordinalInstance = convertFFormatToOrdinalInstance(ordinalRep, new OperationTracer(10000));
-                    console.log(`[VideoGen] Ordinal instance:`, ordinalInstance);
-                    
-                    // Render graphically
-                    const graphicalHTML = renderOrdinalGraphical(ordinalInstance);
-                    
-                    // Update display
-                    this.elements.displayArea.innerHTML = graphicalHTML;
-                    this.elements.currentOrdinal.textContent = ordinalInstance.toStringCNF();
-                    
-                    return {
-                        ordinalInstance,
-                        graphicalHTML,
-                        linearString: ordinalInstance.toStringCNF()
-                    };
-                } catch (error) {
-                    console.error('[VideoGen] Error rendering ordinal:', error);
-                    this.elements.displayArea.innerHTML = `<span style="color: #dc3545;">Error: ${error.message}</span>`;
-                    this.elements.currentOrdinal.textContent = 'Error';
-                    return null;
-                }
-            }
-            
-            updateProgress(current, total, status = '') {
-                const percentage = total > 0 ? (current / total) * 100 : 0;
-                this.elements.progressBar.style.width = `${percentage}%`;
-                
-                if (status) {
-                    this.elements.progressText.textContent = status;
-                } else {
-                    this.elements.progressText.textContent = `Frame ${current} of ${total} (${percentage.toFixed(1)}%)`;
-                }
-            }
-            
-            async startPreview() {
-                if (this.isGenerating) return;
-                
-                console.log('[VideoGen] Starting preview...');
-                this.isGenerating = true;
-                this.updateButtonStates();
-                
-                const duration = parseFloat(this.elements.duration.value);
-                const frameRate = parseInt(this.elements.frameRate.value);
-                this.totalFrames = Math.floor(duration * frameRate);
-                this.currentFrame = 0;
-                
-                const frameInterval = 1000 / frameRate; // milliseconds per frame
-                let lastFrameTime = 0;
-                
-                const animateFrame = async (currentTime) => {
-                    if (!this.isGenerating) return;
-                    
-                    if (currentTime - lastFrameTime >= frameInterval) {
-                        const x = this.calculateXForFrame(this.currentFrame, this.totalFrames);
-                        await this.renderOrdinalForX(x);
-                        this.updateProgress(this.currentFrame + 1, this.totalFrames, 'Previewing animation...');
-                        
-                        this.currentFrame++;
-                        lastFrameTime = currentTime;
-                        
-                        if (this.currentFrame >= this.totalFrames) {
-                            this.stopGeneration();
-                            return;
-                        }
-                    }
-                    
-                    this.animationFrameId = requestAnimationFrame(animateFrame);
-                };
-                
-                this.animationFrameId = requestAnimationFrame(animateFrame);
-            }
-            
-            async startRecording() {
-                if (this.isGenerating) return;
-                
-                console.log('[VideoGen] Starting recording...');
-                
-                try {
-                    // Set up the display area for recording
-                    this.elements.displayArea.classList.add('recording');
-                    
-                    // Get canvas stream from the display area
-                    const canvas = await this.createCanvasFromElement(this.elements.displayArea);
-                    const stream = canvas.captureStream(parseInt(this.elements.frameRate.value));
-                    
-                    // Set up MediaRecorder
-                    this.recordedChunks = [];
-                    this.mediaRecorder = new MediaRecorder(stream, {
-                        mimeType: 'video/webm; codecs=vp9'
-                    });
-                    
-                    this.mediaRecorder.ondataavailable = (event) => {
-                        if (event.data.size > 0) {
-                            this.recordedChunks.push(event.data);
-                        }
-                    };
-                    
-                    this.mediaRecorder.onstop = () => {
-                        this.processRecordedVideo();
-                    };
-                    
-                    // Start recording
-                    this.mediaRecorder.start();
-                    this.isGenerating = true;
-                    this.updateButtonStates();
-                    
-                    // Start animation
-                    await this.startPreview();
-                    
-                } catch (error) {
-                    console.error('[VideoGen] Recording error:', error);
-                    alert(`Recording failed: ${error.message}`);
-                    this.stopGeneration();
-                }
-            }
-            
-            async generateFrames() {
-                if (this.isGenerating) return;
-                
-                console.log('[VideoGen] Generating frames...');
-                this.isGenerating = true;
-                this.updateButtonStates();
-                
-                const duration = parseFloat(this.elements.duration.value);
-                const frameRate = parseInt(this.elements.frameRate.value);
-                this.totalFrames = Math.floor(duration * frameRate);
-                this.generatedFrames = [];
-                
-                for (let i = 0; i < this.totalFrames; i++) {
-                    if (!this.isGenerating) break;
-                    
-                    const x = this.calculateXForFrame(i, this.totalFrames);
-                    const ordinalData = await this.renderOrdinalForX(x);
-                    
-                    if (ordinalData) {
-                        // Wait a bit for rendering to complete
-                        await new Promise(resolve => setTimeout(resolve, 100));
-                        
-                        // Capture frame
-                        try {
-                            const canvas = await html2canvas(this.elements.displayArea, {
-                                backgroundColor: '#FFFFFF',
-                                scale: 2,
-                                width: this.getResolutionWidth(),
-                                height: this.getResolutionHeight(),
-                                useCORS: true
-                            });
-                            
-                            const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
-                            
-                            this.generatedFrames.push({
-                                frameNumber: i + 1,
-                                x: x,
-                                ordinal: ordinalData.linearString,
-                                blob: blob,
-                                dataUrl: canvas.toDataURL('image/png')
-                            });
-                            
-                        } catch (error) {
-                            console.error(`[VideoGen] Error capturing frame ${i + 1}:`, error);
-                        }
-                    }
-                    
-                    this.updateProgress(i + 1, this.totalFrames, 'Generating frames...');
-                    
-                    // Allow UI to update
-                    await new Promise(resolve => setTimeout(resolve, 10));
-                }
-                
-                if (this.isGenerating) {
-                    this.displayGeneratedFrames();
-                }
-                
+      // Video Generation Feature
+      class OrdinalVideoGenerator {
+        constructor() {
+          this.isGenerating = false;
+          this.mediaRecorder = null;
+          this.recordedChunks = [];
+          this.animationFrameId = null;
+          this.generatedFrames = [];
+          this.currentFrame = 0;
+          this.totalFrames = 0;
+
+          this.initializeElements();
+          this.setupEventListeners();
+        }
+
+        initializeElements() {
+          this.elements = {
+            // Settings
+            duration: document.getElementById("videoDuration"),
+            frameRate: document.getElementById("videoFrameRate"),
+            startX: document.getElementById("videoStartX"),
+            endX: document.getElementById("videoEndX"),
+            progressionType: document.getElementById("videoProgressionType"),
+            resolution: document.getElementById("videoResolution"),
+
+            // Buttons
+            previewBtn: document.getElementById("previewVideoBtn"),
+            recordBtn: document.getElementById("recordVideoBtn"),
+            generateFramesBtn: document.getElementById("generateFramesBtn"),
+            stopBtn: document.getElementById("stopVideoBtn"),
+
+            // Progress
+            progressText: document.getElementById("videoProgressText"),
+            progressBar: document.getElementById("videoProgressBar"),
+            currentOrdinal: document.getElementById("videoCurrentOrdinal"),
+
+            // Display
+            displayArea: document.getElementById("videoDisplayArea"),
+            outputArea: document.getElementById("videoOutputArea"),
+            outputContent: document.getElementById("videoOutputContent"),
+            downloadVideoBtn: document.getElementById("downloadVideoBtn"),
+            downloadFramesBtn: document.getElementById("downloadFramesBtn"),
+          };
+
+          // Set up initial max values based on DEFAULT_F_PARAMS
+          if (
+            typeof DEFAULT_F_PARAMS !== "undefined" &&
+            DEFAULT_F_PARAMS.precomputed &&
+            typeof DEFAULT_F_PARAMS.precomputed[5] === "number"
+          ) {
+            const maxValue = DEFAULT_F_PARAMS.precomputed[5];
+            this.elements.startX.max = maxValue;
+            this.elements.endX.max = maxValue;
+            this.elements.endX.value = Math.min(5, maxValue);
+          }
+        }
+
+        setupEventListeners() {
+          this.elements.previewBtn.addEventListener("click", () =>
+            this.startPreview()
+          );
+          this.elements.recordBtn.addEventListener("click", () =>
+            this.startRecording()
+          );
+          this.elements.generateFramesBtn.addEventListener("click", () =>
+            this.generateFrames()
+          );
+          this.elements.stopBtn.addEventListener("click", () =>
+            this.stopGeneration()
+          );
+          this.elements.downloadVideoBtn.addEventListener("click", () =>
+            this.downloadVideo()
+          );
+          this.elements.downloadFramesBtn.addEventListener("click", () =>
+            this.downloadFrames()
+          );
+        }
+
+        getTimeProgressionValue(normalizedTime, type) {
+          switch (type) {
+            case "linear":
+              return normalizedTime;
+            case "exponential":
+              return (Math.exp(normalizedTime) - 1) / (Math.E - 1);
+            case "logarithmic":
+              return (
+                Math.log(1 + normalizedTime * (Math.E - 1)) / Math.log(Math.E)
+              );
+            case "sine":
+              return (Math.sin((normalizedTime - 0.5) * Math.PI) + 1) / 2;
+            default:
+              return normalizedTime;
+          }
+        }
+
+        calculateXForFrame(frameIndex, totalFrames) {
+          const normalizedTime = frameIndex / (totalFrames - 1);
+          const progressionValue = this.getTimeProgressionValue(
+            normalizedTime,
+            this.elements.progressionType.value
+          );
+
+          const startX = parseFloat(this.elements.startX.value);
+          const endX = parseFloat(this.elements.endX.value);
+
+          return startX + (endX - startX) * progressionValue;
+        }
+
+        async renderOrdinalForX(x) {
+          try {
+            console.log(`[VideoGen] Rendering ordinal for x=${x}`);
+
+            // Use fInverse to get ordinal representation
+            const ordinalRep = fInverse(x, DEFAULT_F_PARAMS);
+            console.log(`[VideoGen] fInverse returned:`, ordinalRep);
+
+            // Convert to ordinal instance
+            const ordinalInstance = convertFFormatToOrdinalInstance(
+              ordinalRep,
+              new OperationTracer(10000)
+            );
+            console.log(`[VideoGen] Ordinal instance:`, ordinalInstance);
+
+            // Render graphically
+            const graphicalHTML = renderOrdinalGraphical(ordinalInstance);
+
+            // Update display
+            this.elements.displayArea.innerHTML = graphicalHTML;
+            this.elements.currentOrdinal.textContent =
+              ordinalInstance.toStringCNF();
+
+            return {
+              ordinalInstance,
+              graphicalHTML,
+              linearString: ordinalInstance.toStringCNF(),
+            };
+          } catch (error) {
+            console.error("[VideoGen] Error rendering ordinal:", error);
+            this.elements.displayArea.innerHTML = `<span style="color: #dc3545;">Error: ${error.message}</span>`;
+            this.elements.currentOrdinal.textContent = "Error";
+            return null;
+          }
+        }
+
+        updateProgress(current, total, status = "") {
+          const percentage = total > 0 ? (current / total) * 100 : 0;
+          this.elements.progressBar.style.width = `${percentage}%`;
+
+          if (status) {
+            this.elements.progressText.textContent = status;
+          } else {
+            this.elements.progressText.textContent = `Frame ${current} of ${total} (${percentage.toFixed(
+              1
+            )}%)`;
+          }
+        }
+
+        async startPreview() {
+          if (this.isGenerating) return;
+
+          console.log("[VideoGen] Starting preview...");
+          this.isGenerating = true;
+          this.updateButtonStates();
+
+          const duration = parseFloat(this.elements.duration.value);
+          const frameRate = parseInt(this.elements.frameRate.value);
+          this.totalFrames = Math.floor(duration * frameRate);
+          this.currentFrame = 0;
+
+          const frameInterval = 1000 / frameRate; // milliseconds per frame
+          let lastFrameTime = 0;
+
+          const animateFrame = async (currentTime) => {
+            if (!this.isGenerating) return;
+
+            if (currentTime - lastFrameTime >= frameInterval) {
+              const x = this.calculateXForFrame(
+                this.currentFrame,
+                this.totalFrames
+              );
+              await this.renderOrdinalForX(x);
+              this.updateProgress(
+                this.currentFrame + 1,
+                this.totalFrames,
+                "Previewing animation..."
+              );
+
+              this.currentFrame++;
+              lastFrameTime = currentTime;
+
+              if (this.currentFrame >= this.totalFrames) {
                 this.stopGeneration();
+                return;
+              }
             }
-            
-            async createCanvasFromElement(element) {
-                const canvas = document.createElement('canvas');
-                const ctx = canvas.getContext('2d');
-                
-                canvas.width = this.getResolutionWidth();
-                canvas.height = this.getResolutionHeight();
-                
-                // This is a simplified version - in practice, you'd need more sophisticated
-                // canvas rendering of the ordinal graphics
-                ctx.fillStyle = '#FFFFFF';
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-                
-                return canvas;
+
+            this.animationFrameId = requestAnimationFrame(animateFrame);
+          };
+
+          this.animationFrameId = requestAnimationFrame(animateFrame);
+        }
+
+        async startRecording() {
+          if (this.isGenerating) return;
+
+          console.log("[VideoGen] Starting recording...");
+
+          try {
+            // Set up the display area for recording
+            this.elements.displayArea.classList.add("recording");
+
+            // Get canvas stream from the display area
+            const canvas = await this.createCanvasFromElement(
+              this.elements.displayArea
+            );
+            const stream = canvas.captureStream(
+              parseInt(this.elements.frameRate.value)
+            );
+
+            // Set up MediaRecorder
+            this.recordedChunks = [];
+            this.mediaRecorder = new MediaRecorder(stream, {
+              mimeType: "video/webm; codecs=vp9",
+            });
+
+            this.mediaRecorder.ondataavailable = (event) => {
+              if (event.data.size > 0) {
+                this.recordedChunks.push(event.data);
+              }
+            };
+
+            this.mediaRecorder.onstop = () => {
+              this.processRecordedVideo();
+            };
+
+            // Start recording
+            this.mediaRecorder.start();
+            this.isGenerating = true;
+            this.updateButtonStates();
+
+            // Start animation
+            await this.startPreview();
+          } catch (error) {
+            console.error("[VideoGen] Recording error:", error);
+            alert(`Recording failed: ${error.message}`);
+            this.stopGeneration();
+          }
+        }
+
+        async generateFrames() {
+          if (this.isGenerating) return;
+
+          console.log("[VideoGen] Generating frames...");
+          this.isGenerating = true;
+          this.updateButtonStates();
+
+          const duration = parseFloat(this.elements.duration.value);
+          const frameRate = parseInt(this.elements.frameRate.value);
+          this.totalFrames = Math.floor(duration * frameRate);
+          this.generatedFrames = [];
+
+          for (let i = 0; i < this.totalFrames; i++) {
+            if (!this.isGenerating) break;
+
+            const x = this.calculateXForFrame(i, this.totalFrames);
+            const ordinalData = await this.renderOrdinalForX(x);
+
+            if (ordinalData) {
+              // Wait a bit for rendering to complete
+              await new Promise((resolve) => setTimeout(resolve, 100));
+
+              // Capture frame
+              try {
+                const canvas = await html2canvas(this.elements.displayArea, {
+                  backgroundColor: "#FFFFFF",
+                  scale: 2,
+                  width: this.getResolutionWidth(),
+                  height: this.getResolutionHeight(),
+                  useCORS: true,
+                });
+
+                const blob = await new Promise((resolve) =>
+                  canvas.toBlob(resolve, "image/png")
+                );
+
+                this.generatedFrames.push({
+                  frameNumber: i + 1,
+                  x: x,
+                  ordinal: ordinalData.linearString,
+                  blob: blob,
+                  dataUrl: canvas.toDataURL("image/png"),
+                });
+              } catch (error) {
+                console.error(
+                  `[VideoGen] Error capturing frame ${i + 1}:`,
+                  error
+                );
+              }
             }
-            
-            getResolutionWidth() {
-                const resolution = this.elements.resolution.value;
-                switch (resolution) {
-                    case '720p': return 1280;
-                    case '1080p': return 1920;
-                    case '4k': return 3840;
-                    default: return 1920;
-                }
-            }
-            
-            getResolutionHeight() {
-                const resolution = this.elements.resolution.value;
-                switch (resolution) {
-                    case '720p': return 720;
-                    case '1080p': return 1080;
-                    case '4k': return 2160;
-                    default: return 1080;
-                }
-            }
-            
-            displayGeneratedFrames() {
-                let html = '<div class="frames-grid">';
-                html += `<p>Generated ${this.generatedFrames.length} frames</p>`;
-                
-                this.generatedFrames.slice(0, 12).forEach(frame => { // Show first 12 as thumbnails
-                    html += `
+
+            this.updateProgress(
+              i + 1,
+              this.totalFrames,
+              "Generating frames..."
+            );
+
+            // Allow UI to update
+            await new Promise((resolve) => setTimeout(resolve, 10));
+          }
+
+          if (this.isGenerating) {
+            this.displayGeneratedFrames();
+          }
+
+          this.stopGeneration();
+        }
+
+        async createCanvasFromElement(element) {
+          const canvas = document.createElement("canvas");
+          const ctx = canvas.getContext("2d");
+
+          canvas.width = this.getResolutionWidth();
+          canvas.height = this.getResolutionHeight();
+
+          // This is a simplified version - in practice, you'd need more sophisticated
+          // canvas rendering of the ordinal graphics
+          ctx.fillStyle = "#FFFFFF";
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+          return canvas;
+        }
+
+        getResolutionWidth() {
+          const resolution = this.elements.resolution.value;
+          switch (resolution) {
+            case "720p":
+              return 1280;
+            case "1080p":
+              return 1920;
+            case "4k":
+              return 3840;
+            default:
+              return 1920;
+          }
+        }
+
+        getResolutionHeight() {
+          const resolution = this.elements.resolution.value;
+          switch (resolution) {
+            case "720p":
+              return 720;
+            case "1080p":
+              return 1080;
+            case "4k":
+              return 2160;
+            default:
+              return 1080;
+          }
+        }
+
+        displayGeneratedFrames() {
+          let html = '<div class="frames-grid">';
+          html += `<p>Generated ${this.generatedFrames.length} frames</p>`;
+
+          this.generatedFrames.slice(0, 12).forEach((frame) => {
+            // Show first 12 as thumbnails
+            html += `
                         <div class="frame-thumbnail">
                             <img src="${frame.dataUrl}" alt="Frame ${frame.frameNumber}">
                             <div class="frame-number">${frame.frameNumber}</div>
                         </div>
                     `;
-                });
-                
-                if (this.generatedFrames.length > 12) {
-                    html += `<p>... and ${this.generatedFrames.length - 12} more frames</p>`;
-                }
-                
-                html += '</div>';
-                
-                this.elements.outputContent.innerHTML = html;
-                this.elements.outputArea.style.display = 'block';
-                this.elements.downloadFramesBtn.style.display = 'inline-block';
-            }
-            
-            processRecordedVideo() {
-                console.log('[VideoGen] Processing recorded video...');
-                
-                const blob = new Blob(this.recordedChunks, { type: 'video/webm' });
-                const url = URL.createObjectURL(blob);
-                
-                this.elements.outputContent.innerHTML = `
+          });
+
+          if (this.generatedFrames.length > 12) {
+            html += `<p>... and ${
+              this.generatedFrames.length - 12
+            } more frames</p>`;
+          }
+
+          html += "</div>";
+
+          this.elements.outputContent.innerHTML = html;
+          this.elements.outputArea.style.display = "block";
+          this.elements.downloadFramesBtn.style.display = "inline-block";
+        }
+
+        processRecordedVideo() {
+          console.log("[VideoGen] Processing recorded video...");
+
+          const blob = new Blob(this.recordedChunks, { type: "video/webm" });
+          const url = URL.createObjectURL(blob);
+
+          this.elements.outputContent.innerHTML = `
                     <div class="video-preview">
                         <video controls width="400" height="300">
                             <source src="${url}" type="video/webm">
@@ -818,91 +934,118 @@
                         <p>Video duration: ${this.elements.duration.value}s at ${this.elements.frameRate.value}fps</p>
                     </div>
                 `;
-                
-                this.elements.outputArea.style.display = 'block';
-                this.elements.downloadVideoBtn.style.display = 'inline-block';
-                
-                // Store for download
-                this.recordedVideoBlob = blob;
-            }
-            
-            downloadVideo() {
-                if (!this.recordedVideoBlob) return;
-                
-                const url = URL.createObjectURL(this.recordedVideoBlob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `ordinal-video-${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.webm`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-            }
-            
-            downloadFrames() {
-                if (this.generatedFrames.length === 0) return;
-                
-                // Create a zip file would be ideal, but for now, download individual frames
-                this.generatedFrames.forEach((frame, index) => {
-                    const a = document.createElement('a');
-                    a.href = frame.dataUrl;
-                    a.download = `ordinal-frame-${String(frame.frameNumber).padStart(4, '0')}.png`;
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                    
-                    // Small delay between downloads to avoid overwhelming the browser
-                    if (index < this.generatedFrames.length - 1) {
-                        setTimeout(() => {}, 100);
-                    }
-                });
-            }
-            
-            stopGeneration() {
-                console.log('[VideoGen] Stopping generation...');
-                this.isGenerating = false;
-                
-                if (this.animationFrameId) {
-                    cancelAnimationFrame(this.animationFrameId);
-                    this.animationFrameId = null;
-                }
-                
-                if (this.mediaRecorder && this.mediaRecorder.state === 'recording') {
-                    this.mediaRecorder.stop();
-                }
-                
-                this.elements.displayArea.classList.remove('recording');
-                this.updateButtonStates();
-                
-                if (this.currentFrame > 0) {
-                    this.elements.progressText.textContent = `Completed ${this.currentFrame} frames`;
-                } else {
-                    this.elements.progressText.textContent = 'Ready to generate';
-                }
-            }
-            
-            updateButtonStates() {
-                const isGenerating = this.isGenerating;
-                
-                this.elements.previewBtn.disabled = isGenerating;
-                this.elements.recordBtn.disabled = isGenerating;
-                this.elements.generateFramesBtn.disabled = isGenerating;
-                this.elements.stopBtn.disabled = !isGenerating;
-            }
+
+          this.elements.outputArea.style.display = "block";
+          this.elements.downloadVideoBtn.style.display = "inline-block";
+
+          // Store for download
+          this.recordedVideoBlob = blob;
         }
 
-        // Initialize video generator when DOM is loaded
-        document.addEventListener('DOMContentLoaded', () => {
-            console.log('[VideoGen] Initializing video generator...');
-            window.ordinalVideoGenerator = new OrdinalVideoGenerator();
-            
-            console.log('[VideoGen] Checking dependencies...');
-            console.log('- fInverse:', typeof fInverse === 'function' ? 'Available' : 'Not available');
-            console.log('- convertFFormatToOrdinalInstance:', typeof convertFFormatToOrdinalInstance === 'function' ? 'Available' : 'Not available');
-            console.log('- renderOrdinalGraphical:', typeof renderOrdinalGraphical === 'function' ? 'Available' : 'Not available');
-            console.log('- html2canvas:', typeof html2canvas !== 'undefined' ? 'Available' : 'Not available');
-            console.log('- DEFAULT_F_PARAMS:', typeof DEFAULT_F_PARAMS !== 'undefined' ? 'Available' : 'Not available');
-        });
+        downloadVideo() {
+          if (!this.recordedVideoBlob) return;
+
+          const url = URL.createObjectURL(this.recordedVideoBlob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = `ordinal-video-${new Date()
+            .toISOString()
+            .slice(0, 19)
+            .replace(/:/g, "-")}.webm`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        }
+
+        downloadFrames() {
+          if (this.generatedFrames.length === 0) return;
+
+          // Create a zip file would be ideal, but for now, download individual frames
+          this.generatedFrames.forEach((frame, index) => {
+            const a = document.createElement("a");
+            a.href = frame.dataUrl;
+            a.download = `ordinal-frame-${String(frame.frameNumber).padStart(
+              4,
+              "0"
+            )}.png`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+
+            // Small delay between downloads to avoid overwhelming the browser
+            if (index < this.generatedFrames.length - 1) {
+              setTimeout(() => {}, 100);
+            }
+          });
+        }
+
+        stopGeneration() {
+          console.log("[VideoGen] Stopping generation...");
+          this.isGenerating = false;
+
+          if (this.animationFrameId) {
+            cancelAnimationFrame(this.animationFrameId);
+            this.animationFrameId = null;
+          }
+
+          if (this.mediaRecorder && this.mediaRecorder.state === "recording") {
+            this.mediaRecorder.stop();
+          }
+
+          this.elements.displayArea.classList.remove("recording");
+          this.updateButtonStates();
+
+          if (this.currentFrame > 0) {
+            this.elements.progressText.textContent = `Completed ${this.currentFrame} frames`;
+          } else {
+            this.elements.progressText.textContent = "Ready to generate";
+          }
+        }
+
+        updateButtonStates() {
+          const isGenerating = this.isGenerating;
+
+          this.elements.previewBtn.disabled = isGenerating;
+          this.elements.recordBtn.disabled = isGenerating;
+          this.elements.generateFramesBtn.disabled = isGenerating;
+          this.elements.stopBtn.disabled = !isGenerating;
+        }
+      }
+
+      // Initialize video generator when DOM is loaded
+      document.addEventListener("DOMContentLoaded", () => {
+        console.log("[VideoGen] Initializing video generator...");
+        window.ordinalVideoGenerator = new OrdinalVideoGenerator();
+
+        console.log("[VideoGen] Checking dependencies...");
+        console.log(
+          "- fInverse:",
+          typeof fInverse === "function" ? "Available" : "Not available"
+        );
+        console.log(
+          "- convertFFormatToOrdinalInstance:",
+          typeof convertFFormatToOrdinalInstance === "function"
+            ? "Available"
+            : "Not available"
+        );
+        console.log(
+          "- renderOrdinalGraphical:",
+          typeof renderOrdinalGraphical === "function"
+            ? "Available"
+            : "Not available"
+        );
+        console.log(
+          "- html2canvas:",
+          typeof html2canvas !== "undefined" ? "Available" : "Not available"
+        );
+        console.log(
+          "- DEFAULT_F_PARAMS:",
+          typeof DEFAULT_F_PARAMS !== "undefined"
+            ? "Available"
+            : "Not available"
+        );
+      });
     </script>
-</body>
-</html> 
+  </body>
+</html>

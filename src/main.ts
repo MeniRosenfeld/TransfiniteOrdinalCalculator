@@ -231,3 +231,89 @@ if (document.readyState === 'loading') {
     initializeUI();
 }
 
+// =============================================================================
+// ES6 MODULE EXPORTS
+// =============================================================================
+// Export all public APIs for ES6 module consumers.
+// This enables proper IDE navigation (F12 Go to Definition) and type checking.
+// =============================================================================
+
+// Type system
+export {
+    OrdinalBase,
+    ZeroOrdinal,
+    OneOrdinal,
+    FiniteOrdinal,
+    OmegaOrdinal,
+    EpsilonZero,
+    EpsilonNumber,
+    ZetaZero,
+    ENFFactor,
+    ENFTerm,
+    ENFOrdinal,
+    CNFOrdinal,
+    WTowerOrdinal,
+    EpsilonTowerOrdinal,
+    EpsilonTunnelOrdinal
+};
+
+// Conversion system
+export {
+    ConversionRegistry,
+    ConversionEngine
+};
+
+// Operations
+export {
+    Rule,
+    RuleEngine,
+    getTowerInfo,
+    Rational,
+    DoubleFloatContext,
+    RationalContext,
+    createAdditionRules,
+    createMultiplicationRules,
+    createExponentiationRules,
+    createTetrationRules,
+    createComparisonRules,
+    Operations,
+    OPERATIONS,
+    initializeOperations,
+    OperationTracer
+};
+
+// Parser and calculator
+export {
+    SimpleParser,
+    calculateSimple,
+    renderOrdinalSimple,
+    RenderingComponents
+};
+
+// New typed ordinal mapping
+export {
+    fTyped,
+    fInverseTyped,
+    FParams,
+    DoubleContext,
+    Interval,
+    addOneToOrdinal,
+    ORDINAL_ZERO,
+    ORDINAL_ONE
+};
+
+// Legacy ordinal mapping (for backward compatibility)
+export {
+    DEFAULT_F_PARAMS,
+    OLD_F_PARAMS,
+    convertOrdinalInstanceToFFormat,
+    convertFFormatToOrdinalInstance,
+    f,
+    fInverse
+};
+
+// UI initialization
+export {
+    initializeUI
+};
+
