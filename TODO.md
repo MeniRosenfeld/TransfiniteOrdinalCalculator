@@ -6,3 +6,5 @@
 4. Make F12 work (separate ts file from html)
 5. Make intervals open/closed
 6. fInverse fail high
+7. Add Zeta_0 to parser
+8. Add infinite tunnels
