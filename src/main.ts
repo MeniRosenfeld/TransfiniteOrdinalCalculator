@@ -97,7 +97,7 @@ import { initializeUI } from './script.js';
 //   import { getOperations } from './operations/OperationsSingleton.js';
 //   import { CNFOrdinal } from './types/CNFOrdinal.js';
 //
-// See MIGRATION_GUIDE.md for migration instructions.
+// See DEVELOPMENT.md for ES6 import examples.
 //
 // Note: These exports are safe to keep indefinitely. There's no plan to remove them.
 // =============================================================================
@@ -179,7 +179,7 @@ window.convertFFormatToOrdinalInstance = convertFFormatToOrdinalInstance;
 //                 get() {
 //                     console.warn(
 //                         `[DEPRECATED] window.${name} is deprecated. ` +
-//                         `Use ES6 imports instead. See MIGRATION_GUIDE.md`
+//                         `Use ES6 imports instead. See DEVELOPMENT.md for examples.`
 //                     );
 //                     return original;
 //                 },

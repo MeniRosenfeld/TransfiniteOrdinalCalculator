@@ -7,81 +7,89 @@ A comprehensive web application for parsing, computing, and visualizing transfin
 ## Features
 
 ### **Enhanced Expression System**
-*   **Multi-type expression support:**
-    *   **Ordinals**: Non-negative integers, `w` (omega), `e_k` (epsilon numbers), `e__n` (tunnels)
-    *   **Comparisons**: `=`, `!=`, `<`, `>`, `<=`, `>=`, `?` (returns `<`, `=`, or `>`)
-    *   **Boolean Logic**: `&&`, `||`, `->` (implication), `!` (not)
-    *   **String Literals**: `"text"` with escape sequences
-    *   **Boolean Literals**: `true`, `false` (case insensitive)
-    *   **Variables**: `a`, `b`, `c`, etc. with substitution support
-    *   **Functions**: `complexity[ordinal]`, `toString[value]`, `parse[string]`
-*   **Advanced operations:**
-    *   **Arithmetic**: `+`, `*`, `^`, `^^` with proper precedence
-    *   **Successor**: `ordinal'` (postfix operator)
-    *   **Variable Substitution**: `expr/.{var:=value, ...}` (lowest precedence)
-    *   **Parentheses**: `()` for grouping and controlling order of operations
-*   **Expression Trees**: Deferred evaluation system for complex expressions with variables
-*   **Partial Substitution**: Variables can be substituted incrementally
+
+- **Multi-type expression support:**
+  - **Ordinals**: Non-negative integers, `w` (omega), `e_k` (epsilon numbers), `e__n` (tunnels)
+  - **Comparisons**: `=`, `!=`, `<`, `>`, `<=`, `>=`, `?` (returns `<`, `=`, or `>`)
+  - **Boolean Logic**: `&&`, `||`, `->` (implication), `!` (not)
+  - **String Literals**: `"text"` with escape sequences
+  - **Boolean Literals**: `true`, `false` (case insensitive)
+  - **Variables**: `a`, `b`, `c`, etc. with substitution support
+  - **Functions**: `complexity[ordinal]`, `toString[value]`, `parse[string]`
+- **Advanced operations:**
+  - **Arithmetic**: `+`, `*`, `^`, `^^` with proper precedence
+  - **Successor**: `ordinal'` (postfix operator)
+  - **Variable Substitution**: `expr/.{var:=value, ...}` (lowest precedence)
+  - **Parentheses**: `()` for grouping and controlling order of operations
+- **Expression Trees**: Deferred evaluation system for complex expressions with variables
+- **Partial Substitution**: Variables can be substituted incrementally
 
 ### **Multiple Ordinal Representations**
-*   **`FiniteOrdinal`**: Natural numbers with BigInt precision
-*   **`OmegaOrdinal`**: The ordinal ω
-*   **`CNFOrdinal`**: Cantor Normal Form for ordinals < ε₀
-*   **`EpsilonZero`**: The ordinal ε₀
-*   **`EpsilonNumber`**: Epsilon numbers ε_k for arbitrary indices k
-*   **`ENFOrdinal`/`ENFTerm`/`ENFFactor`**: Epsilon Normal Form for ordinals < Γ₀
-*   **`WTowerOrdinal`**: Omega towers (ω↑↑n) like ω, ω^ω, ω^ω^ω, etc.
-*   **`EpsilonTowerOrdinal`**: Epsilon towers (ε_k↑↑n) with arbitrary base indices
-*   **`EpsilonTunnelOrdinal`**: Deep epsilon nesting (ε_ε_ε_...0)
-*   **`ZetaZero`**: The ordinal ζ₀ (zeta-zero)
+
+- **`FiniteOrdinal`**: Natural numbers with BigInt precision
+- **`OmegaOrdinal`**: The ordinal ω
+- **`CNFOrdinal`**: Cantor Normal Form for ordinals < ε₀
+- **`EpsilonZero`**: The ordinal ε₀
+- **`EpsilonNumber`**: Epsilon numbers ε_k for arbitrary indices k
+- **`ENFOrdinal`/`ENFTerm`/`ENFFactor`**: Epsilon Normal Form for ordinals < Γ₀
+- **`WTowerOrdinal`**: Omega towers (ω↑↑n) like ω, ω^ω, ω^ω^ω, etc.
+- **`EpsilonTowerOrdinal`**: Epsilon towers (ε_k↑↑n) with arbitrary base indices
+- **`EpsilonTunnelOrdinal`**: Deep epsilon nesting (ε*ε*ε\_...0)
+- **`ZetaZero`**: The ordinal ζ₀ (zeta-zero)
 
 ### **Advanced Arithmetic Operations**
-*   **Rule-based computation engine** with modular operation rules
-*   **Automatic type conversion** and intelligent dispatch
-*   **Comprehensive tetration support:**
-    *   `0^^n`: 1 if n even, 0 if n odd; `0^^∞` undefined
-    *   `1^^k`: always 1
-    *   `m^^n` (finite m≥2): iterative computation for small n, ω for infinite n
-    *   `ω^^n`: `WTowerOrdinal` for large n, ε₀ for infinite n
-    *   `ε_k^^n`: `EpsilonTowerOrdinal` for large n, ε_(k+1) for infinite n
-*   **Operation budget system** prevents infinite computation loops
+
+- **Rule-based computation engine** with modular operation rules
+- **Automatic type conversion** and intelligent dispatch
+- **Comprehensive tetration support:**
+  - `0^^n`: 1 if n even, 0 if n odd; `0^^∞` undefined
+  - `1^^k`: always 1
+  - `m^^n` (finite m≥2): iterative computation for small n, ω for infinite n
+  - `ω^^n`: `WTowerOrdinal` for large n, ε₀ for infinite n
+  - `ε_k^^n`: `EpsilonTowerOrdinal` for large n, ε\_(k+1) for infinite n
+- **Operation budget system** prevents infinite computation loops
 
 ### **Dual Display System**
-*   **Graphical Representation:** Beautiful mathematical rendering with:
-    *   True superscripts and subscripts
-    *   Proper ω, ε, ζ symbols with Unicode subscripts
-    *   Tower notation with up arrows (ω↑↑n) and down arrows (ε↓↓n)
-    *   Smart parentheses placement for readability
-*   **Linear String Format:** Clean text representation preserving mathematical structure
+
+- **Graphical Representation:** Beautiful mathematical rendering with:
+  - True superscripts and subscripts
+  - Proper ω, ε, ζ symbols with Unicode subscripts
+  - Tower notation with up arrows (ω↑↑n) and down arrows (ε↓↓n)
+  - Smart parentheses placement for readability
+- **Linear String Format:** Clean text representation preserving mathematical structure
 
 ### **Ordinal-to-Real Mapping f(α)**
-*   **Strictly increasing function** mapping ordinals α < ζ₀ to real numbers
-*   **Parameterizable scaling** with `FParams` class
-*   **Interactive exploration** via slider interface
-*   **Inverse mapping** `fInverse(x)` for real-to-ordinal conversion
-*   **Bidirectional discovery:** Find ordinals corresponding to specific real values
+
+- **Strictly increasing function** mapping ordinals α < ζ₀ to real numbers
+- **Parameterizable scaling** with `FParams` class
+- **Interactive exploration** via slider interface
+- **Inverse mapping** `fInverse(x)` for real-to-ordinal conversion
+- **Bidirectional discovery:** Find ordinals corresponding to specific real values
 
 ### **User Interface**
-*   **Copy functionality:** Export results as images or text
-*   **Shareable links:** Generate URLs with pre-filled expressions
-*   **Interactive slider:** Explore ordinal-real number relationships
-*   **Responsive design:** Works on desktop and mobile devices
+
+- **Copy functionality:** Export results as images or text
+- **Shareable links:** Generate URLs with pre-filled expressions
+- **Interactive slider:** Explore ordinal-real number relationships
+- **Responsive design:** Works on desktop and mobile devices
 
 ### **Developer Tools**
-*   **Comprehensive test suites** with visual feedback
-*   **Enhanced parser test suite** for multi-type expressions and variable substitution
-*   **Unified test system** with declarative test definitions (90% code reduction)
-*   **Immutability testing** verifies ordinal objects remain unchanged during operations
-*   **Conversion debugging matrix** showing all type transformations
-*   **Operation tracing** with budget monitoring
-*   **Alertness testing** randomly introduces errors to verify test suite effectiveness
-*   **Singleton instances** for efficient constant ordinal access
-*   **Expression tree debugging** for complex variable expressions
-*   **Extensive documentation** and development guides
+
+- **Comprehensive test suites** with visual feedback
+- **Enhanced parser test suite** for multi-type expressions and variable substitution
+- **Unified test system** with declarative test definitions (90% code reduction)
+- **Immutability testing** verifies ordinal objects remain unchanged during operations
+- **Conversion debugging matrix** showing all type transformations
+- **Operation tracing** with budget monitoring
+- **Alertness testing** randomly introduces errors to verify test suite effectiveness
+- **Singleton instances** for efficient constant ordinal access
+- **Expression tree debugging** for complex variable expressions
+- **Extensive documentation** and development guides
 
 ## How to Use
 
 ### **Basic Calculator Usage**
+
 1. **Enter Expression:** Type any supported expression:
    - **Ordinals**: `w^w+1`, `e_0*2`, `e__(w+1)`
    - **Comparisons**: `w > 5`, `e_0 ? w`
@@ -98,9 +106,10 @@ A comprehensive web application for parsing, computing, and visualizing transfin
 ### **Example Expressions**
 
 **Ordinal Arithmetic:**
+
 ```
 w+1              → ω+1
-(w+1)*2          → ω×2+2  
+(w+1)*2          → ω×2+2
 w^2              → ω²
 2^w              → ω
 w^^3             → ω^ω^ω (displayed as ω↑↑3 for large towers)
@@ -110,6 +119,7 @@ w'               → ω+1 (successor operator)
 ```
 
 **Enhanced Expressions:**
+
 ```
 w > 5            → true (boolean result)
 w ? e_0          → < (comparison result)
@@ -121,6 +131,7 @@ parse["w+1"]     → ω+1
 ```
 
 **Variable Substitution:**
+
 ```
 a+b/.{a:=w,b:=1}           → ω+1
 a+b/.{a:=w}                → ω+b (partial substitution)
@@ -129,47 +140,53 @@ parse[toString[a]]/.{a:=5}  → 5 (nested functions)
 ```
 
 ### **Advanced Features**
-*   **Copy Results:** Click "Copy as Image" or "Copy Text"
-*   **Share:** Click "Share Link" to generate a URL
-*   **Real Number Exploration:** Adjust slider to find ordinals for specific f(α) values
-*   **Fine Control:** Use ↔️ nudge control for precise slider adjustments
+
+- **Copy Results:** Click "Copy as Image" or "Copy Text"
+- **Share:** Click "Share Link" to generate a URL
+- **Real Number Exploration:** Adjust slider to find ordinals for specific f(α) values
+- **Fine Control:** Use ↔️ nudge control for precise slider adjustments
 
 ## Technical Architecture
 
 ### **Modular Design**
-*   **`types/`**: All ordinal type implementations inheriting from `OrdinalBase`
-*   **`operations/`**: Rule-based arithmetic engines with pluggable rules
-*   **`conversions/`**: Type conversion system with automatic path finding
-*   **`tests/`**: Comprehensive test suites and debugging tools
+
+- **`types/`**: All ordinal type implementations inheriting from `OrdinalBase`
+- **`operations/`**: Rule-based arithmetic engines with pluggable rules
+- **`conversions/`**: Type conversion system with automatic path finding
+- **`tests/`**: Comprehensive test suites and debugging tools
 
 ### **Rule-Based Operations**
-*   **`RuleEngine`**: Pattern matching and rule application system
-*   **Modular rules**: Separate files for addition, multiplication, exponentiation, tetration
-*   **Automatic dispatch**: Smart selection of appropriate algorithms based on operand types
+
+- **`RuleEngine`**: Pattern matching and rule application system
+- **Modular rules**: Separate files for addition, multiplication, exponentiation, tetration
+- **Automatic dispatch**: Smart selection of appropriate algorithms based on operand types
 
 ### **Type Conversion System**
-*   **`ConversionRegistry`**: Manages all type-to-type conversions
-*   **`ConversionEngine`**: Finds optimal conversion paths automatically
-*   **Lazy conversion**: Operations convert types only when necessary
+
+- **`ConversionRegistry`**: Manages all type-to-type conversions
+- **`ConversionEngine`**: Finds optimal conversion paths automatically
+- **Lazy conversion**: Operations convert types only when necessary
 
 ### **Parser Architecture**
-*   **`SimpleParser`**: Recursive descent parser with tokenization
-*   **Flexible output**: Can produce any supported ordinal type
-*   **Error handling**: Clear error messages with position information
+
+- **`SimpleParser`**: Recursive descent parser with tokenization
+- **Flexible output**: Can produce any supported ordinal type
+- **Error handling**: Clear error messages with position information
 
 ### **Performance Features**
-*   **Operation budgets**: Prevents infinite loops in complex calculations
-*   **Efficient algorithms**: Optimized implementations for common operations
-*   **Caching**: Results cached where appropriate to avoid recomputation
+
+- **Operation budgets**: Prevents infinite loops in complex calculations
+- **Efficient algorithms**: Optimized implementations for common operations
+- **Caching**: Results cached where appropriate to avoid recomputation
 
 ### **Modern Architecture (TypeScript + ES6 Modules)**
-*   **TypeScript migration**: Full type safety with strict mode enabled
-*   **ES6 modules**: Proper dependency management and imports
-*   **No window dependencies**: Internal code uses modern imports (see `WINDOW_DEPENDENCIES_REMOVED.md`)
-*   **Factory pattern**: Circular dependency resolution via `OrdinalFactory`
-*   **Singleton pattern**: Operations accessible via `getOperations()` from `OperationsSingleton`
-*   **Backward compatible**: Window globals maintained for test files and console debugging
-*   **Migration guide**: See `MIGRATION_GUIDE.md` for upgrading existing code
+
+- **TypeScript migration**: Full type safety with strict mode enabled
+- **ES6 modules**: Proper dependency management and imports
+- **Factory pattern**: Circular dependency resolution via `OrdinalFactory`
+- **Singleton pattern**: Operations accessible via `getOperations()` from `OperationsSingleton`
+- **Backward compatible**: Window globals maintained for test files and console debugging
+- **Import patterns**: See `DEVELOPMENT.md` for ES6 import examples
 
 ## File Structure
 
@@ -239,12 +256,15 @@ npm install
 ### **Running Locally**
 
 **⚡ Quick Start (For Development):**
+
 ```bash
 npm run dev          # Start dev server → http://localhost:3000
 ```
+
 Changes to `src/` files hot-reload instantly! See `DEVELOPMENT.md` for full workflow guide.
 
 **📦 Other Commands:**
+
 ```bash
 npm run build        # Build production bundle → dist/
 npm run preview      # Preview production build → http://localhost:4173
@@ -280,52 +300,58 @@ Then navigate to `http://localhost:8000`
 ### **Testing**
 
 **New ES6 Module System:**
-*   **Test Index:** Open `index-tests.html` for all test links
-*   **Main Test Suite:** Open `tests/ordinal_enf_test.html`
-*   **Calculator Tests:** Open `tests/ordinal_calculator_test.html`
+
+- **Test Index:** Open `index-tests.html` for all test links
+- **Main Test Suite:** Open `tests/ordinal_enf_test.html`
+- **Calculator Tests:** Open `tests/ordinal_calculator_test.html`
 
 **Legacy System (for comparison):**
-*   **Main Test Suite:** Open `tests/ordinal_enf_test.html`
-*   **Enhanced Parser Tests:** Open `tests/enhanced_parser_test.html`
-*   **Arithmetic Laws Tests:** Open `tests/arithmetic_laws_test.html`
-*   **Immutability Tests:** Open `tests/immutability_test.html`
-*   **Conversion Testing:** Open `tests/conversion_debug.html`  
-*   **Architecture Tests:** Open `tests/new_system_smoke_tests.html`
-*   **Comparison Debugging:** Open `tests/debug_enf.html`
+
+- **Main Test Suite:** Open `tests/ordinal_enf_test.html`
+- **Enhanced Parser Tests:** Open `tests/enhanced_parser_test.html`
+- **Arithmetic Laws Tests:** Open `tests/arithmetic_laws_test.html`
+- **Immutability Tests:** Open `tests/immutability_test.html`
+- **Conversion Testing:** Open `tests/conversion_debug.html`
+- **Architecture Tests:** Open `tests/new_system_smoke_tests.html`
+- **Comparison Debugging:** Open `tests/debug_enf.html`
 
 ## Technologies Used
 
-*   **HTML5** with semantic markup
-*   **CSS3** with mathematical typography
-*   **ES6 Modules** with modern JavaScript (ES2020+ for BigInt support)
-*   **[Vite](https://vitejs.dev/)** for development and production builds
-*   **TypeScript** (configured for gradual migration)
-*   **[html2canvas](https://html2canvas.hertzen.com/)** for image export
+- **HTML5** with semantic markup
+- **CSS3** with mathematical typography
+- **ES6 Modules** with modern JavaScript (ES2020+ for BigInt support)
+- **[Vite](https://vitejs.dev/)** for development and production builds
+- **TypeScript** (configured for gradual migration)
+- **[html2canvas](https://html2canvas.hertzen.com/)** for image export
 
 ### **Build System**
 
 The project uses a modern build system with dual compatibility:
 
-*   **Development:** Fast hot-reload with Vite dev server
-*   **Production:** Optimized bundled builds (~118KB minified)
-*   **Legacy Support:** Original script-tag loading still works for backward compatibility
+- **Development:** Fast hot-reload with Vite dev server
+- **Production:** Optimized bundled builds (~118KB minified)
+- **Legacy Support:** Original script-tag loading still works for backward compatibility
 
 ## Mathematical Background
 
 ### **Ordinal Numbers**
+
 Ordinal numbers extend natural numbers into the transfinite, representing well-ordered sets. Key ordinals include:
-*   **ω** (omega): First infinite ordinal
-*   **ε₀** (epsilon-zero): First epsilon number, where ω^ε₀ = ε₀
-*   **ζ₀** (zeta-zero): First zeta number, limit of epsilon tower
+
+- **ω** (omega): First infinite ordinal
+- **ε₀** (epsilon-zero): First epsilon number, where ω^ε₀ = ε₀
+- **ζ₀** (zeta-zero): First zeta number, limit of epsilon tower
 
 ### **Normal Forms**
-*   **Cantor Normal Form (CNF)**: Represents ordinals < ε₀ as finite sums of omega powers
-*   **Epsilon Normal Form (ENF)**: Extends CNF to handle epsilon numbers up to Γ₀
+
+- **Cantor Normal Form (CNF)**: Represents ordinals < ε₀ as finite sums of omega powers
+- **Epsilon Normal Form (ENF)**: Extends CNF to handle epsilon numbers up to Γ₀
 
 ### **Ordinal Arithmetic**
-*   **Non-commutative**: α + β ≠ β + α in general
-*   **Left-distributive**: α(β + γ) = αβ + αγ, but (β + γ)α ≠ βα + γα
-*   **Tetration**: Iterated exponentiation creating tower structures
+
+- **Non-commutative**: α + β ≠ β + α in general
+- **Left-distributive**: α(β + γ) = αβ + αγ, but (β + γ)α ≠ βα + γα
+- **Tetration**: Iterated exponentiation creating tower structures
 
 ## Development
 
@@ -342,24 +368,28 @@ Ordinal numbers extend natural numbers into the transfinite, representing well-o
 The project currently maintains two parallel systems during migration:
 
 **New System (src/):**
+
 - ES6 modules with proper imports/exports
 - Vite for development and building
 - Optimized production bundles
 - Ready for TypeScript migration
 
 **Legacy System (root .js files):**
+
 - Original script-tag loading
 - Still functional for backward compatibility
 - Used by some test files
 
 **Making Changes:**
+
 1. Edit files in `src/` directory
 2. Run `npm run dev` to test with hot reload
 3. Run `npm run build` to create production bundle
 4. Test with `npm run preview`
 5. Verify tests pass: open `index-tests.html` or `tests/ordinal_enf_test.html`
 
-**Migration Status:** 
+**Migration Status:**
+
 - ✅ Phase 1: Infrastructure setup (complete)
 - ✅ Phase 2: ES6 modules (complete)
 - 🔄 Phase 3: TypeScript migration (in progress)
@@ -370,28 +400,26 @@ The project currently maintains two parallel systems during migration:
 Comprehensive documentation is available:
 
 ### **For Users**
+
 - **[README.md](README.md)** (this file) - Project overview and quick start
-- **[ENHANCED_PARSER_EXAMPLES.md](ENHANCED_PARSER_EXAMPLES.md)** - Examples of parser capabilities
+- **[MATHEMATICAL_BACKGROUND.md](MATHEMATICAL_BACKGROUND.md)** - Mathematical foundations
 
 ### **For Developers**
-- **[API_REFERENCE.md](API_REFERENCE.md)** - Complete API documentation for all classes and methods
+
 - **[COMPREHENSIVE_DOCUMENTATION.md](COMPREHENSIVE_DOCUMENTATION.md)** - Technical architecture and design
-- **[DEVELOPMENT.md](DEVELOPMENT.md)** - Development workflow and testing guide
+- **[DEVELOPMENT.md](DEVELOPMENT.md)** - Development workflow, testing, and ES6 imports
 - **[AGENT_DOCUMENTATION.md](AGENT_DOCUMENTATION.md)** - Common pitfalls and best practices
 - **[CONTRIBUTING.md](CONTRIBUTING.md)** - Contribution guidelines
-
-### **Specialized Topics**
-- **[MIGRATION_GUIDE.md](MIGRATION_GUIDE.md)** - ES6 module migration patterns
-- **[UNIFIED_TEST_SYSTEM.md](UNIFIED_TEST_SYSTEM.md)** - Declarative test framework
+- **[TODO.md](TODO.md)** - Current roadmap and planned features
 
 ## Future Enhancements
 
-*   Support for larger ordinals (Γ₀, Veblen functions)
-*   Step-by-step calculation display
-*   Advanced error reporting with syntax highlighting
-*   Random ordinal generation and exploration
-*   More sophisticated visual rendering for deeply nested expressions
-*   Export to LaTeX and other mathematical formats
+- Support for larger ordinals (Γ₀, Veblen functions)
+- Step-by-step calculation display
+- Advanced error reporting with syntax highlighting
+- Random ordinal generation and exploration
+- More sophisticated visual rendering for deeply nested expressions
+- Export to LaTeX and other mathematical formats
 
 ## License
 
