@@ -1,37 +1,16 @@
 // @ts-nocheck
 
+import { OperationTracer } from "../OperationTracer.js";
+import { SimpleParser } from "../SimpleParser.js";
+import { f, fInverse, DEFAULT_F_PARAMS, convertFFormatToOrdinalInstance, convertOrdinalInstanceToFFormat } from "../ordinal_mapping/OrdinalMappingCompat.js";
+import { initializeTestEnvironment } from "./testEnvironment.js";
+
 // Extracted from simplify_test.html
 
 // Original <scripttype="module">
 
-        // Wait for module to finish loading and exporting to window
-        await new Promise(resolve => setTimeout(resolve, 200));
-
-        // Verify globals are available
-        if (typeof SimpleParser === 'undefined' || typeof OPERATIONS === 'undefined') {
-            document.body.innerHTML = '<h1 style="color: red;">ERROR: Module not loaded. Required globals missing!</h1>' +
-                '<p>SimpleParser: ' + typeof SimpleParser + '</p>' +
-                '<p>OPERATIONS: ' + typeof OPERATIONS + '</p>';
-            throw new Error('Module loading failed');
-        }
-
-        console.log('[Test] Module loaded successfully, starting simplify tests...');
-
-        // Initialize the operations system
-        if (window.OPERATIONS) {
-            try {
-                if (typeof initializeOperations === 'function') {
-                    initializeOperations(OPERATIONS);
-                    console.log('[Test] Operations singleton initialized');
-                }
-            } catch (e) {
-                console.error('Failed to initialize OPERATIONS', e);
-            }
-        }
-
-        // Initialize global tracer for tests
-        OperationTracer.setGlobalTracer(1000000); // 1M operations budget
-        console.log('[GlobalTracer] Simplify test suite initialized with budget:', OperationTracer.getBudget());
+        initializeTestEnvironment(1_000_000);
+        console.log('[Test] Simplify tests initialized');
 
         // Stats for each test kind
         const testStats = {

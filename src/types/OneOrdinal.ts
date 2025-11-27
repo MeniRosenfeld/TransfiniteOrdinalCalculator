@@ -2,10 +2,10 @@
 // Represents the specific ordinal 1.
 
 import { OrdinalBase } from './OrdinalBase.js';
-import type { OmegaOrdinal } from './OmegaOrdinal.js';
-import type { ZeroOrdinal } from './ZeroOrdinal.js';
-import type { FiniteOrdinal } from './FiniteOrdinal.js';
-import type { WTowerOrdinal } from './WTowerOrdinal.js';
+import { OmegaOrdinal } from './OmegaOrdinal.js';
+import { ZeroOrdinal } from './ZeroOrdinal.js';
+import { FiniteOrdinal } from './FiniteOrdinal.js';
+import { WTowerOrdinal } from './WTowerOrdinal.js';
 import { RenderingComponents } from '../RenderingComponents.js';
 
 /**
@@ -36,7 +36,7 @@ export class OneOrdinal extends OrdinalBase {
     needsParenthesesAsExponent(): boolean { return false; }
 
     nextRank(): OrdinalBase {
-        return new (window as any).OmegaOrdinal();
+        return new OmegaOrdinal();
     }
 
     complexity(): number { return 1; }
@@ -61,7 +61,7 @@ export class OneOrdinal extends OrdinalBase {
             };
         }
         // Fallback to 0 if 1 doesn't fit
-        const zero = (window as any).ZeroOrdinal.instance();
+        const zero = ZeroOrdinal.instance();
         return { simplifiedOrdinal: zero, remainingBudget: complexityBudget };
     }
 
@@ -70,7 +70,7 @@ export class OneOrdinal extends OrdinalBase {
     }
 
     log(): OrdinalBase {
-        return (window as any).ZeroOrdinal.instance();
+        return ZeroOrdinal.instance();
     }
 
     logStar(): bigint {
@@ -78,7 +78,7 @@ export class OneOrdinal extends OrdinalBase {
     }
 
     successor(): OrdinalBase {
-        return new (window as any).FiniteOrdinal(2n);
+        return new FiniteOrdinal(2n);
     }
 
     isEpsilonNumber(): boolean { return false; }
@@ -105,10 +105,10 @@ export class OneOrdinal extends OrdinalBase {
 
     convertTo(targetTypeName: string): OrdinalBase {
         if (targetTypeName === 'Finite') {
-            return new (window as any).FiniteOrdinal(1n);
+            return new FiniteOrdinal(1n);
         }
         if (targetTypeName === 'WTower') {
-            return new (window as any).WTowerOrdinal(0n);
+            return new WTowerOrdinal(0n);
         }
         throw new Error(`OneOrdinal cannot convert directly to ${targetTypeName}`);
     }

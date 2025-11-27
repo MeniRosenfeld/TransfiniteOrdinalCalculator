@@ -1,42 +1,48 @@
+import { OperationTracer } from "../OperationTracer.js";
+import { OPERATIONS } from "../operations/Operations.js";
+import { ENFOrdinal } from "../types/ENFOrdinal.js";
+import { ENFTerm } from "../types/ENFTerm.js";
+import { ENFFactor } from "../types/ENFFactor.js";
+import { OmegaOrdinal } from "../types/OmegaOrdinal.js";
+import { CNFOrdinal } from "../types/CNFOrdinal.js";
+import { EpsilonZero } from "../types/EpsilonZero.js";
+import { EpsilonNumber } from "../types/EpsilonNumber.js";
+import { ZeroOrdinal } from "../types/ZeroOrdinal.js";
+import { FiniteOrdinal } from "../types/FiniteOrdinal.js";
+import { WTowerOrdinal } from "../types/WTowerOrdinal.js";
+import { EpsilonTowerOrdinal } from "../types/EpsilonTowerOrdinal.js";
+import { OneOrdinal } from "../types/OneOrdinal.js";
+import { SimpleParser } from "../SimpleParser.js";
+import { initializeTestEnvironment } from "./testEnvironment.js";
+import {
+    ordinalLabels,
+    expectedAdditionResults,
+    expectedMultiplicationResults,
+    expectedExponentiationResults,
+} from "./data/ordinalEnfExpectedResults.js";
+
+// @ts-nocheck
+
+let mutabilityTest: {
+    checkMutations: () => {
+        mutated: boolean;
+        mutationCount: number;
+        mutations: Array<{
+            index: number;
+            original: string;
+            current: string;
+        }>;
+    };
+} | null = null;
+
 // @ts-nocheck
 
 // Extracted from ordinal_enf_test.html
 
 // Original <scripttype="module">
 
-        // Wait for module to finish loading and exporting to window
-        await new Promise(resolve => setTimeout(resolve, 200));
-
-        // Verify globals are available
-        if (typeof OperationTracer === 'undefined' || typeof OPERATIONS === 'undefined') {
-            document.body.innerHTML = '<h1 style="color: red;">ERROR: Module not loaded. Required globals missing!</h1>' +
-                '<p>OperationTracer: ' + typeof OperationTracer + '</p>' +
-                '<p>OPERATIONS: ' + typeof OPERATIONS + '</p>' +
-                '<p>ENFOrdinal: ' + typeof ENFOrdinal + '</p>';
-            throw new Error('Module loading failed');
-        }
-
-        console.log('[Test] Module loaded successfully, starting ENF tests...');
-
-        // Initialize the new operations system
-        if (window.OPERATIONS) {
-            try {
-                OPERATIONS.initialize();
-                console.log('[Test] OPERATIONS initialized');
-                // Also reinitialize the singleton to point to this OPERATIONS instance
-                if (typeof initializeOperations === 'function') {
-                    initializeOperations(OPERATIONS);
-                    console.log('[Test] Operations singleton initialized');
-                }
-            } catch (e) {
-                console.error('Failed to initialize OPERATIONS', e);
-            }
-        }
-
-        // DOM is already loaded (we waited 200ms), so run tests immediately
-        // Initialize global tracer BEFORE defining tests
-        OperationTracer.setGlobalTracer(2000000); // 2M operations budget
-        console.log('[GlobalTracer] ENF test suite initialized with budget:', OperationTracer.getBudget());
+        initializeTestEnvironment(2000000);
+        console.log('[Test] ENF tests initialized');
 
         // Declare all variables and functions first, then run tests at the end
         const testStats = {
@@ -1477,8 +1483,8 @@
             console.log('[MUTABILITY] Captured', allOrdinals.length, 'ordinal string representations');
             console.log('[MUTABILITY] Sample strings:', originalStrings.slice(0, 5));
 
-            // Store mutation detection data globally
-            window.mutabilityTest = {
+            // Store mutation detection data for debugging
+            mutabilityTest = {
                 ordinals: allOrdinals,
                 originalStrings: originalStrings,
                 checkMutations: function () {
@@ -2549,9 +2555,9 @@
             setTimeout(() => {
                 console.log('[MUTABILITY] All tests completed, checking for mutations...');
 
-                if (window.mutabilityTest && typeof window.mutabilityTest.checkMutations === 'function') {
+                if (mutabilityTest && typeof mutabilityTest.checkMutations === 'function') {
                     // Perform mutation check
-                    const mutabilityResult = window.mutabilityTest.checkMutations();
+                    const mutabilityResult = mutabilityTest.checkMutations();
 
                     // Update overall test status based on mutability
                     if (!mutabilityResult) {
@@ -2635,9 +2641,9 @@
             setTimeout(() => {
                 console.log('[MUTABILITY] All tests completed, checking for mutations...');
 
-                if (window.mutabilityTest && typeof window.mutabilityTest.checkMutations === 'function') {
+                if (mutabilityTest && typeof mutabilityTest.checkMutations === 'function') {
                     // Perform mutation check
-                    const mutabilityResult = window.mutabilityTest.checkMutations();
+                    const mutabilityResult = mutabilityTest.checkMutations();
 
                     // Update overall test status based on mutability
                     if (!mutabilityResult) {

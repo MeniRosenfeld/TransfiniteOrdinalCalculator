@@ -1,41 +1,15 @@
+import { OperationTracer } from "../OperationTracer.js";
+import { SimpleParser } from "../SimpleParser.js";
+import { initializeTestEnvironment } from "./testEnvironment.js";
+
 // @ts-nocheck
 
 // Extracted from enhanced_parser_test.html
 
 // Original <scripttype="module">
 
-        // Wait for module to finish loading and exporting to window
-        await new Promise(resolve => setTimeout(resolve, 200));
-
-        // Verify globals are available
-        if (typeof OperationTracer === 'undefined' || typeof OPERATIONS === 'undefined' || typeof SimpleParser === 'undefined') {
-            document.body.innerHTML = '<h1 style="color: red;">ERROR: Module not loaded. Required globals missing!</h1>' +
-                '<p>OperationTracer: ' + typeof OperationTracer + '</p>' +
-                '<p>OPERATIONS: ' + typeof OPERATIONS + '</p>' +
-                '<p>SimpleParser: ' + typeof SimpleParser + '</p>';
-            throw new Error('Module loading failed');
-        }
-
-        console.log('[Test] Module loaded successfully, starting Enhanced Parser tests...');
-
-        // Initialize the new operations system
-        if (window.OPERATIONS) {
-            try {
-                OPERATIONS.initialize();
-                console.log('[Test] OPERATIONS initialized');
-                // Also reinitialize the singleton to point to this OPERATIONS instance
-                if (typeof initializeOperations === 'function') {
-                    initializeOperations(OPERATIONS);
-                    console.log('[Test] Operations singleton initialized');
-                }
-            } catch (e) {
-                console.error('Failed to initialize OPERATIONS', e);
-            }
-        }
-
-        // Initialize global tracer
-        OperationTracer.setGlobalTracer(100000); // 100K operations budget
-        console.log('[GlobalTracer] Enhanced Parser test suite initialized with budget:', OperationTracer.getBudget());
+        initializeTestEnvironment(100000);
+        console.log('[Test] Enhanced Parser tests initialized');
 
     
 
@@ -412,21 +386,29 @@
             }
         }
 
-        // Wait for DOM to be ready
-        // OPERATIONS and OperationTracer are already initialized by the module script above
-        document.addEventListener('DOMContentLoaded', function () {
-            console.log('[Enhanced Parser Test] DOM loaded');
+        const initializeControls = () => {
+            console.log('[Enhanced Parser Test] DOM ready');
+
+            document.getElementById('runAllTestsBtn')?.addEventListener('click', () => {
+                runAllTests();
+            });
+
+            document.getElementById('testExpressionBtn')?.addEventListener('click', () => {
+                testInteractive();
+            });
 
             // Allow Enter key in interactive input
-            document.getElementById('interactive-input').addEventListener('keypress', function (e) {
+            document.getElementById('interactive-input')?.addEventListener('keypress', function (e) {
                 if (e.key === 'Enter') {
                     testInteractive();
                 }
             });
 
             console.log('Enhanced Parser Test Suite loaded successfully');
-        });
+        };
 
-        // Expose controls for HTML buttons
-        window.runAllTests = runAllTests;
-        window.testInteractive = testInteractive;
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializeControls, { once: true });
+        } else {
+            initializeControls();
+        }

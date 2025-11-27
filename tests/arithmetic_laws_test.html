@@ -368,12 +368,12 @@
               min="0"
             />
             <div class="preset-buttons" style="margin-top: 5px">
-              <button class="preset-btn" onclick="setMinRange(0)">0</button>
-              <button class="preset-btn" onclick="setMinRange(1)">1</button>
-              <button class="preset-btn" onclick="setMinRangeToOmegaSquared()">
+              <button class="preset-btn" data-set-min-range="0">0</button>
+              <button class="preset-btn" data-set-min-range="1">1</button>
+              <button class="preset-btn" data-action="min-range-omega-squared">
                 f(ω²)
               </button>
-              <button class="preset-btn" onclick="setMinRangeToOmegaOmega()">
+              <button class="preset-btn" data-action="min-range-omega-omega">
                 f(ω^ω)
               </button>
             </div>
@@ -389,14 +389,14 @@
               min="0"
             />
             <div class="preset-buttons" style="margin-top: 5px">
-              <button class="preset-btn" onclick="setMaxRange(1)">1</button>
-              <button class="preset-btn" onclick="setMaxRangeToOmegaSquared()">
+              <button class="preset-btn" data-set-max-range="1">1</button>
+              <button class="preset-btn" data-action="max-range-omega-squared">
                 f(ω²)
               </button>
-              <button class="preset-btn" onclick="setMaxRangeToOmegaOmega()">
+              <button class="preset-btn" data-action="max-range-omega-omega">
                 f(ω^ω)
               </button>
-              <button class="preset-btn" onclick="setMaxRangeToEpsilonZero()">
+              <button class="preset-btn" data-action="max-range-epsilon-zero">
                 f(ε₀)
               </button>
             </div>
@@ -432,8 +432,8 @@
           max="2147483647"
         />
         <button
+          id="generateSeedButton"
           class="preset-btn"
-          onclick="generateNewSeed()"
           style="margin-left: 10px"
         >
           New Seed
@@ -595,8 +595,6 @@
       </div>
     </div>
 
-    <!-- Load ES6 Module Bundle (exports everything to window globals) -->
-    <script type="module" src="/src/main.js"></script>
     <script type="module" src="/src/tests/arithmetic_laws_test.ts"></script>
 
     

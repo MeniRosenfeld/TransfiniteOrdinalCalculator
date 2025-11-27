@@ -1,34 +1,20 @@
+import { CNFOrdinal } from "../types/CNFOrdinal.js";
+import { EpsilonZero } from "../types/EpsilonZero.js";
+import { ZeroOrdinal } from "../types/ZeroOrdinal.js";
+import { OneOrdinal } from "../types/OneOrdinal.js";
+import { FiniteOrdinal } from "../types/FiniteOrdinal.js";
+import { OmegaOrdinal } from "../types/OmegaOrdinal.js";
+import { OPERATIONS } from "../operations/Operations.js";
+import { initializeTestEnvironment } from "./testEnvironment.js";
+
 // @ts-nocheck
 
 // Extracted from is_well_formed_test.html
 
 // Original <scripttype="module">
 
-        // Wait for module to finish loading and exporting to window
-        await new Promise(resolve => setTimeout(resolve, 200));
-
-        // Verify globals are available
-        if (typeof CNFOrdinal === 'undefined' || typeof EpsilonZero === 'undefined' || typeof OPERATIONS === 'undefined') {
-            document.body.innerHTML = '<h1 style="color: red;">ERROR: Module not loaded. Required globals missing!</h1>' +
-                '<p>CNFOrdinal: ' + typeof CNFOrdinal + '</p>' +
-                '<p>EpsilonZero: ' + typeof EpsilonZero + '</p>' +
-                '<p>OPERATIONS: ' + typeof OPERATIONS + '</p>';
-            throw new Error('Module loading failed');
-        }
-
-        console.log('[Test] Module loaded successfully, starting isWellFormed tests...');
-
-        // Initialize the operations system
-        if (window.OPERATIONS) {
-            try {
-                if (typeof initializeOperations === 'function') {
-                    initializeOperations(OPERATIONS);
-                    console.log('[Test] Operations singleton initialized');
-                }
-            } catch (e) {
-                console.error('Failed to initialize OPERATIONS', e);
-            }
-        }
+        initializeTestEnvironment();
+        console.log('[Test] isWellFormed tests initialized');
 
         function addCase(desc, got, expected) {
             const div = document.createElement('div');

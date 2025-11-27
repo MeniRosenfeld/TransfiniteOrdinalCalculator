@@ -3,12 +3,12 @@
 
 import { OrdinalBase } from './OrdinalBase.js';
 import { OperationTracer } from '../OperationTracer.js';
-import type { FiniteOrdinal } from './FiniteOrdinal.js';
-import type { OneOrdinal } from './OneOrdinal.js';
+import { FiniteOrdinal } from './FiniteOrdinal.js';
+import { OneOrdinal } from './OneOrdinal.js';
 import { RenderingComponents } from '../RenderingComponents.js';
-import type { ENFFactor } from './ENFFactor.js';
-import type { ENFTerm } from './ENFTerm.js';
-import type { EpsilonTowerOrdinal } from './EpsilonTowerOrdinal.js';
+import { ENFFactor } from './ENFFactor.js';
+import { ENFTerm } from './ENFTerm.js';
+import { EpsilonTowerOrdinal } from './EpsilonTowerOrdinal.js';
 
 /**
  * Represents an epsilon number, e_k, where k is an ordinal.
@@ -83,7 +83,7 @@ export class EpsilonNumber extends OrdinalBase {
             };
         }
 
-        const zero = new (window as any).FiniteOrdinal(0);
+        const zero = new FiniteOrdinal(0);
         const zeroComplexity = zero.complexity();
         if (zeroComplexity <= complexityBudget) {
             return {
@@ -100,7 +100,7 @@ export class EpsilonNumber extends OrdinalBase {
     }
 
     log(): OrdinalBase {
-        return (window as any).OneOrdinal.instance();
+        return OneOrdinal.instance();
     }
 
     logStar(): bigint {
@@ -127,11 +127,11 @@ export class EpsilonNumber extends OrdinalBase {
         switch (targetTypeName) {
             case 'ENFTerm':
                 // Convert e_k to ENFTerm with single factor: e_k^1 * 1
-                const factor = new (window as any).ENFFactor(this, (window as any).OneOrdinal.instance());
-                return new (window as any).ENFTerm([factor], 1n);
+                const factor = new ENFFactor(this, OneOrdinal.instance());
+                return new ENFTerm([factor], 1n);
             case 'EpsilonTower':
                 // Convert e_k to EpsilonTower e_k^^1 (which equals e_k)
-                return new (window as any).EpsilonTowerOrdinal(this.k, 1);
+                return new EpsilonTowerOrdinal(this.k, 1);
             default:
                 throw new Error(`EpsilonNumber cannot convert directly to ${targetTypeName}`);
         }

@@ -3,6 +3,7 @@
 This document tracks planned improvements to the codebase, organized by priority.
 
 **Legend:**
+
 - `[ ]` - Not started
 - `[~]` - In progress
 - `[x]` - Completed
@@ -19,13 +20,15 @@ This document tracks planned improvements to the codebase, organized by priority
 **Impact:** Unnecessary memory allocation and object creation.
 
 **Tasks:**
-- [ ] 1.1 Implement singleton pattern for `OmegaOrdinal`
-- [ ] 1.2 Implement singleton pattern for `EpsilonZero`
-- [ ] 1.3 Implement singleton pattern for `ZetaZero`
+
+- [x] 1.1 Implement singleton pattern for `OmegaOrdinal`
+- [x] 1.2 Implement singleton pattern for `EpsilonZero`
+- [x] 1.3 Implement singleton pattern for `ZetaZero`
 - [ ] 1.4 Update `FiniteOrdinal.rank()` to return singleton instances instead of creating new ones
 - [ ] 1.5 Audit all ordinal types for singleton opportunities
 
 **Files affected:**
+
 - `src/types/OmegaOrdinal.ts`
 - `src/types/EpsilonZero.ts`
 - `src/types/ZetaZero.ts`
@@ -38,6 +41,7 @@ This document tracks planned improvements to the codebase, organized by priority
 **Issue:** Inconsistent error handling - some methods return `null`, others throw, others return error objects.
 
 **Tasks:**
+
 - [ ] 2.1 Define error handling strategy (throw exceptions for errors, return values for success)
 - [ ] 2.2 Audit `ConversionRegistry.getConversionPath()` and similar methods
 - [ ] 2.3 Standardize null/undefined handling in constructors (either always throw or always default to zero)
@@ -45,6 +49,7 @@ This document tracks planned improvements to the codebase, organized by priority
 - [ ] 2.5 Create user-friendly error message layer on top of technical ones
 
 **Files to audit:**
+
 - `src/conversions/ConversionRegistry.ts`
 - `src/types/CNFOrdinal.ts`
 - All ordinal type classes
@@ -56,6 +61,7 @@ This document tracks planned improvements to the codebase, organized by priority
 **Issue:** Many methods assume valid ordinal inputs without checking; user input parsed without length limits.
 
 **Tasks:**
+
 - [ ] 3.1 Add input length limit to parser (e.g., 10,000 characters max)
 - [ ] 3.2 Add defensive checks to `multiplyENFTerms` and similar methods
 - [ ] 3.3 Document preconditions for methods that don't validate
@@ -72,6 +78,7 @@ This document tracks planned improvements to the codebase, organized by priority
 **Issue:** Console.log statements and commented debug code throughout codebase.
 
 **Tasks:**
+
 - [ ] 4.1 Remove/wrap `console.log` statements in `ConversionRegistry.ts`
 - [ ] 4.2 Remove commented-out debug code from `SimpleParser.ts` (lines 273-295)
 - [ ] 4.3 Remove debug logging from `OrdinalMapping.ts`
@@ -79,6 +86,7 @@ This document tracks planned improvements to the codebase, organized by priority
 - [ ] 4.5 Add environment-based logging configuration (disable in production)
 
 **Files to audit:**
+
 - `src/conversions/ConversionRegistry.ts`
 - `src/SimpleParser.ts`
 - `src/ordinal_mapping/OrdinalMapping.ts`
@@ -90,10 +98,12 @@ This document tracks planned improvements to the codebase, organized by priority
 **Issue:** `Operations.initialize()` checks `this.initialized` but isn't atomic; multiple calls could race.
 
 **Tasks:**
+
 - [ ] 5.1 Implement promise-based initialization pattern
 - [ ] 5.2 Add lock mechanism or ensure idempotent initialization
 
 **Files affected:**
+
 - `src/operations/Operations.ts`
 
 ---
@@ -105,6 +115,7 @@ This document tracks planned improvements to the codebase, organized by priority
 **Issue:** Most methods lack JSDoc comments.
 
 **Tasks:**
+
 - [ ] 6.1 Add JSDoc to `RuleEngine.execute()` and all public methods
 - [ ] 6.2 Document complex algorithms (e.g., `CNFOrdinal.logStar()` lines 129-167)
 - [ ] 6.3 Document the conversion DAG with explanations of why paths exist
@@ -117,12 +128,19 @@ This document tracks planned improvements to the codebase, organized by priority
 **Issue:** Code uses global variables and checks for `module.exports`; not compatible with modern ES6 modules.
 
 **Tasks:**
-- [ ] 7.1 Audit current module usage patterns
-- [ ] 7.2 Refactor to proper ES6 module imports/exports
-- [ ] 7.3 Remove global variable patterns
+
+- [x] 7.1 Audit current module usage patterns
+- [~] 7.2 Refactor to proper ES6 module imports/exports (types now import each other directly; remaining work in legacy UI helpers)
+- [~] 7.3 Remove global variable patterns (long-term goal: eliminate globals entirely) — core ordinal types and test harnesses no longer depend on `window.*`, but some UI glue still does
 - [ ] 7.4 Update index.html to use ES6 module loading
 
 **Note:** Partially done based on TypeScript files in `src/`.
+
+**Recent progress:**
+
+- `ZeroOrdinal`, `OneOrdinal`, `OmegaOrdinal`, `EpsilonZero`, `EpsilonNumber`, and `ZetaZero` now rely solely on explicit imports (no `window` fallbacks).
+- `initializeTestEnvironment()` boots the `OrdinalFactory` before any tests run, so isolated test pages mirror the main app’s initialization order.
+- Test modules such as `arithmetic_laws_test.ts` and `enhanced_parser_test.ts` now bind UI handlers via `DOMContentLoaded`/`document.readyState`, ensuring reliability regardless of module execution timing.
 
 ---
 
@@ -131,6 +149,7 @@ This document tracks planned improvements to the codebase, organized by priority
 **Issue:** All JavaScript loaded as separate `<script>` tags (60+ scripts in index.html). No minification or tree shaking.
 
 **Tasks:**
+
 - [ ] 8.1 Review current Vite configuration
 - [ ] 8.2 Ensure proper code splitting and tree shaking
 - [ ] 8.3 Add minification for production builds
@@ -138,6 +157,7 @@ This document tracks planned improvements to the codebase, organized by priority
 - [ ] 8.5 Add feature detection for BigInt with friendly error for older browsers
 
 **Files affected:**
+
 - `vite.config.ts`
 - `index.html`
 
@@ -148,6 +168,7 @@ This document tracks planned improvements to the codebase, organized by priority
 **Issue:** Files like `MultiplicationRules.ts` have deeply nested conditions.
 
 **Tasks:**
+
 - [ ] 9.1 Extract helper functions for complex conditions in `MultiplicationRules.ts`
 - [ ] 9.2 Extract helper functions in `AdditionRules.ts`
 - [ ] 9.3 Extract helper functions in `ExponentiationRules.ts`
@@ -160,6 +181,7 @@ This document tracks planned improvements to the codebase, organized by priority
 **Issue:** Heavy reliance on `instanceof` checks creates tight coupling to concrete classes.
 
 **Tasks:**
+
 - [ ] 10.1 Add `getTypeName()` method to all ordinal types (if not present)
 - [ ] 10.2 Refactor `AdditionRules.ts` (lines 38-41 and similar) to use type checking via method
 - [ ] 10.3 Standardize type checking pattern (add `isOrdinal()` check like elsewhere)
@@ -172,6 +194,7 @@ This document tracks planned improvements to the codebase, organized by priority
 **Issue:** Uses Floyd-Warshall (O(n³)) with `computeAllPaths()` called manually after registration.
 
 **Tasks:**
+
 - [ ] 11.1 Implement lazy path computation
 - [ ] 11.2 Or implement incremental path updates when types are registered
 - [ ] 11.3 Memoize conversion results within single operation context
@@ -183,6 +206,7 @@ This document tracks planned improvements to the codebase, organized by priority
 **Issue:** Global state creates implicit coupling; hard to test in parallel; many small `consume(1)` calls have overhead.
 
 **Tasks:**
+
 - [ ] 12.1 Consider context-based approach: `OperationContext.withTracer(budget, () => { ... })`
 - [ ] 12.2 Implement thread-local or async-context storage for web worker support
 - [ ] 12.3 Batch consumption or use cheaper periodic checks
@@ -198,6 +222,7 @@ This document tracks planned improvements to the codebase, organized by priority
 **Issue:** 18 separate HTML test files with duplicate infrastructure; no CI/CD integration.
 
 **Tasks:**
+
 - [ ] 13.1 Create unified test runner that can load different test suites
 - [ ] 13.2 Add Jest or Vitest for automated testing (keep HTML tests for visual verification)
 - [ ] 13.3 Configure CI/CD integration
@@ -210,7 +235,8 @@ This document tracks planned improvements to the codebase, organized by priority
 **Issue:** Type classes have both data representation AND rendering logic (`toGraphicalHTML()`).
 
 **Tasks:**
-- [ ] 14.1 Consider extracting rendering into separate `Renderer` class
+
+- [ ] 14.1 Consider extracting rendering into separate `Renderer` class (keep this item open for further work)
 - [ ] 14.2 Follow Single Responsibility Principle
 - [ ] 14.3 Create `OrdinalRenderer` that takes ordinals as input
 
@@ -221,6 +247,7 @@ This document tracks planned improvements to the codebase, organized by priority
 ### 15. Serialization Support
 
 **Tasks:**
+
 - [ ] 15.1 Add `toJSON()` method to all ordinal types
 - [ ] 15.2 Add `fromJSON()` static method for deserialization
 - [ ] 15.3 Document serialization format
@@ -230,6 +257,7 @@ This document tracks planned improvements to the codebase, organized by priority
 ### 16. Additional Mathematical Features
 
 **Tasks:**
+
 - [ ] 16.1 Add `isSuccessor()` method
 - [ ] 16.2 Add `isAdditivePrincipal()` method
 - [ ] 16.3 Add bulk comparison/sorting utilities for ordinal arrays
@@ -240,6 +268,7 @@ This document tracks planned improvements to the codebase, organized by priority
 ### 17. Performance Optimizations
 
 **Tasks:**
+
 - [ ] 17.1 Review `CNFOrdinal` constructor array operations (lines 26-29) - share immutable references instead of creating new objects
 - [ ] 17.2 Audit string building for efficiency (prefer `.join()` over `+` in loops)
 - [ ] 17.3 Clarify `ENFOrdinal.clone()` behavior (lines 118-121) - document if shallow copy is intentional; fix if it's a bug
@@ -250,6 +279,7 @@ This document tracks planned improvements to the codebase, organized by priority
 ### 18. URL & UX Improvements
 
 **Tasks:**
+
 - [ ] 18.1 Add try-catch for URL parameter parsing with user-friendly error messages
 - [ ] 18.2 Add progress indication for long operations
 
@@ -258,6 +288,7 @@ This document tracks planned improvements to the codebase, organized by priority
 ### 19. Document Memory/Singleton Behavior
 
 **Tasks:**
+
 - [ ] 19.1 Document that singleton instances are never released (intentional for performance)
 - [ ] 19.2 Document immutability model for terms and factors
 
@@ -267,28 +298,28 @@ This document tracks planned improvements to the codebase, organized by priority
 
 These are pre-existing items that should be integrated into the work:
 
-- [ ] Deprecate old f/fInverse
+- [x] Deprecate old f/fInverse (legacy implementation already removed; all scripts use the new path)
 - [ ] Test rational mapping
-- [ ] Support rationals in calculator
+- [ ] Support rationals in calculator (GUI still needs clean support for rational contexts)
 - [ ] Make F12 work (separate ts file from html)
 - [ ] Make intervals open/closed
 - [ ] fInverse fail high
 - [ ] Add Zeta_0 to parser
 - [ ] Add infinite tunnels
-- [ ] Make better graphical rendering / LaTeX
+- [ ] Make better graphical rendering / LaTeX (SimpleRenderer exists but further improvements desired)
 - [ ] Add hybrid Towers
 
 ---
 
 ## Progress Summary
 
-| Priority | Total | Completed | Percentage |
-|----------|-------|-----------|------------|
-| 🔴 High  | 21    | 0         | 0%         |
-| 🟡 Medium| 24    | 0         | 0%         |
-| 🟢 Low   | 19    | 0         | 0%         |
-| 📋 Legacy| 10    | 0         | 0%         |
-| **Total**| **74**| **0**     | **0%**     |
+| Priority  | Total  | Completed | Percentage |
+| --------- | ------ | --------- | ---------- |
+| 🔴 High   | 21     | 3         | 14%        |
+| 🟡 Medium | 24     | 0         | 0%         |
+| 🟢 Low    | 19     | 0         | 0%         |
+| 📋 Legacy | 10     | 0         | 0%         |
+| **Total** | **74** | **3**     | **4%**     |
 
 ---
 
@@ -301,5 +332,4 @@ These are pre-existing items that should be integrated into the work:
 
 ---
 
-*Last updated: November 26, 2025*
-
+_Last updated: November 26, 2025_

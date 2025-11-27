@@ -3,12 +3,12 @@
 
 import { OrdinalBase } from './OrdinalBase.js';
 import { OperationTracer } from '../OperationTracer.js';
-import type { OneOrdinal } from './OneOrdinal.js';
-import type { ZeroOrdinal } from './ZeroOrdinal.js';
-import type { EpsilonZero } from './EpsilonZero.js';
+import { OneOrdinal } from './OneOrdinal.js';
+import { ZeroOrdinal } from './ZeroOrdinal.js';
+import { EpsilonZero } from './EpsilonZero.js';
 import { RenderingComponents } from '../RenderingComponents.js';
-import type { CNFOrdinal } from './CNFOrdinal.js';
-import type { WTowerOrdinal } from './WTowerOrdinal.js';
+import { CNFOrdinal } from './CNFOrdinal.js';
+import { WTowerOrdinal } from './WTowerOrdinal.js';
 
 /**
  * Represents the specific ordinal omega (ω).
@@ -37,7 +37,7 @@ export class OmegaOrdinal extends OrdinalBase {
     }
 
     log(): OrdinalBase {
-        return (window as any).OneOrdinal.instance();
+        return OneOrdinal.instance();
     }
 
     logStar(): bigint {
@@ -58,7 +58,7 @@ export class OmegaOrdinal extends OrdinalBase {
     needsParenthesesAsExponent(): boolean { return false; }
 
     nextRank(): OrdinalBase {
-        return new (window as any).EpsilonZero();
+        return new EpsilonZero();
     }
 
     complexity(): number { return 1; }
@@ -90,7 +90,7 @@ export class OmegaOrdinal extends OrdinalBase {
             };
         }
 
-        const zero = (window as any).ZeroOrdinal.instance();
+        const zero = ZeroOrdinal.instance();
         const zeroComplexity = zero.complexity();
         if (zeroComplexity <= complexityBudget) {
             return {
@@ -131,12 +131,12 @@ export class OmegaOrdinal extends OrdinalBase {
         switch (targetTypeName) {
             case 'CNF':
                 // ω = CNFOrdinal with single term: ω^1 * 1
-                return new (window as any).CNFOrdinal([{
-                    exponent: (window as any).CNFOrdinal.ONEStatic(), // ω^1 as CNF exponent
+                return new CNFOrdinal([{
+                    exponent: CNFOrdinal.ONEStatic(), // ω^1 as CNF exponent
                     coefficient: 1n
                 }]);
             case 'WTower':
-                return new (window as any).WTowerOrdinal(1);
+                return new WTowerOrdinal(1);
 
             default:
                 throw new Error(`OmegaOrdinal cannot convert directly to ${targetTypeName}`);

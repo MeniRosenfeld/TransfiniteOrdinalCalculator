@@ -2,9 +2,9 @@
 // Represents the specific ordinal 0.
 
 import { OrdinalBase } from './OrdinalBase.js';
-import type { OneOrdinal } from './OneOrdinal.js';
-import type { FiniteOrdinal } from './FiniteOrdinal.js';
-import type { WTowerOrdinal } from './WTowerOrdinal.js';
+import { OneOrdinal } from './OneOrdinal.js';
+import { FiniteOrdinal } from './FiniteOrdinal.js';
+import { WTowerOrdinal } from './WTowerOrdinal.js';
 import { RenderingComponents } from '../RenderingComponents.js';
 
 /**
@@ -35,8 +35,7 @@ export class ZeroOrdinal extends OrdinalBase {
     needsParenthesesAsExponent(): boolean { return false; }
 
     nextRank(): OrdinalBase {
-        // Access via window global to avoid circular dependency at compile time
-        return (window as any).OneOrdinal.instance();
+        return OneOrdinal.instance();
     }
 
     complexity(): number { return 0; }
@@ -75,7 +74,7 @@ export class ZeroOrdinal extends OrdinalBase {
     }
 
     successor(): OrdinalBase {
-        return (window as any).OneOrdinal.instance();
+        return OneOrdinal.instance();
     }
 
     isEpsilonNumber(): boolean { return false; }
@@ -102,10 +101,10 @@ export class ZeroOrdinal extends OrdinalBase {
 
     convertTo(targetTypeName: string): OrdinalBase {
         if (targetTypeName === 'Finite') {
-            return new (window as any).FiniteOrdinal(0n);
+            return new FiniteOrdinal(0n);
         }
         if (targetTypeName === 'WTower') {
-            return new (window as any).WTowerOrdinal(-1n);
+            return new WTowerOrdinal(-1n);
         }
         throw new Error(`ZeroOrdinal cannot convert directly to ${targetTypeName}`);
     }

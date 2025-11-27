@@ -3,10 +3,10 @@
 
 import { OrdinalBase } from './OrdinalBase.js';
 import { OperationTracer } from '../OperationTracer.js';
-import type { FiniteOrdinal } from './FiniteOrdinal.js';
-import type { ZeroOrdinal } from './ZeroOrdinal.js';
-import type { OneOrdinal } from './OneOrdinal.js';
-import type { EpsilonNumber } from './EpsilonNumber.js';
+import { FiniteOrdinal } from './FiniteOrdinal.js';
+import { ZeroOrdinal } from './ZeroOrdinal.js';
+import { OneOrdinal } from './OneOrdinal.js';
+import { EpsilonNumber } from './EpsilonNumber.js';
 import { RenderingComponents } from '../RenderingComponents.js';
 
 export class EpsilonZero extends OrdinalBase {
@@ -32,7 +32,7 @@ export class EpsilonZero extends OrdinalBase {
     }
 
     log(): OrdinalBase {
-        return new (window as any).FiniteOrdinal(1n);
+        return new FiniteOrdinal(1n);
     }
 
     logStar(): bigint {
@@ -48,7 +48,7 @@ export class EpsilonZero extends OrdinalBase {
     isEpsilonNumber(): boolean { return true; }
 
     epsilonIndex(): OrdinalBase {
-        return (window as any).ZeroOrdinal.instance();
+        return ZeroOrdinal.instance();
     }
 
     getFiniteBigInt(): bigint {
@@ -82,7 +82,7 @@ export class EpsilonZero extends OrdinalBase {
             };
         }
 
-        const zero = new (window as any).FiniteOrdinal(0);
+        const zero = new FiniteOrdinal(0);
         const zeroComplexity = zero.complexity();
         if (zeroComplexity <= complexityBudget) {
             return {
@@ -113,7 +113,7 @@ export class EpsilonZero extends OrdinalBase {
     convertTo(targetTypeName: string): OrdinalBase {
         switch (targetTypeName) {
             case 'EpsilonNumber':
-                return new (window as any).EpsilonNumber((window as any).ZeroOrdinal.instance());
+                return new EpsilonNumber(ZeroOrdinal.instance());
             default:
                 throw new Error(`EpsilonZero cannot convert directly to ${targetTypeName}`);
         }
@@ -121,6 +121,6 @@ export class EpsilonZero extends OrdinalBase {
 
     nextRank(): OrdinalBase {
         // nextRank for e_0 is e_1
-        return new (window as any).EpsilonNumber((window as any).OneOrdinal.instance());
+        return new EpsilonNumber(OneOrdinal.instance());
     }
 }

@@ -1,43 +1,16 @@
+import { OperationTracer } from "../OperationTracer.js";
+import { OPERATIONS } from "../operations/Operations.js";
+import { fInverse, DEFAULT_F_PARAMS } from "../ordinal_mapping/OrdinalMappingCompat.js";
+import { initializeTestEnvironment } from "./testEnvironment.js";
+
 // @ts-nocheck
 
 // Extracted from finverse_debug.html
 
 // Original <scripttype="module">
 
-        // Wait for module to finish loading and exporting to window
-        await new Promise(resolve => setTimeout(resolve, 200));
-
-        // Verify globals are available
-        if (typeof OperationTracer === 'undefined' || typeof OPERATIONS === 'undefined' || 
-            typeof fInverse === 'undefined' || typeof DEFAULT_F_PARAMS === 'undefined') {
-            document.body.innerHTML = '<h1 style="color: red;">ERROR: Module not loaded. Required globals missing!</h1>' +
-                '<p>OperationTracer: ' + typeof OperationTracer + '</p>' +
-                '<p>OPERATIONS: ' + typeof OPERATIONS + '</p>' +
-                '<p>fInverse: ' + typeof fInverse + '</p>' +
-                '<p>DEFAULT_F_PARAMS: ' + typeof DEFAULT_F_PARAMS + '</p>';
-            throw new Error('Module loading failed');
-        }
-
-        console.log('[Test] Module loaded successfully, starting fInverse debug...');
-
-        // Initialize the new operations system
-        if (window.OPERATIONS) {
-            try {
-                OPERATIONS.initialize();
-                console.log('[Test] OPERATIONS initialized');
-                // Also reinitialize the singleton to point to this OPERATIONS instance
-                if (typeof initializeOperations === 'function') {
-                    initializeOperations(OPERATIONS);
-                    console.log('[Test] Operations singleton initialized');
-                }
-            } catch (e) {
-                console.error('Failed to initialize OPERATIONS', e);
-            }
-        }
-
-        // Initialize global tracer
-        OperationTracer.setGlobalTracer(500000); // 500K operations budget
-        console.log('[GlobalTracer] Finverse debug initialized with budget:', OperationTracer.getBudget());
+        initializeTestEnvironment(500000);
+        console.log('[Test] fInverse debug initialized');
 
         // Run the fInverse calculation
         // Module scripts are deferred, so DOM is already loaded - run immediately

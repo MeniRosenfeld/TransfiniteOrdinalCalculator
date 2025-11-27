@@ -1,41 +1,16 @@
+import { OperationTracer } from "../OperationTracer.js";
+import { OPERATIONS } from "../operations/Operations.js";
+import { SimpleParser } from "../SimpleParser.js";
+import { initializeTestEnvironment } from "./testEnvironment.js";
+
 // @ts-nocheck
 
 // Extracted from immutability_test.html
 
 // Original <scripttype="module">
 
-        // Wait for module to finish loading and exporting to window
-        await new Promise(resolve => setTimeout(resolve, 200));
-
-        // Verify globals are available
-        if (typeof OperationTracer === 'undefined' || typeof OPERATIONS === 'undefined' || typeof SimpleParser === 'undefined') {
-            document.body.innerHTML = '<h1 style="color: red;">ERROR: Module not loaded. Required globals missing!</h1>' +
-                '<p>OperationTracer: ' + typeof OperationTracer + '</p>' +
-                '<p>OPERATIONS: ' + typeof OPERATIONS + '</p>' +
-                '<p>SimpleParser: ' + typeof SimpleParser + '</p>';
-            throw new Error('Module loading failed');
-        }
-
-        console.log('[Test] Module loaded successfully, starting Immutability tests...');
-
-        // Initialize the new operations system
-        if (window.OPERATIONS) {
-            try {
-                OPERATIONS.initialize();
-                console.log('[Test] OPERATIONS initialized');
-                // Also reinitialize the singleton to point to this OPERATIONS instance
-                if (typeof initializeOperations === 'function') {
-                    initializeOperations(OPERATIONS);
-                    console.log('[Test] Operations singleton initialized');
-                }
-            } catch (e) {
-                console.error('Failed to initialize OPERATIONS', e);
-            }
-        }
-
-        // Initialize global tracer
-        OperationTracer.setGlobalTracer(1000000); // 1M operations budget
-        console.log('[GlobalTracer] Immutability test suite initialized with budget:', OperationTracer.getBudget());
+        initializeTestEnvironment(1000000);
+        console.log('[Test] Immutability tests initialized');
 
         // Import mutability array from ordinal_enf_expected_results.js
         const mutabilityArray = [

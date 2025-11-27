@@ -15,14 +15,7 @@ let operationsInstance: Operations | null = null;
  */
 export function getOperations(): Operations {
     if (!operationsInstance) {
-        // Auto-initialize from window.OPERATIONS if available (for test compatibility)
-        if (typeof window !== 'undefined' && (window as any).OPERATIONS) {
-            console.warn('[OperationsSingleton] Auto-initializing from window.OPERATIONS');
-            initializeOperations((window as any).OPERATIONS);
-            return operationsInstance!; // Non-null assertion since we just initialized
-        } else {
-            throw new Error('Operations not initialized. Call initializeOperations() first.');
-        }
+        throw new Error('Operations not initialized. Call initializeOperations() first.');
     }
     return operationsInstance;
 }

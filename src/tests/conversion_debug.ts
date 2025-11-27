@@ -1,40 +1,29 @@
+import { OperationTracer } from "../OperationTracer.js";
+import { OPERATIONS } from "../operations/Operations.js";
+import { ZeroOrdinal } from "../types/ZeroOrdinal.js";
+import { OneOrdinal } from "../types/OneOrdinal.js";
+import { FiniteOrdinal } from "../types/FiniteOrdinal.js";
+import { OmegaOrdinal } from "../types/OmegaOrdinal.js";
+import { CNFOrdinal } from "../types/CNFOrdinal.js";
+import { ENFOrdinal } from "../types/ENFOrdinal.js";
+import { ENFTerm } from "../types/ENFTerm.js";
+import { ENFFactor } from "../types/ENFFactor.js";
+import { EpsilonZero } from "../types/EpsilonZero.js";
+import { EpsilonNumber } from "../types/EpsilonNumber.js";
+import { WTowerOrdinal } from "../types/WTowerOrdinal.js";
+import { EpsilonTowerOrdinal } from "../types/EpsilonTowerOrdinal.js";
+import { EpsilonTunnelOrdinal } from "../types/EpsilonTunnelOrdinal.js";
+import { ZetaZero } from "../types/ZetaZero.js";
+import { initializeTestEnvironment } from "./testEnvironment.js";
+
 // @ts-nocheck
 
 // Extracted from conversion_debug.html
 
 // Original <scripttype="module">
 
-        // Wait for module to finish loading and exporting to window
-        await new Promise(resolve => setTimeout(resolve, 200));
-
-        // Verify globals are available
-        if (typeof OperationTracer === 'undefined' || typeof OPERATIONS === 'undefined') {
-            document.body.innerHTML = '<h1 style="color: red;">ERROR: Module not loaded. Required globals missing!</h1>' +
-                '<p>OperationTracer: ' + typeof OperationTracer + '</p>' +
-                '<p>OPERATIONS: ' + typeof OPERATIONS + '</p>';
-            throw new Error('Module loading failed');
-        }
-
-        console.log('[Test] Module loaded successfully, starting Conversion Debug...');
-
-        // Initialize the new operations system
-        if (window.OPERATIONS) {
-            try {
-                OPERATIONS.initialize();
-                console.log('[Test] OPERATIONS initialized');
-                // Also reinitialize the singleton to point to this OPERATIONS instance
-                if (typeof initializeOperations === 'function') {
-                    initializeOperations(OPERATIONS);
-                    console.log('[Test] Operations singleton initialized');
-                }
-            } catch (e) {
-                console.error('Failed to initialize OPERATIONS', e);
-            }
-        }
-
-        // Initialize global tracer
-        OperationTracer.setGlobalTracer(1000000); // 1M operations budget
-        console.log('[GlobalTracer] Conversion debug initialized with budget:', OperationTracer.getBudget());
+        initializeTestEnvironment(1000000);
+        console.log('[Test] Conversion debug initialized');
 
         // Now that initialization is complete, run the rendering code
         (function () {

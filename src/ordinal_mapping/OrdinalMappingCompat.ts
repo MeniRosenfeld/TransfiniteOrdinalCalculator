@@ -13,6 +13,10 @@ import { fInverseWrapper } from './OrdinalMappingInverse.js';
 import { FParams } from './FParams.js';
 import { DoubleContext } from './Contexts.js';
 import { DoubleNumericValue } from './DoubleNumericValue.js';
+import { FiniteOrdinal } from '../types/FiniteOrdinal.js';
+import { CNFOrdinal } from '../types/CNFOrdinal.js';
+import { EpsilonNumber } from '../types/EpsilonNumber.js';
+import { WTowerOrdinal } from '../types/WTowerOrdinal.js';
 
 /**
  * Default FParams instance using DoubleContext with scale 3 for all parameters.
@@ -108,19 +112,6 @@ export function convertOrdinalInstanceToFFormat(ordinal: any): OrdinalRepresenta
  * @returns OrdinalBase instance
  */
 export function convertFFormatToOrdinalInstance(fFormat: OrdinalRepresentation): any {
-    // We need to import ordinal types dynamically or have them passed in
-    // For now, we'll use the window globals that should be available in the browser
-
-    if (typeof window === 'undefined') {
-        throw new Error('convertFFormatToOrdinalInstance: window is not defined. This function requires browser environment.');
-    }
-
-    const { FiniteOrdinal, CNFOrdinal, EpsilonNumber, WTowerOrdinal, OmegaOrdinal } = window as any;
-
-    if (!FiniteOrdinal || !CNFOrdinal) {
-        throw new Error('convertFFormatToOrdinalInstance: Required ordinal classes not available on window.');
-    }
-
     // Recursive helper to convert nested representations
     function convert(rep: OrdinalRepresentation): any {
         // Finite ordinal
@@ -177,18 +168,12 @@ export function convertFFormatToOrdinalInstance(fFormat: OrdinalRepresentation):
             if (typeof h !== 'bigint') {
                 throw new Error(`WTowerOrdinal height must be bigint, got ${typeof h}: ${String(h)}`);
             }
-            if (WTowerOrdinal) {
-                return new WTowerOrdinal(h);
-            }
-            throw new Error('WTowerOrdinal class not available');
+            return new WTowerOrdinal(h);
         }
 
         // Legacy ε₀
         if (rep === 'E0_TYPE') {
-            if (EpsilonNumber) {
-                return new EpsilonNumber(new FiniteOrdinal(0n));
-            }
-            throw new Error('EpsilonNumber class not available for E0_TYPE');
+            return new EpsilonNumber(new FiniteOrdinal(0n));
         }
 
         throw new Error(`convertFFormatToOrdinalInstance: Unknown representation format: ${typeof rep === 'object' ? `type=${(rep as any)?.type}` : String(rep)}`);

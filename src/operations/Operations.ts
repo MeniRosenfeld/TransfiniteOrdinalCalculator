@@ -161,6 +161,10 @@ export class Operations {
         }
     }
 
+    isInitialized(): boolean {
+        return this.initialized;
+    }
+
     /**
      * Returns diagnostic information about the operations system.
      */

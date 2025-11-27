@@ -15,7 +15,6 @@
       import { DoubleContext } from "../ordinal_mapping/Contexts.js";
       import { OperationTracer } from "../OperationTracer.js";
       import { OPERATIONS } from "../operations/Operations.js";
-      import { initializeOperations } from "../operations/OperationsSingleton.js";
       import { ZeroOrdinal } from "../types/ZeroOrdinal.js";
       import { OneOrdinal } from "../types/OneOrdinal.js";
       import { FiniteOrdinal } from "../types/FiniteOrdinal.js";
@@ -23,37 +22,13 @@
       import { CNFOrdinal } from "../types/CNFOrdinal.js";
       import { EpsilonZero } from "../types/EpsilonZero.js";
       import { SimpleParser } from "../SimpleParser.js";
-
-      // Make available globally for non-module script blocks
-      window.f = f;
-      window.fInverse = fInverse;
-      window.DEFAULT_F_PARAMS = DEFAULT_F_PARAMS;
-      window.OperationTracer = OperationTracer;
-      window.OPERATIONS = OPERATIONS;
-      window.initializeOperations = initializeOperations;
-      window.ZeroOrdinal = ZeroOrdinal;
-      window.OneOrdinal = OneOrdinal;
-      window.FiniteOrdinal = FiniteOrdinal;
-      window.OmegaOrdinal = OmegaOrdinal;
-      window.CNFOrdinal = CNFOrdinal;
-      window.EpsilonZero = EpsilonZero;
-      window.SimpleParser = SimpleParser;
-      window.DoubleContext = DoubleContext;
-      window.FParams = FParams;
-      window.convertFFormatToOrdinalInstance = convertFFormatToOrdinalInstance;
+      import { initializeTestEnvironment } from "./testEnvironment.js";
 
       console.log(
         "[Test] Module loaded successfully, starting Arithmetic Laws tests..."
       );
 
-      // Initialize the new operations system
-      OPERATIONS.initialize();
-      console.log("[Test] OPERATIONS initialized");
-      initializeOperations(OPERATIONS);
-      console.log("[Test] Operations singleton initialized");
-
-      // Initialize global tracer BEFORE defining tests
-      OperationTracer.setGlobalTracer(10000000); // 10M operations budget
+      initializeTestEnvironment(10000000);
       console.log(
         "[GlobalTracer] Arithmetic Laws test suite initialized with budget:",
         OperationTracer.getBudget()
@@ -129,13 +104,57 @@
       const randomSeedInput = document.getElementById("randomSeed");
       const skipCyclesInput = document.getElementById("skipCycles");
 
-      // Initialize when page loads
-      window.addEventListener("load", () => {
+      const initializePage = () => {
         console.log("Arithmetic Laws Test Suite loaded");
         initializeDefaults();
         updateUI();
         calculatePresetRanges();
-      });
+
+        document
+          .querySelectorAll("[data-set-min-range]")
+          .forEach((button) => {
+            const value = parseFloat(
+              (button as HTMLElement).getAttribute("data-set-min-range") || "0"
+            );
+            button.addEventListener("click", () => setMinRange(value));
+          });
+
+        document
+          .querySelectorAll("[data-set-max-range]")
+          .forEach((button) => {
+            const value = parseFloat(
+              (button as HTMLElement).getAttribute("data-set-max-range") || "0"
+            );
+            button.addEventListener("click", () => setMaxRange(value));
+          });
+
+        document
+          .querySelector('[data-action="min-range-omega-squared"]')
+          ?.addEventListener("click", () => setMinRangeToOmegaSquared());
+        document
+          .querySelector('[data-action="min-range-omega-omega"]')
+          ?.addEventListener("click", () => setMinRangeToOmegaOmega());
+        document
+          .querySelector('[data-action="max-range-omega-squared"]')
+          ?.addEventListener("click", () => setMaxRangeToOmegaSquared());
+        document
+          .querySelector('[data-action="max-range-omega-omega"]')
+          ?.addEventListener("click", () => setMaxRangeToOmegaOmega());
+        document
+          .querySelector('[data-action="max-range-epsilon-zero"]')
+          ?.addEventListener("click", () => setMaxRangeToEpsilonZero());
+        document
+          .getElementById("generateSeedButton")
+          ?.addEventListener("click", generateNewSeed);
+      };
+
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", initializePage, {
+          once: true,
+        });
+      } else {
+        initializePage();
+      }
 
       function initializeDefaults() {
         // Set max range to DEFAULT_F_PARAMS.precomputed[5] value (f(ε₀))

@@ -1,32 +1,26 @@
+import { OperationTracer } from "../OperationTracer.js";
+import { OPERATIONS } from "../operations/Operations.js";
+import { CNFOrdinal } from "../types/CNFOrdinal.js";
+import { WTowerOrdinal } from "../types/WTowerOrdinal.js";
+import { SimpleParser } from "../SimpleParser.js";
+import {
+  f,
+  fInverse,
+  DEFAULT_F_PARAMS,
+  OLD_F_PARAMS,
+  convertFFormatToOrdinalInstance,
+  convertOrdinalInstanceToFFormat,
+} from "../ordinal_mapping/OrdinalMappingCompat.js";
+import { initializeTestEnvironment } from "./testEnvironment.js";
+
 // @ts-nocheck
 
 // Extracted from ordinal_calculator_test.html
 
 // Original <scripttype="module">
 
-      // Wait for module to finish loading and exporting to window
-      await new Promise((resolve) => setTimeout(resolve, 200));
-
-      // Verify globals are available
-      if (
-        typeof OperationTracer === "undefined" ||
-        typeof OPERATIONS === "undefined"
-      ) {
-        document.body.innerHTML =
-          '<h1 style="color: red;">ERROR: Module not loaded. Required globals missing!</h1>' +
-          "<p>OperationTracer: " +
-          typeof OperationTracer +
-          "</p>" +
-          "<p>OPERATIONS: " +
-          typeof OPERATIONS +
-          "</p>" +
-          "<p>CNFOrdinal: " +
-          typeof CNFOrdinal +
-          "</p>";
-        throw new Error("Module loading failed");
-      }
-
-      console.log("[Test] Module loaded successfully, starting tests...");
+      initializeTestEnvironment(1000000);
+      console.log("[Test] Ordinal calculator tests initialized");
 
       // Stats for each test kind
       const testStats = {
@@ -1859,20 +1853,6 @@
         );
       }
 
-      // Ensure operations initialized before running tests
-      (function ensureOpsInit() {
-        if (window.OPERATIONS) {
-          try {
-            OPERATIONS.initialize();
-            if (typeof initializeOperations === "function") {
-              initializeOperations(OPERATIONS);
-            }
-          } catch (e) {
-            console.error(e);
-          }
-        }
-      })();
-
       // Global error handler to catch test failures
       let hasUnhandledErrors = false;
       window.addEventListener("error", (event) => {
@@ -1914,23 +1894,6 @@
         OperationTracer.getBudget()
       );
 
-      // Initialize OPERATIONS system immediately
-      if (typeof OPERATIONS !== "undefined" && OPERATIONS.initialize) {
-        OPERATIONS.initialize();
-        console.log(
-          "[CalculatorTest] OPERATIONS system initialized immediately"
-        );
-        // Also reinitialize the singleton to point to this OPERATIONS instance
-        if (typeof initializeOperations === "function") {
-          initializeOperations(OPERATIONS);
-          console.log("[CalculatorTest] Operations singleton initialized");
-        }
-      } else {
-        console.error(
-          "[CalculatorTest] OPERATIONS not available or missing initialize method"
-        );
-      }
-
       try {
         runAllTestsAndRender();
       } catch (error) {
@@ -1953,9 +1916,8 @@
           let cnfCandidate = simpOrd;
           try {
             if (
-              window.OPERATIONS &&
-              OPERATIONS.initialized &&
-              cnfCandidate.isLessThanEpsilon0 &&
+              OPERATIONS.isInitialized() &&
+              typeof cnfCandidate.isLessThanEpsilon0 === "function" &&
               cnfCandidate.isLessThanEpsilon0() &&
               OPERATIONS.canConvert(cnfCandidate, "CNF")
             ) {

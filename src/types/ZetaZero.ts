@@ -3,8 +3,8 @@
 
 import { OrdinalBase } from './OrdinalBase.js';
 import { OperationTracer } from '../OperationTracer.js';
-import type { ZeroOrdinal } from './ZeroOrdinal.js';
-import type { OneOrdinal } from './OneOrdinal.js';
+import { ZeroOrdinal } from './ZeroOrdinal.js';
+import { OneOrdinal } from './OneOrdinal.js';
 
 export class ZetaZero extends OrdinalBase {
     constructor() {
@@ -55,7 +55,7 @@ export class ZetaZero extends OrdinalBase {
                 remainingBudget: complexityBudget - myComplexity
             };
         }
-        const zero = (window as any).ZeroOrdinal.instance();
+        const zero = ZeroOrdinal.instance();
         const zeroComplexity = zero.complexity();
         return {
             simplifiedOrdinal: zero,
@@ -66,7 +66,7 @@ export class ZetaZero extends OrdinalBase {
     rank(): OrdinalBase { return this; }
 
     log(): OrdinalBase {
-        return (window as any).OneOrdinal.instance();
+        return OneOrdinal.instance();
     }
 
     logStar(): bigint { return 1n; }

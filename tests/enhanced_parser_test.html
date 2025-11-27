@@ -110,7 +110,7 @@
         <p>Comprehensive tests for the expanded parser supporting comparison operators, boolean logic, strings, and
             functions.</p>
 
-        <button class="run-tests-btn" onclick="runAllTests()">Run All Tests</button>
+        <button id="runAllTestsBtn" class="run-tests-btn">Run All Tests</button>
 
         <div class="stats" id="stats">
             <h3>Test Statistics</h3>
@@ -121,7 +121,7 @@
             <h2>Interactive Test</h2>
             <input type="text" class="expression-input" id="interactive-input"
                 placeholder="Enter expression to test (e.g., w+1 > w, toString[e_0], !true && false)">
-            <button class="run-tests-btn" onclick="testInteractive()">Test Expression</button>
+            <button id="testExpressionBtn" class="run-tests-btn">Test Expression</button>
             <div id="interactive-result"></div>
         </div>
 
@@ -162,8 +162,6 @@
         </div>
     </div>
 
-    <!-- Load ES6 Module Bundle (exports everything to window globals) -->
-    <script type="module" src="/src/main.js"></script>
     <script type="module" src="/src/tests/enhanced_parser_test.ts"></script>
 
     
