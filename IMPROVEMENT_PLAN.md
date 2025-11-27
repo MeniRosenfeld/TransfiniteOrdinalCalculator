@@ -130,17 +130,11 @@ This document tracks planned improvements to the codebase, organized by priority
 **Tasks:**
 
 - [x] 7.1 Audit current module usage patterns
-- [~] 7.2 Refactor to proper ES6 module imports/exports (types now import each other directly; remaining work in legacy UI helpers)
-- [~] 7.3 Remove global variable patterns (long-term goal: eliminate globals entirely) — core ordinal types and test harnesses no longer depend on `window.*`, but some UI glue still does
-- [ ] 7.4 Update index.html to use ES6 module loading
+- [x] 7.2 Refactor to proper ES6 module imports/exports
+- [x] 7.3 Remove global variable patterns (long-term goal: eliminate globals entirely)
+- [x] 7.4 Update index.html (and other entry pages) to use ES6 module loading
 
-**Note:** Partially done based on TypeScript files in `src/`.
-
-**Recent progress:**
-
-- `ZeroOrdinal`, `OneOrdinal`, `OmegaOrdinal`, `EpsilonZero`, `EpsilonNumber`, and `ZetaZero` now rely solely on explicit imports (no `window` fallbacks).
-- `initializeTestEnvironment()` boots the `OrdinalFactory` before any tests run, so isolated test pages mirror the main app’s initialization order.
-- Test modules such as `arithmetic_laws_test.ts` and `enhanced_parser_test.ts` now bind UI handlers via `DOMContentLoaded`/`document.readyState`, ensuring reliability regardless of module execution timing.
+**Status:** ✅ Complete. Every HTML page now loads a dedicated TypeScript module (no inline scripts), the core ordinal types/tests import each other directly, and the shared `initializeTestEnvironment()` brings up both the factory and the operations singleton so nothing relies on `window.*` for ordinal logic anymore.
 
 ---
 
