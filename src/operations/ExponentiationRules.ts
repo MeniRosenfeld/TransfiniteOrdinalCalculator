@@ -5,6 +5,8 @@ import { OperationTracer } from '../OperationTracer.js';
 import { Rule } from './RuleEngine.js';
 import type { ConversionEngine } from '../conversions/ConversionEngine.js';
 import { CNFOrdinal } from '../types/CNFOrdinal.js';
+import type { CNFTerm } from '../types/CNFOrdinal.js';
+import type { OrdinalBase } from '../types/OrdinalBase.js';
 import { ENFOrdinal } from '../types/ENFOrdinal.js';
 import { ENFTerm } from '../types/ENFTerm.js';
 import { ENFFactor } from '../types/ENFFactor.js';
@@ -18,18 +20,18 @@ import { EpsilonTowerOrdinal } from '../types/EpsilonTowerOrdinal.js';
 import { ZetaZero } from '../types/ZetaZero.js';
 import { getOperations } from './OperationsSingleton.js';
 
-function powerFinite(a: any, b: any): any {
+function powerFinite(a: OrdinalBase, b: OrdinalBase): FiniteOrdinal {
     const base = a.getFiniteBigInt();
     const exp = b.getFiniteBigInt();
     const result = base ** exp;
     return new FiniteOrdinal(result);
 }
 
-function buildLimitPart(cnf: any): any {
+function buildLimitPart(cnf: CNFOrdinal): CNFOrdinal {
     if (!(cnf instanceof CNFOrdinal)) return new CNFOrdinal(0);
     if (cnf.isZero()) return new CNFOrdinal(0);
     const terms = cnf.terms;
-    const resultTerms = [];
+    const resultTerms: CNFTerm[] = [];
     OperationTracer.consume(terms.length || 0);
     for (let i = 0; i < terms.length; i++) {
         const t = terms[i];
@@ -39,7 +41,7 @@ function buildLimitPart(cnf: any): any {
     return new CNFOrdinal(resultTerms);
 }
 
-function powerCNF(a: any, b: any): any {
+function powerCNF(a: CNFOrdinal, b: CNFOrdinal): CNFOrdinal {
     // Port of legacy CNF power with available helpers
     if (b.isZero()) return CNFOrdinal.ONEStatic();
     if (a.isZero()) return CNFOrdinal.ZEROStatic();
@@ -47,19 +49,19 @@ function powerCNF(a: any, b: any): any {
     if (b.isOne()) return a;
 
     // Helper: exponentiation by squaring for CNF ordinals
-    function powBySquaringCNF(baseCNF: any, expBigInt: bigint): any {
-        let result: any = CNFOrdinal.ONEStatic();
-        let base: any = baseCNF;
+    function powBySquaringCNF(baseCNF: CNFOrdinal, expBigInt: bigint): CNFOrdinal {
+        let result: CNFOrdinal = CNFOrdinal.ONEStatic();
+        let base: CNFOrdinal = baseCNF;
         let e = expBigInt;
         let loopCount = 0;
         while (e > 0n) {
             loopCount++;
             if ((e & 1n) === 1n) {
-                result = result.multiply(base);
+                result = result.multiply(base) as CNFOrdinal;
             }
             e >>= 1n;
             if (e > 0n) {
-                base = base.multiply(base);
+                base = base.multiply(base) as CNFOrdinal;
             }
         }
         OperationTracer.consume(loopCount);
@@ -120,7 +122,7 @@ function powerCNF(a: any, b: any): any {
         const alpha1 = leading.exponent;
         const omegaExp = alpha1.multiply(B_lim);
         const omegaTerm = new CNFOrdinal([{ exponent: omegaExp, coefficient: 1n }]);
-        return omegaTerm.multiply(alphaPowM);
+        return omegaTerm.multiply(alphaPowM) as CNFOrdinal;
     }
 
     // Finite base, infinite exponent: k^β where β = ω·ξ + r  => ω^ξ * k^r
@@ -138,13 +140,13 @@ function powerCNF(a: any, b: any): any {
         const xi = B_lim.divideByOmega();
         const omegaPowXi = new CNFOrdinal([{ exponent: xi, coefficient: 1n }]);
         const kPowR = new CNFOrdinal(k ** r);
-        return omegaPowXi.multiply(kPowR);
+        return omegaPowXi.multiply(kPowR) as CNFOrdinal;
     }
 
     throw new Error('CNF exponentiation: unsupported case');
 }
 
-function powerENF(a: any, b: any): any {
+function powerENF(a: ENFOrdinal, b: ENFOrdinal): ENFOrdinal {
     OperationTracer.consume();
 
     // Trivial cases
@@ -157,7 +159,7 @@ function powerENF(a: any, b: any): any {
     if (b.isFinite()) {
         let n = b.getFinitePart();
         let res = new ENFOrdinal([new ENFTerm([], 1n)]);
-        let temp_a = a;
+        let temp_a: ENFOrdinal = a;
         while (n > 0n) {
             OperationTracer.consume();
             if (n % 2n === 1n) res = res.multiply(temp_a) as ENFOrdinal;
@@ -195,16 +197,16 @@ function powerENF(a: any, b: any): any {
                     const factor = new ENFFactor(epsilonBase, x);
                     k_pow_x = new ENFOrdinal([new ENFTerm([factor], 1n)]);
                 }
-                const w_pow_r: any = powerENF(a, r);
-                return k_pow_x.multiply(w_pow_r);
+                const wPowR = powerENF(a, r);
+                return k_pow_x.multiply(wPowR) as ENFOrdinal;
             }
 
             // If exponent splits as d + r with d = ε_k and r finite, use ω^(ε_k+r) = ε_k * ω^r
             const d = b.getLimitPart();
             const r = b.getFinitePart();
             if (!d.isZero() && d.isEpsilonNumber()) {
-                const w_pow_r: any = r > 0n ? powerENF(a, new ENFOrdinal([new ENFTerm([], r)])) : new ENFOrdinal([new ENFTerm([], 1n)]);
-                return d.multiply(w_pow_r);
+                const wPowR = r > 0n ? powerENF(a, new ENFOrdinal([new ENFTerm([], r)])) : new ENFOrdinal([new ENFTerm([], 1n)]);
+                return d.multiply(wPowR) as ENFOrdinal;
             }
 
             // General case: ω^b → ENFFactor with base=ω and exponent=b
@@ -233,8 +235,8 @@ function powerENF(a: any, b: any): any {
                     const factor = new ENFFactor(epsilonBase, x);
                     k_pow_x = new ENFOrdinal([new ENFTerm([factor], 1n)]);
                 }
-                const term_r: any = powerENF(a, r);
-                return k_pow_x.multiply(term_r);
+                const termR = powerENF(a, r);
+                return k_pow_x.multiply(termR) as ENFOrdinal;
             }
             // ε_idx^b = ε_idx with exponent b
             const epsilonBase = new EpsilonNumber(idx);
@@ -264,8 +266,8 @@ function powerENF(a: any, b: any): any {
             const factor = new ENFFactor(epsilonBase, x);
             k_pow_x = new ENFOrdinal([new ENFTerm([factor], 1n)]);
         }
-        const term_r = powerENF(a, r);
-        return k_pow_x.multiply(term_r);
+        const termR = powerENF(a, r);
+        return k_pow_x.multiply(termR) as ENFOrdinal;
     }
     // Case B: rank(b) <= rank(a)
     else {
@@ -273,9 +275,9 @@ function powerENF(a: any, b: any): any {
         const c = a.log();
         const d = b.getLimitPart();
         const r = b.getFinitePart();
-        const term_r = r > 0n ? powerENF(a, new ENFOrdinal([new ENFTerm([], r)])) : new ENFOrdinal([new ENFTerm([], 1n)]);
+        const termR = r > 0n ? powerENF(a, new ENFOrdinal([new ENFTerm([], r)])) : new ENFOrdinal([new ENFTerm([], 1n)]);
         if (d.isZero()) {
-            return term_r; // a^0 * a^r = a^r
+            return termR; // a^0 * a^r = a^r
         }
         const cd = c.multiply(d);
         // Build k^(c*d) directly
@@ -290,7 +292,7 @@ function powerENF(a: any, b: any): any {
             const factor = new ENFFactor(epsilonBase, cd);
             k_pow_cd = new ENFOrdinal([new ENFTerm([factor], 1n)]);
         }
-        return k_pow_cd.multiply(term_r);
+        return k_pow_cd.multiply(termR) as ENFOrdinal;
     }
 }
 
@@ -335,8 +337,8 @@ export function createExponentiationRules(conversionEngine: ConversionEngine): R
         new Rule('Convert to CNF when convertible',
             (a, b) => conversionEngine.canConvert(a, 'CNF') && conversionEngine.canConvert(b, 'CNF'),
             (a, b) => {
-                const aCNF = conversionEngine.convert(a, 'CNF');
-                const bCNF = conversionEngine.convert(b, 'CNF');
+                const aCNF = conversionEngine.convert(a, 'CNF') as CNFOrdinal;
+                const bCNF = conversionEngine.convert(b, 'CNF') as CNFOrdinal;
                 return powerCNF(aCNF, bCNF);
             }),
 
@@ -355,8 +357,8 @@ export function createExponentiationRules(conversionEngine: ConversionEngine): R
         new Rule("Convert to ENF fallback",
             (a, b) => conversionEngine.canConvert(a, 'ENF') && conversionEngine.canConvert(b, 'ENF'),
             (a, b) => {
-                const aENF = conversionEngine.convert(a, 'ENF');
-                const bENF = conversionEngine.convert(b, 'ENF');
+                const aENF = conversionEngine.convert(a, 'ENF') as ENFOrdinal;
+                const bENF = conversionEngine.convert(b, 'ENF') as ENFOrdinal;
                 return powerENF(aENF, bENF);
             })
     ];

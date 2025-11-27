@@ -16,6 +16,7 @@ import {
     convertOrdinalInstanceToFFormat,
     convertFFormatToOrdinalInstance
 } from './ordinal_mapping/OrdinalMappingCompat.js';
+import { isOrdinal } from './parser-types.js';
 
 // Create a shared context and params for all f/fInverse operations
 const doubleContext = new DoubleContext();
@@ -337,7 +338,12 @@ export function initializeUI() {
             }
 
             // --- Calculate and Display f(α) for the ORIGINAL ordinal FIRST (only for ordinal results) ---
-            if (mappedValueTextElement && resultType === 'ordinal' && originalResultObject) {
+            if (
+                mappedValueTextElement &&
+                resultType === 'ordinal' &&
+                originalResultObject &&
+                isOrdinal(originalResultObject)
+            ) {
                 console.log("[fCalc] originalResultObject type:", originalResultObject.constructor.name);
                 try {
                     console.log("[fCalc] Calling convertOrdinalInstanceToFFormat with:", originalResultObject);

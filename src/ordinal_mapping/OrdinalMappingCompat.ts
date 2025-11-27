@@ -13,8 +13,10 @@ import { fInverseWrapper } from './OrdinalMappingInverse.js';
 import { FParams } from './FParams.js';
 import { DoubleContext } from './Contexts.js';
 import { DoubleNumericValue } from './DoubleNumericValue.js';
+import type { OrdinalBase } from '../types/OrdinalBase.js';
 import { FiniteOrdinal } from '../types/FiniteOrdinal.js';
 import { CNFOrdinal } from '../types/CNFOrdinal.js';
+import type { CNFTerm } from '../types/CNFOrdinal.js';
 import { EpsilonNumber } from '../types/EpsilonNumber.js';
 import { WTowerOrdinal } from '../types/WTowerOrdinal.js';
 
@@ -82,18 +84,17 @@ export function fInverse(
  * @param ordinal - OrdinalBase instance
  * @returns OrdinalRepresentation
  */
-export function convertOrdinalInstanceToFFormat(ordinal: any): OrdinalRepresentation {
-    if (!ordinal) {
+export function convertOrdinalInstanceToFFormat(ordinal: OrdinalBase | bigint): OrdinalRepresentation {
+    if (ordinal === null || ordinal === undefined) {
         throw new Error('convertOrdinalInstanceToFFormat: ordinal is null/undefined');
     }
 
-    if (typeof ordinal.toFFormat === 'function') {
-        return ordinal.toFFormat();
-    }
-
-    // Fallback: try to extract from the ordinal structure
     if (typeof ordinal === 'bigint') {
         return ordinal;
+    }
+
+    if (typeof (ordinal as OrdinalBase).toFFormat === 'function') {
+        return (ordinal as OrdinalBase).toFFormat();
     }
 
     throw new Error(
@@ -111,9 +112,9 @@ export function convertOrdinalInstanceToFFormat(ordinal: any): OrdinalRepresenta
  * @param fFormat - OrdinalRepresentation
  * @returns OrdinalBase instance
  */
-export function convertFFormatToOrdinalInstance(fFormat: OrdinalRepresentation): any {
+export function convertFFormatToOrdinalInstance(fFormat: OrdinalRepresentation): OrdinalBase {
     // Recursive helper to convert nested representations
-    function convert(rep: OrdinalRepresentation): any {
+    function convert(rep: OrdinalRepresentation): OrdinalBase {
         // Finite ordinal
         if (typeof rep === 'bigint') {
             return new FiniteOrdinal(rep);
@@ -123,7 +124,7 @@ export function convertFFormatToOrdinalInstance(fFormat: OrdinalRepresentation):
         if (typeof rep === 'object' && rep !== null && rep.type === 'pow') {
             const k = convert(rep.k);
             // ω^k is represented as CNF with single term: ω^k * 1
-            const terms = [{ exponent: k, coefficient: 1n }];
+            const terms: CNFTerm[] = [{ exponent: k, coefficient: 1n }];
             return new CNFOrdinal(terms);
         }
 
@@ -134,20 +135,25 @@ export function convertFFormatToOrdinalInstance(fFormat: OrdinalRepresentation):
             const delta = convert(rep.delta);
 
             // Create CNF with the leading term
-            const term = { exponent: beta, coefficient: c };
+            const term: CNFTerm = { exponent: beta, coefficient: c };
 
             // Add delta terms if non-zero
             if (delta && !delta.isZero()) {
-                // Convert delta to CNF and merge terms
-                const deltaCNF = delta.toCNF ? delta.toCNF() : delta;
-                if (deltaCNF instanceof CNFOrdinal && deltaCNF.terms) {
-                    const allTerms = [term, ...deltaCNF.terms];
+                if (delta instanceof CNFOrdinal) {
+                    const allTerms: CNFTerm[] = [term, ...delta.terms];
                     return new CNFOrdinal(allTerms);
-                } else {
-                    // Delta is not CNF, use addition
-                    const leadingOrdinal = new CNFOrdinal([term]);
-                    return leadingOrdinal.add(delta);
                 }
+
+                const deltaWithToCNF = delta as OrdinalBase & { toCNF?: () => CNFOrdinal };
+                if (typeof deltaWithToCNF.toCNF === 'function') {
+                    const deltaCNF = deltaWithToCNF.toCNF();
+                    const allTerms: CNFTerm[] = [term, ...deltaCNF.terms];
+                    return new CNFOrdinal(allTerms);
+                }
+
+                // Delta is not CNF, use addition
+                const leadingOrdinal = new CNFOrdinal([term]);
+                return leadingOrdinal.add(delta);
             }
 
             return new CNFOrdinal([term]);
@@ -176,7 +182,10 @@ export function convertFFormatToOrdinalInstance(fFormat: OrdinalRepresentation):
             return new EpsilonNumber(new FiniteOrdinal(0n));
         }
 
-        throw new Error(`convertFFormatToOrdinalInstance: Unknown representation format: ${typeof rep === 'object' ? `type=${(rep as any)?.type}` : String(rep)}`);
+        const repType = (typeof rep === 'object' && rep !== null && 'type' in rep)
+            ? `type=${(rep as { type: string }).type}`
+            : String(rep);
+        throw new Error(`convertFFormatToOrdinalInstance: Unknown representation format: ${repType}`);
     }
 
     return convert(fFormat);

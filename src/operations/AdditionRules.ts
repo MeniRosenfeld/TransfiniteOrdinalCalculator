@@ -3,15 +3,17 @@
 
 import { OperationTracer } from '../OperationTracer.js';
 import { Rule } from './RuleEngine.js';
-import { ConversionEngine } from '../conversions/ConversionEngine.js';
+import type { ConversionEngine } from '../conversions/ConversionEngine.js';
+import type { OrdinalBase } from '../types/OrdinalBase.js';
 import { CNFOrdinal } from '../types/CNFOrdinal.js';
+import type { CNFTerm } from '../types/CNFOrdinal.js';
 import { ENFOrdinal } from '../types/ENFOrdinal.js';
 import { ENFTerm } from '../types/ENFTerm.js';
 import { FiniteOrdinal } from '../types/FiniteOrdinal.js';
 import { ZetaZero } from '../types/ZetaZero.js';
 
 // Addition-specific implementations
-function addCNF(a: any, b: any): any {
+function addCNF(a: CNFOrdinal, b: CNFOrdinal): CNFOrdinal {
     // CNF-specific addition algorithm (extracted from CNFOrdinal.prototype.addCNF)
     OperationTracer.consume();
     // Case 1: b is 0
@@ -32,7 +34,7 @@ function addCNF(a: any, b: any): any {
     // Case 4: a is infinite, b is finite
     if (!a.isFinite() && b.isFinite()) {
         OperationTracer.consume(a.terms.length || 0);
-        const newTerms = a.terms.map((t: any) => ({
+        const newTerms: CNFTerm[] = a.terms.map((t) => ({
             exponent: t.exponent,
             coefficient: t.coefficient
         }));
@@ -62,7 +64,7 @@ function addCNF(a: any, b: any): any {
     const firstTermOther = b.terms[0];
     const firstExpOther = firstTermOther.exponent;
 
-    const newTermsResult = [];
+    const newTermsResult: CNFTerm[] = [];
     let i = 0;
 
     // Copy terms from a whose exponents are greater than the leading exponent of b
@@ -94,13 +96,13 @@ function addCNF(a: any, b: any): any {
     return new CNFOrdinal(newTermsResult);
 }
 
-function addENF(a: any, b: any): any {
+function addENF(a: ENFOrdinal, b: ENFOrdinal): ENFOrdinal {
     // ENF-specific addition algorithm (extracted from ENFOrdinal.prototype.add)
     if (a.isZero()) return b;
     if (b.isZero()) return a;
 
     const b1 = b.terms[0];
-    const newTerms = [];
+    const newTerms: ENFTerm[] = [];
     let k = -1;
 
     OperationTracer.consume(a.terms.length || 0);
@@ -113,12 +115,12 @@ function addENF(a: any, b: any): any {
     }
 
     if (k === -1) {
-        return new ENFOrdinal(newTerms.concat(b.terms.map((t: any) => t)));
+        return new ENFOrdinal(newTerms.concat(b.terms));
     }
 
     const ak = a.terms[k];
     if (ak.compareStructureTo(b1) < 0) {
-        return new ENFOrdinal(newTerms.concat(b.terms.map((t: any) => t)));
+        return new ENFOrdinal(newTerms.concat(b.terms));
     }
 
     if (ak.compareStructureTo(b1) === 0) {
@@ -128,13 +130,13 @@ function addENF(a: any, b: any): any {
             ak.coefficient + b1.coefficient  // Combined coefficient
         );
         newTerms.push(newJunctionTerm);
-        const restOfBeta = b.terms.slice(1).map((t: any) => t); // Clone remaining terms
+        const restOfBeta = b.terms.slice(1); // Clone remaining terms
         return new ENFOrdinal(newTerms.concat(restOfBeta));
     }
-    return new ENFOrdinal(newTerms.concat(b.terms.map((t: any) => t)));
+    return new ENFOrdinal(newTerms.concat(b.terms));
 }
 
-function addFinite(a: any, b: any): any {
+function addFinite(a: OrdinalBase, b: OrdinalBase): FiniteOrdinal {
     // Simple finite addition
     const aVal = a.getFiniteBigInt();
     const bVal = b.getFiniteBigInt();
@@ -170,8 +172,8 @@ export function createAdditionRules(conversionEngine: ConversionEngine): Rule[] 
             (a, b) => a.isLessThanEpsilon0() && b.isLessThanEpsilon0() &&
                 conversionEngine.canConvert(a, 'CNF') && conversionEngine.canConvert(b, 'CNF'),
             (a, b) => {
-                const aCNF = conversionEngine.convert(a, 'CNF');
-                const bCNF = conversionEngine.convert(b, 'CNF');
+                const aCNF = conversionEngine.convert(a, 'CNF') as CNFOrdinal;
+                const bCNF = conversionEngine.convert(b, 'CNF') as CNFOrdinal;
                 return addCNF(aCNF, bCNF);
             }),
 
@@ -179,8 +181,8 @@ export function createAdditionRules(conversionEngine: ConversionEngine): Rule[] 
         new Rule("Convert to ENF fallback",
             (a, b) => conversionEngine.canConvert(a, 'ENF') && conversionEngine.canConvert(b, 'ENF'),
             (a, b) => {
-                const aENF = conversionEngine.convert(a, 'ENF');
-                const bENF = conversionEngine.convert(b, 'ENF');
+                const aENF = conversionEngine.convert(a, 'ENF') as ENFOrdinal;
+                const bENF = conversionEngine.convert(b, 'ENF') as ENFOrdinal;
                 return addENF(aENF, bENF);
             }),
 

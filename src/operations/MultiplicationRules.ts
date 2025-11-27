@@ -5,25 +5,27 @@ import { OperationTracer } from '../OperationTracer.js';
 import { Rule } from './RuleEngine.js';
 import type { ConversionEngine } from '../conversions/ConversionEngine.js';
 import { CNFOrdinal } from '../types/CNFOrdinal.js';
+import type { CNFTerm } from '../types/CNFOrdinal.js';
 import { ENFOrdinal } from '../types/ENFOrdinal.js';
 import { ENFTerm } from '../types/ENFTerm.js';
 import { ENFFactor } from '../types/ENFFactor.js';
+import type { OrdinalBase } from '../types/OrdinalBase.js';
 import { FiniteOrdinal } from '../types/FiniteOrdinal.js';
 import { ZetaZero } from '../types/ZetaZero.js';
 import { getOperations } from './OperationsSingleton.js';
 
 
-function multiplyFinite(a: any, b: any): any {
+function multiplyFinite(a: OrdinalBase, b: OrdinalBase): FiniteOrdinal {
     const av = a.getFiniteBigInt();
     const bv = b.getFiniteBigInt();
     return new FiniteOrdinal(av * bv);
 }
 
-function buildLimitPart(cnf: any): any {
+function buildLimitPart(cnf: CNFOrdinal): CNFOrdinal {
     if (!(cnf instanceof CNFOrdinal)) return new CNFOrdinal(0);
     if (cnf.isZero()) return new CNFOrdinal(0);
     const terms = cnf.terms;
-    const resultTerms = [];
+    const resultTerms: CNFTerm[] = [];
     OperationTracer.consume(terms.length || 0);
     for (let i = 0; i < terms.length; i++) {
         const t = terms[i];
@@ -34,7 +36,7 @@ function buildLimitPart(cnf: any): any {
     return new CNFOrdinal(resultTerms);
 }
 
-function multiplyCNF(a: any, b: any): any {
+function multiplyCNF(a: CNFOrdinal, b: CNFOrdinal): CNFOrdinal {
     // Implements the legacy CNF * CNF algorithm, using rule-based add for exponents
     if (a.isZero() || b.isZero()) return CNFOrdinal.ZEROStatic();
     if (a.isOne()) return b;
@@ -46,7 +48,7 @@ function multiplyCNF(a: any, b: any): any {
     const b_limit_part = buildLimitPart(b);
     const m_finite_part = b.getFinitePart();
 
-    const newTerms = [];
+    const newTerms: CNFTerm[] = [];
 
     // sum over limit part: ω^{a1+bj} * mj
     OperationTracer.consume(b_limit_part.terms.length || 0);
@@ -74,19 +76,19 @@ function multiplyCNF(a: any, b: any): any {
     return new CNFOrdinal(newTerms);
 }
 
-function multiplyENFTerms(termA: any, termB: any): any {
+function multiplyENFTerms(termA: ENFTerm, termB: ENFTerm): ENFTerm {
     // Multiply two ENFTerms with correct factor absorption
     // A * B: factors are absorbed by higher-ranked factors on the right
     // This implements ordinal multiplication's key property: only the "large" part of A survives
 
     const factorsA = termA.factors || [];
     const factorsB = termB.factors || [];
-    const newFactors = [];
+    const newFactors: ENFFactor[] = [];
 
     // If B is finite, just multiply coefficients and keep A's factors
     if (factorsB.length === 0) {
         return new ENFTerm(
-            [...factorsA] as any,
+            [...factorsA],
             BigInt(termA.coefficient) * BigInt(termB.coefficient)
         );
     }
@@ -105,7 +107,7 @@ function multiplyENFTerms(termA: any, termB: any): any {
         } else if (baseCmp === 0 && !foundEqualBase) {
             // Base of A = leading base of B: combine exponents
             const combinedExp = factorA.exponent.add(factorsB[0].exponent);
-            newFactors.push(new ENFFactor(factorA.base, combinedExp as any));
+            newFactors.push(new ENFFactor(factorA.base, combinedExp));
             foundEqualBase = true;
             break;
         } else {
@@ -171,7 +173,7 @@ export function createMultiplicationRules(conversionEngine: ConversionEngine): R
         new Rule("ENFTerm * ENFTerm",
             (a, b) => (a instanceof ENFTerm) && (b instanceof ENFTerm),
             (a, b) => {
-                return multiplyENFTerms(a, b);
+                return multiplyENFTerms(a as ENFTerm, b as ENFTerm);
             }),
 
         // Convert to CNF for < ε0 and use CNF multiplication
@@ -179,8 +181,8 @@ export function createMultiplicationRules(conversionEngine: ConversionEngine): R
             (a, b) => a.isLessThanEpsilon0() && b.isLessThanEpsilon0() &&
                 conversionEngine.canConvert(a, 'CNF') && conversionEngine.canConvert(b, 'CNF'),
             (a, b) => {
-                const aCNF = conversionEngine.convert(a, 'CNF');
-                const bCNF = conversionEngine.convert(b, 'CNF');
+                const aCNF = conversionEngine.convert(a, 'CNF') as CNFOrdinal;
+                const bCNF = conversionEngine.convert(b, 'CNF') as CNFOrdinal;
                 const res = multiplyCNF(aCNF, bCNF);
                 return res;
             }),
@@ -200,25 +202,25 @@ export function createMultiplicationRules(conversionEngine: ConversionEngine): R
         new Rule("Convert to ENF fallback",
             (a, b) => conversionEngine.canConvert(a, 'ENF') && conversionEngine.canConvert(b, 'ENF'),
             (a, b) => {
-                const aENF = conversionEngine.convert(a, 'ENF');
-                const bENF = conversionEngine.convert(b, 'ENF');
+                const aENF = conversionEngine.convert(a, 'ENF') as ENFOrdinal;
+                const bENF = conversionEngine.convert(b, 'ENF') as ENFOrdinal;
                 return multiplyENF(aENF, bENF);
             })
     ];
 }
 
-function multiplyENF(a: any, b: any): any {
+function multiplyENF(a: ENFOrdinal, b: ENFOrdinal): ENFOrdinal {
     if (a.isZero() || b.isZero()) return new ENFOrdinal([]);
 
     // a * b where b is finite: (t1 + t2 + ...)*m = (t1*m) + t2 + ...
     if (b.isFinite()) {
         if (a.isFinite()) {
-            return new ENFOrdinal([new ENFTerm([] as any, BigInt(a.getFiniteBigInt()) * BigInt(b.getFiniteBigInt()))]);
+            return new ENFOrdinal([new ENFTerm([], BigInt(a.getFiniteBigInt()) * BigInt(b.getFiniteBigInt()))]);
         }
         // IMMUTABILITY FIX: Don't mutate existing term, create new one
         const leadingTerm = a.terms[0];
         const newLeadingTerm = new ENFTerm(
-            [...leadingTerm.factors] as any,
+            [...leadingTerm.factors],
             BigInt(leadingTerm.coefficient) * BigInt(b.getFinitePart()) // New coefficient
         );
         const remainingTerms = a.terms.slice(1);
@@ -228,7 +230,7 @@ function multiplyENF(a: any, b: any): any {
     // a * b where b is infinite: (t1 + t2 + ...)*(s1 + s2 + ...) 
     // = (t1 * s1) + (t1 * s2) + ... + t2 + t3 + ...
     // Only the leading term of a gets multiplied; lower-order terms are preserved
-    const resultTerms = [];
+    const resultTerms: ENFTerm[] = [];
 
     // Multiply leading term of a by each term of b
     for (const termB of b.terms) {

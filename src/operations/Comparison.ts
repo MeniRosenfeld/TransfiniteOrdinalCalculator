@@ -4,11 +4,14 @@
 import { OperationTracer } from '../OperationTracer.js';
 import { Rule } from './RuleEngine.js';
 import type { ConversionEngine } from '../conversions/ConversionEngine.js';
+import { CNFOrdinal } from '../types/CNFOrdinal.js';
+import { ENFOrdinal } from '../types/ENFOrdinal.js';
+import type { OrdinalBase } from '../types/OrdinalBase.js';
 import { ZetaZero } from '../types/ZetaZero.js';
 import { getOperations } from './OperationsSingleton.js';
 
 // Comparison-specific implementations
-function compareCNF(a: any, b: any): number {
+function compareCNF(a: CNFOrdinal, b: CNFOrdinal): number {
     // CNF-specific comparison algorithm (extracted from CNFOrdinal.prototype.compareTo)
     OperationTracer.consume(1);
 
@@ -39,7 +42,7 @@ function compareCNF(a: any, b: any): number {
     return 0;
 }
 
-function compareENF(a: any, b: any): number {
+function compareENF(a: ENFOrdinal, b: ENFOrdinal): number {
     // Lexicographic comparison by terms, using compareTermTo (structure first, then coefficient)
     if (a.isZero() && b.isZero()) return 0;
     if (a.isZero()) return -1;
@@ -60,7 +63,7 @@ function compareENF(a: any, b: any): number {
     return 0;
 }
 
-function compareFinite(a: any, b: any): number {
+function compareFinite(a: OrdinalBase, b: OrdinalBase): number {
     // Simple finite comparison
     const aVal = a.getFiniteBigInt();
     const bVal = b.getFiniteBigInt();
@@ -132,8 +135,8 @@ export function createComparisonRules(conversionEngine: ConversionEngine): Rule[
             (a, b) => a.isLessThanEpsilon0() && b.isLessThanEpsilon0() &&
                 conversionEngine.canConvert(a, 'CNF') && conversionEngine.canConvert(b, 'CNF'),
             (a, b) => {
-                const aCNF = conversionEngine.convert(a, 'CNF');
-                const bCNF = conversionEngine.convert(b, 'CNF');
+                const aCNF = conversionEngine.convert(a, 'CNF') as CNFOrdinal;
+                const bCNF = conversionEngine.convert(b, 'CNF') as CNFOrdinal;
                 return compareCNF(aCNF, bCNF);
             }),
 
@@ -141,8 +144,8 @@ export function createComparisonRules(conversionEngine: ConversionEngine): Rule[
         new Rule("Convert to ENF fallback",
             (a, b) => conversionEngine.canConvert(a, 'ENF') && conversionEngine.canConvert(b, 'ENF'),
             (a, b) => {
-                const aENF = conversionEngine.convert(a, 'ENF');
-                const bENF = conversionEngine.convert(b, 'ENF');
+                const aENF = conversionEngine.convert(a, 'ENF') as ENFOrdinal;
+                const bENF = conversionEngine.convert(b, 'ENF') as ENFOrdinal;
                 return compareENF(aENF, bENF);
             }),
 

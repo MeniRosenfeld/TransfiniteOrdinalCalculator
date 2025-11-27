@@ -4,6 +4,7 @@ import {
     fInverse,
     convertFFormatToOrdinalInstance,
 } from "./ordinal_mapping/OrdinalMappingCompat.js";
+import type { OrdinalBase } from "./types/OrdinalBase.js";
 
 type Html2Canvas = (element: HTMLElement) => Promise<HTMLCanvasElement>;
 
@@ -21,7 +22,7 @@ type FrameInfo = {
 };
 
 type RenderResult = {
-    ordinalInstance: any;
+    ordinalInstance: OrdinalBase;
     graphicalHTML: string;
     linearString: string;
 } | null;
@@ -98,6 +99,14 @@ class OrdinalVideoGenerator {
         this.elements.downloadFramesBtn.addEventListener("click", () => this.downloadFrames());
     }
 
+    private formatOrdinalString(ordinal: OrdinalBase): string {
+        const ordinalWithCNF = ordinal as OrdinalBase & { toStringCNF?: () => string };
+        if (typeof ordinalWithCNF.toStringCNF === "function") {
+            return ordinalWithCNF.toStringCNF();
+        }
+        return ordinal.toString();
+    }
+
     private getTimeProgressionValue(normalizedTime: number, type: string): number {
         switch (type) {
             case "linear":
@@ -136,18 +145,13 @@ class OrdinalVideoGenerator {
             const graphicalHTML = renderOrdinalSimple(ordinalInstance);
 
             this.elements.displayArea.innerHTML = graphicalHTML;
-            this.elements.currentOrdinal.textContent =
-                typeof ordinalInstance.toStringCNF === "function"
-                    ? ordinalInstance.toStringCNF()
-                    : ordinalInstance.toString();
+            const ordinalString = this.formatOrdinalString(ordinalInstance);
+            this.elements.currentOrdinal.textContent = ordinalString;
 
             return {
                 ordinalInstance,
                 graphicalHTML,
-                linearString:
-                    typeof ordinalInstance.toStringCNF === "function"
-                        ? ordinalInstance.toStringCNF()
-                        : ordinalInstance.toString(),
+                linearString: ordinalString,
             };
         } catch (error: any) {
             console.error("[VideoGen] Error rendering ordinal:", error);

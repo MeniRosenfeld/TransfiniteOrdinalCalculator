@@ -23,16 +23,21 @@ import {
 
 // @ts-nocheck
 
+type MutationRecord = {
+    index: number;
+    original: string;
+    current: string;
+    ordinal?: unknown;
+};
+
+type MutationReport = {
+    mutated: boolean;
+    mutationCount: number;
+    mutations: MutationRecord[];
+};
+
 let mutabilityTest: {
-    checkMutations: () => {
-        mutated: boolean;
-        mutationCount: number;
-        mutations: Array<{
-            index: number;
-            original: string;
-            current: string;
-        }>;
-    };
+    checkMutations: () => MutationReport;
 } | null = null;
 
 // @ts-nocheck
@@ -1487,10 +1492,10 @@ let mutabilityTest: {
             mutabilityTest = {
                 ordinals: allOrdinals,
                 originalStrings: originalStrings,
-                checkMutations: function () {
+                checkMutations: function (): MutationReport {
                     console.log('[MUTABILITY] Checking for mutations...');
                     let mutationCount = 0;
-                    const mutations = [];
+                    const mutations: MutationRecord[] = [];
 
                     for (let i = 0; i < allOrdinals.length; i++) {
                         const ordinal = allOrdinals[i];
@@ -1545,11 +1550,19 @@ let mutabilityTest: {
                         `;
                         document.body.appendChild(mutationContainer);
 
-                        return false; // Indicate failure
-                    } else {
-                        console.log('[MUTABILITY] ✅ No mutations detected - all ordinals remain immutable!');
-                        return true; // Indicate success
+                        return {
+                            mutated: true,
+                            mutationCount,
+                            mutations
+                        };
                     }
+
+                    console.log('[MUTABILITY] ✅ No mutations detected - all ordinals remain immutable!');
+                    return {
+                        mutated: false,
+                        mutationCount: 0,
+                        mutations: []
+                    };
                 }
             };
 
@@ -2560,7 +2573,7 @@ let mutabilityTest: {
                     const mutabilityResult = mutabilityTest.checkMutations();
 
                     // Update overall test status based on mutability
-                    if (!mutabilityResult) {
+                    if (mutabilityResult.mutated) {
                         console.error('[MUTABILITY] Test suite FAILED due to immutability violations');
                         hasUnhandledErrors = true;
                         updateOverallPageSummary();
@@ -2646,7 +2659,7 @@ let mutabilityTest: {
                     const mutabilityResult = mutabilityTest.checkMutations();
 
                     // Update overall test status based on mutability
-                    if (!mutabilityResult) {
+                    if (mutabilityResult.mutated) {
                         console.error('[MUTABILITY] Test suite FAILED due to immutability violations');
                         hasUnhandledErrors = true;
                         updateOverallPageSummary();

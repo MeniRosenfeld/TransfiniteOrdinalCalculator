@@ -2,18 +2,19 @@
 // Rule definitions for ordinal tetration (a ^^ b)
 
 import { Rule } from './RuleEngine.js';
-import { ConversionEngine } from '../conversions/ConversionEngine.js';
+import type { ConversionEngine } from '../conversions/ConversionEngine.js';
+import type { OrdinalBase } from '../types/OrdinalBase.js';
 import { OneOrdinal } from '../types/OneOrdinal.js';
 import { ZeroOrdinal } from '../types/ZeroOrdinal.js';
 import { WTowerOrdinal } from '../types/WTowerOrdinal.js';
 import { EpsilonTowerOrdinal } from '../types/EpsilonTowerOrdinal.js';
 import { ZetaZero } from '../types/ZetaZero.js';
 
-function tetrateFinite(base: any, heightFinite: any): any {
+function tetrateFinite(base: OrdinalBase, heightFinite: OrdinalBase): OrdinalBase {
     const h = heightFinite.getFiniteBigInt();
     if (h === 0n) return OneOrdinal.instance();
     if (h === 1n) return base;
-    let result = base;
+    let result: OrdinalBase = base;
     // Build right-associative tower: a^(a^(...)) of height h
     for (let i = 2n; i <= h; i++) {
         result = base.power(result);
@@ -21,7 +22,7 @@ function tetrateFinite(base: any, heightFinite: any): any {
     return result;
 }
 
-export function createTetrationRules(conversionEngine: ConversionEngine): Rule[] {
+export function createTetrationRules(_conversionEngine: ConversionEngine): Rule[] {
     return [
 
         // a ^^ 0 = 1
