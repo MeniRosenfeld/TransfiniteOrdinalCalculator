@@ -136,7 +136,7 @@ export class CNFOrdinal extends OrdinalBase {
         if (this.isFinite()) {
             return OneOrdinal.instance();
         }
-        return new OmegaOrdinal();
+        return OmegaOrdinal.instance();
     }
 
     log() {
@@ -159,7 +159,7 @@ export class CNFOrdinal extends OrdinalBase {
         }
 
         // For CNF ordinals, the base is always omega, so we compare against omega
-        const originalBase = new OmegaOrdinal();
+        const originalBase = OmegaOrdinal.instance();
 
         // Iterative implementation to avoid quadratic complexity from cloning
         let count = 0;
@@ -238,10 +238,10 @@ export class CNFOrdinal extends OrdinalBase {
             if (n === 0n) {
                 return OneOrdinal.instance();
             }
-            return new OmegaOrdinal();
+            return OmegaOrdinal.instance();
         }
         // CNF ordinals here are < ε₀ and infinite
-        return new EpsilonZero();
+        return EpsilonZero.instance();
     }
 
     divideByOmega() {

@@ -274,7 +274,7 @@ export class ENFOrdinal extends OrdinalBase {
         }
         if (ord instanceof OmegaOrdinal) {
             const one = OneOrdinal.instance();
-            const omegaFactor = new ENFFactor(new OmegaOrdinal(), one);
+            const omegaFactor = new ENFFactor(OmegaOrdinal.instance(), one);
             return new ENFOrdinal([new ENFTerm([omegaFactor], 1n)]);
         }
         if (ord instanceof EpsilonZero) {
@@ -312,7 +312,7 @@ export class ENFOrdinal extends OrdinalBase {
                 terms.push(new ENFTerm([], t.coefficient));
             } else {
                 // Term of the form ω^k * m
-                const omegaFactor = new ENFFactor(new OmegaOrdinal(), exp);
+                const omegaFactor = new ENFFactor(OmegaOrdinal.instance(), exp);
                 terms.push(new ENFTerm([omegaFactor], t.coefficient));
             }
         }

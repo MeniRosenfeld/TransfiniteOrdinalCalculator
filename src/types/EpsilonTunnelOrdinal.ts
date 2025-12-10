@@ -57,7 +57,7 @@ export class EpsilonTunnelOrdinal extends OrdinalBase {
         }
         // For depth > 0, the rank is quite complex - it's essentially the ordinal itself
         // but we'll approximate with a high epsilon number
-        return new EpsilonNumber(new EpsilonZero());
+        return new EpsilonNumber(EpsilonZero.instance());
     }
 
     log() {

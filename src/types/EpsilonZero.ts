@@ -28,11 +28,11 @@ export class EpsilonZero extends OrdinalBase {
     }
 
     rank(): OrdinalBase {
-        return new EpsilonZero();
+        return EpsilonZero.instance();
     }
 
     log(): OrdinalBase {
-        return new FiniteOrdinal(1n);
+        return OneOrdinal.instance();
     }
 
     logStar(): bigint {
@@ -66,7 +66,7 @@ export class EpsilonZero extends OrdinalBase {
         return RenderingComponents.renderEpsilonZero();
     }
 
-    clone(): EpsilonZero { return new EpsilonZero(); }
+    clone(): EpsilonZero { return EpsilonZero.instance(); }
 
     toFFormat(): { type: string; index: bigint } {
         return { type: 'epsilon', index: 0n };
@@ -82,7 +82,7 @@ export class EpsilonZero extends OrdinalBase {
             };
         }
 
-        const zero = new FiniteOrdinal(0);
+        const zero = ZeroOrdinal.instance();
         const zeroComplexity = zero.complexity();
         if (zeroComplexity <= complexityBudget) {
             return {

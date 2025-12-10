@@ -240,7 +240,7 @@ export class ENFTerm extends OrdinalBase {
     nextRank() {
         if (this.factors.length === 0) {
             // Pure finite term - next rank is ω
-            return new OmegaOrdinal();
+            return OmegaOrdinal.instance();
         }
 
         const leadingFactor = this.factors[0];
@@ -248,7 +248,7 @@ export class ENFTerm extends OrdinalBase {
 
         if (leadingBase.isOmega()) {
             // Base is ω, next rank is ε₀
-            return new EpsilonZero();
+            return EpsilonZero.instance();
         } else if (leadingBase.isEpsilonNumber()) {
             // Base is ε_k, next rank is ε_(k+1)
             const k = leadingBase.epsilonIndex();

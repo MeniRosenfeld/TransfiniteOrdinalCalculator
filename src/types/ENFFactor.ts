@@ -25,7 +25,7 @@ export class ENFFactor {
         }
         this.exponent = exponent;
         if (base.isOmega()) {
-            this.base = new OmegaOrdinal();
+            this.base = OmegaOrdinal.instance();
         } else if (base.isEpsilonNumber()) {
             this.base = new EpsilonNumber(base.epsilonIndex());
         } else {

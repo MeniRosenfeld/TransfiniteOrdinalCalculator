@@ -24,8 +24,8 @@ This document tracks planned improvements to the codebase, organized by priority
 - [x] 1.1 Implement singleton pattern for `OmegaOrdinal`
 - [x] 1.2 Implement singleton pattern for `EpsilonZero`
 - [x] 1.3 Implement singleton pattern for `ZetaZero`
-- [ ] 1.4 Update `FiniteOrdinal.rank()` to return singleton instances instead of creating new ones
-- [ ] 1.5 Audit all ordinal types for singleton opportunities
+- [x] 1.4 Update `FiniteOrdinal.rank()` to return singleton instances instead of creating new ones
+- [x] 1.5 Audit all ordinal types for singleton opportunities
 
 **Files affected:**
 

@@ -55,7 +55,7 @@ export class WTowerOrdinal extends OrdinalBase {
         if (this.height === 0n) {
             return OneOrdinal.instance();
         } else {
-            return new OmegaOrdinal();
+            return OmegaOrdinal.instance();
         }
     }
 
@@ -142,7 +142,7 @@ export class WTowerOrdinal extends OrdinalBase {
             expandedOrdinal = this.convertTo('CNF');
         } else if (this.height === 1n) {
             // w^^1 -> w
-            expandedOrdinal = new OmegaOrdinal();
+            expandedOrdinal = OmegaOrdinal.instance();
         } else { // this.height === 0n
             // w^^0 -> 1
             expandedOrdinal = OneOrdinal.instance();
@@ -212,8 +212,8 @@ export class WTowerOrdinal extends OrdinalBase {
             return OneOrdinal.instance();
         }
         if (this.height === 0n) {
-            return new OmegaOrdinal();
+            return OmegaOrdinal.instance();
         }
-        return new EpsilonZero();
+        return EpsilonZero.instance();
     }
 }

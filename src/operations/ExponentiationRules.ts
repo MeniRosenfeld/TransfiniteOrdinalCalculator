@@ -187,7 +187,7 @@ function powerENF(a: ENFOrdinal, b: ENFOrdinal): ENFOrdinal {
                 let k_pow_x;
                 if (k.isOmega()) {
                     // ω^x: create ENFFactor with base=ω and exponent=x
-                    const omegaBase = new OmegaOrdinal();
+                    const omegaBase = OmegaOrdinal.instance();
                     const factor = new ENFFactor(omegaBase, x);
                     k_pow_x = new ENFOrdinal([new ENFTerm([factor], 1n)]);
                 } else {
@@ -210,7 +210,7 @@ function powerENF(a: ENFOrdinal, b: ENFOrdinal): ENFOrdinal {
             }
 
             // General case: ω^b → ENFFactor with base=ω and exponent=b
-            const omegaBase = new OmegaOrdinal();
+            const omegaBase = OmegaOrdinal.instance();
             const factor = new ENFFactor(omegaBase, b);
             return new ENFOrdinal([new ENFTerm([factor], 1n)]);
         }
@@ -226,7 +226,7 @@ function powerENF(a: ENFOrdinal, b: ENFOrdinal): ENFOrdinal {
                 // Build k^x
                 let k_pow_x;
                 if (k.isOmega()) {
-                    const omegaBase = new OmegaOrdinal();
+                    const omegaBase = OmegaOrdinal.instance();
                     const factor = new ENFFactor(omegaBase, x);
                     k_pow_x = new ENFOrdinal([new ENFTerm([factor], 1n)]);
                 } else {
@@ -256,7 +256,7 @@ function powerENF(a: ENFOrdinal, b: ENFOrdinal): ENFOrdinal {
         // Build k^x directly: if k = ω, create ω^x; if k=ε_t, create ε_t^x
         let k_pow_x;
         if (k.isOmega()) {
-            const omegaBase = new OmegaOrdinal();
+            const omegaBase = OmegaOrdinal.instance();
             const factor = new ENFFactor(omegaBase, x);
             k_pow_x = new ENFOrdinal([new ENFTerm([factor], 1n)]);
         } else {
@@ -283,7 +283,7 @@ function powerENF(a: ENFOrdinal, b: ENFOrdinal): ENFOrdinal {
         // Build k^(c*d) directly
         let k_pow_cd;
         if (k.isOmega()) {
-            const omegaBase = new OmegaOrdinal();
+            const omegaBase = OmegaOrdinal.instance();
             const factor = new ENFFactor(omegaBase, cd);
             k_pow_cd = new ENFOrdinal([new ENFTerm([factor], 1n)]);
         } else {

@@ -253,7 +253,7 @@ export class EpsilonTowerOrdinal extends OrdinalBase {
             return OneOrdinal.instance();
         }
         if (this.height === 0n) {
-            return new OmegaOrdinal();
+            return OmegaOrdinal.instance();
         }
         return new EpsilonNumber(this.baseIndex.successor());
     }

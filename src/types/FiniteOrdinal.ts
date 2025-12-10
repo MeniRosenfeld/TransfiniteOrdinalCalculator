@@ -51,8 +51,7 @@ export class FiniteOrdinal extends OrdinalBase {
     }
 
     rank(): OrdinalBase {
-        if (this.isZero()) return new FiniteOrdinal(0n);
-        return new FiniteOrdinal(1n);
+        return this.isZero() ? ZeroOrdinal.instance() : OneOrdinal.instance();
     }
 
     log(): OrdinalBase {
@@ -83,7 +82,7 @@ export class FiniteOrdinal extends OrdinalBase {
         if (this.isZero()) {
             return OneOrdinal.instance();
         }
-        return new OmegaOrdinal();
+        return OmegaOrdinal.instance();
     }
 
     complexity(): number {

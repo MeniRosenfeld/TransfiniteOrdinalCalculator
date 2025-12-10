@@ -40,7 +40,7 @@ export class ZetaZero extends OrdinalBase {
         return '<span class="ordinal-zeta">ζ₀</span>';
     }
 
-    clone(): ZetaZero { return new ZetaZero(); }
+    clone(): ZetaZero { return ZetaZero.instance(); }
 
     toFFormat(): { type: string } {
         return { type: 'zeta_zero' };

@@ -33,7 +33,7 @@ export class OmegaOrdinal extends OrdinalBase {
     }
 
     rank(): OrdinalBase {
-        return new OmegaOrdinal();
+        return OmegaOrdinal.instance();
     }
 
     log(): OrdinalBase {
@@ -58,7 +58,7 @@ export class OmegaOrdinal extends OrdinalBase {
     needsParenthesesAsExponent(): boolean { return false; }
 
     nextRank(): OrdinalBase {
-        return new EpsilonZero();
+        return EpsilonZero.instance();
     }
 
     complexity(): number { return 1; }
@@ -72,7 +72,7 @@ export class OmegaOrdinal extends OrdinalBase {
     }
 
     clone(): OmegaOrdinal {
-        return new OmegaOrdinal();
+        return OmegaOrdinal.instance();
     }
 
     toFFormat(): { type: string; k: bigint } {

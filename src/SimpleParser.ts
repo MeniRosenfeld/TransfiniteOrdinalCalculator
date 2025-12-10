@@ -248,7 +248,7 @@ export class SimpleParser {
             if (!this._hasUnresolvedElements(substitutedIndex)) {
                 const indexAsOrdinal = substitutedIndex as any;
                 if (indexAsOrdinal.isZero && indexAsOrdinal.isZero()) {
-                    return new EpsilonZero();
+                    return EpsilonZero.instance();
                 } else {
                     return new EpsilonNumber(indexAsOrdinal as OrdinalBase);
                 }
@@ -630,7 +630,7 @@ export class SimpleParser {
             return { type: 'boolean', value: bool };
         } else if (token.type === 'OMEGA') {
             this._consume('OMEGA');
-            return new OmegaOrdinal();
+            return OmegaOrdinal.instance();
         } else if (token.type === 'EPSILON') {
             return this._parseEpsilon();
         } else if (token.type === 'TUNNEL') {
@@ -902,7 +902,7 @@ export class SimpleParser {
 
         // Handle special case: if index is 0, return EpsilonZero
         if (index.isZero()) {
-            return new EpsilonZero();
+            return EpsilonZero.instance();
         }
 
         // Otherwise return EpsilonNumber with the parsed index
@@ -927,7 +927,7 @@ export class SimpleParser {
             return new FiniteOrdinal(num);
         } else if (token.type === 'OMEGA') {
             this._consume('OMEGA');
-            return new OmegaOrdinal();
+            return OmegaOrdinal.instance();
         } else if (token.type === 'EPSILON') {
             // Nested epsilon number: e_e_k
             return this._parseEpsilon();

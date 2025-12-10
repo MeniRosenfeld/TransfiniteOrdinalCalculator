@@ -36,7 +36,7 @@ export class OneOrdinal extends OrdinalBase {
     needsParenthesesAsExponent(): boolean { return false; }
 
     nextRank(): OrdinalBase {
-        return new OmegaOrdinal();
+        return OmegaOrdinal.instance();
     }
 
     complexity(): number { return 1; }
