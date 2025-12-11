@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 import { OperationTracer } from "../OperationTracer.js";
 import { OPERATIONS } from "../operations/Operations.js";
 import { ENFOrdinal } from "../types/ENFOrdinal.js";
@@ -20,8 +22,6 @@ import {
     expectedMultiplicationResults,
     expectedExponentiationResults,
 } from "./data/ordinalEnfExpectedResults.js";
-
-// @ts-nocheck
 
 type MutationRecord = {
     index: number;

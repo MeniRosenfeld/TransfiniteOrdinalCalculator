@@ -221,6 +221,7 @@ This document tracks planned improvements to the codebase, organized by priority
 - [ ] 13.2 Add Jest or Vitest for automated testing (keep HTML tests for visual verification)
 - [ ] 13.3 Configure CI/CD integration
 - [ ] 13.4 Review and extend existing Vitest setup (`vitest.config.ts`)
+- [ ] 13.5 Refactor browser test scripts (e.g., `ordinal_enf_test.ts`) so they are `ts-check` ready and fully typed
 
 ---
 
