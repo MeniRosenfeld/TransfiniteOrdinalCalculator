@@ -409,7 +409,7 @@
         updateConfiguration();
         try {
           const omegaOmega = new CNFOrdinal(
-            [{ exponent: new OmegaOrdinal(null), coefficient: 1n }],
+            [{ exponent: OmegaOrdinal.instance(), coefficient: 1n }],
             null
           );
           const fRep = omegaOmega.toFFormat();
@@ -441,7 +441,7 @@
         updateConfiguration();
         try {
           const omegaOmega = new CNFOrdinal(
-            [{ exponent: new OmegaOrdinal(null), coefficient: 1n }],
+            [{ exponent: OmegaOrdinal.instance(), coefficient: 1n }],
             null
           );
           const fRep = omegaOmega.toFFormat();
@@ -456,7 +456,7 @@
       function setMaxRangeToEpsilonZero() {
         updateConfiguration();
         try {
-          const epsilonZero = new EpsilonZero(null);
+          const epsilonZero = EpsilonZero.instance();
           const fRep = epsilonZero.toFFormat();
           const fValue = f(fRep, testState.scaleParams);
           setMaxRange(fValue);

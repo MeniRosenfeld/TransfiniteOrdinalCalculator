@@ -1396,11 +1396,11 @@ let mutabilityTest: {
 
             const enf_zero = new ENFOrdinal([]);
             const enf_one = new ENFOrdinal([new ENFTerm([], 1n)]);
-            const enf_w = ENFOrdinal.fromCNF(new OmegaOrdinal());
-            const enf_e0 = new ENFOrdinal([new ENFTerm([new ENFFactor(new EpsilonZero(), enf_one)], 1n)]);
+            const enf_w = ENFOrdinal.fromCNF(OmegaOrdinal.instance());
+            const enf_e0 = new ENFOrdinal([new ENFTerm([new ENFFactor(EpsilonZero.instance(), enf_one)], 1n)]);
             const e0_base = new EpsilonNumber(ZeroOrdinal.instance());
             const e1_base = new EpsilonNumber(OneOrdinal.instance());
-            const w_cnf = OPERATIONS.convert(new OmegaOrdinal(), 'CNF');
+            const w_cnf = OPERATIONS.convert(OmegaOrdinal.instance(), 'CNF');
             const one_cnf = OPERATIONS.convert(OneOrdinal.instance(), 'CNF');
             // Additional ordinals referenced in tests
             const ord_zero = enf_zero;
@@ -1415,20 +1415,20 @@ let mutabilityTest: {
 
 
             // Complex test cases
-            const ord_w_w = new ENFOrdinal([new ENFTerm([new ENFFactor(new OmegaOrdinal(), new OmegaOrdinal())], 1n)]);
-            const ord_w_w_plus_1 = new ENFOrdinal([new ENFTerm([new ENFFactor(new OmegaOrdinal(), new OmegaOrdinal())], 1n), new ENFTerm([], 1n)]);
-            const ord_w_w_times_2 = new ENFOrdinal([new ENFTerm([new ENFFactor(new OmegaOrdinal(), new OmegaOrdinal())], 2n)]);
-            const ord_w_w2 = new ENFOrdinal([new ENFTerm([new ENFFactor(new OmegaOrdinal(), new SimpleParser("w^2").parse())], 1n)]);
+            const ord_w_w = new ENFOrdinal([new ENFTerm([new ENFFactor(OmegaOrdinal.instance(), OmegaOrdinal.instance())], 1n)]);
+            const ord_w_w_plus_1 = new ENFOrdinal([new ENFTerm([new ENFFactor(OmegaOrdinal.instance(), OmegaOrdinal.instance())], 1n), new ENFTerm([], 1n)]);
+            const ord_w_w_times_2 = new ENFOrdinal([new ENFTerm([new ENFFactor(OmegaOrdinal.instance(), OmegaOrdinal.instance())], 2n)]);
+            const ord_w_w2 = new ENFOrdinal([new ENFTerm([new ENFFactor(OmegaOrdinal.instance(), new SimpleParser("w^2").parse())], 1n)]);
 
             const ord_e0_plus_w = new ENFOrdinal([ord_e0.terms[0].clone(), ord_w.terms[0].clone()]);
             const ord_e0_plus_w_w = new ENFOrdinal([ord_e0.terms[0].clone(), ord_w_w.terms[0].clone()]);
             const ord_e0_times_2 = new ENFOrdinal([new ENFTerm([new ENFFactor(e0_base, enf_one)], 2n)]);
-            const ord_e0_times_w = new ENFOrdinal([new ENFTerm([new ENFFactor(e0_base, enf_one), new ENFFactor(new OmegaOrdinal(), enf_one)], 1n)]);
+            const ord_e0_times_w = new ENFOrdinal([new ENFTerm([new ENFFactor(e0_base, enf_one), new ENFFactor(OmegaOrdinal.instance(), enf_one)], 1n)]);
             const ord_e0_squared = new ENFOrdinal([new ENFTerm([new ENFFactor(e0_base, new FiniteOrdinal(2))], 1n)]);
 
             const ord_e1 = new ENFOrdinal([new ENFTerm([new ENFFactor(e1_base, enf_one)], 1n)]);
             const ord_e1_times_2 = new ENFOrdinal([new ENFTerm([new ENFFactor(e1_base, enf_one)], 2n)]);
-            const ord_e1_times_w = new ENFOrdinal([new ENFTerm([new ENFFactor(e1_base, enf_one), new ENFFactor(new OmegaOrdinal(), enf_one)], 1n)]);
+            const ord_e1_times_w = new ENFOrdinal([new ENFTerm([new ENFFactor(e1_base, enf_one), new ENFFactor(OmegaOrdinal.instance(), enf_one)], 1n)]);
             const ord_e1_times_e0 = new ENFOrdinal([new ENFTerm([new ENFFactor(e1_base, enf_one), new ENFFactor(e0_base, enf_one)], 1n)]);
             const ord_e2 = new ENFOrdinal([new ENFTerm([new ENFFactor(new EpsilonNumber(new FiniteOrdinal(2)), enf_one)], 1n)]);
 
@@ -1448,17 +1448,17 @@ let mutabilityTest: {
 
             // Build w^3+2 as an ordinal: w^3 + 2
             const w_cubed_plus_2 = new ENFOrdinal([
-                new ENFTerm([new ENFFactor(new OmegaOrdinal(), new FiniteOrdinal(3))], 1n),
+                new ENFTerm([new ENFFactor(OmegaOrdinal.instance(), new FiniteOrdinal(3))], 1n),
                 new ENFTerm([], 2n)
             ]);
 
             const multi_term_1 = new ENFOrdinal([
-                new ENFTerm([new ENFFactor(e1_base, ord_w), new ENFFactor(e0_base, ord_five), new ENFFactor(new OmegaOrdinal(), w_cubed_plus_2)], 3n),
-                new ENFTerm([new ENFFactor(new OmegaOrdinal(), new SimpleParser("w^2").parse())], 5n),
+                new ENFTerm([new ENFFactor(e1_base, ord_w), new ENFFactor(e0_base, ord_five), new ENFFactor(OmegaOrdinal.instance(), w_cubed_plus_2)], 3n),
+                new ENFTerm([new ENFFactor(OmegaOrdinal.instance(), new SimpleParser("w^2").parse())], 5n),
                 new ENFTerm([], 10n)
             ]);
             const multi_term_2 = new ENFOrdinal([
-                new ENFTerm([new ENFFactor(e1_base, ord_w), new ENFFactor(e0_base, ord_five), new ENFFactor(new OmegaOrdinal(), w_cubed_plus_2)], 2n)
+                new ENFTerm([new ENFFactor(e1_base, ord_w), new ENFFactor(e0_base, ord_five), new ENFFactor(OmegaOrdinal.instance(), w_cubed_plus_2)], 2n)
             ]);
 
 
@@ -1630,33 +1630,33 @@ let mutabilityTest: {
             runConstructionTest("w^w*2", ord_w_w_times_2, "w^w*2");
 
             // Stress test parentheses - simple exponents
-            const simple_exp_test = new ENFOrdinal([new ENFTerm([new ENFFactor(new OmegaOrdinal(), new FiniteOrdinal(2))], 1n)]);
+            const simple_exp_test = new ENFOrdinal([new ENFTerm([new ENFFactor(OmegaOrdinal.instance(), new FiniteOrdinal(2))], 1n)]);
             runConstructionTest("w^2 (simple exponent)", simple_exp_test, "w^2");
 
             // Stress test parentheses - complex exponent with addition
-            const complex_exp_test1 = new ENFOrdinal([new ENFTerm([new ENFFactor(new OmegaOrdinal(),
-                new ENFOrdinal([new ENFTerm([new ENFFactor(new OmegaOrdinal(), new FiniteOrdinal(2))], 1n), new ENFTerm([], 3n)]))], 1n)]);
+            const complex_exp_test1 = new ENFOrdinal([new ENFTerm([new ENFFactor(OmegaOrdinal.instance(),
+                new ENFOrdinal([new ENFTerm([new ENFFactor(OmegaOrdinal.instance(), new FiniteOrdinal(2))], 1n), new ENFTerm([], 3n)]))], 1n)]);
             runConstructionTest("w^(w^2+3) (complex exponent)", complex_exp_test1, "w^(w^2+3)");
 
             // Stress test parentheses - exponent with coefficient
-            const coeff_exp_test = new ENFOrdinal([new ENFTerm([new ENFFactor(new OmegaOrdinal(),
-                new ENFOrdinal([new ENFTerm([new ENFFactor(new OmegaOrdinal(), new FiniteOrdinal(2))], 3n)]))], 1n)]);
+            const coeff_exp_test = new ENFOrdinal([new ENFTerm([new ENFFactor(OmegaOrdinal.instance(),
+                new ENFOrdinal([new ENFTerm([new ENFFactor(OmegaOrdinal.instance(), new FiniteOrdinal(2))], 3n)]))], 1n)]);
             runConstructionTest("w^(w^2*3) (exponent with coefficient)", coeff_exp_test, "w^(w^2*3)");
 
             // Stress test parentheses - exponent with multiple factors
-            const multi_factor_exp_test = new ENFOrdinal([new ENFTerm([new ENFFactor(new OmegaOrdinal(),
+            const multi_factor_exp_test = new ENFOrdinal([new ENFTerm([new ENFFactor(OmegaOrdinal.instance(),
                 new ENFOrdinal([new ENFTerm([new ENFFactor(e1_base, enf_one), new ENFFactor(e0_base, new FiniteOrdinal(2))], 1n)]))], 1n)]);
             runConstructionTest("w^(e_1*e_0^2) (exponent with multiple factors)", multi_factor_exp_test, "w^(e_1*e_0^2)");
 
             // Stress test parentheses - exponent with multiple factors AND coefficient
-            const multi_factor_coeff_exp_test = new ENFOrdinal([new ENFTerm([new ENFFactor(new OmegaOrdinal(),
+            const multi_factor_coeff_exp_test = new ENFOrdinal([new ENFTerm([new ENFFactor(OmegaOrdinal.instance(),
                 new ENFOrdinal([new ENFTerm([new ENFFactor(e1_base, enf_one), new ENFFactor(e0_base, new FiniteOrdinal(2))], 5n)]))], 1n)]);
             runConstructionTest("w^(e_1*e_0^2*5) (exponent with multiple factors and coefficient)", multi_factor_coeff_exp_test, "w^(e_1*e_0^2*5)");
 
             // Stress test parentheses - nested complex exponents
-            const nested_exp_test = new ENFOrdinal([new ENFTerm([new ENFFactor(new OmegaOrdinal(),
-                new ENFOrdinal([new ENFTerm([new ENFFactor(new OmegaOrdinal(),
-                    new ENFOrdinal([new ENFTerm([new ENFFactor(new OmegaOrdinal(), new FiniteOrdinal(2))], 1n), new ENFTerm([], 1n)]))], 1n)]))], 1n)]);
+            const nested_exp_test = new ENFOrdinal([new ENFTerm([new ENFFactor(OmegaOrdinal.instance(),
+                new ENFOrdinal([new ENFTerm([new ENFFactor(OmegaOrdinal.instance(),
+                    new ENFOrdinal([new ENFTerm([new ENFFactor(OmegaOrdinal.instance(), new FiniteOrdinal(2))], 1n), new ENFTerm([], 1n)]))], 1n)]))], 1n)]);
             runConstructionTest("w^(w^(w^2+1)) (nested complex exponents)", nested_exp_test, "w^w^(w^2+1)");
 
             // Test the problematic case from Very Complex section
@@ -1694,9 +1694,9 @@ let mutabilityTest: {
             CURRENT_KIND = 'ADDITION';
             runAdditionTest("w + 1", ord_w, ord_one, "w+1");
             runAdditionTest("1 + w", ord_one, ord_w, "w");
-            runAdditionTest("w*2 + w*3", ord_w_times_2, new ENFOrdinal([new ENFTerm([new ENFFactor(new OmegaOrdinal(), enf_one)], 3n)]), "w*5");
-            runAdditionTest("(w^2*3 + w*5) + (w*8 + 1)", new ENFOrdinal([new ENFTerm([new ENFFactor(new OmegaOrdinal(), OPERATIONS.convert(new FiniteOrdinal(2), 'CNF'))], 3n), new ENFTerm([new ENFFactor(new OmegaOrdinal(), enf_one)], 5n)]), new ENFOrdinal([new ENFTerm([new ENFFactor(new OmegaOrdinal(), enf_one)], 8n), new ENFTerm([], 1n)]), "w^2*3+w*13+1");
-            runAdditionTest("(w^2 + 5) + (w+3)", new ENFOrdinal([new ENFTerm([new ENFFactor(new OmegaOrdinal(), OPERATIONS.convert(new FiniteOrdinal(2), 'CNF'))], 1n), new ENFTerm([], 5n)]), new ENFOrdinal([new ENFTerm([new ENFFactor(new OmegaOrdinal(), enf_one)], 1n), new ENFTerm([], 3n)]), "w^2+w+3");
+            runAdditionTest("w*2 + w*3", ord_w_times_2, new ENFOrdinal([new ENFTerm([new ENFFactor(OmegaOrdinal.instance(), enf_one)], 3n)]), "w*5");
+            runAdditionTest("(w^2*3 + w*5) + (w*8 + 1)", new ENFOrdinal([new ENFTerm([new ENFFactor(OmegaOrdinal.instance(), OPERATIONS.convert(new FiniteOrdinal(2), 'CNF'))], 3n), new ENFTerm([new ENFFactor(OmegaOrdinal.instance(), enf_one)], 5n)]), new ENFOrdinal([new ENFTerm([new ENFFactor(OmegaOrdinal.instance(), enf_one)], 8n), new ENFTerm([], 1n)]), "w^2*3+w*13+1");
+            runAdditionTest("(w^2 + 5) + (w+3)", new ENFOrdinal([new ENFTerm([new ENFFactor(OmegaOrdinal.instance(), OPERATIONS.convert(new FiniteOrdinal(2), 'CNF'))], 1n), new ENFTerm([], 5n)]), new ENFOrdinal([new ENFTerm([new ENFFactor(OmegaOrdinal.instance(), enf_one)], 1n), new ENFTerm([], 3n)]), "w^2+w+3");
             runAdditionTest("e_0 + w^w", ord_e0, ord_w_w, "e_0+w^w");
             runAdditionTest("w^w + e_0", ord_w_w, ord_e0, "e_0");
 
@@ -1798,7 +1798,7 @@ let mutabilityTest: {
                 })();
 
                 // Special-case power: e_0^(e_0^^n) = e_0^^(n+1)
-                const base_e0_cnf = new EpsilonZero();
+                const base_e0_cnf = EpsilonZero.instance();
                 const lhs = base_e0_cnf.power(new EpsilonTowerOrdinal(k0_cnf, 2));
                 const rhs = new EpsilonTowerOrdinal(k0_cnf, 3);
                 runEqualityTest("EpsTower: e_0^(e_0^^2) = e_0^^3", lhs, rhs);
@@ -1880,7 +1880,7 @@ let mutabilityTest: {
                 })();
 
                 // k = e_0 (so base is e_{e_0})
-                const k_e0 = new EpsilonZero();
+                const k_e0 = EpsilonZero.instance();
                 const e_e0_t2 = new EpsilonTowerOrdinal(k_e0, 2);
                 const e_e0_base_enf = ENFOrdinal.fromCNF(new EpsilonNumber(k_e0));
                 const e_e0_pow2 = OPERATIONS.power(e_e0_base_enf, e_e0_base_enf);
@@ -1958,7 +1958,7 @@ let mutabilityTest: {
                 (function () {
                     const container = document.createElement('div'); container.className = 'test-case';
                     const title = document.createElement('h3'); title.textContent = 'w^^11 produces WTower'; container.appendChild(title);
-                    const omega = new OmegaOrdinal();
+                    const omega = OmegaOrdinal.instance();
                     const eleven = new FiniteOrdinal(11);
                     const res = omega.tetrate(eleven);
                     const ok = (typeof WTowerOrdinal !== 'undefined') && (res instanceof WTowerOrdinal) && res.height === 11n;
@@ -1979,7 +1979,7 @@ let mutabilityTest: {
                 (function () {
                     const container = document.createElement('div'); container.className = 'test-case';
                     const title = document.createElement('h3'); title.textContent = 'e_0^^11 produces EpsilonTower'; container.appendChild(title);
-                    const e0 = new EpsilonZero();
+                    const e0 = EpsilonZero.instance();
                     const eleven = new FiniteOrdinal(11);
                     const res = e0.tetrate(eleven);
                     let ok = false;
@@ -2070,14 +2070,14 @@ let mutabilityTest: {
                 })();
 
                 // a (CNF infinite epsilon-free) ^^ infinite = e_0
-                expectEqual('w^2 ^^ w = e_0', new CNFOrdinal([{ exponent: CNFOrdinal.fromInt(2), coefficient: 1n }]).tetrate(CNFOrdinal.OMEGAStatic().clone()), new EpsilonZero());
+                expectEqual('w^2 ^^ w = e_0', new CNFOrdinal([{ exponent: CNFOrdinal.fromInt(2), coefficient: 1n }]).tetrate(CNFOrdinal.OMEGAStatic().clone()), EpsilonZero.instance());
 
                 // a ≥ e_0: (e_1^e_0) ^^ e_4 = e_2
                 (function () {
                     const container = document.createElement('div'); container.className = 'test-case';
                     const title = document.createElement('h3'); title.textContent = '(e_1^e_0) ^^ e_4 = e_2'; container.appendChild(title);
                     const e1 = new EpsilonNumber(CNFOrdinal.fromInt(1));
-                    const e0 = new EpsilonZero();
+                    const e0 = EpsilonZero.instance();
                     const base = ENFOrdinal.fromCNF(e1).power(ENFOrdinal.fromCNF(e0));
                     const height = new EpsilonNumber(CNFOrdinal.fromInt(4));
                     const actual = base.tetrate(height);

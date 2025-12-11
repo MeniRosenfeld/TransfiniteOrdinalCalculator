@@ -4,6 +4,7 @@ import { ZeroOrdinal } from "../types/ZeroOrdinal.js";
 import { OneOrdinal } from "../types/OneOrdinal.js";
 import { FiniteOrdinal } from "../types/FiniteOrdinal.js";
 import { OmegaOrdinal } from "../types/OmegaOrdinal.js";
+import { WTowerOrdinal } from "../types/WTowerOrdinal.js";
 import { OPERATIONS } from "../operations/Operations.js";
 import { initializeTestEnvironment } from "./testEnvironment.js";
 
@@ -62,8 +63,8 @@ import { initializeTestEnvironment } from "./testEnvironment.js";
             // ZeroOrdinal / OneOrdinal / Omega / EpsilonZero
             check('ZeroOrdinal well formed', () => ZeroOrdinal.instance().isWellFormed());
             check('OneOrdinal well formed', () => OneOrdinal.instance().isWellFormed());
-            check('OmegaOrdinal well formed', () => new OmegaOrdinal().isWellFormed());
-            check('EpsilonZero well formed', () => new EpsilonZero().isWellFormed());
+            check('OmegaOrdinal well formed', () => OmegaOrdinal.instance().isWellFormed());
+            check('EpsilonZero well formed', () => EpsilonZero.instance().isWellFormed());
 
             // WTowerOrdinal
             check('WTowerOrdinal(-1) well formed (semantic 0)', () => new WTowerOrdinal(-1).isWellFormed());
@@ -116,7 +117,7 @@ import { initializeTestEnvironment } from "./testEnvironment.js";
 
             // Exponent not < e0 (use EpsilonZero)
             checkFalse('CNF exponent is ε₀ (invalid)', () => {
-                const terms = [{ exponent: new EpsilonZero(), coefficient: 1n }];
+                const terms = [{ exponent: EpsilonZero.instance(), coefficient: 1n }];
                 return new CNFOrdinal(terms).isWellFormed();
             });
 

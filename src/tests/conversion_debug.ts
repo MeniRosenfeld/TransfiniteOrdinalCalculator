@@ -1,4 +1,3 @@
-import { OperationTracer } from "../OperationTracer.js";
 import { OPERATIONS } from "../operations/Operations.js";
 import { ZeroOrdinal } from "../types/ZeroOrdinal.js";
 import { OneOrdinal } from "../types/OneOrdinal.js";
@@ -31,6 +30,15 @@ import { initializeTestEnvironment } from "./testEnvironment.js";
             const diag = document.getElementById('diag');
             const graphHost = document.getElementById('graph');
 
+            if (!out || !diag || !graphHost) {
+                console.error('[ConversionDebug] Missing required DOM nodes');
+                return;
+            }
+
+            const matrixContainer = out;
+            const diagContainer = diag;
+            const graphContainer = graphHost;
+
             function renderMatrix() {
                 try {
                     OPERATIONS.initialize();
@@ -45,23 +53,29 @@ import { initializeTestEnvironment } from "./testEnvironment.js";
                         const TypeClass = OPERATIONS.registry.getTypeClass(src);
                         let instance;
                         try {
-                            const tracer = new OperationTracer(1000);
-                            if (src === 'Zero') instance = new ZeroOrdinal(tracer);
-                            else if (src === 'One') instance = new OneOrdinal(tracer);
-                            else if (src === 'Finite') instance = new FiniteOrdinal(2, tracer);
-                            else if (src === 'Omega') instance = new OmegaOrdinal(tracer);
-                            else if (src === 'CNF') instance = new CNFOrdinal(0, tracer);
-                            else if (src === 'WTower') instance = new WTowerOrdinal(2, tracer);
-                            else if (src === 'EpsilonZero') instance = new EpsilonZero(tracer);
-                            else if (src === 'EpsilonNumber') instance = new EpsilonNumber(new ZeroOrdinal(tracer), tracer); // e_0
-                            else if (src === 'EpsilonTower') instance = new EpsilonTowerOrdinal(new ZeroOrdinal(tracer), 2, tracer); // e_0^^2
-                            else if (src === 'EpsilonTunnel') instance = new EpsilonTunnelOrdinal(2, tracer); // e__2
-                            else if (src === 'ZetaZero') instance = new ZetaZero(tracer);
-                            else if (src === 'ENF') instance = new ENFOrdinal([new ENFTerm([], 5n, tracer)], tracer); // finite 5 as ENF
-                            else if (src === 'ENFTerm') instance = new ENFTerm([], 5n, tracer);
-                            else if (src === 'ENFFactor') instance = new ENFFactor(new OmegaOrdinal(tracer), new OneOrdinal(tracer)); // ω^1
-                            else instance = new TypeClass(tracer);
+                            if (src === 'Zero') instance = ZeroOrdinal.instance();
+                            else if (src === 'One') instance = OneOrdinal.instance();
+                            else if (src === 'Finite') instance = new FiniteOrdinal(2);
+                            else if (src === 'Omega') instance = OmegaOrdinal.instance();
+                            else if (src === 'CNF') instance = new CNFOrdinal(0);
+                            else if (src === 'WTower') instance = new WTowerOrdinal(2);
+                            else if (src === 'EpsilonZero') instance = EpsilonZero.instance();
+                            else if (src === 'EpsilonNumber') instance = new EpsilonNumber(ZeroOrdinal.instance()); // e_0
+                            else if (src === 'EpsilonTower') instance = new EpsilonTowerOrdinal(ZeroOrdinal.instance(), 2); // e_0^^2
+                            else if (src === 'EpsilonTunnel') instance = new EpsilonTunnelOrdinal(2); // e__2
+                            else if (src === 'ZetaZero') instance = ZetaZero.instance();
+                            else if (src === 'ENF') instance = new ENFOrdinal([new ENFTerm([], 5n)]); // finite 5 as ENF
+                            else if (src === 'ENFTerm') instance = new ENFTerm([], 5n);
+                            else if (src === 'ENFFactor') instance = new ENFFactor(OmegaOrdinal.instance(), OneOrdinal.instance()); // ω^1
+                            else {
+                                const TypeClass = OPERATIONS.registry.getTypeClass(src);
+                                if (!TypeClass) {
+                                    throw new Error(`Unknown ordinal type: ${src}`);
+                                }
+                                instance = new TypeClass();
+                            }
                         } catch (e) {
+                            console.error('[ConversionDebug] Failed to instantiate', src, e);
                             instance = null;
                         }
 
@@ -100,62 +114,66 @@ import { initializeTestEnvironment } from "./testEnvironment.js";
                         html += '</tr>';
                     }
                     html += '</tbody></table>';
-                    out.innerHTML = html;
+                    matrixContainer.innerHTML = html;
 
                     const diagInfo = OPERATIONS.getDiagnostics();
-                    diag.textContent = JSON.stringify(diagInfo, null, 2);
+                    diagContainer.textContent = JSON.stringify(diagInfo, null, 2);
                     renderGraph(diagInfo.registeredTypes);
                 } catch (e) {
-                    out.textContent = 'Initialization error: ' + e.message;
+                    matrixContainer.textContent = 'Initialization error: ' + (e as Error).message;
                 }
             }
 
-            function renderGraph(typeNames) {
+            function renderGraph(typeNames: string[] = []) {
                 // Build direct conversion adjacency from registry
-                const registry = OPERATIONS.registry;
-                const direct = registry.directConversions; // Map
-                const types = Array.from(typeNames);
+                const registry: any = OPERATIONS.registry;
+                const direct: Map<string, Set<string>> = (registry?.directConversions as Map<string, Set<string>>) ?? new Map<string, Set<string>>();
+                const types: string[] = Array.isArray(typeNames) ? [...typeNames] : [];
 
                 // Prepare edge maps
-                const edgesFrom = new Map();
-                const edgesTo = new Map();
+                const edgesFrom = new Map<string, Set<string>>();
+                const edgesTo = new Map<string, Set<string>>();
                 for (const t of types) { edgesFrom.set(t, new Set()); edgesTo.set(t, new Set()); }
                 for (const [src, targets] of direct.entries()) {
                     if (!edgesFrom.has(src)) continue;
                     for (const dst of targets) {
                         if (!edgesFrom.has(dst)) continue;
-                        edgesFrom.get(src).add(dst);
-                        edgesTo.get(dst).add(src);
+                        edgesFrom.get(src)!.add(dst);
+                        edgesTo.get(dst)!.add(src);
                     }
                 }
 
                 // Layering via Kahn-like pass
-                const indegree = new Map(types.map(t => [t, edgesTo.get(t).size]));
-                const layer = new Map();
-                const queue = [];
-                for (const t of types) if (indegree.get(t) === 0) { layer.set(t, 0); queue.push(t); }
+                const indegree = new Map(types.map(t => [t, edgesTo.get(t)!.size]));
+                const layer = new Map<string, number>();
+                const queue: string[] = [];
+                for (const t of types) if ((indegree.get(t) ?? 0) === 0) { layer.set(t, 0); queue.push(t); }
                 while (queue.length) {
                     const u = queue.shift();
+                    if (!u) break;
                     const lu = layer.get(u) || 0;
-                    for (const v of edgesFrom.get(u)) {
-                        if (!layer.has(v) || layer.get(v) < lu + 1) layer.set(v, lu + 1);
-                        indegree.set(v, (indegree.get(v) || 0) - 1);
-                        if (indegree.get(v) === 0) queue.push(v);
+                    for (const v of edgesFrom.get(u) ?? []) {
+                        if (!layer.has(v) || (layer.get(v) ?? 0) < lu + 1) layer.set(v, lu + 1);
+                        indegree.set(v, (indegree.get(v) ?? 0) - 1);
+                        if ((indegree.get(v) ?? 0) === 0) queue.push(v);
                     }
                 }
                 // Any remaining (cycles): assign layer 0
                 for (const t of types) if (!layer.has(t)) layer.set(t, 0);
 
                 const maxLayer = Math.max(...Array.from(layer.values()));
-                const layers = Array.from({ length: maxLayer + 1 }, () => []);
-                for (const t of types) layers[layer.get(t)].push(t);
+                const layers: string[][] = Array.from({ length: maxLayer + 1 }, () => []);
+                for (const t of types) {
+                    const layerIndex = layer.get(t) ?? 0;
+                    layers[layerIndex].push(t);
+                }
 
                 // SVG layout
                 const width = 960, layerGap = 110, nodeW = 120, nodeH = 36, marginX = 40, marginY = 20;
                 const height = (maxLayer + 1) * layerGap + marginY * 2;
 
                 // Create SVG
-                graphHost.innerHTML = '';
+                graphContainer.innerHTML = '';
                 const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
                 svg.setAttribute('width', String(width));
                 svg.setAttribute('height', String(height));
@@ -179,7 +197,7 @@ import { initializeTestEnvironment } from "./testEnvironment.js";
                 svg.appendChild(defs);
 
                 // Compute node positions
-                const positions = new Map();
+                const positions = new Map<string, { x: number; y: number }>();
                 for (let l = 0; l <= maxLayer; l++) {
                     const nodes = layers[l];
                     const count = nodes.length || 1;
@@ -238,7 +256,7 @@ import { initializeTestEnvironment } from "./testEnvironment.js";
                     svg.appendChild(g);
                 }
 
-                graphHost.appendChild(svg);
+                graphContainer.appendChild(svg);
             }
 
             // OPERATIONS is already initialized above in this module script
