@@ -7,8 +7,7 @@ import { OmegaOrdinal } from "../types/OmegaOrdinal.js";
 import { WTowerOrdinal } from "../types/WTowerOrdinal.js";
 import { OPERATIONS } from "../operations/Operations.js";
 import { initializeTestEnvironment } from "./testEnvironment.js";
-
-// @ts-nocheck
+import { requireElementById } from "./testUtils.js";
 
 // Extracted from is_well_formed_test.html
 
@@ -17,28 +16,30 @@ import { initializeTestEnvironment } from "./testEnvironment.js";
         initializeTestEnvironment();
         console.log('[Test] isWellFormed tests initialized');
 
-        function addCase(desc, got, expected) {
+        const resultsContainer = requireElementById<HTMLDivElement>('results');
+        const summaryElement = requireElementById<HTMLDivElement>('summary');
+
+        function addCase(desc: string, got: unknown, expected: unknown): boolean {
             const div = document.createElement('div');
-            div.className = 'case ' + (got === expected ? 'pass' : 'fail');
-            div.textContent = `${got === expected ? 'PASS' : 'FAIL'} - ${desc} → got ${got}, expected ${expected}`;
-            document.getElementById('results').appendChild(div);
-            return got === expected;
+            const passed = got === expected;
+            div.className = 'case ' + (passed ? 'pass' : 'fail');
+            div.textContent = `${passed ? 'PASS' : 'FAIL'} - ${desc} → got ${got}, expected ${expected}`;
+            resultsContainer.appendChild(div);
+            return passed;
         }
 
         (function runTests() {
             // OPERATIONS already initialized above
-            const resultsEl = document.getElementById('results');
-            const summaryEl = document.getElementById('summary');
             let passed = 0, total = 0;
 
-            function check(desc, fn) {
+            function check(desc: string, fn: () => boolean) {
                 total++;
                 let ok = false;
                 try { ok = !!fn(); } catch (e) { ok = false; }
                 if (addCase(desc, ok, true)) passed++;
             }
 
-            function checkFalse(desc, fn) {
+            function checkFalse(desc: string, fn: () => boolean) {
                 total++;
                 let actual = false;
                 try { actual = !!fn(); } catch (e) { actual = false; }
@@ -128,5 +129,5 @@ import { initializeTestEnvironment } from "./testEnvironment.js";
             });
 
             // Report
-            summaryEl.textContent = `${passed}/${total} tests passed`;
+            summaryElement.textContent = `${passed}/${total} tests passed`;
         })();

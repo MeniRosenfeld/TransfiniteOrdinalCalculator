@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 // Extracted from fTyped_test.html
 
 // Original <scripttype="module">
@@ -8,15 +6,16 @@
         import { DoubleContext } from "../ordinal_mapping/Contexts.js";
         import { RationalContext } from "../ordinal_mapping/Contexts.js";
         import { FParams } from "../ordinal_mapping/FParams.js";
+        import { requireElementById } from "./testUtils.js";
 
-        const resultsDiv = document.getElementById('test-results');
-        const summaryDiv = document.getElementById('summary');
+        const resultsDiv = requireElementById<HTMLDivElement>('test-results');
+        const summaryDiv = requireElementById<HTMLDivElement>('summary');
         
         let totalTests = 0;
         let passedTests = 0;
         let failedTests = 0;
 
-        function addTestResult(testName, passed, message = '') {
+        function addTestResult(testName: string, passed: boolean, message = ''): void {
             totalTests++;
             if (passed) {
                 passedTests++;
@@ -30,7 +29,7 @@
             resultsDiv.appendChild(resultDiv);
         }
 
-        function addSection(title) {
+        function addSection(title: string): HTMLDivElement {
             const section = document.createElement('div');
             section.className = 'test-section';
             section.innerHTML = `<h2>${title}</h2>`;
@@ -38,18 +37,18 @@
             return section;
         }
 
-        function updateSummary() {
+        function updateSummary(): void {
             const allPassed = failedTests === 0;
             summaryDiv.className = `summary ${allPassed ? 'all-pass' : 'some-fail'}`;
             summaryDiv.innerHTML = `
                 <div>Total Tests: ${totalTests}</div>
                 <div>Passed: ${passedTests}</div>
                 <div>Failed: ${failedTests}</div>
-                <div>Success Rate: ${((passedTests / totalTests) * 100).toFixed(1)}%</div>
+                <div>Success Rate: ${totalTests === 0 ? '0.0' : ((passedTests / totalTests) * 100).toFixed(1)}%</div>
             `;
         }
 
-        function approxEqual(a, b, tolerance = 1e-10) {
+        function approxEqual(a: number, b: number, tolerance = 1e-10): boolean {
             return Math.abs(a - b) < tolerance;
         }
 
@@ -287,7 +286,8 @@
         } catch (error) {
             const errorDiv = document.createElement('div');
             errorDiv.className = 'test-result fail';
-            errorDiv.textContent = `✗ Test suite crashed: ${error.message}`;
+            const message = error instanceof Error ? error.message : String(error);
+            errorDiv.textContent = `✗ Test suite crashed: ${message}`;
             resultsDiv.appendChild(errorDiv);
             console.error('Test error:', error);
             updateSummary();

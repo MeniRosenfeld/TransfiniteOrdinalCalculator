@@ -296,7 +296,7 @@ These are pre-existing items that should be integrated into the work:
 - [x] Deprecate old f/fInverse (legacy implementation already removed; all scripts use the new path)
 - [ ] Test rational mapping
 - [ ] Support rationals in calculator (GUI still needs clean support for rational contexts)
-- [ ] Make F12 work (separate ts file from html)
+- [x] Make F12 work (separate ts file from html)
 - [ ] Make intervals open/closed
 - [ ] fInverse fail high
 - [ ] Add Zeta_0 to parser

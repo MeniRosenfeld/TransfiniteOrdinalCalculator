@@ -1,9 +1,13 @@
 import { OperationTracer } from "../OperationTracer.js";
 import { OPERATIONS } from "../operations/Operations.js";
-import { fInverse, DEFAULT_F_PARAMS } from "../ordinal_mapping/OrdinalMappingCompat.js";
+import {
+    f,
+    fInverse,
+    DEFAULT_F_PARAMS,
+    convertFFormatToOrdinalInstance,
+} from "../ordinal_mapping/OrdinalMappingCompat.js";
 import { initializeTestEnvironment } from "./testEnvironment.js";
-
-// @ts-nocheck
+import { requireElementById } from "./testUtils.js";
 
 // Extracted from finverse_debug.html
 
@@ -18,10 +22,10 @@ import { initializeTestEnvironment } from "./testEnvironment.js";
         const inputValue = 46.445219999999985; // Hardcoded input value (e.g., f(w+1))
         // ---------------------
 
-        document.getElementById('input-value').textContent = inputValue;
-        const outputEl = document.getElementById('output');
-        const timeEl = document.getElementById('time');
-        const fEl = document.getElementById('f');
+        requireElementById<HTMLElement>('input-value').textContent = String(inputValue);
+        const outputEl = requireElementById<HTMLElement>('output');
+        const timeEl = requireElementById<HTMLElement>('time');
+        const fEl = requireElementById<HTMLElement>('f');
 
         try {
             const startTime = performance.now();
@@ -40,6 +44,7 @@ import { initializeTestEnvironment } from "./testEnvironment.js";
             fEl.textContent = (f(resultRep, fParams) - inputValue).toString();
 
         } catch (e) {
-            outputEl.textContent = `Error: ${e.message}`;
+            const message = e instanceof Error ? e.message : String(e);
+            outputEl.textContent = `Error: ${message}`;
             console.error("Error during fInverse calculation:", e);
         }

@@ -1,7 +1,6 @@
-// @ts-nocheck
-
 import { OperationTracer } from "../OperationTracer.js";
 import { OPERATIONS } from "../operations/Operations.js";
+import type { OrdinalBase } from "../types/OrdinalBase.js";
 import { ENFOrdinal } from "../types/ENFOrdinal.js";
 import { ENFTerm } from "../types/ENFTerm.js";
 import { ENFFactor } from "../types/ENFFactor.js";
@@ -40,7 +39,45 @@ let mutabilityTest: {
     checkMutations: () => MutationReport;
 } | null = null;
 
-// @ts-nocheck
+type TestKind =
+    | "BASIC"
+    | "CONSTRUCTION"
+    | "ADDITION"
+    | "MULTIPLICATION"
+    | "EXPONENTIATION"
+    | "EPSILON_TOWER"
+    | "TETRATION"
+    | "RANDOM"
+    | "ENF_CALC";
+
+type TestResultEntry = {
+    passed: boolean;
+    node: HTMLElement | null;
+};
+
+type TestKindStats = {
+    total: number;
+    passed: number;
+    failed: number;
+    containerId: string;
+    previewId: string;
+    summaryId: string;
+    results: TestResultEntry[];
+};
+
+const createKindStats = (config: {
+    containerId: string;
+    previewId: string;
+    summaryId: string;
+}): TestKindStats => ({
+    total: 0,
+    passed: 0,
+    failed: 0,
+    containerId: config.containerId,
+    previewId: config.previewId,
+    summaryId: config.summaryId,
+    results: [],
+});
 
 // Extracted from ordinal_enf_test.html
 
@@ -50,20 +87,20 @@ let mutabilityTest: {
         console.log('[Test] ENF tests initialized');
 
         // Declare all variables and functions first, then run tests at the end
-        const testStats = {
-            BASIC: { total: 0, passed: 0, failed: 0, containerId: 'basic-results-output', previewId: 'basic-failed-preview', summaryId: 'basic-summary', results: [] },
-            CONSTRUCTION: { total: 0, passed: 0, failed: 0, containerId: 'construction-results-output', previewId: 'construction-failed-preview', summaryId: 'construction-summary', results: [] },
-            ADDITION: { total: 0, passed: 0, failed: 0, containerId: 'addition-results-output', previewId: 'addition-failed-preview', summaryId: 'addition-summary', results: [] },
-            MULTIPLICATION: { total: 0, passed: 0, failed: 0, containerId: 'multiplication-results-output', previewId: 'multiplication-failed-preview', summaryId: 'multiplication-summary', results: [] },
-            EXPONENTIATION: { total: 0, passed: 0, failed: 0, containerId: 'exponentiation-results-output', previewId: 'exponentiation-failed-preview', summaryId: 'exponentiation-summary', results: [] },
-            EPSILON_TOWER: { total: 0, passed: 0, failed: 0, containerId: 'epsilon-tower-results-output', previewId: 'epsilon-tower-failed-preview', summaryId: 'epsilon-tower-summary', results: [] },
-            TETRATION: { total: 0, passed: 0, failed: 0, containerId: 'tetration-results-output', previewId: 'tetration-failed-preview', summaryId: 'tetration-summary', results: [] },
-            RANDOM: { total: 0, passed: 0, failed: 0, containerId: 'random-results-output', previewId: 'random-failed-preview', summaryId: 'random-summary', results: [] },
-            ENF_CALC: { total: 0, passed: 0, failed: 0, containerId: 'enf-calc-results-output', previewId: 'enf-calc-failed-preview', summaryId: 'enf-calc-summary', results: [] }
+        const testStats: Record<TestKind, TestKindStats> = {
+            BASIC: createKindStats({ containerId: 'basic-results-output', previewId: 'basic-failed-preview', summaryId: 'basic-summary' }),
+            CONSTRUCTION: createKindStats({ containerId: 'construction-results-output', previewId: 'construction-failed-preview', summaryId: 'construction-summary' }),
+            ADDITION: createKindStats({ containerId: 'addition-results-output', previewId: 'addition-failed-preview', summaryId: 'addition-summary' }),
+            MULTIPLICATION: createKindStats({ containerId: 'multiplication-results-output', previewId: 'multiplication-failed-preview', summaryId: 'multiplication-summary' }),
+            EXPONENTIATION: createKindStats({ containerId: 'exponentiation-results-output', previewId: 'exponentiation-failed-preview', summaryId: 'exponentiation-summary' }),
+            EPSILON_TOWER: createKindStats({ containerId: 'epsilon-tower-results-output', previewId: 'epsilon-tower-failed-preview', summaryId: 'epsilon-tower-summary' }),
+            TETRATION: createKindStats({ containerId: 'tetration-results-output', previewId: 'tetration-failed-preview', summaryId: 'tetration-summary' }),
+            RANDOM: createKindStats({ containerId: 'random-results-output', previewId: 'random-failed-preview', summaryId: 'random-summary' }),
+            ENF_CALC: createKindStats({ containerId: 'enf-calc-results-output', previewId: 'enf-calc-failed-preview', summaryId: 'enf-calc-summary' })
         };
-        let CURRENT_KIND = 'BASIC';
+        let CURRENT_KIND: TestKind = 'BASIC';
         let __renderScheduled = false;
-        function scheduleRender() {
+        function scheduleRender(): void {
             if (__renderScheduled) return;
             __renderScheduled = true;
             setTimeout(() => {
@@ -83,7 +120,7 @@ let mutabilityTest: {
             }, 0);
         }
 
-        function recordTestResult(kindKey, passed, containerNode) {
+        function recordTestResult(kindKey: TestKind, passed: boolean, containerNode: HTMLElement | null): void {
             const stats = testStats[kindKey];
             if (!stats) { console.warn('[ENF TEST] Unknown kindKey in recordTestResult:', kindKey); return; }
             stats.total++;
@@ -94,7 +131,7 @@ let mutabilityTest: {
         }
 
         // Wrapper function to safely execute test sections and ensure errors are recorded
-        function executeTestSection(sectionName, testFunction) {
+        function executeTestSection(sectionName: string, testFunction: () => void): void {
             try {
                 testFunction();
             } catch (error) {
@@ -129,7 +166,7 @@ let mutabilityTest: {
             }
         }
 
-        function updateKindSummary(kindKey) {
+        function updateKindSummary(kindKey: TestKind): void {
             const stats = testStats[kindKey];
             const summaryDiv = document.getElementById(stats.summaryId);
             if (!summaryDiv) return;
@@ -137,13 +174,13 @@ let mutabilityTest: {
             summaryDiv.className = 'kind-summary ' + (stats.failed > 0 ? 'status-failed' : 'status-passed');
         }
 
-        function renderSingleKindOutput(kindKey) {
+        function renderSingleKindOutput(kindKey: TestKind): void {
             const stats = testStats[kindKey];
             if (!stats) return;
-            const detailsElement = document.getElementById('details-' + kindKey);
+            const detailsElement = document.getElementById('details-' + kindKey) as HTMLDetailsElement | null;
             const previewContainer = document.getElementById(stats.previewId);
             const mainResultsOutputContainer = document.getElementById(stats.containerId);
-            const allTestsContainerWhenOpen = mainResultsOutputContainer ? mainResultsOutputContainer.querySelector('.passed-tests-container') : null;
+            const allTestsContainerWhenOpen = mainResultsOutputContainer ? mainResultsOutputContainer.querySelector<HTMLElement>('.passed-tests-container') : null;
 
             console.log(`[DEBUG] renderSingleKindOutput(${kindKey}): stats.results.length=${stats.results.length}, isExpanded=${detailsElement?.open}`);
             if (!detailsElement || !previewContainer || !allTestsContainerWhenOpen) {
@@ -200,20 +237,23 @@ let mutabilityTest: {
             }
         }
 
-        function renderAllKindResults() {
-            for (const key in testStats) {
+        function renderAllKindResults(): void {
+            (Object.keys(testStats) as TestKind[]).forEach((key) => {
                 updateKindSummary(key);
                 renderSingleKindOutput(key);
-            }
+            });
         }
 
-        function updateOverallPageSummary() {
+        function updateOverallPageSummary(): void {
             const overallStatusIndicator = document.getElementById('overall-status-indicator');
             const overallSummaryDetails = document.getElementById('overall-summary-details');
+            if (!overallStatusIndicator || !overallSummaryDetails) {
+                return;
+            }
             overallSummaryDetails.innerHTML = '';
             let overallPass = true; let totalRun = 0;
             let grandTotal = 0; let grandPassed = 0; let grandFailed = 0;
-            for (const key in testStats) {
+            (Object.keys(testStats) as TestKind[]).forEach((key) => {
                 const stats = testStats[key];
                 const num = stats.total;
                 grandTotal += num;
@@ -226,7 +266,7 @@ let mutabilityTest: {
                     if (stats.failed > 0) overallPass = false;
                     overallSummaryDetails.appendChild(line);
                 }
-            }
+            });
             if (grandTotal === 0) { overallStatusIndicator.textContent = 'No tests were run.'; overallStatusIndicator.className = 'status-overall-pending'; return; }
             // Check for unhandled errors and force failure if any occurred
             const finalOverallPass = overallPass && !hasUnhandledErrors;
@@ -239,11 +279,11 @@ let mutabilityTest: {
                 overallStatusIndicator.className = 'status-overall-fail';
             }
         }
-        const testResults = [];
+        const testResults: boolean[] = [];
         let totalTests = 0;
         let passedTests = 0;
 
-        function runComparisonTest(testName, ordinals, expectedOrder) {
+        function runComparisonTest(testName: string, ordinals: OrdinalBase[], expectedOrder: string[]): void {
             totalTests++;
             const container = document.createElement('div');
             container.className = 'test-case';
@@ -300,7 +340,7 @@ let mutabilityTest: {
             }
         }
 
-        function runAdditionTest(testName, ordA, ordB, expectedString) {
+        function runAdditionTest(testName: string, ordA: OrdinalBase, ordB: OrdinalBase, expectedString: string): void {
             totalTests++;
             const container = document.createElement('div');
             container.className = 'test-case';
@@ -356,7 +396,7 @@ let mutabilityTest: {
             }
         }
 
-        function runEqualityTest(testName, actualOrdinal, expectedOrdinal) {
+        function runEqualityTest(testName: string, actualOrdinal: OrdinalBase, expectedOrdinal: OrdinalBase): void {
             totalTests++;
             const container = document.createElement('div');
             container.className = 'test-case';
@@ -401,7 +441,7 @@ let mutabilityTest: {
             }
         }
 
-        function runENFCalculationTest(testName, inputString, expectedString) {
+        function runENFCalculationTest(testName: string, inputString: string, expectedString: string): void {
             totalTests++;
             const container = document.createElement('div');
             container.className = 'test-case';
@@ -580,7 +620,7 @@ let mutabilityTest: {
             }
         }
 
-        function runComprehensiveAdditionTest(ordinals) {
+        function runComprehensiveAdditionTest(ordinals: ENFOrdinal[]): void {
             totalTests++;
             const container = document.createElement('div');
             container.className = 'test-case';
@@ -662,7 +702,7 @@ let mutabilityTest: {
             }
         }
 
-        function runAdditionMonotonicityTest(ordinals) {
+        function runAdditionMonotonicityTest(ordinals: ENFOrdinal[]): void {
             totalTests++;
             const container = document.createElement('div');
             container.className = 'test-case';
@@ -767,7 +807,7 @@ let mutabilityTest: {
             }
         }
 
-        function runMultiplicationMonotonicityTest(ordinals) {
+        function runMultiplicationMonotonicityTest(ordinals: ENFOrdinal[]): void {
             totalTests++;
             const container = document.createElement('div');
             container.className = 'test-case';
@@ -872,7 +912,7 @@ let mutabilityTest: {
             }
         }
 
-        function runExponentiationMonotonicityTest(ordinals) {
+        function runExponentiationMonotonicityTest(ordinals: ENFOrdinal[]): void {
             totalTests++;
             const container = document.createElement('div');
             container.className = 'test-case';
@@ -967,7 +1007,7 @@ let mutabilityTest: {
             }
         }
 
-        function runComprehensiveMultiplicationTest(ordinals) {
+        function runComprehensiveMultiplicationTest(ordinals: ENFOrdinal[]): void {
             totalTests++;
             const container = document.createElement('div');
             container.className = 'test-case';
@@ -1048,7 +1088,7 @@ let mutabilityTest: {
             }
         }
 
-        function runRandomTripleAssociativityAdditionTest(ordinals, sampleCount = 100) {
+        function runRandomTripleAssociativityAdditionTest(ordinals: ENFOrdinal[], sampleCount = 100): void {
             totalTests++;
             const container = document.createElement('div');
             container.className = 'test-case';
@@ -1158,7 +1198,7 @@ let mutabilityTest: {
             }
         }
 
-        function runRandomTripleAlgebraRulesTest(ordinals, sampleCount = 100) {
+        function runRandomTripleAlgebraRulesTest(ordinals: ENFOrdinal[], sampleCount = 100): void {
             totalTests++;
             const container = document.createElement('div');
             container.className = 'test-case';
@@ -1300,7 +1340,7 @@ let mutabilityTest: {
             }
         }
 
-        function runComprehensiveExponentiationTest(ordinals) {
+        function runComprehensiveExponentiationTest(ordinals: ENFOrdinal[]): void {
             totalTests++;
             const container = document.createElement('div');
             container.className = 'test-case';
@@ -1390,7 +1430,7 @@ let mutabilityTest: {
             }
         }
 
-        function defineTests() {
+        function defineTests(): void {
             // Use global tracer - no need for local tracer
             OperationTracer.setGlobalTracer(2000000); // Ensure fresh budget for test definitions
 
@@ -1569,7 +1609,7 @@ let mutabilityTest: {
             // --- Construction Tests ---
             CURRENT_KIND = 'CONSTRUCTION';
 
-            function runConstructionTest(testName, ordinal, expectedString) {
+            function runConstructionTest(testName: string, ordinal: OrdinalBase, expectedString: string): void {
                 totalTests++;
                 const container = document.createElement('div');
                 container.className = 'test-case';
@@ -1913,7 +1953,7 @@ let mutabilityTest: {
                 const zero = CNFOrdinal.ZEROStatic().clone();
                 const one = CNFOrdinal.ONEStatic().clone();
                 const two = CNFOrdinal.fromInt(2);
-                function expectEqual(title, a, b) {
+                function expectEqual(title: string, a: OrdinalBase, b: OrdinalBase): void {
                     runEqualityTest(title, a, b);
                 }
                 expectEqual('0^^0 = 1', zero.tetrate(CNFOrdinal.fromInt(0)), one);
@@ -2196,7 +2236,7 @@ let mutabilityTest: {
             generateOrdinalIndexLegend(allOrdinals);
         }
 
-        function generateExponentiationTable(ordinals) {
+        function generateExponentiationTable(ordinals: ENFOrdinal[]): void {
             const container = document.getElementById('exponentiation-table-container');
             container.innerHTML = '<h2>Comprehensive Exponentiation Table</h2>';
 
@@ -2294,7 +2334,7 @@ let mutabilityTest: {
             });
         }
 
-        function generateOrdinalIndexLegend(ordinals) {
+        function generateOrdinalIndexLegend(ordinals: ENFOrdinal[]): void {
             let container = document.getElementById('ordinal-index-legend-container');
             if (!container) {
                 container = document.createElement('div');
@@ -2346,7 +2386,7 @@ let mutabilityTest: {
         }
 
 
-        function generateAdditionTable(ordinals) {
+        function generateAdditionTable(ordinals: ENFOrdinal[]): void {
             const container = document.getElementById('addition-table-container');
             container.innerHTML = '<h2>Comprehensive Addition Table</h2>';
 
@@ -2435,7 +2475,7 @@ let mutabilityTest: {
             });
         }
 
-        function generateMultiplicationTable(ordinals) {
+        function generateMultiplicationTable(ordinals: ENFOrdinal[]): void {
             const container = document.getElementById('multiplication-table-container');
             container.innerHTML = '<h2>Comprehensive Multiplication Table</h2>';
 
@@ -2531,7 +2571,7 @@ let mutabilityTest: {
             });
         }
 
-        function finalizeSummary() { /* replaced by updateOverallPageSummary */ }
+        function finalizeSummary(): void { /* replaced by updateOverallPageSummary */ }
 
         // Global error handler to catch test failures
         let hasUnhandledErrors = false;
@@ -2587,7 +2627,7 @@ let mutabilityTest: {
         }, 100);
 
         // Test runner for individual expressions
-        function calculateAndSimplify(expr, options = {}) {
+        function calculateAndSimplify(expr: string, options: { budget?: number } = {}): { ordinal: OrdinalBase | null; error: string | null } {
             try {
                 // Reset global tracer for each test with specified budget
                 OperationTracer.setGlobalTracer(options.budget || 200000);
@@ -2599,27 +2639,27 @@ let mutabilityTest: {
             }
         }
 
-        function testENFEquality(aStr, bStr, expected) {
+        function testENFEquality(aStr: string, bStr: string, expected: boolean): void {
             // ... implementation ...
         }
 
-        function testENFComparison(aStr, bStr, expected) {
+        function testENFComparison(aStr: string, bStr: string, expected: string): void {
             // ... implementation ...
         }
 
-        function testENFAddition(aStr, bStr, expectedStr) {
+        function testENFAddition(aStr: string, bStr: string, expectedStr: string): void {
             // ... implementation ...
         }
 
-        function testENFMultiplication(aStr, bStr, expectedStr) {
+        function testENFMultiplication(aStr: string, bStr: string, expectedStr: string): void {
             // ... implementation ...
         }
 
-        function testENFExponentiation(aStr, bStr, expectedStr) {
+        function testENFExponentiation(aStr: string, bStr: string, expectedStr: string): void {
             // ... implementation ...
         }
 
-        function runAllTests() {
+        function runAllTests(): void {
             // ... existing test calls ...
         }
 

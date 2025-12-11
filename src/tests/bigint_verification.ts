@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 // Extracted from bigint_verification.html
 
 // Original <scripttype="module">
@@ -10,11 +8,14 @@
 
         const resultsDiv = document.getElementById('results');
         const summaryDiv = document.getElementById('summary');
+        if (!resultsDiv || !summaryDiv) {
+            throw new Error('Required result containers are missing');
+        }
         
         let passed = 0;
         let failed = 0;
 
-        function addResult(testName, success, message = '') {
+        function addResult(testName: string, success: boolean, message = ''): void {
             const div = document.createElement('div');
             div.className = `test-result ${success ? 'pass' : 'fail'}`;
             div.textContent = `${success ? '✓' : '✗'} ${testName}${message ? ': ' + message : ''}`;

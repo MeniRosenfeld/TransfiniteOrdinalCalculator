@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 // Extracted from fInverse_test.html
 
 // Original <scripttype="module">
@@ -15,13 +13,31 @@
         RationalContext,
       } from "../ordinal_mapping/Contexts.js";
       import { Interval } from "../ordinal_mapping/Interval.js";
+      import { requireElementById } from "./testUtils.js";
 
-      const resultsDiv = document.getElementById("results");
+      type PowRepresentation = { type: "pow"; k: OrdinalRepresentation };
+      type SumRepresentation = { type: "sum"; beta: OrdinalRepresentation; c: bigint; delta: OrdinalRepresentation };
+      type TowerRepresentation = { type: "w_tower"; height: bigint };
+      type EpsilonRepresentation = { type: "epsilon"; index: OrdinalRepresentation };
+type OrdinalRepresentation = bigint | PowRepresentation | SumRepresentation | TowerRepresentation | EpsilonRepresentation;
+type FInverseResult = OrdinalRepresentation;
+
+const isPowRepresentation = (value: FInverseResult): value is PowRepresentation => {
+      return typeof value === "object" && value !== null && "type" in value && value.type === "pow";
+};
+const isSumRepresentation = (value: FInverseResult): value is SumRepresentation => {
+      return typeof value === "object" && value !== null && "type" in value && value.type === "sum";
+};
+const isEpsilonRepresentation = (value: FInverseResult): value is EpsilonRepresentation => {
+      return typeof value === "object" && value !== null && "type" in value && value.type === "epsilon";
+};
+
+      const resultsDiv = requireElementById<HTMLDivElement>("results");
       let passCount = 0;
       let failCount = 0;
       let skipCount = 0;
 
-      function addResult(testName, passed, details = "", skipped = false) {
+      function addResult(testName: string, passed: boolean, details = "", skipped = false): void {
         const div = document.createElement("div");
         div.className = `test-result ${
           skipped ? "skip" : passed ? "pass" : "fail"
@@ -44,7 +60,7 @@
         else failCount++;
       }
 
-      function addSection(title) {
+      function addSection(title: string): HTMLDivElement {
         const section = document.createElement("div");
         section.className = "test-section";
         section.innerHTML = `<h2>${title}</h2>`;
@@ -52,25 +68,27 @@
         return section;
       }
 
-      function formatOrdinal(ord) {
+      function formatOrdinal(ord: OrdinalRepresentation | number): string {
         if (typeof ord === "bigint") return ord.toString();
-        if (typeof ord === "object" && ord !== null) {
-          if (ord.type === "pow") {
-            return `ω^${formatOrdinal(ord.k)}`;
-          } else if (ord.type === "sum") {
-            return `ω^${formatOrdinal(ord.beta)} * ${ord.c} + ${formatOrdinal(
-              ord.delta
+        if (typeof ord === "number") return ord.toString();
+        if (typeof ord === "object" && ord !== null && "type" in ord) {
+          const typed = ord as Exclude<OrdinalRepresentation, bigint>;
+          if (typed.type === "pow") {
+            return `ω^${formatOrdinal(typed.k)}`;
+          } else if (typed.type === "sum") {
+            return `ω^${formatOrdinal(typed.beta)} * ${typed.c} + ${formatOrdinal(
+              typed.delta
             )}`;
-          } else if (ord.type === "w_tower") {
-            return `ω↑↑${ord.height}`;
-          } else if (ord.type === "epsilon") {
-            return `ε_${ord.index}`;
+          } else if (typed.type === "w_tower") {
+            return `ω↑↑${typed.height}`;
+          } else if (typed.type === "epsilon") {
+            return `ε_${typed.index}`;
           }
         }
         return String(ord);
       }
 
-      async function runTests() {
+      async function runTests(): Promise<void> {
         console.log("Starting fInverse tests...");
 
         // Create context and parameters
@@ -125,7 +143,7 @@
           const x1 = ctx.ONE;
           const resultOmega = fInverseWrapper(x1.toNumber(), params);
           const expectedOmega = { type: "pow", k: 1n };
-          const matchOmega = resultOmega.type === "pow" && resultOmega.k === 1n;
+          const matchOmega = isPowRepresentation(resultOmega) && resultOmega.k === 1n;
           addResult(
             `fInverse(1) should return ω`,
             matchOmega,
@@ -144,7 +162,7 @@
             params
           );
           const matchOmega2 =
-            resultOmega2.type === "pow" && resultOmega2.k === 2n;
+            isPowRepresentation(resultOmega2) && resultOmega2.k === 2n;
           addResult(
             `fInverse(f(ω^2)) should return ω^2`,
             matchOmega2,
@@ -162,8 +180,8 @@
           const resultOmegaOmega = fInverseWrapper(x3.toNumber(), params);
           const expectedOmegaOmega = { type: "pow", k: { type: "pow", k: 1n } };
           const matchOmegaOmega =
-            resultOmegaOmega.type === "pow" &&
-            resultOmegaOmega.k.type === "pow" &&
+            isPowRepresentation(resultOmegaOmega) &&
+            isPowRepresentation(resultOmegaOmega.k) &&
             resultOmegaOmega.k.k === 1n;
           addResult(
             `fInverse(f(ω^ω)) should return ω^ω`,
@@ -207,7 +225,7 @@
             ctx.fromNumber(1.5)
           );
           const result1Int = fInverseTyped(interval1, params);
-          const match1Int = result1Int.type === "pow" && result1Int.k === 1n;
+          const match1Int = isPowRepresentation(result1Int) && result1Int.k === 1n;
           addResult(
             `fInverse([0.9, 1.5]) should prefer ω`,
             match1Int,
@@ -227,9 +245,8 @@
             ctx.fromNumber(fOmegaOmega + 0.5)
           );
           const result3Int = fInverseTyped(interval3, params);
-          const match3Int =
-            result3Int.type === "pow" &&
-            result3Int.k.type === "pow" &&
+          const match3Int = isPowRepresentation(result3Int) &&
+            isPowRepresentation(result3Int.k) &&
             result3Int.k.k === 1n;
           addResult(
             `fInverse([${(fOmegaOmega - 0.3).toFixed(1)}, ${(
@@ -262,7 +279,7 @@
 
           // Check if result is equivalent to ω + 1
           const isCorrect =
-            resultOmegaPlus1.type === "sum" &&
+            isSumRepresentation(resultOmegaPlus1) &&
             resultOmegaPlus1.beta === 1n &&
             resultOmegaPlus1.c === 1n &&
             resultOmegaPlus1.delta === 1n;
@@ -286,7 +303,7 @@
           const x5 = params.precomputed[5];
           const resultEpsilon = fInverseWrapper(x5.toNumber(), params);
           const matchEpsilon =
-            resultEpsilon.type === "epsilon" && resultEpsilon.index === 0n;
+            isEpsilonRepresentation(resultEpsilon) && resultEpsilon.index === 0n;
           addResult(
             `fInverse(${x5.toNumber().toFixed(6)}) should return ε₀`,
             matchEpsilon,

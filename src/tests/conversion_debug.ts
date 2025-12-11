@@ -1,3 +1,4 @@
+import type { OrdinalBase } from "../types/OrdinalBase.js";
 import { OPERATIONS } from "../operations/Operations.js";
 import { ZeroOrdinal } from "../types/ZeroOrdinal.js";
 import { OneOrdinal } from "../types/OneOrdinal.js";
@@ -14,8 +15,7 @@ import { EpsilonTowerOrdinal } from "../types/EpsilonTowerOrdinal.js";
 import { EpsilonTunnelOrdinal } from "../types/EpsilonTunnelOrdinal.js";
 import { ZetaZero } from "../types/ZetaZero.js";
 import { initializeTestEnvironment } from "./testEnvironment.js";
-
-// @ts-nocheck
+import { requireElementById } from "./testUtils.js";
 
 // Extracted from conversion_debug.html
 
@@ -24,22 +24,59 @@ import { initializeTestEnvironment } from "./testEnvironment.js";
         initializeTestEnvironment(1000000);
         console.log('[Test] Conversion debug initialized');
 
+        const matrixContainer = requireElementById<HTMLDivElement>('matrix');
+        const diagContainer = requireElementById<HTMLElement>('diag');
+        const graphContainer = requireElementById<HTMLDivElement>('graph');
+
+        function instantiateSample(typeName: string): OrdinalBase | null {
+            try {
+                switch (typeName) {
+                    case 'Zero':
+                        return ZeroOrdinal.instance();
+                    case 'One':
+                        return OneOrdinal.instance();
+                    case 'Finite':
+                        return new FiniteOrdinal(2);
+                    case 'Omega':
+                        return OmegaOrdinal.instance();
+                    case 'CNF':
+                        return new CNFOrdinal(0);
+                    case 'WTower':
+                        return new WTowerOrdinal(2);
+                    case 'EpsilonZero':
+                        return EpsilonZero.instance();
+                    case 'EpsilonNumber':
+                        return new EpsilonNumber(ZeroOrdinal.instance());
+                    case 'EpsilonTower':
+                        return new EpsilonTowerOrdinal(ZeroOrdinal.instance(), 2);
+                    case 'EpsilonTunnel':
+                        return new EpsilonTunnelOrdinal(2);
+                    case 'ZetaZero':
+                        return ZetaZero.instance();
+                    case 'ENF':
+                        return new ENFOrdinal([new ENFTerm([], 5n)]);
+                    case 'ENFTerm':
+                        return new ENFTerm([], 5n);
+                    case 'ENFFactor':
+                        return new ENFFactor(OmegaOrdinal.instance(), OneOrdinal.instance());
+                    default: {
+                        const TypeClass = OPERATIONS.registry.getTypeClass(typeName);
+                        if (!TypeClass) {
+                            throw new Error(`Unknown ordinal type: ${typeName}`);
+                        }
+                        return new TypeClass();
+                    }
+                }
+            } catch (error) {
+                console.error('[ConversionDebug] Failed to instantiate', typeName, error);
+                return null;
+            }
+        }
+
         // Now that initialization is complete, run the rendering code
         (function () {
-            const out = document.getElementById('matrix');
-            const diag = document.getElementById('diag');
-            const graphHost = document.getElementById('graph');
 
-            if (!out || !diag || !graphHost) {
-                console.error('[ConversionDebug] Missing required DOM nodes');
-                return;
-            }
-
-            const matrixContainer = out;
-            const diagContainer = diag;
-            const graphContainer = graphHost;
-
-            function renderMatrix() {
+            function renderMatrix(): void {
                 try {
                     OPERATIONS.initialize();
                     const types = OPERATIONS.registry.getTypeNames();
@@ -50,34 +87,7 @@ import { initializeTestEnvironment } from "./testEnvironment.js";
 
                     for (const src of types) {
                         html += `<tr><th>${src}</th>`;
-                        const TypeClass = OPERATIONS.registry.getTypeClass(src);
-                        let instance;
-                        try {
-                            if (src === 'Zero') instance = ZeroOrdinal.instance();
-                            else if (src === 'One') instance = OneOrdinal.instance();
-                            else if (src === 'Finite') instance = new FiniteOrdinal(2);
-                            else if (src === 'Omega') instance = OmegaOrdinal.instance();
-                            else if (src === 'CNF') instance = new CNFOrdinal(0);
-                            else if (src === 'WTower') instance = new WTowerOrdinal(2);
-                            else if (src === 'EpsilonZero') instance = EpsilonZero.instance();
-                            else if (src === 'EpsilonNumber') instance = new EpsilonNumber(ZeroOrdinal.instance()); // e_0
-                            else if (src === 'EpsilonTower') instance = new EpsilonTowerOrdinal(ZeroOrdinal.instance(), 2); // e_0^^2
-                            else if (src === 'EpsilonTunnel') instance = new EpsilonTunnelOrdinal(2); // e__2
-                            else if (src === 'ZetaZero') instance = ZetaZero.instance();
-                            else if (src === 'ENF') instance = new ENFOrdinal([new ENFTerm([], 5n)]); // finite 5 as ENF
-                            else if (src === 'ENFTerm') instance = new ENFTerm([], 5n);
-                            else if (src === 'ENFFactor') instance = new ENFFactor(OmegaOrdinal.instance(), OneOrdinal.instance()); // ω^1
-                            else {
-                                const TypeClass = OPERATIONS.registry.getTypeClass(src);
-                                if (!TypeClass) {
-                                    throw new Error(`Unknown ordinal type: ${src}`);
-                                }
-                                instance = new TypeClass();
-                            }
-                        } catch (e) {
-                            console.error('[ConversionDebug] Failed to instantiate', src, e);
-                            instance = null;
-                        }
+                        const instance = instantiateSample(src);
 
                         for (const dst of types) {
                             let cls = 'no';
@@ -118,16 +128,16 @@ import { initializeTestEnvironment } from "./testEnvironment.js";
 
                     const diagInfo = OPERATIONS.getDiagnostics();
                     diagContainer.textContent = JSON.stringify(diagInfo, null, 2);
-                    renderGraph(diagInfo.registeredTypes);
+                    renderGraph(diagInfo.registeredTypes ?? []);
                 } catch (e) {
                     matrixContainer.textContent = 'Initialization error: ' + (e as Error).message;
                 }
             }
 
-            function renderGraph(typeNames: string[] = []) {
+            function renderGraph(typeNames: string[] = []): void {
                 // Build direct conversion adjacency from registry
-                const registry: any = OPERATIONS.registry;
-                const direct: Map<string, Set<string>> = (registry?.directConversions as Map<string, Set<string>>) ?? new Map<string, Set<string>>();
+                const registry = OPERATIONS.registry as unknown as { directConversions?: Map<string, Set<string>> };
+                const direct: Map<string, Set<string>> = registry.directConversions ?? new Map<string, Set<string>>();
                 const types: string[] = Array.isArray(typeNames) ? [...typeNames] : [];
 
                 // Prepare edge maps
@@ -150,7 +160,9 @@ import { initializeTestEnvironment } from "./testEnvironment.js";
                 for (const t of types) if ((indegree.get(t) ?? 0) === 0) { layer.set(t, 0); queue.push(t); }
                 while (queue.length) {
                     const u = queue.shift();
-                    if (!u) break;
+                    if (u === undefined) {
+                        break;
+                    }
                     const lu = layer.get(u) || 0;
                     for (const v of edgesFrom.get(u) ?? []) {
                         if (!layer.has(v) || (layer.get(v) ?? 0) < lu + 1) layer.set(v, lu + 1);
@@ -161,7 +173,7 @@ import { initializeTestEnvironment } from "./testEnvironment.js";
                 // Any remaining (cycles): assign layer 0
                 for (const t of types) if (!layer.has(t)) layer.set(t, 0);
 
-                const maxLayer = Math.max(...Array.from(layer.values()));
+                const maxLayer = layer.size > 0 ? Math.max(...Array.from(layer.values())) : 0;
                 const layers: string[][] = Array.from({ length: maxLayer + 1 }, () => []);
                 for (const t of types) {
                     const layerIndex = layer.get(t) ?? 0;
@@ -170,7 +182,7 @@ import { initializeTestEnvironment } from "./testEnvironment.js";
 
                 // SVG layout
                 const width = 960, layerGap = 110, nodeW = 120, nodeH = 36, marginX = 40, marginY = 20;
-                const height = (maxLayer + 1) * layerGap + marginY * 2;
+                const height = (Math.max(0, maxLayer) + 1) * layerGap + marginY * 2;
 
                 // Create SVG
                 graphContainer.innerHTML = '';
