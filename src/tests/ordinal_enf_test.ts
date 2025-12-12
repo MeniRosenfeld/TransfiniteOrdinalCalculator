@@ -245,11 +245,8 @@ const createKindStats = (config: {
         }
 
         function updateOverallPageSummary(): void {
-            const overallStatusIndicator = document.getElementById('overall-status-indicator');
-            const overallSummaryDetails = document.getElementById('overall-summary-details');
-            if (!overallStatusIndicator || !overallSummaryDetails) {
-                return;
-            }
+            const overallStatusIndicator = requireElementById<HTMLDivElement>('overall-status-indicator');
+            const overallSummaryDetails = requireElementById<HTMLDivElement>('overall-summary-details');
             overallSummaryDetails.innerHTML = '';
             let overallPass = true; let totalRun = 0;
             let grandTotal = 0; let grandPassed = 0; let grandFailed = 0;

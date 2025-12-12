@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 // Extracted from arithmetic_laws_test.html
 
 // Original <scripttype="module">
@@ -15,14 +13,109 @@
       import { DoubleContext } from "../ordinal_mapping/Contexts.js";
       import { OperationTracer } from "../OperationTracer.js";
       import { OPERATIONS } from "../operations/Operations.js";
-      import { ZeroOrdinal } from "../types/ZeroOrdinal.js";
+import type { OrdinalBase } from "../types/OrdinalBase.js";
+import { ZeroOrdinal } from "../types/ZeroOrdinal.js";
       import { OneOrdinal } from "../types/OneOrdinal.js";
       import { FiniteOrdinal } from "../types/FiniteOrdinal.js";
       import { OmegaOrdinal } from "../types/OmegaOrdinal.js";
       import { CNFOrdinal } from "../types/CNFOrdinal.js";
       import { EpsilonZero } from "../types/EpsilonZero.js";
       import { SimpleParser } from "../SimpleParser.js";
-      import { initializeTestEnvironment } from "./testEnvironment.js";
+import { initializeTestEnvironment } from "./testEnvironment.js";
+import { requireElementById } from "./testUtils.js";
+
+type TestCategory = "single" | "pair" | "triple";
+
+interface TestStatsBucket {
+  examined: number;
+  passed: number;
+  aborted: number;
+  failed: number;
+}
+
+interface ExampleBucket {
+  passing: string[];
+  aborted: string[];
+  failed: string[];
+}
+
+interface TestExamples {
+  single: ExampleBucket;
+  pair: ExampleBucket;
+  triple: ExampleBucket;
+}
+
+interface TestStats {
+  single: TestStatsBucket;
+  pair: TestStatsBucket;
+  triple: TestStatsBucket;
+}
+
+interface TestState {
+  running: boolean;
+  paused: boolean;
+  scaleParams: FParams<any> | null;
+  minRange: number;
+  maxRange: number;
+  samplingExponent: number;
+  randomSeed: number;
+  skipCycles: number;
+  rng: SeededRandom;
+  stats: TestStats;
+  examples: TestExamples;
+}
+
+interface ExecutionResult {
+  status: "passed" | "failed" | "aborted";
+  reason?: string;
+}
+
+interface TestListResult {
+  name: string;
+  status: "passed" | "failed" | "aborted" | "skipped";
+  reason?: string;
+}
+
+class SeededRandom {
+  seed: number;
+
+  constructor(seed: number) {
+    this.seed = seed % 2147483647;
+    if (this.seed <= 0) this.seed += 2147483646;
+  }
+
+  next(): number {
+    this.seed = (this.seed * 16807) % 2147483647;
+    return (this.seed - 1) / 2147483646;
+  }
+
+  setSeed(seed: number): void {
+    this.seed = seed % 2147483647;
+    if (this.seed <= 0) this.seed += 2147483646;
+  }
+}
+
+const getErrorMessage = (error: unknown): string =>
+  error instanceof Error ? error.message : String(error);
+
+const getScaleParams = (): FParams<any> => {
+  if (!testState.scaleParams) {
+    throw new Error("Scale parameters are not initialized.");
+  }
+  return testState.scaleParams;
+};
+
+const isBudgetOrRecursionError = (error: unknown): boolean => {
+  if (!(error instanceof Error)) {
+    return false;
+  }
+  const message = error.message || "";
+  return (
+    message.includes("budget exceeded") ||
+    message.includes("too much recursion") ||
+    message.includes("Maximum call stack")
+  );
+};
 
       console.log(
         "[Test] Module loaded successfully, starting Arithmetic Laws tests..."
@@ -56,29 +149,21 @@
       }
 
       // Global test state
-      let testState = {
+      const testState: TestState = {
         running: false,
         paused: false,
-
-        // Configuration
         scaleParams: null,
         minRange: 0,
         maxRange: 5,
         samplingExponent: 1,
         randomSeed: 12345,
         skipCycles: 0,
-
-        // Random number generator
         rng: new SeededRandom(12345),
-
-        // Statistics
         stats: {
           single: { examined: 0, passed: 0, aborted: 0, failed: 0 },
           pair: { examined: 0, passed: 0, aborted: 0, failed: 0 },
           triple: { examined: 0, passed: 0, aborted: 0, failed: 0 },
         },
-
-        // Examples
         examples: {
           single: { passing: [], aborted: [], failed: [] },
           pair: { passing: [], aborted: [], failed: [] },
@@ -87,22 +172,22 @@
       };
 
       // UI Elements
-      const startBtn = document.getElementById("startBtn");
-      const pauseBtn = document.getElementById("pauseBtn");
-      const stepBtn = document.getElementById("stepBtn");
-      const resetBtn = document.getElementById("resetBtn");
-      const statusText = document.getElementById("statusText");
+      const startBtn = requireElementById<HTMLButtonElement>("startBtn");
+      const pauseBtn = requireElementById<HTMLButtonElement>("pauseBtn");
+      const stepBtn = requireElementById<HTMLButtonElement>("stepBtn");
+      const resetBtn = requireElementById<HTMLButtonElement>("resetBtn");
+      const statusText = requireElementById<HTMLDivElement>("statusText");
 
       // Configuration inputs
-      const scaleAddInput = document.getElementById("scaleAdd");
-      const scaleMultInput = document.getElementById("scaleMult");
-      const scaleExpInput = document.getElementById("scaleExp");
-      const scaleTetInput = document.getElementById("scaleTet");
-      const minRangeInput = document.getElementById("minRange");
-      const maxRangeInput = document.getElementById("maxRange");
-      const samplingExponentInput = document.getElementById("samplingExponent");
-      const randomSeedInput = document.getElementById("randomSeed");
-      const skipCyclesInput = document.getElementById("skipCycles");
+      const scaleAddInput = requireElementById<HTMLInputElement>("scaleAdd");
+      const scaleMultInput = requireElementById<HTMLInputElement>("scaleMult");
+      const scaleExpInput = requireElementById<HTMLInputElement>("scaleExp");
+      const scaleTetInput = requireElementById<HTMLInputElement>("scaleTet");
+      const minRangeInput = requireElementById<HTMLInputElement>("minRange");
+      const maxRangeInput = requireElementById<HTMLInputElement>("maxRange");
+      const samplingExponentInput = requireElementById<HTMLInputElement>("samplingExponent");
+      const randomSeedInput = requireElementById<HTMLInputElement>("randomSeed");
+      const skipCyclesInput = requireElementById<HTMLInputElement>("skipCycles");
 
       const initializePage = () => {
         console.log("Arithmetic Laws Test Suite loaded");
@@ -156,13 +241,13 @@
         initializePage();
       }
 
-      function initializeDefaults() {
+      function initializeDefaults(): void {
         // Set max range to DEFAULT_F_PARAMS.precomputed[5] value (f(ε₀))
         try {
-          const defaultMaxValue = DEFAULT_F_PARAMS.precomputed[5];
+          const defaultMaxValue = DEFAULT_F_PARAMS.precomputed[5].toString();
           maxRangeInput.value = defaultMaxValue;
           console.log("Set default max range to:", defaultMaxValue);
-        } catch (error) {
+        } catch (error: unknown) {
           console.error("Error setting default max range:", error);
           maxRangeInput.value = 91; // fallback
         }
@@ -172,9 +257,9 @@
         randomSeedInput.value = 1761031719;
       }
 
-      function generateNewSeed() {
+      function generateNewSeed(): void {
         const newSeed = Math.floor(Math.random() * 2147483647) + 1;
-        randomSeedInput.value = newSeed;
+        randomSeedInput.value = newSeed.toString();
         console.log("Generated new random seed:", newSeed);
       }
 
@@ -184,7 +269,7 @@
       stepBtn.addEventListener("click", stepTesting);
       resetBtn.addEventListener("click", resetTesting);
 
-      function startTesting() {
+      function startTesting(): void {
         if (testState.paused) {
           // Resume testing
           testState.paused = false;
@@ -202,13 +287,13 @@
         runTestLoop();
       }
 
-      function pauseTesting() {
+      function pauseTesting(): void {
         testState.running = false;
         testState.paused = true;
         updateUI();
       }
 
-      async function stepTesting() {
+      async function stepTesting(): Promise<void> {
         console.log("[STEP] Step button pressed");
 
         // Always update configuration to ensure RNG is in correct state
@@ -234,7 +319,7 @@
         updateUI();
       }
 
-      function resetTesting() {
+      function resetTesting(): void {
         testState.running = false;
         testState.paused = false;
 
@@ -255,7 +340,7 @@
         updateUI();
       }
 
-      function updateConfiguration() {
+      function updateConfiguration(): void {
         // Create FParams object with current scale values using DoubleContext
         const ctx = new DoubleContext();
         testState.scaleParams = new FParams(
@@ -272,8 +357,8 @@
         testState.samplingExponent = parseFloat(samplingExponentInput.value);
 
         // Update random seed and reinitialize RNG
-        testState.randomSeed = parseInt(randomSeedInput.value);
-        testState.skipCycles = parseInt(skipCyclesInput.value);
+        testState.randomSeed = parseInt(randomSeedInput.value, 10) || 0;
+        testState.skipCycles = parseInt(skipCyclesInput.value, 10) || 0;
         testState.rng.setSeed(testState.randomSeed);
 
         // Skip the specified number of cycles
@@ -320,21 +405,22 @@
         updateExamples("triple");
       }
 
-      function updateStats(category) {
+      function updateStats(category: TestCategory): void {
         const stats = testState.stats[category];
-        document.getElementById(`${category}Examined`).textContent =
-          stats.examined;
-        document.getElementById(`${category}Passed`).textContent = stats.passed;
-        document.getElementById(`${category}Aborted`).textContent =
-          stats.aborted;
-        document.getElementById(`${category}Failed`).textContent = stats.failed;
+        requireElementById<HTMLElement>(`${category}Examined`).textContent =
+          stats.examined.toString();
+        requireElementById<HTMLElement>(`${category}Passed`).textContent =
+          stats.passed.toString();
+        requireElementById<HTMLElement>(`${category}Aborted`).textContent =
+          stats.aborted.toString();
+        requireElementById<HTMLElement>(`${category}Failed`).textContent =
+          stats.failed.toString();
       }
 
-      function updateExamples(category) {
+      function updateExamples(category: TestCategory): void {
         const examples = testState.examples[category];
 
-        // Update passing examples (up to 1)
-        const passingDiv = document.getElementById(
+        const passingDiv = requireElementById<HTMLDivElement>(
           `${category}PassingExamples`
         );
         passingDiv.innerHTML = "";
@@ -345,8 +431,7 @@
           passingDiv.appendChild(div);
         });
 
-        // Update aborted examples (up to 3)
-        const abortedDiv = document.getElementById(
+        const abortedDiv = requireElementById<HTMLDivElement>(
           `${category}AbortedExamples`
         );
         abortedDiv.innerHTML = "";
@@ -357,8 +442,8 @@
           abortedDiv.appendChild(div);
         });
 
-        // Update failed examples (up to 10)
-        const failedDiv = document.getElementById(`${category}FailedExamples`);
+        const failedDiv =
+          requireElementById<HTMLDivElement>(`${category}FailedExamples`);
         failedDiv.innerHTML = "";
         examples.failed.slice(0, 10).forEach((example) => {
           const div = document.createElement("div");
@@ -369,27 +454,27 @@
       }
 
       // Range preset functions
-      function setMinRange(value) {
-        minRangeInput.value = value;
+      function setMinRange(value: number): void {
+        minRangeInput.value = value.toString();
       }
 
-      function setMaxRange(value) {
-        maxRangeInput.value = value;
+      function setMaxRange(value: number): void {
+        maxRangeInput.value = value.toString();
       }
 
-      function calculatePresetRanges() {
+      function calculatePresetRanges(): void {
         // Calculate f-values for common ordinals using current scale parameters
         updateConfiguration();
 
         try {
           // These will be calculated when preset buttons are clicked
           console.log("Preset ranges will be calculated on demand");
-        } catch (error) {
+        } catch (error: unknown) {
           console.error("Error calculating preset ranges:", error);
         }
       }
 
-      function setMinRangeToOmegaSquared() {
+      function setMinRangeToOmegaSquared(): void {
         updateConfiguration();
         try {
           const omegaSquared = new CNFOrdinal(
@@ -397,15 +482,15 @@
             null
           );
           const fRep = omegaSquared.toFFormat();
-          const fValue = f(fRep, testState.scaleParams);
+          const fValue = f(fRep, getScaleParams());
           setMinRange(fValue);
-        } catch (error) {
+        } catch (error: unknown) {
           console.error("Error calculating f(ω²):", error);
           setMinRange(2); // fallback
         }
       }
 
-      function setMinRangeToOmegaOmega() {
+      function setMinRangeToOmegaOmega(): void {
         updateConfiguration();
         try {
           const omegaOmega = new CNFOrdinal(
@@ -413,15 +498,15 @@
             null
           );
           const fRep = omegaOmega.toFFormat();
-          const fValue = f(fRep, testState.scaleParams);
+          const fValue = f(fRep, getScaleParams());
           setMinRange(fValue);
-        } catch (error) {
+        } catch (error: unknown) {
           console.error("Error calculating f(ω^ω):", error);
           setMinRange(3); // fallback
         }
       }
 
-      function setMaxRangeToOmegaSquared() {
+      function setMaxRangeToOmegaSquared(): void {
         updateConfiguration();
         try {
           const omegaSquared = new CNFOrdinal(
@@ -429,15 +514,15 @@
             null
           );
           const fRep = omegaSquared.toFFormat();
-          const fValue = f(fRep, testState.scaleParams);
+          const fValue = f(fRep, getScaleParams());
           setMaxRange(fValue);
-        } catch (error) {
+        } catch (error: unknown) {
           console.error("Error calculating f(ω²):", error);
           setMaxRange(2); // fallback
         }
       }
 
-      function setMaxRangeToOmegaOmega() {
+      function setMaxRangeToOmegaOmega(): void {
         updateConfiguration();
         try {
           const omegaOmega = new CNFOrdinal(
@@ -445,29 +530,29 @@
             null
           );
           const fRep = omegaOmega.toFFormat();
-          const fValue = f(fRep, testState.scaleParams);
+          const fValue = f(fRep, getScaleParams());
           setMaxRange(fValue);
-        } catch (error) {
+        } catch (error: unknown) {
           console.error("Error calculating f(ω^ω):", error);
           setMaxRange(3); // fallback
         }
       }
 
-      function setMaxRangeToEpsilonZero() {
+      function setMaxRangeToEpsilonZero(): void {
         updateConfiguration();
         try {
           const epsilonZero = EpsilonZero.instance();
           const fRep = epsilonZero.toFFormat();
-          const fValue = f(fRep, testState.scaleParams);
+          const fValue = f(fRep, getScaleParams());
           setMaxRange(fValue);
-        } catch (error) {
+        } catch (error: unknown) {
           console.error("Error calculating f(ε₀):", error);
           setMaxRange(91); // fallback - DEFAULT_F_PARAMS.precomputed[5] value
         }
       }
 
       // Random ordinal generation
-      function generateRandomFValue() {
+      function generateRandomFValue(): number {
         const r = testState.samplingExponent;
         const min = testState.minRange;
         const max = testState.maxRange;
@@ -483,13 +568,13 @@
         return Math.pow(sampledPowered, r);
       }
 
-      function generateRandomOrdinal() {
+      function generateRandomOrdinal(): OrdinalBase {
         const fValue = generateRandomFValue();
         try {
-          const fFormat = fInverse(fValue, testState.scaleParams);
+          const fFormat = fInverse(fValue, getScaleParams());
           const ordinal = convertFFormatToOrdinalInstance(fFormat);
           return ordinal;
-        } catch (error) {
+        } catch (error: unknown) {
           console.error("Error in fInverse or conversion:", error);
           // Fallback to a simple ordinal
           return new FiniteOrdinal(
@@ -498,7 +583,7 @@
         }
       }
 
-      function generateTriple() {
+      function generateTriple(): [OrdinalBase, OrdinalBase, OrdinalBase] {
         return [
           generateRandomOrdinal(),
           generateRandomOrdinal(),
@@ -507,7 +592,7 @@
       }
 
       // Single triple step function for debugging
-      async function runSingleTripleStep() {
+      async function runSingleTripleStep(): Promise<void> {
         try {
           console.log("[STEP] Starting runSingleTripleStep");
 
@@ -578,13 +663,13 @@
           console.log(
             `[STEP] Completed triple step. Stats - Single: ${testState.stats.single.examined}, Pair: ${testState.stats.pair.examined}, Triple: ${testState.stats.triple.examined}`
           );
-        } catch (error) {
+        } catch (error: unknown) {
           console.error("Error in single triple step:", error);
         }
       }
 
       // Test execution functions
-      async function runTestLoop() {
+      async function runTestLoop(): Promise<void> {
         while (testState.running) {
           try {
             await runSingleTripleStep();
@@ -594,14 +679,17 @@
 
             // Small delay to prevent UI freezing
             await new Promise((resolve) => setTimeout(resolve, 10));
-          } catch (error) {
+          } catch (error: unknown) {
             console.error("Error in test loop:", error);
             // Continue testing despite errors
           }
         }
       }
 
-      async function runSingleOrdinalTests(ordinal, index) {
+      async function runSingleOrdinalTests(
+        ordinal: OrdinalBase,
+        index: number
+      ): Promise<void> {
         // Placeholder for single ordinal tests
         // For now, all tests pass vacuously
         const testResult = runSingleOrdinalTestsImpl(ordinal);
@@ -638,7 +726,11 @@
         }
       }
 
-      async function runPairTests(ordinal1, ordinal2, index) {
+      async function runPairTests(
+        ordinal1: OrdinalBase,
+        ordinal2: OrdinalBase,
+        index: number
+      ): Promise<void> {
         // Placeholder for pair tests
         // For now, all tests pass vacuously
         const testResult = runPairTestsImpl(ordinal1, ordinal2);
@@ -679,7 +771,12 @@
         }
       }
 
-      async function runTripleTests(ordinal1, ordinal2, ordinal3, index) {
+      async function runTripleTests(
+        ordinal1: OrdinalBase,
+        ordinal2: OrdinalBase,
+        ordinal3: OrdinalBase,
+        index: number
+      ): Promise<void> {
         // Placeholder for triple tests
         // For now, all tests pass vacuously
         const testResult = runTripleTestsImpl(ordinal1, ordinal2, ordinal3);
@@ -721,12 +818,12 @@
       }
 
       // Test implementation functions (currently vacuous)
-      function runSingleOrdinalTestsImpl(ordinal) {
+      function runSingleOrdinalTestsImpl(ordinal: OrdinalBase): ExecutionResult {
         try {
           console.log(`[SINGLE] Testing with a=${ordinal.toString()}`);
 
           // Create substitution map with direct object
-          const substitutions = new Map([["a", ordinal]]);
+          const substitutions = new Map<string, OrdinalBase>([["a", ordinal]]);
 
           // Run single ordinal tests
           const results = runTestList(SINGLE_ORDINAL_TESTS, substitutions);
@@ -753,22 +850,25 @@
           }
 
           return { status: "passed" };
-        } catch (error) {
+        } catch (error: unknown) {
           return {
             status: "failed",
-            reason: `Single ordinal test error: ${error.message}`,
+            reason: `Single ordinal test error: ${getErrorMessage(error)}`,
           };
         }
       }
 
-      function runPairTestsImpl(ordinal1, ordinal2) {
+      function runPairTestsImpl(
+        ordinal1: OrdinalBase,
+        ordinal2: OrdinalBase
+      ): ExecutionResult {
         try {
           console.log(
             `[PAIR] Testing with a=${ordinal1.toString()}, b=${ordinal2.toString()}`
           );
 
           // Create substitution map with direct objects
-          const substitutions = new Map([
+          const substitutions = new Map<string, OrdinalBase>([
             ["a", ordinal1],
             ["b", ordinal2],
           ]);
@@ -798,10 +898,10 @@
           }
 
           return { status: "passed" };
-        } catch (error) {
+        } catch (error: unknown) {
           return {
             status: "failed",
-            reason: `Pair ordinal test error: ${error.message}`,
+            reason: `Pair ordinal test error: ${getErrorMessage(error)}`,
           };
         }
       }
@@ -819,7 +919,7 @@
       // {name: "Associativity", lhs: "(a+b)+c", rhs: "a+(b+c)"}  // Triple test
 
       // Single ordinal tests (use variable 'a')
-      const SINGLE_ORDINAL_TESTS = [
+      const SINGLE_ORDINAL_TESTS: OrdinalTest[] = [
         {
           name: "Less than successor",
           lhs: "a < a'",
@@ -833,7 +933,7 @@
       ];
 
       // Pair ordinal tests (use variables 'a' and 'b')
-      const PAIR_ORDINAL_TESTS = [
+      const PAIR_ORDINAL_TESTS: OrdinalTest[] = [
         {
           name: "Successor Monotonicity",
           lhs: "a' ? b'",
@@ -857,7 +957,7 @@
       ];
 
       // Triple ordinal tests (use variables 'a', 'b', and 'c')
-      const TRIPLE_ORDINAL_TESTS = [
+      const TRIPLE_ORDINAL_TESTS: OrdinalTest[] = [
         {
           name: "Associativity of Addition",
           lhs: "(a+b)+c",
@@ -922,8 +1022,11 @@
       ];
 
       // Generic test runner for any test list and substitution map
-      function runTestList(testList, substitutions) {
-        const results = [];
+      function runTestList(
+        testList: OrdinalTest[],
+        substitutions: Map<string, OrdinalBase>
+      ): TestListResult[] {
+        const results: TestListResult[] = [];
 
         for (const test of testList) {
           try {
@@ -1017,23 +1120,18 @@
                 } = ${_formatTestResult(rhsResult)} (with ${varValues})`,
               });
             }
-          } catch (error) {
-            if (
-              error.message &&
-              (error.message.includes("budget exceeded") ||
-                error.message.includes("too much recursion") ||
-                error.message.includes("Maximum call stack"))
-            ) {
+          } catch (error: unknown) {
+            if (isBudgetOrRecursionError(error)) {
               results.push({
                 name: test.name,
                 status: "aborted",
-                reason: error.message,
+                reason: getErrorMessage(error),
               });
             } else {
               results.push({
                 name: test.name,
                 status: "failed",
-                reason: `Error: ${error.message}`,
+                reason: `Error: ${getErrorMessage(error)}`,
               });
             }
           }
@@ -1042,16 +1140,16 @@
         return results;
       }
 
-      function _isOrdinal(value) {
+      function _isOrdinal(value: unknown): value is OrdinalBase {
         return (
           value &&
           typeof value === "object" &&
-          typeof value.isZero === "function" &&
-          typeof value.add === "function"
+          typeof (value as OrdinalBase).isZero === "function" &&
+          typeof (value as OrdinalBase).add === "function"
         );
       }
 
-      function _hasUnresolvedElements(value) {
+      function _hasUnresolvedElements(value: unknown): boolean {
         return (
           value &&
           typeof value === "object" &&
@@ -1064,29 +1162,50 @@
         );
       }
 
-      function _compareTestValues(left, right) {
+      type ParserNode =
+        | { type: "string"; value: string }
+        | { type: "boolean"; value: boolean }
+        | { type: "comparison"; value: -1 | 0 | 1 }
+        | { type: string; value?: unknown };
+
+      function _compareTestValues(left: unknown, right: unknown): number {
         // Both are ordinals
         if (_isOrdinal(left) && _isOrdinal(right)) {
           return OPERATIONS.compare(left, right);
         }
 
         // Both are strings
-        if (left.type === "string" && right.type === "string") {
-          if (left.value < right.value) return -1;
-          if (left.value > right.value) return 1;
+        if (
+          (left as ParserNode)?.type === "string" &&
+          (right as ParserNode)?.type === "string"
+        ) {
+          const leftNode = left as ParserNode;
+          const rightNode = right as ParserNode;
+          if ((leftNode.value ?? "") < (rightNode.value ?? "")) return -1;
+          if ((leftNode.value ?? "") > (rightNode.value ?? "")) return 1;
           return 0;
         }
 
         // Both are booleans
-        if (left.type === "boolean" && right.type === "boolean") {
-          if (left.value === right.value) return 0;
-          return left.value ? 1 : -1;
+        if (
+          (left as ParserNode)?.type === "boolean" &&
+          (right as ParserNode)?.type === "boolean"
+        ) {
+          const leftNode = left as ParserNode;
+          const rightNode = right as ParserNode;
+          if (leftNode.value === rightNode.value) return 0;
+          return leftNode.value ? 1 : -1;
         }
 
         // Both are comparison results
-        if (left.type === "comparison" && right.type === "comparison") {
-          if (left.value < right.value) return -1;
-          if (left.value > right.value) return 1;
+        if (
+          (left as ParserNode)?.type === "comparison" &&
+          (right as ParserNode)?.type === "comparison"
+        ) {
+          const leftNode = left as ParserNode;
+          const rightNode = right as ParserNode;
+          if ((leftNode.value ?? 0) < (rightNode.value ?? 0)) return -1;
+          if ((leftNode.value ?? 0) > (rightNode.value ?? 0)) return 1;
           return 0;
         }
 
@@ -1098,7 +1217,7 @@
         return 0;
       }
 
-      function _formatTestResult(result) {
+      function _formatTestResult(result: unknown): string {
         if (
           result &&
           typeof result.toString === "function" &&
@@ -1123,14 +1242,18 @@
         }
       }
 
-      function runTripleTestsImpl(a, b, c) {
+      function runTripleTestsImpl(
+        a: OrdinalBase,
+        b: OrdinalBase,
+        c: OrdinalBase
+      ): ExecutionResult {
         try {
           console.log(
             `[TRIPLE] Testing with a=${a.toString()}, b=${b.toString()}, c=${c.toString()}`
           );
 
           // Create substitution map with direct objects
-          const substitutions = new Map([
+          const substitutions = new Map<string, OrdinalBase>([
             ["a", a],
             ["b", b],
             ["c", c],
@@ -1202,21 +1325,17 @@
                 reason: `Addition associativity failed: (${a}+${b})+${c} = ${lhs1} ≠ ${a}+(${b}+${c}) = ${rhs1}`,
               };
             }
-          } catch (error) {
-            if (
-              error.message &&
-              (error.message.includes("budget exceeded") ||
-                error.message.includes("too much recursion") ||
-                error.message.includes("Maximum call stack"))
-            ) {
+          } catch (error: unknown) {
+            if (isBudgetOrRecursionError(error)) {
               return {
                 status: "aborted",
-                reason: "Addition associativity: " + error.message,
+                reason: "Addition associativity: " + getErrorMessage(error),
               };
             }
             return {
               status: "failed",
-              reason: "Addition associativity error: " + error.message,
+              reason:
+                "Addition associativity error: " + getErrorMessage(error),
             };
           }
 
@@ -1233,21 +1352,18 @@
                 reason: `Multiplication associativity failed: (${a}*${b})*${c} = ${lhs2} ≠ ${a}*(${b}*${c}) = ${rhs2}`,
               };
             }
-          } catch (error) {
-            if (
-              error.message &&
-              (error.message.includes("budget exceeded") ||
-                error.message.includes("too much recursion") ||
-                error.message.includes("Maximum call stack"))
-            ) {
+          } catch (error: unknown) {
+            if (isBudgetOrRecursionError(error)) {
               return {
                 status: "aborted",
-                reason: "Multiplication associativity: " + error.message,
+                reason:
+                  "Multiplication associativity: " + getErrorMessage(error),
               };
             }
             return {
               status: "failed",
-              reason: "Multiplication associativity error: " + error.message,
+              reason:
+                "Multiplication associativity error: " + getErrorMessage(error),
             };
           }
 
@@ -1267,21 +1383,16 @@
                 reason: `Left distributivity failed: ${a}*(${b}+${c}) = ${lhs3} ≠ ${a}*${b}+${a}*${c} = ${rhs3}`,
               };
             }
-          } catch (error) {
-            if (
-              error.message &&
-              (error.message.includes("budget exceeded") ||
-                error.message.includes("too much recursion") ||
-                error.message.includes("Maximum call stack"))
-            ) {
+          } catch (error: unknown) {
+            if (isBudgetOrRecursionError(error)) {
               return {
                 status: "aborted",
-                reason: "Left distributivity: " + error.message,
+                reason: "Left distributivity: " + getErrorMessage(error),
               };
             }
             return {
               status: "failed",
-              reason: "Left distributivity error: " + error.message,
+              reason: "Left distributivity error: " + getErrorMessage(error),
             };
           }
 
@@ -1301,21 +1412,16 @@
                 reason: `Exponent addition failed: ${a}^(${b}+${c}) = ${lhs4} ≠ ${a}^${b}*${a}^${c} = ${rhs4}`,
               };
             }
-          } catch (error) {
-            if (
-              error.message &&
-              (error.message.includes("budget exceeded") ||
-                error.message.includes("too much recursion") ||
-                error.message.includes("Maximum call stack"))
-            ) {
+          } catch (error: unknown) {
+            if (isBudgetOrRecursionError(error)) {
               return {
                 status: "aborted",
-                reason: "Exponent addition: " + error.message,
+                reason: "Exponent addition: " + getErrorMessage(error),
               };
             }
             return {
               status: "failed",
-              reason: "Exponent addition error: " + error.message,
+              reason: "Exponent addition error: " + getErrorMessage(error),
             };
           }
 
@@ -1332,21 +1438,17 @@
                 reason: `Exponent multiplication failed: ${a}^(${b}*${c}) = ${lhs5} ≠ (${a}^${b})^${c} = ${rhs5}`,
               };
             }
-          } catch (error) {
-            if (
-              error.message &&
-              (error.message.includes("budget exceeded") ||
-                error.message.includes("too much recursion") ||
-                error.message.includes("Maximum call stack"))
-            ) {
+          } catch (error: unknown) {
+            if (isBudgetOrRecursionError(error)) {
               return {
                 status: "aborted",
-                reason: "Exponent multiplication: " + error.message,
+                reason: "Exponent multiplication: " + getErrorMessage(error),
               };
             }
             return {
               status: "failed",
-              reason: "Exponent multiplication error: " + error.message,
+              reason:
+                "Exponent multiplication error: " + getErrorMessage(error),
             };
           }
 
@@ -1365,21 +1467,17 @@
                 reason: `Addition monotonicity failed: ${a}+${b} ${sumRelation} ${a}+${c} but ${b} ${bcRelation} ${c}`,
               };
             }
-          } catch (error) {
-            if (
-              error.message &&
-              (error.message.includes("budget exceeded") ||
-                error.message.includes("too much recursion") ||
-                error.message.includes("Maximum call stack"))
-            ) {
+          } catch (error: unknown) {
+            if (isBudgetOrRecursionError(error)) {
               return {
                 status: "aborted",
-                reason: "Addition monotonicity: " + error.message,
+                reason: "Addition monotonicity: " + getErrorMessage(error),
               };
             }
             return {
               status: "failed",
-              reason: "Addition monotonicity error: " + error.message,
+              reason:
+                "Addition monotonicity error: " + getErrorMessage(error),
             };
           }
 
@@ -1402,21 +1500,18 @@
                 };
               }
             }
-          } catch (error) {
-            if (
-              error.message &&
-              (error.message.includes("budget exceeded") ||
-                error.message.includes("too much recursion") ||
-                error.message.includes("Maximum call stack"))
-            ) {
+          } catch (error: unknown) {
+            if (isBudgetOrRecursionError(error)) {
               return {
                 status: "aborted",
-                reason: "Multiplication monotonicity: " + error.message,
+                reason:
+                  "Multiplication monotonicity: " + getErrorMessage(error),
               };
             }
             return {
               status: "failed",
-              reason: "Multiplication monotonicity error: " + error.message,
+              reason:
+                "Multiplication monotonicity error: " + getErrorMessage(error),
             };
           }
 
@@ -1439,50 +1534,56 @@
                 };
               }
             }
-          } catch (error) {
-            if (
-              error.message &&
-              (error.message.includes("budget exceeded") ||
-                error.message.includes("too much recursion") ||
-                error.message.includes("Maximum call stack"))
-            ) {
+          } catch (error: unknown) {
+            if (isBudgetOrRecursionError(error)) {
               return {
                 status: "aborted",
-                reason: "Exponentiation monotonicity: " + error.message,
+                reason:
+                  "Exponentiation monotonicity: " + getErrorMessage(error),
               };
             }
             return {
               status: "failed",
-              reason: "Exponentiation monotonicity error: " + error.message,
+              reason:
+                "Exponentiation monotonicity error: " + getErrorMessage(error),
             };
           }
 
           // All tests passed
           return { status: "passed" };
-        } catch (error) {
-          if (error.message && error.message.includes("budget exceeded")) {
+        } catch (error: unknown) {
+          if (isBudgetOrRecursionError(error)) {
             return {
               status: "aborted",
-              reason: "Overall budget exceeded: " + error.message,
+              reason: "Overall budget exceeded: " + getErrorMessage(error),
             };
           }
           return {
             status: "failed",
-            reason: "Unexpected error: " + error.message,
+            reason: "Unexpected error: " + getErrorMessage(error),
           };
         }
       }
 
       // Display test lists in the UI
-      function displayTestLists() {
+      function displayTestLists(): void {
         displayTestList("singleTestsList", SINGLE_ORDINAL_TESTS);
         displayTestList("pairTestsList", PAIR_ORDINAL_TESTS);
         displayTestList("tripleTestsList", TRIPLE_ORDINAL_TESTS);
       }
 
-      function displayTestList(elementId, testList) {
-        const container = document.getElementById(elementId);
-        if (!container) return;
+      type OrdinalTest = {
+        name: string;
+        lhs: string;
+        rhs: string;
+        condition?: string;
+      };
+
+      function displayTestList(
+        elementId: string,
+        testList: OrdinalTest[]
+      ): void {
+        const container = requireElementById<HTMLDivElement>(elementId);
 
         container.innerHTML = "";
 
