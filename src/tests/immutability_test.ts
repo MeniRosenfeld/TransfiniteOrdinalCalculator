@@ -1,9 +1,9 @@
 import { OperationTracer } from "../OperationTracer.js";
 import { OPERATIONS } from "../operations/Operations.js";
 import { SimpleParser } from "../SimpleParser.js";
+import type { OrdinalBase } from "../types/OrdinalBase.js";
+import { requireElementById } from "./testUtils.js";
 import { initializeTestEnvironment } from "./testEnvironment.js";
-
-// @ts-nocheck
 
 // Extracted from immutability_test.html
 
@@ -38,7 +38,28 @@ import { initializeTestEnvironment } from "./testEnvironment.js";
 
         const sortedArray = ["0", "1", "2", "5", "6", "10", "25", "w^2+w+1", "w^2*5", "w^5", "w^w+2", "w^w*2+5", "w^(w+1)+w^w+1", "w^(w*2)+w^w+1", "w^w^2+5", "w^(w^2+w)", "w^(w^2+w)+w^w^2", "w^(w^w+w)", "w^(w^w+w^2)", "e_0*2+1", "e_0*3+w", "e_0*5+w", "e_0*w+w^2", "e_0*w+w^w*2", "e_0*w^w+e_0+1", "e_0^2+e_0+w", "e_0^2*w+e_0^2", "e_0^2*w^2", "e_0^2*w^w", "e_0^w+e_0", "e_0^w+e_0+1", "e_0^(w+1)+w^w^2", "e_0^(w+1)*w+e_0^(w+1)", "e_0^(w+1)*w^2", "e_0^(w+3)", "e_0^(w*5)", "e_0^(w^w+1)+e_0^w^w", "e_0^(w^w+1)+e_0^w^w*w^w", "e_0^(w^w+1)*2", "e_1", "e_1+1", "e_1+w", "e_1+e_0+1", "e_1+e_0+w*2", "e_1+e_0*2+w^w", "e_1+e_0^(w+1)", "e_1*2+e_0^w", "e_1*10", "e_1*w+e_0", "e_1*w+e_0+w", "e_1*w^w^2", "e_1*e_0+5", "e_1*e_0*w^w+e_1*e_0", "e_1*e_0*w^w^2", "e_1*e_0^2+e_1*e_0", "e_1^2*e_0", "e_1^w*e_0^5*w^(w^3+2)*2+e_0", "e_1^w*e_0^5*w^(w^3+2)*2+e_0^2", "e_1^w*e_0^5*w^(w^3+2)*3+w^w^2*5+11", "e_1^w*e_0^5*w^(w^3+2)*3+w^w^2*5+w*20", "e_1^w*e_0^5*w^(w^3+2)*3+e_1+e_0", "e_1^w*e_0^6*2", "e_1^w*e_0^(w+1)", "e_1^(w+1)+e_1^w*e_0^6", "e_1^(w*2)*e_0^5*w^(w^3+2)*3+e_1^w*e_0^5*w^(w^3+w^2)*5+e_1^w*e_0^5*w^(w^3+2)*30+w^w^2*5+10", "e_1^(w^w+1)*w", "e_1^e_0+w^w", "e_1^e_0+w^w^2", "e_1^e_0+e_0^(w+1)", "e_1^e_0*5", "e_1^e_0*e_0^2", "e_1^(e_0+w)*e_0^5*w^(w^3+2)*2", "e_1^(e_1*2)", "e_1^(e_1^w*e_0^5*w^(w^3+2)*3)*w^(w^w^2*5+10)+e_1^(e_1^w*e_0^5*w^(w^3+2)*3)*w^(w^w^2*5+9)+e_1^(e_1^w*e_0^5*w^(w^3+2)*3)*w^(w^w^2*5+8)+e_1^(e_1^w*e_0^5*w^(w^3+2)*3)*w^(w^w^2*5+7)+e_1^(e_1^w*e_0^5*w^(w^3+2)*3)*w^(w^w^2*5+6)+e_1^(e_1^w*e_0^5*w^(w^3+2)*3)*w^(w^w^2*5+5)+e_1^(e_1^w*e_0^5*w^(w^3+2)*3)*w^(w^w^2*5+4)+e_1^(e_1^w*e_0^5*w^(w^3+2)*3)*w^(w^w^2*5+3)+e_1^(e_1^w*e_0^5*w^(w^3+2)*3)*w^(w^w^2*5+2)+e_1^(e_1^w*e_0^5*w^(w^3+2)*3)*w^(w^w^2*5+1)+e_1^(e_1^w*e_0^5*w^(w^3+2)*3)*w^(w^w^2*5)", "e_1^(e_1^w*e_0^5*w^(w^3+2)*3+w^w^2*5+10)*2", "e_2+e_0+1", "e_2+e_1^w*e_0^5*w^(w^3+2)*2", "e_2+e_1^e_0", "e_2*w+e_2", "e_2*w*2", "e_2*w^w", "e_2*e_0+e_2*w", "e_2*e_1*e_0", "e_2^w^w^2", "e_2^e_2", "e_4^w", "e_4^w^w", "e_4^e_2", "e_w+e_0*w", "e_w+e_0^(w+1)", "e_w+e_1^e_0", "e_w*w*2", "e_w*w^w^2", "e_w*e_0", "e_w^(w^w*2)", "e_w^e_0", "e_w^(e_1+e_0)", "e_e_0+e_0+w", "e_e_0+e_1^w*e_0^5*w^(w^3+2)*3+w^w^2*5+10", "e_e_0*w^w^2", "e_e_0*e_0^2", "e_e_0*e_1", "e_e_0*e_1+e_e_0*e_0", "e_e_0*e_w", "e_e_0^5", "e_e_0^(w*2)", "e_e_0^w^w", "e_e_0^e_0", "e_e_0^(e_0*2)", "e_e_0^e_0^(w+1)"];
 
+        type MutationRecord = {
+            index: number;
+            original: string;
+            current: string;
+        };
+
+        type SortingError = {
+            position: number;
+            expected: string;
+            actual: string;
+        };
+
+        type NullableOrdinal = OrdinalBase | null;
+
         class ImmutabilityTester {
+            originalStrings: string[];
+            ordinalObjects: NullableOrdinal[];
+            mutations: MutationRecord[];
+            sortingErrors: SortingError[];
+            totalOperations: number;
+            completedOperations: number;
+
             constructor() {
                 this.originalStrings = [...mutabilityArray];
                 this.ordinalObjects = [];
@@ -48,8 +69,8 @@ import { initializeTestEnvironment } from "./testEnvironment.js";
                 this.completedOperations = 0;
             }
 
-            updateStatus(message, type = 'running') {
-                const statusEl = document.getElementById('overall-status');
+            updateStatus(message: string, type: 'running' | 'pass' | 'fail' = 'running'): void {
+                const statusEl = requireElementById<HTMLDivElement>('overall-status');
                 console.log(`[ImmutabilityTest] updateStatus called: "${message}", type: "${type}"`);
                 console.log(`[ImmutabilityTest] statusEl found:`, statusEl);
 
@@ -62,21 +83,23 @@ import { initializeTestEnvironment } from "./testEnvironment.js";
                 console.log(`[ImmutabilityTest] statusEl after update:`, statusEl.textContent, statusEl.className);
             }
 
-            updateProgress(completed, total, description = '') {
+            updateProgress(completed: number, total: number, description = ''): void {
                 const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
-                document.getElementById('progress-bar').style.width = `${percentage}%`;
-                document.getElementById('progress-text').textContent =
+                const progressBar = requireElementById<HTMLDivElement>('progress-bar');
+                const progressText = requireElementById<HTMLDivElement>('progress-text');
+                progressBar.style.width = `${percentage}%`;
+                progressText.textContent =
                     `${percentage}% complete ${description ? '- ' + description : ''}`;
             }
 
-            updateStats() {
-                document.getElementById('total-ordinals').textContent = this.ordinalObjects.length;
-                document.getElementById('operations-count').textContent = this.completedOperations;
-                document.getElementById('mutations-found').textContent = this.mutations.length;
-                document.getElementById('sorting-errors').textContent = this.sortingErrors.length;
+            updateStats(): void {
+                requireElementById<HTMLElement>('total-ordinals').textContent = String(this.ordinalObjects.length);
+                requireElementById<HTMLElement>('operations-count').textContent = String(this.completedOperations);
+                requireElementById<HTMLElement>('mutations-found').textContent = String(this.mutations.length);
+                requireElementById<HTMLElement>('sorting-errors').textContent = String(this.sortingErrors.length);
             }
 
-            async parseOrdinals() {
+            async parseOrdinals(): Promise<void> {
                 this.updateStatus('Parsing ordinal strings...');
 
                 for (let i = 0; i < this.originalStrings.length; i++) {
@@ -86,7 +109,7 @@ import { initializeTestEnvironment } from "./testEnvironment.js";
                         // Reset tracer for each parse
                         OperationTracer.reset(100000);
                         const parser = new SimpleParser(ordinalString);
-                        const ordinalObj = parser.parse();
+                        const ordinalObj = parser.parse() as OrdinalBase;
                         this.ordinalObjects.push(ordinalObj);
                     } catch (error) {
                         console.error(`Failed to parse "${ordinalString}":`, error);
@@ -105,7 +128,7 @@ import { initializeTestEnvironment } from "./testEnvironment.js";
                 this.updateStats();
             }
 
-            async sortAndDisplay() {
+            async sortAndDisplay(): Promise<void> {
                 this.updateStatus('Sorting ordinals...');
 
                 // Create array of indices for sorting
@@ -130,7 +153,7 @@ import { initializeTestEnvironment } from "./testEnvironment.js";
 
                 // Display sorted results
                 const sortedStrings = indices.map(i => this.originalStrings[i]);
-                const sortedDisplay = document.getElementById('sorted-display');
+                const sortedDisplay = requireElementById<HTMLDivElement>('sorted-display');
                 sortedDisplay.innerHTML = sortedStrings.map((str, idx) =>
                     `<div>${idx + 1}. ${str}</div>`
                 ).join('');
@@ -165,7 +188,7 @@ import { initializeTestEnvironment } from "./testEnvironment.js";
                 }
             }
 
-            async performArithmeticOperations() {
+            async performArithmeticOperations(): Promise<void> {
                 this.updateStatus('Performing arithmetic operations...');
 
                 const n = this.ordinalObjects.length;
@@ -225,7 +248,7 @@ import { initializeTestEnvironment } from "./testEnvironment.js";
                 this.updateStats();
             }
 
-            isSafeForExponentiation(base, exponent) {
+            isSafeForExponentiation(base: OrdinalBase, exponent: OrdinalBase): boolean {
                 // Avoid potentially expensive exponentiations
                 try {
                     const baseStr = base.toString();
@@ -243,7 +266,7 @@ import { initializeTestEnvironment } from "./testEnvironment.js";
                 }
             }
 
-            verifySorting(actualSortedStrings) {
+            verifySorting(actualSortedStrings: string[]): void {
                 this.updateStatus('Verifying sort order against known good array...');
 
                 // Compare actual sorted result with known good sortedArray
@@ -269,7 +292,7 @@ import { initializeTestEnvironment } from "./testEnvironment.js";
                 }
             }
 
-            async checkForMutations() {
+            async checkForMutations(): Promise<void> {
                 this.updateStatus('Checking for mutations...');
 
                 for (let i = 0; i < this.ordinalObjects.length; i++) {
@@ -300,7 +323,7 @@ import { initializeTestEnvironment } from "./testEnvironment.js";
                 this.updateStats();
             }
 
-            displayResults() {
+            displayResults(): void {
                 const hasMutations = this.mutations.length > 0;
                 const hasSortingErrors = this.sortingErrors.length > 0;
                 const hasAnyErrors = hasMutations || hasSortingErrors;
@@ -308,9 +331,9 @@ import { initializeTestEnvironment } from "./testEnvironment.js";
                 console.log(`[ImmutabilityTest] displayResults called - mutations: ${this.mutations.length}, sorting errors: ${this.sortingErrors.length}`);
 
                 // Update both the progress section (top) and final result section (bottom)
-                const finalResultEl = document.getElementById('final-result');
-                const mutationsList = document.getElementById('mutations-list');
-                const mutationsContent = document.getElementById('mutations-content');
+                const finalResultEl = requireElementById<HTMLElement>('final-result');
+                const mutationsList = requireElementById<HTMLElement>('mutations-list');
+                const mutationsContent = requireElementById<HTMLElement>('mutations-content');
 
                 if (hasAnyErrors) {
                     console.log('[ImmutabilityTest] Setting both sections to FAILED');
@@ -370,11 +393,11 @@ import { initializeTestEnvironment } from "./testEnvironment.js";
                 }
             }
 
-            sleep(ms) {
-                return new Promise(resolve => setTimeout(resolve, ms));
+            sleep(ms: number): Promise<void> {
+                return new Promise((resolve) => setTimeout(resolve, ms));
             }
 
-            async runTest() {
+            async runTest(): Promise<void> {
                 try {
                     console.log('[ImmutabilityTest] Starting parseOrdinals...');
                     await this.parseOrdinals();

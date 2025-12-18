@@ -1,9 +1,11 @@
-// @ts-nocheck
-
 import { OperationTracer } from "../OperationTracer.js";
 import { SimpleParser } from "../SimpleParser.js";
-import { f, fInverse, DEFAULT_F_PARAMS, convertFFormatToOrdinalInstance, convertOrdinalInstanceToFFormat } from "../ordinal_mapping/OrdinalMappingCompat.js";
+import type { OrdinalBase } from "../types/OrdinalBase.js";
+import { CNFOrdinal } from "../types/CNFOrdinal.js";
+import { WTowerOrdinal } from "../types/WTowerOrdinal.js";
+import { f, fInverse, DEFAULT_F_PARAMS, OLD_F_PARAMS, convertFFormatToOrdinalInstance, convertOrdinalInstanceToFFormat } from "../ordinal_mapping/OrdinalMappingCompat.js";
 import { initializeTestEnvironment } from "./testEnvironment.js";
+import { requireElementById } from "./testUtils.js";
 
 // Extracted from simplify_test.html
 
@@ -12,14 +14,45 @@ import { initializeTestEnvironment } from "./testEnvironment.js";
         initializeTestEnvironment(1_000_000);
         console.log('[Test] Simplify tests initialized');
 
-        // Stats for each test kind
-        const testStats = {
-            SIMPLIFY: { total: 0, passed: 0, failed: 0, containerId: 'simplify-results-output', previewId: 'simplify-failed-preview', summaryId: 'simplify-summary', results: [] },
+        type TestKind = 'SIMPLIFY' | 'WTOWER' | 'COMPLEXITY' | 'MONOTONICITY' | 'INVERSE_MAPPING';
+
+        type TestResult = {
+            passed: boolean;
+            detailsElements: HTMLElement[];
         };
 
-        const successfulCNFTestResultsForMapping = [];
+        type TestStatsEntry = {
+            total?: number;
+            passed?: number;
+            failed?: number;
+            total_pairs?: number;
+            passed_pairs?: number;
+            failed_pairs?: number;
+            containerId?: string;
+            previewId?: string;
+            summaryId?: string;
+            results: TestResult[];
+        };
 
-        function toCnfString(ordinalLike) {
+        type TestStatsMap = Record<string, TestStatsEntry>;
+
+        // Stats for each test kind
+        const testStats: TestStatsMap = {
+            SIMPLIFY: { total: 0, passed: 0, failed: 0, containerId: 'simplify-results-output', previewId: 'simplify-failed-preview', summaryId: 'simplify-summary', results: [] },
+            WTOWER: { total: 0, passed: 0, failed: 0, containerId: 'wtower-results-output', previewId: 'wtower-failed-preview', summaryId: 'wtower-summary', results: [] },
+            COMPLEXITY: { total: 0, passed: 0, failed: 0, containerId: 'complexity-results-output', previewId: 'complexity-failed-preview', summaryId: 'complexity-summary', results: [] },
+            INVERSE_MAPPING: { total: 0, passed: 0, failed: 0, containerId: 'inverse-mapping-results-output', previewId: 'inverse-mapping-failed-preview', summaryId: 'inverse-mapping-summary', results: [] },
+            MONOTONICITY: { total_pairs: 0, passed_pairs: 0, failed_pairs: 0, containerId: 'monotonicity-results-output', previewId: 'monotonicity-failed-preview', summaryId: 'monotonicity-summary', results: [] },
+        };
+
+        const successfulCNFTestResultsForMapping: Array<{
+            input: string;
+            ordinal: OrdinalBase;
+            mappedValue: number;
+            cnf: string;
+        }> = [];
+
+        function toCnfString(ordinalLike: OrdinalBase | { toDisplayString?: (...args: any[]) => string; toStringCNF?: () => string } | null | undefined): string {
             try {
                 if (ordinalLike && typeof ordinalLike.toDisplayString === 'function') {
                     return ordinalLike.toDisplayString({ format: 'CNF' });
@@ -31,19 +64,19 @@ import { initializeTestEnvironment } from "./testEnvironment.js";
             return String(ordinalLike);
         }
 
-        const overallSummaryContainer = document.getElementById('overall-summary-container');
-        const overallStatusIndicatorDiv = document.getElementById('overall-status-indicator');
+        const overallSummaryContainer = requireElementById<HTMLDivElement>('overall-summary-container');
+        const overallStatusIndicatorDiv = requireElementById<HTMLDivElement>('overall-status-indicator');
         // Create a specific div for the lines in the overall summary if it doesn't exist
-        let overallSummaryDetailsDiv = document.getElementById('overall-summary-details');
+        let overallSummaryDetailsDiv = document.getElementById('overall-summary-details') as HTMLDivElement | null;
         if (!overallSummaryDetailsDiv) {
             overallSummaryDetailsDiv = document.createElement('div');
             overallSummaryDetailsDiv.id = 'overall-summary-details';
             // Insert it after overallStatusIndicatorDiv
-            overallStatusIndicatorDiv.parentNode.insertBefore(overallSummaryDetailsDiv, overallStatusIndicatorDiv.nextSibling);
+            overallStatusIndicatorDiv.parentNode?.insertBefore(overallSummaryDetailsDiv, overallStatusIndicatorDiv.nextSibling);
         }
 
         // Generic logToPage, parentElement must be provided
-        function logToPage(message, className = '', parentElement) {
+        function logToPage(message: string, className = '', parentElement?: HTMLElement | null): void {
             if (!parentElement) {
                 console.warn('logToPage called without parentElement for message:', message);
                 return;
@@ -55,7 +88,7 @@ import { initializeTestEnvironment } from "./testEnvironment.js";
         }
 
         // Refactored addDetailElement for testOrdinalCalc
-        function addDetailElement(text, classNameString = '') { // Renamed for clarity
+        function addDetailElement(text: string, classNameString = ''): void { // Renamed for clarity
             const p = document.createElement('p');
             p.textContent = text;
             p.classList.add('log-output'); // Base class for all test details
@@ -72,9 +105,9 @@ import { initializeTestEnvironment } from "./testEnvironment.js";
         }
 
         // Refactored testOrdinalCalc
-        function testOrdinalCalc(input, expectedCNF) {
-            testStats.CNF.total++;
-            const outputElements = [];
+        function testOrdinalCalc(input: string, expectedCNF: string): void {
+            testStats.SIMPLIFY.total++;
+            const outputElements: HTMLElement[] = [];
 
             const addDetailElement = (text, classNameString = '') => {
                 const p = document.createElement('p');
@@ -213,18 +246,18 @@ import { initializeTestEnvironment } from "./testEnvironment.js";
             addDetailElement(mainStatusMessage, mainStatusClass);
 
             if (overallTestPassed) {
-                testStats.CNF.passed++;
+                testStats.SIMPLIFY.passed++;
             } else {
-                testStats.CNF.failed++;
+                testStats.SIMPLIFY.failed++;
             }
-            testStats.CNF.results.push({ passed: overallTestPassed, detailsElements: outputElements });
+            testStats.SIMPLIFY.results.push({ passed: overallTestPassed, detailsElements: outputElements } as unknown as TestResult);
         }
 
         // --- MINIMALLY MODIFIED OTHER TEST FUNCTIONS ---
-        function testWTowerOrdinal(description, height, expectedCNFString, budget = 10000000) {
+        function testWTowerOrdinal(description: string, height: number | bigint, expectedCNFString: string, budget = 10000000): void {
             testStats.WTOWER.total++;
-            const outputElements = [];
-            const addDetailElement = (text, className = '') => {
+            const outputElements: HTMLElement[] = [];
+            const addDetailElement = (text: string, className = '') => {
                 const p = document.createElement('p');
                 p.textContent = text;
                 p.classList.add('log-output');
@@ -235,12 +268,16 @@ import { initializeTestEnvironment } from "./testEnvironment.js";
             OperationTracer.setGlobalTracer(budget);
             addDetailElement(`Test (WTower): ${description}`);
 
-            let actualCNF = '', statusMsg = '', sClass = '', currentTestPassed = false, cnfOrdForMapping;
+            let actualCNF = '';
+            let statusMsg = '';
+            let sClass = '';
+            let currentTestPassed = false;
+            let cnfOrdForMapping: OrdinalBase | null = null;
 
             try {
-                let inst = new WTowerOrdinal(height, tracer);
+                const inst = new WTowerOrdinal(height);
                 addDetailElement(`Input WTower: w^^${height}`);
-                let cnfOrd = inst.toCNFOrdinal();
+                const cnfOrd = inst.toCNFOrdinal();
                 cnfOrdForMapping = cnfOrd; // Store for mapping
                 actualCNF = toCnfString(cnfOrd);
 
@@ -277,10 +314,10 @@ import { initializeTestEnvironment } from "./testEnvironment.js";
             testStats.WTOWER.results.push({ passed: currentTestPassed, detailsElements: outputElements });
         }
 
-        function testOrdinalSimplify(description, inputStr, budget, expectedCNF, expectedRem, opBudget = 100000) {
+        function testOrdinalSimplify(description: string, inputStr: string, budget: number, expectedCNF: string, expectedRem: string, opBudget = 100000): void {
             testStats.SIMPLIFY.total++;
-            const outputElements = [];
-            const addDetailElement = (text, className = '') => {
+            const outputElements: HTMLElement[] = [];
+            const addDetailElement = (text: string, className = '') => {
                 const p = document.createElement('p');
                 p.textContent = text;
                 p.classList.add('log-output');
@@ -340,9 +377,9 @@ import { initializeTestEnvironment } from "./testEnvironment.js";
             testStats.SIMPLIFY.results.push({ passed: currentTestPassed, detailsElements: outputElements });
         }
 
-        function testOrdinalComplexity(inputStr, expectedComp, opBudget = 100000) {
+        function testOrdinalComplexity(inputStr: string, expectedComp: number, opBudget = 100000): void {
             testStats.COMPLEXITY.total++;
-            const outputElements = [];
+            const outputElements: HTMLElement[] = [];
             const addDetailElement = (text, className = '') => {
                 const p = document.createElement('p');
                 p.textContent = text;
@@ -379,12 +416,15 @@ import { initializeTestEnvironment } from "./testEnvironment.js";
             addDetailElement(sMsg, sCls);
             testStats.COMPLEXITY.results.push({ passed: currentTestPassed, detailsElements: outputElements });
         }
-        function testManualComplexity(desc, ordInst, exp) {
+        function testManualComplexity(desc: string, ordInst: OrdinalBase, exp: number): void {
             testStats.COMPLEXITY.total++;
-            const outputElements = [];
-            const addDetailElement = (text, className = '') => { /* as above */ const p = document.createElement('p'); p.textContent = text; p.classList.add('log-output'); if (className) p.classList.add(className); outputElements.push(p); };
+            const outputElements: HTMLElement[] = [];
+            const addDetailElement = (text: string, className = '') => { /* as above */ const p = document.createElement('p'); p.textContent = text; p.classList.add('log-output'); if (className) p.classList.add(className); outputElements.push(p); };
             addDetailElement(`Test (Manual Complexity): ${desc}`);
-            let actualComplexity, currentTestPassed = false, statusMsg, statusClass;
+            let actualComplexity = -1;
+            let currentTestPassed = false;
+            let statusMsg = '';
+            let statusClass = '';
             try {
                 actualComplexity = ordInst.complexity();
                 if (actualComplexity === exp) {
@@ -401,13 +441,19 @@ import { initializeTestEnvironment } from "./testEnvironment.js";
             addDetailElement(statusMsg, statusClass);
             testStats.COMPLEXITY.results.push({ passed: currentTestPassed, detailsElements: outputElements });
         }
-        function testManualSimplify(desc, ordInst, bud, expCNF, expRem) {
+        function testManualSimplify(desc: string, ordInst: OrdinalBase, bud: number, expCNF: string, expRem: number): void {
             testStats.SIMPLIFY.total++;
-            const outputElements = [];
-            const addDetailElement = (text, className = '') => { /* as above */ const p = document.createElement('p'); p.textContent = text; p.classList.add('log-output'); if (className) p.classList.add(className); outputElements.push(p); };
+            const outputElements: HTMLElement[] = [];
+            const addDetailElement = (text: string, className = '') => { /* as above */ const p = document.createElement('p'); p.textContent = text; p.classList.add('log-output'); if (className) p.classList.add(className); outputElements.push(p); };
             addDetailElement(`Test (Manual Simplify): ${desc} [Budget: ${bud}]`);
             addDetailElement(`Input Ordinal (direct): ${toCnfString(ordInst)} (g=${ordInst.complexity()})`);
-            let actualCNF, actualRem, currentTestPassed = true, notes = [], statusMsg, statusClass, simpG = 'N/A';
+            let actualCNF = '';
+            let actualRem = 0;
+            let currentTestPassed = true;
+            const notes: string[] = [];
+            let statusMsg = '';
+            let statusClass = '';
+            let simpG: number | string = 'N/A';
             try {
                 const simpRes = ordInst.simplify(bud, false);
                 let simpOrd = simpRes.simplifiedOrdinal;
@@ -432,7 +478,7 @@ import { initializeTestEnvironment } from "./testEnvironment.js";
         }
 
         // Helper function for fInverse test output formatting
-        function formatFInverseOutput(result) {
+        function formatFInverseOutput(result: unknown): string {
             if (typeof result === 'bigint') {
                 return toCnfString(new CNFOrdinal(result));
             }
@@ -458,12 +504,12 @@ import { initializeTestEnvironment } from "./testEnvironment.js";
         }
 
         // Test function for fInverse
-        function testFInverse(description, inputValue, expectedOutput, expectError = false) {
+        function testFInverse(description: string, inputValue: number, expectedOutput: string | number, expectError = false): void {
             const kindKey = 'INVERSE_MAPPING';
             testStats[kindKey].total++;
-            const outputElements = [];
+            const outputElements: HTMLElement[] = [];
 
-            const addDetailElement = (text, className = '') => {
+            const addDetailElement = (text: string, className = '') => {
                 const p = document.createElement('p');
                 p.textContent = text;
                 p.classList.add('log-output');
@@ -471,7 +517,10 @@ import { initializeTestEnvironment } from "./testEnvironment.js";
                 outputElements.push(p);
             };
 
-            let actualOutput, statusClass = '', statusMessage = '', currentTestPassed = false;
+            let actualOutput: string | number | undefined;
+            let statusClass = '';
+            let statusMessage = '';
+            let currentTestPassed = false;
 
             addDetailElement(`Test (fInverse): ${description}`);
             addDetailElement(`Input Value: ${inputValue}`);
@@ -533,15 +582,21 @@ import { initializeTestEnvironment } from "./testEnvironment.js";
         }
 
         // Main test orchestrator
-        function runAllTestsAndRender() {
+        function runAllTestsAndRender(): void {
             console.log("runAllTestsAndRender: Started");
             // Initialize/Clear all stats and containers
             for (const kindKey in testStats) {
                 const kind = testStats[kindKey];
                 kind.results = []; kind.total = 0; kind.passed = 0; kind.failed = 0;
                 if (kindKey === 'MONOTONICITY') { kind.total_pairs = 0; kind.passed_pairs = 0; kind.failed_pairs = 0; }
-                const summaryDiv = document.getElementById(kind.summaryId);
-                if (summaryDiv) summaryDiv.textContent = 'Pending...';
+                if (kind.summaryId) {
+                    const summaryDiv = document.getElementById(kind.summaryId);
+                    if (summaryDiv) {
+                        summaryDiv.textContent = 'Pending...';
+                    } else {
+                        console.warn(`runAllTestsAndRender: summary element #${kind.summaryId} not found; skipping.`);
+                    }
+                }
                 // const containerDiv = document.getElementById(kind.containerId);
                 // if(containerDiv) containerDiv.innerHTML = ''; // DO NOT CLEAR THE MAIN CONTAINER HERE
             }
@@ -567,16 +622,17 @@ import { initializeTestEnvironment } from "./testEnvironment.js";
             // WTowerOrdinal (manual simplify tests from original)
             try {
                 const tracer = new OperationTracer(100000);
-                let wt0 = new WTowerOrdinal(0, tracer);
-                let wt1 = new WTowerOrdinal(1, tracer);
-                let wt2 = new WTowerOrdinal(2, tracer);
+                tracer; // tracer retained for budgeting side effects
+                const wt0 = new WTowerOrdinal(0);
+                const wt1 = new WTowerOrdinal(1);
+                const wt2 = new WTowerOrdinal(2);
                 testManualSimplify("w^^0 fits", wt0, 10, "w^^0", 6);
                 testManualSimplify("w^^2 fits", wt2, 5, "w^^2", 1);
                 testManualSimplify("w^^1 does not fit, fallback to 0", wt1, 3, "0", 3);
                 testManualSimplify("w^^2 cannot fit 0", wt2, 0, "0", 0);
             } catch (e) {
                 testStats.SIMPLIFY.failed++; testStats.SIMPLIFY.total++;
-                const simplifyContainer = document.getElementById(testStats.SIMPLIFY.containerId);
+                const simplifyContainer = requireElementById<HTMLDivElement>(testStats.SIMPLIFY.containerId || '');
                 if (simplifyContainer) {
                     logToPage("Error in manual WTower simplify tests setup (counted as SIMPLIFY failure): " + e.message, 'error-message', simplifyContainer);
                 }
@@ -626,7 +682,7 @@ import { initializeTestEnvironment } from "./testEnvironment.js";
             updateOverallPageSummary();
 
             // Add event listeners for collapsibles
-            document.querySelectorAll('details.test-kind-section').forEach(detailsElement => {
+            document.querySelectorAll<HTMLDetailsElement>('details.test-kind-section').forEach((detailsElement) => {
                 detailsElement.addEventListener('toggle', () => {
                     const kindKey = detailsElement.id.replace('details-', '');
                     renderSingleKindOutput(kindKey);
@@ -637,24 +693,24 @@ import { initializeTestEnvironment } from "./testEnvironment.js";
             console.log("runAllTestsAndRender: Finished, event listeners attached.");
         }
 
-        function renderSingleKindOutput(kindKey) {
-            const detailsElementForLog = document.getElementById('details-' + kindKey);
+        function renderSingleKindOutput(kindKey: string): void {
+            const detailsElementForLog = document.getElementById('details-' + kindKey) as HTMLDetailsElement | null;
             console.log(`[${kindKey}] renderSingleKindOutput: START. Details open: ${detailsElementForLog ? detailsElementForLog.open : 'details_element_not_found'}`);
             const kindData = testStats[kindKey];
-            const detailsElement = document.getElementById('details-' + kindKey);
+            const detailsElement = document.getElementById('details-' + kindKey) as HTMLDetailsElement | null;
 
             // Correctly select the preview container using its ID
-            const previewContainer = document.getElementById(kindData.previewId);
+            const previewContainer = kindData.previewId ? document.getElementById(kindData.previewId) as HTMLDivElement | null : null;
             // The main container for when 'details' is open (this is the div with class 'test-results-output')
-            const mainResultsOutputContainer = document.getElementById(kindData.containerId);
+            const mainResultsOutputContainer = kindData.containerId ? document.getElementById(kindData.containerId) as HTMLDivElement | null : null;
             // Inside mainResultsOutputContainer, there's a div with class 'passed-tests-container'
             // This will be used to hold ALL tests when the details section is expanded.
-            const allTestsContainerWhenOpen = mainResultsOutputContainer ? mainResultsOutputContainer.querySelector('.passed-tests-container') : null;
+            const allTestsContainerWhenOpen = mainResultsOutputContainer?.querySelector('.passed-tests-container') as HTMLDivElement | null;
 
             if (!kindData) { console.error(`[${kindKey}] renderSingleKindOutput: kindData is missing.`); return; }
-            if (!detailsElement) { console.warn(`[${kindKey}] renderSingleKindOutput: Details element #details-${kindKey} NOT FOUND.`); return; } // Critical
-            if (!previewContainer) { console.error(`[${kindKey}] renderSingleKindOutput: previewContainer (#${kindData.previewId}) NOT FOUND.`); return; } // Critical
-            if (!mainResultsOutputContainer) { console.error(`[${kindKey}] renderSingleKindOutput: Main results output container #${kindData.containerId} NOT FOUND.`); return; } // Critical
+            if (!detailsElement) { console.warn(`[${kindKey}] renderSingleKindOutput: Details element #details-${kindKey} NOT FOUND.`); return; }
+            if (!previewContainer) { console.error(`[${kindKey}] renderSingleKindOutput: previewContainer (#${kindData.previewId}) NOT FOUND.`); return; }
+            if (!mainResultsOutputContainer) { console.error(`[${kindKey}] renderSingleKindOutput: Main results output container #${kindData.containerId} NOT FOUND.`); return; }
             if (!allTestsContainerWhenOpen) { console.error(`[${kindKey}] renderSingleKindOutput: allTestsContainerWhenOpen (.passed-tests-container) NOT FOUND within #${kindData.containerId}.`); return; } // Critical
 
             console.log(`[${kindKey}] renderSingleKindOutput: Clearing containers. Preview: ${previewContainer.id}, AllWhenOpen: ${allTestsContainerWhenOpen.id || 'N/A'}`);
@@ -754,7 +810,7 @@ import { initializeTestEnvironment } from "./testEnvironment.js";
             console.log(`[${kindKey}] renderSingleKindOutput: END.`);
         }
 
-        function renderAllKindResults() {
+        function renderAllKindResults(): void {
             console.log("renderAllKindResults: Started");
             for (const kindKey in testStats) {
                 console.log(`renderAllKindResults: Processing kind: ${kindKey}`);
@@ -763,11 +819,11 @@ import { initializeTestEnvironment } from "./testEnvironment.js";
             }
         }
 
-        function updateKindSummary(kindKey) {
+        function updateKindSummary(kindKey: string): void {
             console.log(`updateKindSummary: Updating summary for ${kindKey}`);
             console.log(`Stats for ${kindKey}: Total=${(kindKey === 'MONOTONICITY' ? testStats[kindKey].total_pairs : testStats[kindKey].total)}, Passed=${(kindKey === 'MONOTONICITY' ? testStats[kindKey].passed_pairs : testStats[kindKey].passed)}, Failed=${(kindKey === 'MONOTONICITY' ? testStats[kindKey].failed_pairs : testStats[kindKey].failed)}`);
             const stats = testStats[kindKey];
-            const summaryDiv = document.getElementById(stats.summaryId);
+            const summaryDiv = stats.summaryId ? document.getElementById(stats.summaryId) : null;
             if (summaryDiv) {
                 let text = '';
                 if (kindKey === 'MONOTONICITY') {
@@ -782,7 +838,7 @@ import { initializeTestEnvironment } from "./testEnvironment.js";
             }
         }
 
-        function updateOverallPageSummary() {
+        function updateOverallPageSummary(): void {
             console.log("updateOverallPageSummary: Started");
             let overallPass = true;
             let totalTestsActuallyRun = 0;
@@ -821,14 +877,13 @@ import { initializeTestEnvironment } from "./testEnvironment.js";
             console.log("updateOverallPageSummary: Completed");
         }
 
-        function performSanityChecks() { // Refactored slightly for new stats structure
+        function performSanityChecks(): void { // Refactored slightly for new stats structure
             console.log("performSanityChecks: Started");
             const kindKey = 'MONOTONICITY';
             const stats = testStats[kindKey];
             stats.total_pairs = 0; stats.passed_pairs = 0; stats.failed_pairs = 0; stats.results = [];
 
-            const outputContainer = document.getElementById(stats.containerId); // Keep for reference, though direct logging is removed
-            if (!outputContainer) { console.error("Monotonicity output container not found"); return; }
+            const outputContainer = requireElementById<HTMLDivElement>(stats.containerId || ''); // Keep for reference, though direct logging is removed
 
             const numResults = successfulCNFTestResultsForMapping.length;
             const EPSILON = 1e-9;
@@ -875,7 +930,7 @@ import { initializeTestEnvironment } from "./testEnvironment.js";
 
         // --- Test Runner ---
 
-        function calculateAndSimplify(expr) {
+        function calculateAndSimplify(expr: string): { cnfString: string; ordinalObject: OrdinalBase; error: null } | { error: unknown } {
             const result = calculateOrdinalCNF(expr);
             if (result.error) {
                 return result;
@@ -889,7 +944,7 @@ import { initializeTestEnvironment } from "./testEnvironment.js";
             };
         }
 
-        function runTest(input, expected, simplifyOptions) {
+        function runTest(input: string, expected: string, simplifyOptions?: unknown): { pass: boolean; message: string } {
             testCount++;
             const startTime = performance.now();
             try {

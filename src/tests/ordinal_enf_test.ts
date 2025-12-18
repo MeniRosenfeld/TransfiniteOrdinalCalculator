@@ -14,6 +14,7 @@ import { WTowerOrdinal } from "../types/WTowerOrdinal.js";
 import { EpsilonTowerOrdinal } from "../types/EpsilonTowerOrdinal.js";
 import { OneOrdinal } from "../types/OneOrdinal.js";
 import { SimpleParser } from "../SimpleParser.js";
+import { requireElementById } from "./testUtils.js";
 import { initializeTestEnvironment } from "./testEnvironment.js";
 import {
     ordinalLabels,
