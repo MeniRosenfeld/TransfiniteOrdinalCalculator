@@ -5,12 +5,13 @@
         import { fTyped, ORDINAL_ZERO, ORDINAL_ONE } from "../ordinal_mapping/OrdinalMapping.js";
         import { DoubleContext } from "../ordinal_mapping/Contexts.js";
         import { FParams } from "../ordinal_mapping/FParams.js";
+        import { requireElementById } from "./testUtils.js";
 
-        const resultsDiv = document.getElementById('results');
-        const summaryDiv = document.getElementById('summary');
-        if (!resultsDiv || !summaryDiv) {
-            throw new Error('Required result containers are missing');
-        }
+        const toErrorMessage = (error: unknown): string =>
+            error instanceof Error ? error.message : String(error);
+
+        const resultsDiv = requireElementById<HTMLDivElement>('results');
+        const summaryDiv = requireElementById<HTMLDivElement>('summary');
         
         let passed = 0;
         let failed = 0;
@@ -123,7 +124,7 @@
                 <div>Success Rate: ${((passed / total) * 100).toFixed(1)}%</div>
             `;
 
-        } catch (error) {
-            addResult('Test suite execution', false, error.message);
+        } catch (error: unknown) {
+            addResult('Test suite execution', false, toErrorMessage(error));
             console.error('Test error:', error);
         }

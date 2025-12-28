@@ -13,23 +13,22 @@
         RationalContext,
       } from "../ordinal_mapping/Contexts.js";
       import { Interval } from "../ordinal_mapping/Interval.js";
+      import type { OrdinalRepresentation } from "../ordinal_mapping/OrdinalMapping.js";
       import { requireElementById } from "./testUtils.js";
 
-      type PowRepresentation = { type: "pow"; k: OrdinalRepresentation };
-      type SumRepresentation = { type: "sum"; beta: OrdinalRepresentation; c: bigint; delta: OrdinalRepresentation };
-      type TowerRepresentation = { type: "w_tower"; height: bigint };
-      type EpsilonRepresentation = { type: "epsilon"; index: OrdinalRepresentation };
-type OrdinalRepresentation = bigint | PowRepresentation | SumRepresentation | TowerRepresentation | EpsilonRepresentation;
-type FInverseResult = OrdinalRepresentation;
+      type FInverseResult = OrdinalRepresentation;
 
-const isPowRepresentation = (value: FInverseResult): value is PowRepresentation => {
-      return typeof value === "object" && value !== null && "type" in value && value.type === "pow";
+const toErrorMessage = (error: unknown): string =>
+  error instanceof Error ? error.message : String(error);
+
+const isPowRepresentation = (value: FInverseResult): value is Extract<OrdinalRepresentation, { type: "pow" }> => {
+      return typeof value === "object" && value !== null && "type" in value && (value as any).type === "pow";
 };
-const isSumRepresentation = (value: FInverseResult): value is SumRepresentation => {
-      return typeof value === "object" && value !== null && "type" in value && value.type === "sum";
+const isSumRepresentation = (value: FInverseResult): value is Extract<OrdinalRepresentation, { type: "sum" }> => {
+      return typeof value === "object" && value !== null && "type" in value && (value as any).type === "sum";
 };
-const isEpsilonRepresentation = (value: FInverseResult): value is EpsilonRepresentation => {
-      return typeof value === "object" && value !== null && "type" in value && value.type === "epsilon";
+const isEpsilonRepresentation = (value: FInverseResult): value is Extract<OrdinalRepresentation, { type: "epsilon" }> => {
+      return typeof value === "object" && value !== null && "type" in value && (value as any).type === "epsilon";
 };
 
       const resultsDiv = requireElementById<HTMLDivElement>("results");
@@ -68,21 +67,25 @@ const isEpsilonRepresentation = (value: FInverseResult): value is EpsilonReprese
         return section;
       }
 
+const isWTowerRepresentation = (value: FInverseResult): value is Extract<OrdinalRepresentation, { type: "w_tower" }> =>
+  typeof value === "object" && value !== null && "type" in value && (value as any).type === "w_tower";
+
       function formatOrdinal(ord: OrdinalRepresentation | number): string {
         if (typeof ord === "bigint") return ord.toString();
         if (typeof ord === "number") return ord.toString();
-        if (typeof ord === "object" && ord !== null && "type" in ord) {
-          const typed = ord as Exclude<OrdinalRepresentation, bigint>;
-          if (typed.type === "pow") {
+        if (ord === "E0_TYPE") return "ε_0";
+        if (typeof ord === "object" && ord !== null) {
+          const typed = ord as OrdinalRepresentation;
+          if (isPowRepresentation(typed)) {
             return `ω^${formatOrdinal(typed.k)}`;
-          } else if (typed.type === "sum") {
+          } else if (isSumRepresentation(typed)) {
             return `ω^${formatOrdinal(typed.beta)} * ${typed.c} + ${formatOrdinal(
               typed.delta
             )}`;
-          } else if (typed.type === "w_tower") {
+          } else if (isWTowerRepresentation(typed)) {
             return `ω↑↑${typed.height}`;
-          } else if (typed.type === "epsilon") {
-            return `ε_${typed.index}`;
+          } else if (isEpsilonRepresentation(typed)) {
+            return `ε_${formatOrdinal(typed.index)}`;
           }
         }
         return String(ord);
@@ -109,8 +112,8 @@ const isEpsilonRepresentation = (value: FInverseResult): value is EpsilonReprese
             match0,
             `Expected: ${expected0}, Got: ${formatOrdinal(result0)}`
           );
-        } catch (e) {
-          addResult("fInverse(0) test", false, `Error: ${e.message}`);
+        } catch (error: unknown) {
+          addResult("fInverse(0) test", false, `Error: ${toErrorMessage(error)}`);
         }
 
         try {
@@ -127,11 +130,11 @@ const isEpsilonRepresentation = (value: FInverseResult): value is EpsilonReprese
                 .toFixed(6)}, fInverse → ${formatOrdinal(resultN)}`
             );
           }
-        } catch (e) {
+        } catch (error: unknown) {
           addResult(
             "Finite ordinal round-trip test",
             false,
-            `Error: ${e.message}`
+            `Error: ${toErrorMessage(error)}`
           );
         }
 
@@ -149,13 +152,13 @@ const isEpsilonRepresentation = (value: FInverseResult): value is EpsilonReprese
             matchOmega,
             `Expected: ω, Got: ${formatOrdinal(resultOmega)}`
           );
-        } catch (e) {
-          addResult("fInverse(1) → ω test", false, `Error: ${e.message}`);
+        } catch (error: unknown) {
+          addResult("fInverse(1) → ω test", false, `Error: ${toErrorMessage(error)}`);
         }
 
         try {
           // Test f(ω^2)
-          const omegaSquared = { type: "pow", k: 2n };
+          const omegaSquared: OrdinalRepresentation = { type: "pow", k: 2n };
           const fOmegaSquared = fTyped(omegaSquared, params);
           const resultOmega2 = fInverseWrapper(
             fOmegaSquared.toNumber(),
@@ -170,15 +173,19 @@ const isEpsilonRepresentation = (value: FInverseResult): value is EpsilonReprese
               .toNumber()
               .toFixed(6)}, fInverse → ${formatOrdinal(resultOmega2)}`
           );
-        } catch (e) {
-          addResult("ω^2 round-trip test", false, `Error: ${e.message}`);
+        } catch (error: unknown) {
+          addResult("ω^2 round-trip test", false, `Error: ${toErrorMessage(error)}`);
         }
 
         try {
           // Test f(ω^ω) = 3 (using params.precomputed[3])
           const x3 = params.precomputed[3];
+          if (!x3) {
+            addResult("fInverse(3) → ω^ω test", false, "Error: params.precomputed[3] is undefined");
+            return;
+          }
           const resultOmegaOmega = fInverseWrapper(x3.toNumber(), params);
-          const expectedOmegaOmega = { type: "pow", k: { type: "pow", k: 1n } };
+          const expectedOmegaOmega: OrdinalRepresentation = { type: "pow", k: { type: "pow", k: 1n } };
           const matchOmegaOmega =
             isPowRepresentation(resultOmegaOmega) &&
             isPowRepresentation(resultOmegaOmega.k) &&
@@ -190,8 +197,8 @@ const isEpsilonRepresentation = (value: FInverseResult): value is EpsilonReprese
               resultOmegaOmega
             )}`
           );
-        } catch (e) {
-          addResult("fInverse(3) → ω^ω test", false, `Error: ${e.message}`);
+        } catch (error: unknown) {
+          addResult("fInverse(3) → ω^ω test", false, `Error: ${toErrorMessage(error)}`);
         }
 
         // Section 3: Interval preference tests
@@ -214,8 +221,8 @@ const isEpsilonRepresentation = (value: FInverseResult): value is EpsilonReprese
               result0Int
             )}`
           );
-        } catch (e) {
-          addResult("Interval preference for 0", false, `Error: ${e.message}`);
+        } catch (error: unknown) {
+          addResult("Interval preference for 0", false, `Error: ${toErrorMessage(error)}`);
         }
 
         try {
@@ -233,13 +240,18 @@ const isEpsilonRepresentation = (value: FInverseResult): value is EpsilonReprese
               result1Int
             )}`
           );
-        } catch (e) {
-          addResult("Interval preference for ω", false, `Error: ${e.message}`);
+        } catch (error: unknown) {
+          addResult("Interval preference for ω", false, `Error: ${toErrorMessage(error)}`);
         }
 
         try {
           // Wide interval containing f(ω^ω) should return ω^ω
-          const fOmegaOmega = params.precomputed[3].toNumber();
+          const fOmegaOmegaValue = params.precomputed[3];
+          if (!fOmegaOmegaValue) {
+            addResult("Interval preference for ω^ω", false, "Error: params.precomputed[3] is undefined");
+            return;
+          }
+          const fOmegaOmega = fOmegaOmegaValue.toNumber();
           const interval3 = new Interval(
             ctx.fromNumber(fOmegaOmega - 0.3),
             ctx.fromNumber(fOmegaOmega + 0.5)
@@ -257,11 +269,11 @@ const isEpsilonRepresentation = (value: FInverseResult): value is EpsilonReprese
               1
             )}, should return: ω^ω, Got: ${formatOrdinal(result3Int)}`
           );
-        } catch (e) {
+        } catch (error: unknown) {
           addResult(
             "Interval preference for ω^ω",
             false,
-            `Error: ${e.message}`
+            `Error: ${toErrorMessage(error)}`
           );
         }
 
@@ -270,7 +282,7 @@ const isEpsilonRepresentation = (value: FInverseResult): value is EpsilonReprese
 
         try {
           // Test ω + 1
-          const omegaPlus1 = { type: "sum", beta: 1n, c: 1n, delta: 1n };
+          const omegaPlus1: OrdinalRepresentation = { type: "sum", beta: 1n, c: 1n, delta: 1n };
           const fOmegaPlus1 = fTyped(omegaPlus1, params);
           const resultOmegaPlus1 = fInverseWrapper(
             fOmegaPlus1.toNumber(),
@@ -291,8 +303,8 @@ const isEpsilonRepresentation = (value: FInverseResult): value is EpsilonReprese
               .toNumber()
               .toFixed(6)}, fInverse → ${formatOrdinal(resultOmegaPlus1)}`
           );
-        } catch (e) {
-          addResult("ω + 1 round-trip test", false, `Error: ${e.message}`);
+        } catch (error: unknown) {
+          addResult("ω + 1 round-trip test", false, `Error: ${toErrorMessage(error)}`);
         }
 
         // Section 5: Epsilon-zero
@@ -301,6 +313,10 @@ const isEpsilonRepresentation = (value: FInverseResult): value is EpsilonReprese
         try {
           // Test f(ε₀) ≈ 5
           const x5 = params.precomputed[5];
+          if (!x5) {
+            addResult("fInverse → ε₀ test", false, "Error: params.precomputed[5] is undefined");
+            return;
+          }
           const resultEpsilon = fInverseWrapper(x5.toNumber(), params);
           const matchEpsilon =
             isEpsilonRepresentation(resultEpsilon) && resultEpsilon.index === 0n;
@@ -309,8 +325,8 @@ const isEpsilonRepresentation = (value: FInverseResult): value is EpsilonReprese
             matchEpsilon,
             `Expected: ε₀, Got: ${formatOrdinal(resultEpsilon)}`
           );
-        } catch (e) {
-          addResult("fInverse → ε₀ test", false, `Error: ${e.message}`);
+        } catch (error: unknown) {
+          addResult("fInverse → ε₀ test", false, `Error: ${toErrorMessage(error)}`);
         }
 
         // Section 6: Out-of-bounds tests
@@ -324,7 +340,7 @@ const isEpsilonRepresentation = (value: FInverseResult): value is EpsilonReprese
           );
           fInverseTyped(intervalBelow, params);
           addResult("fInverse([-1, 0]) should not throw", true);
-        } catch (e) {
+        } catch (error: unknown) {
           addResult("fInverse([-1, 0]) should not throw", false);
         }
 
@@ -336,7 +352,7 @@ const isEpsilonRepresentation = (value: FInverseResult): value is EpsilonReprese
           );
           fInverseTyped(intervalBelow, params);
           addResult("fInverse([-2, -1]) should throw", false);
-        } catch (e) {
+        } catch (error: unknown) {
           addResult("fInverse([-2, -1]) should throw", true);
         }
 
@@ -348,7 +364,7 @@ const isEpsilonRepresentation = (value: FInverseResult): value is EpsilonReprese
           );
           fInverseTyped(intervalAbove, params);
           addResult("fInverse([49, 60]) should not throw", true);
-        } catch (e) {
+        } catch (error: unknown) {
           addResult("fInverse([49, 60]) should not throw", false);
         }
 
@@ -360,7 +376,7 @@ const isEpsilonRepresentation = (value: FInverseResult): value is EpsilonReprese
           );
           fInverseTyped(intervalAbove, params);
           addResult("fInverse([50, 60]) should throw", false);
-        } catch (e) {
+        } catch (error: unknown) {
           addResult("fInverse([50, 60]) should throw", true);
         }
 
@@ -401,8 +417,8 @@ const isEpsilonRepresentation = (value: FInverseResult): value is EpsilonReprese
               resultN
             )}`
           );
-        } catch (e) {
-          addResult("Rational BigInt test", false, `Error: ${e.message}`);
+        } catch (error: unknown) {
+          addResult("Rational BigInt test", false, `Error: ${toErrorMessage(error)}`);
         }
 
         // Summary
@@ -417,7 +433,7 @@ const isEpsilonRepresentation = (value: FInverseResult): value is EpsilonReprese
                 ✗ Failed: ${failCount}<br>
                 ⊘ Skipped: ${skipCount}
             `;
-        resultsDiv.insertBefore(summary, resultsDiv.firstChild);
+        resultsDiv.prepend(summary);
 
         console.log(
           `Tests complete: ${passCount} passed, ${failCount} failed, ${skipCount} skipped`
@@ -425,7 +441,7 @@ const isEpsilonRepresentation = (value: FInverseResult): value is EpsilonReprese
       }
 
       // Run tests when page loads
-      runTests().catch((e) => {
-        console.error("Test suite error:", e);
-        addResult("Test Suite Execution", false, `Fatal error: ${e.message}`);
+      runTests().catch((error: unknown) => {
+        console.error("Test suite error:", error);
+        addResult("Test Suite Execution", false, `Fatal error: ${toErrorMessage(error)}`);
       });

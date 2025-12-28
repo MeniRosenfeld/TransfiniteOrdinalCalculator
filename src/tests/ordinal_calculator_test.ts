@@ -347,7 +347,7 @@ import { requireElementById } from "./testUtils.js";
 
             let fRoundTripCheckPassed = false;
             const fTripDetailsLogs: string[] = [];
-            let mappedValueOriginalNum = Number.NaN;
+            let mappedValueOriginalNum: number | undefined;
 
             if (!originalOrdinalObject) {
               fTripDetailsLogs.push(
@@ -411,9 +411,10 @@ import { requireElementById } from "./testUtils.js";
                   )}`
                 );
 
-                const difference = Math.abs(
-                  mappedValueOriginalNum - mappedValueOfInverseNum
-                );
+                if (mappedValueOriginalNum === undefined || Number.isNaN(mappedValueOriginalNum)) {
+                  throw new Error("mappedValueOriginalNum is not available for round-trip comparison");
+                }
+                const difference = Math.abs(mappedValueOriginalNum - mappedValueOfInverseNum);
                 fRoundTripCheckPassed = difference < fInverseThreshold;
 
                 if (fRoundTripCheckPassed) {
@@ -448,7 +449,12 @@ import { requireElementById } from "./testUtils.js";
               }
               // Include equality check unless the expected is an error string
               let limitCheckPassed = true; // Default to true for non-ordinal results or errors
-              if (originalOrdinalObject && !originalOrdinalObject.isZero()) {
+              if (
+                originalOrdinalObject &&
+                !originalOrdinalObject.isZero() &&
+                typeof mappedValueOriginalNum === "number" &&
+                Number.isFinite(mappedValueOriginalNum)
+              ) {
                 const limitDetailsLogs: string[] = [];
                 try {
                   const limitEpsilon = 1e-12;

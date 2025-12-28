@@ -1,4 +1,6 @@
 import { CNFOrdinal } from "../types/CNFOrdinal.js";
+import type { CNFTerm } from "../types/CNFOrdinal.js";
+import type { OrdinalBase } from "../types/OrdinalBase.js";
 import { EpsilonZero } from "../types/EpsilonZero.js";
 import { ZeroOrdinal } from "../types/ZeroOrdinal.js";
 import { OneOrdinal } from "../types/OneOrdinal.js";
@@ -124,7 +126,7 @@ import { requireElementById } from "./testUtils.js";
 
             // Exponent not ordinal
             checkFalse('CNF exponent not ordinal object (invalid)', () => {
-                const terms = [{ exponent: 42, coefficient: 1n }];
+                const terms: CNFTerm[] = [{ exponent: 42 as unknown as OrdinalBase, coefficient: 1n }];
                 return new CNFOrdinal(terms).isWellFormed();
             });
 

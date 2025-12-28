@@ -150,11 +150,12 @@ const isVariableNode = (value: ParserValue): value is ParserVariableResult => ha
                 return result.value.toString();
             }
             if (hasType(result, "comparison")) {
-                switch (result.value) {
+                const v = result.value;
+                switch (v) {
                     case -1: return '<';
                     case 0: return '=';
                     case 1: return '>';
-                    default: return result.value.toString();
+                    default: return String(v);
                 }
             }
             if (hasType(result, "variable")) {

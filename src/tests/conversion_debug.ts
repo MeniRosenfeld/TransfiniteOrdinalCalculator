@@ -17,6 +17,9 @@ import { ZetaZero } from "../types/ZetaZero.js";
 import { initializeTestEnvironment } from "./testEnvironment.js";
 import { requireElementById } from "./testUtils.js";
 
+const toErrorMessage = (error: unknown): string =>
+  error instanceof Error ? error.message : String(error);
+
 // Extracted from conversion_debug.html
 
 // Original <scripttype="module">
@@ -56,9 +59,11 @@ import { requireElementById } from "./testUtils.js";
                     case 'ENF':
                         return new ENFOrdinal([new ENFTerm([], 5n)]);
                     case 'ENFTerm':
-                        return new ENFTerm([], 5n);
+                console.warn('[ConversionDebug] ENFTerm is not an OrdinalBase; skipping sample.');
+                return null;
                     case 'ENFFactor':
-                        return new ENFFactor(OmegaOrdinal.instance(), OneOrdinal.instance());
+                console.warn('[ConversionDebug] ENFFactor is not an OrdinalBase; skipping sample.');
+                return null;
                     default: {
                         const TypeClass = OPERATIONS.registry.getTypeClass(typeName);
                         if (!TypeClass) {
@@ -129,8 +134,8 @@ import { requireElementById } from "./testUtils.js";
                     const diagInfo = OPERATIONS.getDiagnostics();
                     diagContainer.textContent = JSON.stringify(diagInfo, null, 2);
                     renderGraph(diagInfo.registeredTypes ?? []);
-                } catch (e) {
-                    matrixContainer.textContent = 'Initialization error: ' + (e as Error).message;
+                } catch (error: unknown) {
+                    matrixContainer.textContent = 'Initialization error: ' + toErrorMessage(error);
                 }
             }
 
