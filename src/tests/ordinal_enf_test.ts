@@ -16,6 +16,16 @@ import { OneOrdinal } from "../types/OneOrdinal.js";
 import { SimpleParser } from "../SimpleParser.js";
 import { requireElementById } from "./testUtils.js";
 import { initializeTestEnvironment } from "./testEnvironment.js";
+const toErrorMessage = (error: unknown): string =>
+  error instanceof Error ? error.message : String(error);
+
+const isOrdinal = (value: unknown): value is OrdinalBase =>
+  Boolean(
+    value &&
+    typeof value === "object" &&
+    typeof (value as OrdinalBase).isZero === "function" &&
+    typeof (value as OrdinalBase).add === "function"
+  );
 import {
     ordinalLabels,
     expectedAdditionResults,
@@ -37,8 +47,18 @@ type MutationReport = {
 };
 
 let mutabilityTest: {
+    ordinals: OrdinalBase[];
+    originalStrings: string[];
     checkMutations: () => MutationReport;
 } | null = null;
+
+const parseOrdinalStrict = (input: string): OrdinalBase => {
+    const parsed = new SimpleParser(input).parse();
+    if (!isOrdinal(parsed)) {
+        throw new Error(`Parsed value is not an ordinal: ${input}`);
+    }
+    return parsed;
+};
 
 type TestKind =
     | "BASIC"
@@ -135,7 +155,7 @@ const createKindStats = (config: {
         function executeTestSection(sectionName: string, testFunction: () => void): void {
             try {
                 testFunction();
-            } catch (error) {
+            } catch (error: unknown) {
                 console.error(`CRITICAL ERROR in ${sectionName} test section:`, error);
 
                 // Create error container
@@ -146,7 +166,7 @@ const createKindStats = (config: {
                 container.appendChild(title);
                 const p = document.createElement('p');
                 p.className = 'log-output status-failed';
-                p.textContent = `CRITICAL ERROR: ${error.message}`;
+                p.textContent = `CRITICAL ERROR: ${toErrorMessage(error)}`;
                 container.appendChild(p);
 
                 // Force record as failed
@@ -154,7 +174,7 @@ const createKindStats = (config: {
                     recordTestResult(CURRENT_KIND, false, container);
                 } catch (recordError) {
                     console.error('CRITICAL: Failed to record error for', sectionName, recordError);
-                    document.getElementById('test-details-container').appendChild(container);
+                    requireElementById<HTMLElement>('test-details-container').appendChild(container);
                     // Manually update stats to ensure failure is recorded
                     if (testStats[CURRENT_KIND]) {
                         testStats[CURRENT_KIND].failed++;
@@ -319,17 +339,18 @@ const createKindStats = (config: {
                     passedTests++;
                 }
 
-            } catch (e) {
+            } catch (error: unknown) {
                 const status = document.createElement('p');
-                status.textContent = `Status: CRITICAL ERROR - ${e.message}`;
+                const message = toErrorMessage(error);
+                status.textContent = `Status: CRITICAL ERROR - ${message}`;
                 status.className = 'status-failed';
                 container.appendChild(status);
-                console.error(`Error in test "${testName}":`, e);
+                console.error(`Error in test "${testName}":`, error);
             }
             const finalPassed = container.querySelector('.status-failed') === null;
             try { recordTestResult(CURRENT_KIND, finalPassed, container); } catch (recordError) {
                 console.error('CRITICAL: Failed to record test result for', CURRENT_KIND, recordError);
-                document.getElementById('test-details-container').appendChild(container);
+                requireElementById<HTMLElement>('test-details-container').appendChild(container);
                 // Force test section to be marked as failed
                 if (testStats[CURRENT_KIND]) {
                     testStats[CURRENT_KIND].failed++;
@@ -375,17 +396,18 @@ const createKindStats = (config: {
                     passedTests++;
                 }
 
-            } catch (e) {
+            } catch (error: unknown) {
                 const status = document.createElement('p');
-                status.textContent = `Status: CRITICAL ERROR - ${e.message}`;
+                const message = toErrorMessage(error);
+                status.textContent = `Status: CRITICAL ERROR - ${message}`;
                 status.className = 'status-failed';
                 container.appendChild(status);
-                console.error(`Error in test "${testName}":`, e);
+                console.error(`Error in test "${testName}":`, error);
             }
             const finalPassed = container.querySelector('.status-failed') === null;
             try { recordTestResult(CURRENT_KIND, finalPassed, container); } catch (recordError) {
                 console.error('CRITICAL: Failed to record test result for', CURRENT_KIND, recordError);
-                document.getElementById('test-details-container').appendChild(container);
+                requireElementById<HTMLElement>('test-details-container').appendChild(container);
                 // Force test section to be marked as failed
                 if (testStats[CURRENT_KIND]) {
                     testStats[CURRENT_KIND].failed++;
@@ -420,17 +442,18 @@ const createKindStats = (config: {
                 container.appendChild(expectedP);
 
                 if (passed) { passedTests++; }
-            } catch (e) {
+            } catch (error: unknown) {
                 const status = document.createElement('p');
-                status.textContent = `Status: CRITICAL ERROR - ${e.message}`;
+                const message = toErrorMessage(error);
+                status.textContent = `Status: CRITICAL ERROR - ${message}`;
                 status.className = 'status-failed';
                 container.appendChild(status);
-                console.error(`Error in equality test "${testName}":`, e);
+                console.error(`Error in equality test "${testName}":`, error);
             }
             const finalPassed = container.querySelector('.status-failed') === null;
             try { recordTestResult(CURRENT_KIND, finalPassed, container); } catch (recordError) {
                 console.error('CRITICAL: Failed to record test result for', CURRENT_KIND, recordError);
-                document.getElementById('test-details-container').appendChild(container);
+                requireElementById<HTMLElement>('test-details-container').appendChild(container);
                 // Force test section to be marked as failed
                 if (testStats[CURRENT_KIND]) {
                     testStats[CURRENT_KIND].failed++;
@@ -459,106 +482,76 @@ const createKindStats = (config: {
                 // Parse and calculate using new architecture only
                 OperationTracer.setGlobalTracer(10000000);
                 const parser = new SimpleParser(inputString);
-                const result = { ordinalObject: parser.parse() };
+                const ordinalObject = parser.parse();
 
-                if (result.error) {
-                    // Got an error - check if we expected one
-                    if (expectError) {
-                        const actualError = result.error.startsWith('Error:') ? result.error : `Error: ${result.error}`;
-                        passed = actualError === expectedString;
+                // Got a successful result - check if we expected success
+                if (expectError) {
+                    // Expected error but got success
+                    passed = false;
+                    const actualString = (ordinalObject as any).toDisplayString
+                        ? (ordinalObject as any).toDisplayString({ format: 'ENF' })
+                        : ordinalObject.toString();
 
-                        const actualP = document.createElement('p');
-                        actualP.className = 'log-output';
-                        actualP.textContent = `Actual:   "${actualError}"`;
-                        container.appendChild(actualP);
+                    const actualP = document.createElement('p');
+                    actualP.className = 'log-output status-failed';
+                    actualP.textContent = `Unexpected Success: "${actualString}"`;
+                    container.appendChild(actualP);
 
-                        if (!passed) {
-                            const expectedP = document.createElement('p');
-                            expectedP.className = 'log-output status-failed';
-                            expectedP.textContent = `Expected: "${expectedString}"`;
-                            container.appendChild(expectedP);
-                        }
-                    } else {
-                        // Got unexpected error
-                        passed = false;
-                        const actualP = document.createElement('p');
-                        actualP.className = 'log-output status-failed';
-                        actualP.textContent = `Unexpected Error: "${result.error}"`;
-                        container.appendChild(actualP);
-
-                        const expectedP = document.createElement('p');
-                        expectedP.className = 'log-output status-failed';
-                        expectedP.textContent = `Expected: "${expectedString}"`;
-                        container.appendChild(expectedP);
-                    }
+                    const expectedP = document.createElement('p');
+                    expectedP.className = 'log-output status-failed';
+                    expectedP.textContent = `Expected: "${expectedString}"`;
+                    container.appendChild(expectedP);
                 } else {
-                    // Got a successful result - check if we expected success
-                    if (expectError) {
-                        // Expected error but got success
-                        passed = false;
-                        const actualString = result.ordinalObject.toDisplayString
-                            ? result.ordinalObject.toDisplayString({ format: 'ENF' })
-                            : result.ordinalObject.toString();
+                    // Expected success and got success
+                    const actualString = (ordinalObject as any).toDisplayString
+                        ? (ordinalObject as any).toDisplayString({ format: 'ENF' })
+                        : ordinalObject.toString();
 
-                        const actualP = document.createElement('p');
-                        actualP.className = 'log-output status-failed';
-                        actualP.textContent = `Unexpected Success: "${actualString}"`;
-                        container.appendChild(actualP);
+                    const stringCheckPassed = actualString === expectedString;
 
+                    const actualP = document.createElement('p');
+                    actualP.className = 'log-output';
+                    actualP.textContent = `Actual:   "${actualString}"`;
+                    container.appendChild(actualP);
+
+                    if (!stringCheckPassed) {
                         const expectedP = document.createElement('p');
                         expectedP.className = 'log-output status-failed';
                         expectedP.textContent = `Expected: "${expectedString}"`;
                         container.appendChild(expectedP);
-                    } else {
-                        // Expected success and got success
-                        const actualString = result.ordinalObject.toDisplayString
-                            ? result.ordinalObject.toDisplayString({ format: 'ENF' })
-                            : result.ordinalObject.toString();
-
-                        const stringCheckPassed = actualString === expectedString;
-
-                        const actualP = document.createElement('p');
-                        actualP.className = 'log-output';
-                        actualP.textContent = `Actual:   "${actualString}"`;
-                        container.appendChild(actualP);
-
-                        if (!stringCheckPassed) {
-                            const expectedP = document.createElement('p');
-                            expectedP.className = 'log-output status-failed';
-                            expectedP.textContent = `Expected: "${expectedString}"`;
-                            container.appendChild(expectedP);
-                        }
-
-                        // Round-trip test: parse the result string and check ordinal equality
-                        let roundTripPassed = false;
-                        let roundTripError = '';
-                        try {
-                            OperationTracer.setGlobalTracer(10000000);
-                            const roundTripParser = new SimpleParser(actualString);
-                            const roundTripOrdinal = roundTripParser.parse();
-
-                            const B = result.ordinalObject;  // Original ordinal
-                            const D = roundTripOrdinal;  // Re-parsed ordinal
-                            roundTripPassed = B.equals(D);
-                            if (!roundTripPassed) {
-                                roundTripError = `Round-trip inequality: B="${B.toString()}" ≠ D="${D.toString()}"`;
-                            }
-                        } catch (e) {
-                            roundTripError = `Round-trip exception: ${e.message}`;
-                        }
-
-                        const roundTripP = document.createElement('p');
-                        roundTripP.className = 'log-output';
-                        if (roundTripPassed) {
-                            roundTripP.textContent = `Round-trip: PASSED (B = parse(string(B)))`;
-                        } else {
-                            roundTripP.textContent = `Round-trip: FAILED (${roundTripError})`;
-                            roundTripP.classList.add('status-failed');
-                        }
-                        container.appendChild(roundTripP);
-
-                        passed = stringCheckPassed && roundTripPassed;
                     }
+
+                    // Round-trip test: parse the result string and check ordinal equality
+                    let roundTripPassed = false;
+                    let roundTripError = '';
+                    try {
+                        OperationTracer.setGlobalTracer(10000000);
+                        const roundTripParser = new SimpleParser(actualString);
+                        const roundTripOrdinal = roundTripParser.parse();
+
+                        if (isOrdinal(ordinalObject) && isOrdinal(roundTripOrdinal)) {
+                            roundTripPassed = ordinalObject.equals(roundTripOrdinal);
+                            if (!roundTripPassed) {
+                                roundTripError = `Round-trip inequality: B="${ordinalObject.toString()}" ≠ D="${roundTripOrdinal.toString()}"`;
+                            }
+                        } else {
+                            roundTripError = "Round-trip produced non-ordinal result.";
+                        }
+                    } catch (e: unknown) {
+                        roundTripError = `Round-trip exception: ${toErrorMessage(e)}`;
+                    }
+
+                    const roundTripP = document.createElement('p');
+                    roundTripP.className = 'log-output';
+                    if (roundTripPassed) {
+                        roundTripP.textContent = `Round-trip: PASSED (B = parse(string(B)))`;
+                    } else {
+                        roundTripP.textContent = `Round-trip: FAILED (${roundTripError})`;
+                        roundTripP.classList.add('status-failed');
+                    }
+                    container.appendChild(roundTripP);
+
+                    passed = stringCheckPassed && roundTripPassed;
                 }
 
                 const status = document.createElement('p');
@@ -570,10 +563,10 @@ const createKindStats = (config: {
                     passedTests++;
                 }
 
-            } catch (e) {
+            } catch (e: unknown) {
                 // Handle exceptions - check if we expected an error
                 if (expectError) {
-                    const actualError = `Error: ${e.message}`;
+                    const actualError = `Error: ${toErrorMessage(e)}`;
                     passed = actualError === expectedString;
 
                     const actualP = document.createElement('p');
@@ -599,7 +592,7 @@ const createKindStats = (config: {
                 } else {
                     // Unexpected exception
                     const status = document.createElement('p');
-                    status.textContent = `Status: CRITICAL ERROR - ${e.message}`;
+                    status.textContent = `Status: CRITICAL ERROR - ${toErrorMessage(e)}`;
                     status.className = 'status-failed';
                     container.appendChild(status);
                     console.error(`Error in ENF calculation test "${testName}":`, e);
@@ -607,9 +600,9 @@ const createKindStats = (config: {
             }
 
             const finalPassed = container.querySelector('.status-failed') === null;
-            try { recordTestResult(CURRENT_KIND, finalPassed, container); } catch (recordError) {
+            try { recordTestResult(CURRENT_KIND, finalPassed, container); } catch (recordError: unknown) {
                 console.error('CRITICAL: Failed to record test result for', CURRENT_KIND, recordError);
-                document.getElementById('test-details-container').appendChild(container);
+                requireElementById<HTMLElement>('test-details-container').appendChild(container);
                 // Force test section to be marked as failed
                 if (testStats[CURRENT_KIND]) {
                     testStats[CURRENT_KIND].failed++;
@@ -680,18 +673,19 @@ const createKindStats = (config: {
                     passedTests++;
                 }
 
-            } catch (e) {
+            } catch (error: unknown) {
                 const status = document.createElement('p');
-                status.textContent = `Status: CRITICAL ERROR - ${e.message}`;
+                const message = toErrorMessage(error);
+                status.textContent = `Status: CRITICAL ERROR - ${message}`;
                 status.className = 'status-failed';
                 container.appendChild(status);
                 testResults.push(false);
-                console.error('Error in comprehensive addition test:', e);
+                console.error('Error in comprehensive addition test:', error);
             }
 
             try { recordTestResult(CURRENT_KIND, container.querySelector('.status-failed') === null, container); } catch (recordError) {
                 console.error('CRITICAL: Failed to record test result for', CURRENT_KIND, recordError);
-                document.getElementById('test-details-container').appendChild(container);
+                requireElementById<HTMLElement>('test-details-container').appendChild(container);
                 // Force test section to be marked as failed
                 if (testStats[CURRENT_KIND]) {
                     testStats[CURRENT_KIND].failed++;
@@ -726,8 +720,8 @@ const createKindStats = (config: {
                                 const ab_result = expectedAdditionResults[a][b];
                                 const ac_result = expectedAdditionResults[a][c];
 
-                                const ab_ord = new SimpleParser(ab_result).parse();
-                                const ac_ord = new SimpleParser(ac_result).parse();
+                                const ab_ord = parseOrdinalStrict(ab_result);
+                                const ac_ord = parseOrdinalStrict(ac_result);
 
                                 if (ab_ord.compareTo(ac_ord) >= 0) {
                                     violations++;
@@ -746,8 +740,8 @@ const createKindStats = (config: {
                                 const ba_result = expectedAdditionResults[b][a];
                                 const ca_result = expectedAdditionResults[c][a];
 
-                                const ba_ord = new SimpleParser(ba_result).parse();
-                                const ca_ord = new SimpleParser(ca_result).parse();
+                                const ba_ord = parseOrdinalStrict(ba_result);
+                                const ca_ord = parseOrdinalStrict(ca_result);
 
                                 if (ba_ord.compareTo(ca_ord) > 0) {
                                     violations++;
@@ -785,18 +779,19 @@ const createKindStats = (config: {
                 }
                 container.appendChild(status);
 
-            } catch (e) {
+            } catch (error: unknown) {
                 const status = document.createElement('p');
-                status.textContent = `Status: CRITICAL ERROR - ${e.message}`;
+                const message = toErrorMessage(error);
+                status.textContent = `Status: CRITICAL ERROR - ${message}`;
                 status.className = 'status-failed';
                 container.appendChild(status);
                 testResults.push(false);
-                console.error('Error in addition monotonicity test:', e);
+                console.error('Error in addition monotonicity test:', error);
             }
 
             try { recordTestResult(CURRENT_KIND, container.querySelector('.status-failed') === null, container); } catch (recordError) {
                 console.error('CRITICAL: Failed to record test result for', CURRENT_KIND, recordError);
-                document.getElementById('test-details-container').appendChild(container);
+                requireElementById<HTMLElement>('test-details-container').appendChild(container);
                 // Force test section to be marked as failed
                 if (testStats[CURRENT_KIND]) {
                     testStats[CURRENT_KIND].failed++;
@@ -831,8 +826,8 @@ const createKindStats = (config: {
                                 const ab_result = expectedMultiplicationResults[a][b];
                                 const ac_result = expectedMultiplicationResults[a][c];
 
-                                const ab_ord = new SimpleParser(ab_result).parse();
-                                const ac_ord = new SimpleParser(ac_result).parse();
+                                const ab_ord = parseOrdinalStrict(ab_result);
+                                const ac_ord = parseOrdinalStrict(ac_result);
 
                                 if (ab_ord.compareTo(ac_ord) >= 0) {
                                     violations++;
@@ -851,8 +846,8 @@ const createKindStats = (config: {
                                 const ba_result = expectedMultiplicationResults[b][a];
                                 const ca_result = expectedMultiplicationResults[c][a];
 
-                                const ba_ord = new SimpleParser(ba_result).parse();
-                                const ca_ord = new SimpleParser(ca_result).parse();
+                                const ba_ord = parseOrdinalStrict(ba_result);
+                                const ca_ord = parseOrdinalStrict(ca_result);
 
                                 if (ba_ord.compareTo(ca_ord) > 0) {
                                     violations++;
@@ -890,18 +885,19 @@ const createKindStats = (config: {
                 }
                 container.appendChild(status);
 
-            } catch (e) {
+            } catch (error: unknown) {
                 const status = document.createElement('p');
-                status.textContent = `Status: CRITICAL ERROR - ${e.message}`;
+                const message = toErrorMessage(error);
+                status.textContent = `Status: CRITICAL ERROR - ${message}`;
                 status.className = 'status-failed';
                 container.appendChild(status);
                 testResults.push(false);
-                console.error('Error in multiplication monotonicity test:', e);
+                console.error('Error in multiplication monotonicity test:', error);
             }
 
             try { recordTestResult(CURRENT_KIND, container.querySelector('.status-failed') === null, container); } catch (recordError) {
                 console.error('CRITICAL: Failed to record test result for', CURRENT_KIND, recordError);
-                document.getElementById('test-details-container').appendChild(container);
+                requireElementById<HTMLElement>('test-details-container').appendChild(container);
                 // Force test section to be marked as failed
                 if (testStats[CURRENT_KIND]) {
                     testStats[CURRENT_KIND].failed++;
@@ -986,17 +982,18 @@ const createKindStats = (config: {
                 }
                 container.appendChild(status);
 
-            } catch (e) {
+            } catch (error: unknown) {
                 const status = document.createElement('p');
-                status.textContent = `Status: CRITICAL ERROR - ${e.message}`;
+                const message = toErrorMessage(error);
+                status.textContent = `Status: CRITICAL ERROR - ${message}`;
                 status.className = 'status-failed';
                 container.appendChild(status);
-                console.error('Error in exponentiation monotonicity test:', e);
+                console.error('Error in exponentiation monotonicity test:', error);
             }
 
             try { recordTestResult(CURRENT_KIND, container.querySelector('.status-failed') === null, container); } catch (recordError) {
                 console.error('CRITICAL: Failed to record test result for', CURRENT_KIND, recordError);
-                document.getElementById('test-details-container').appendChild(container);
+                requireElementById<HTMLElement>('test-details-container').appendChild(container);
                 // Force test section to be marked as failed
                 if (testStats[CURRENT_KIND]) {
                     testStats[CURRENT_KIND].failed++;
@@ -1066,18 +1063,19 @@ const createKindStats = (config: {
                     testResults.push(false);
                 }
 
-            } catch (e) {
+            } catch (error: unknown) {
                 const status = document.createElement('p');
-                status.textContent = `Status: CRITICAL ERROR - ${e.message}`;
+                const message = toErrorMessage(error);
+                status.textContent = `Status: CRITICAL ERROR - ${message}`;
                 status.className = 'status-failed';
                 container.appendChild(status);
                 testResults.push(false);
-                console.error('Error in comprehensive multiplication test:', e);
+                console.error('Error in comprehensive multiplication test:', error);
             }
 
             try { recordTestResult(CURRENT_KIND, container.querySelector('.status-failed') === null, container); } catch (recordError) {
                 console.error('CRITICAL: Failed to record test result for', CURRENT_KIND, recordError);
-                document.getElementById('test-details-container').appendChild(container);
+                requireElementById<HTMLElement>('test-details-container').appendChild(container);
                 // Force test section to be marked as failed
                 if (testStats[CURRENT_KIND]) {
                     testStats[CURRENT_KIND].failed++;
@@ -1140,10 +1138,10 @@ const createKindStats = (config: {
                                 failureMessages.push(`FAIL @ [${i},${j},${k}] (${ordinalLabels[i]} , ${ordinalLabels[j]} , ${ordinalLabels[k]}): left=${left.toString()}, right=${right.toString()}`);
                             }
                         }
-                    } catch (e) {
+                    } catch (error: unknown) {
                         failures++;
                         if (failureMessages.length < 5) {
-                            failureMessages.push(`ERROR @ [${i},${j},${k}] (${ordinalLabels[i]} , ${ordinalLabels[j]} , ${ordinalLabels[k]}): ${e.message}`);
+                            failureMessages.push(`ERROR @ [${i},${j},${k}] (${ordinalLabels[i]} , ${ordinalLabels[j]} , ${ordinalLabels[k]}): ${toErrorMessage(error)}`);
                         }
                     }
                 }
@@ -1176,18 +1174,19 @@ const createKindStats = (config: {
                 }
                 container.appendChild(status);
 
-            } catch (e) {
+            } catch (error: unknown) {
                 const status = document.createElement('p');
-                status.textContent = `Status: CRITICAL ERROR - ${e.message}`;
+                const message = toErrorMessage(error);
+                status.textContent = `Status: CRITICAL ERROR - ${message}`;
                 status.className = 'status-failed';
                 container.appendChild(status);
                 testResults.push(false);
-                console.error('Error in associativity test (addition):', e);
+                console.error('Error in associativity test (addition):', error);
             }
 
             try { recordTestResult(CURRENT_KIND, container.querySelector('.status-failed') === null, container); } catch (recordError) {
                 console.error('CRITICAL: Failed to record test result for', CURRENT_KIND, recordError);
-                document.getElementById('test-details-container').appendChild(container);
+                requireElementById<HTMLElement>('test-details-container').appendChild(container);
                 // Force test section to be marked as failed
                 if (testStats[CURRENT_KIND]) {
                     testStats[CURRENT_KIND].failed++;
@@ -1230,7 +1229,7 @@ const createKindStats = (config: {
                     container.appendChild(ex);
                 }
 
-                const lawResults = [
+                const lawResults: Array<{ key: string; label: string; failures: number; messages: string[] }> = [
                     { key: 'mul_assoc', label: '(a*b)*c = a*(b*c)', failures: 0, messages: [] },
                     { key: 'left_dist', label: 'a*(b+c) = a*b + a*c', failures: 0, messages: [] },
                     { key: 'exp_add', label: 'a^(b+c) = a^b * a^c', failures: 0, messages: [] },
@@ -1281,9 +1280,9 @@ const createKindStats = (config: {
                             entry.failures++;
                             if (entry.messages.length < 5) entry.messages.push(`@ [${i},${j},${k}] ${entry.label} FAIL: left=${left_exp_mul.toString()}, right=${right_exp_mul.toString()}`);
                         }
-                    } catch (e) {
+                    } catch (error: unknown) {
                         // Count as failures for the relevant operations if exception arises; attach generic error
-                        const errMsg = `ERROR @ [${i},${j},${k}] (${ordinalLabels[i]}, ${ordinalLabels[j]}, ${ordinalLabels[k]}): ${e.message}`;
+                        const errMsg = `ERROR @ [${i},${j},${k}] (${ordinalLabels[i]}, ${ordinalLabels[j]}, ${ordinalLabels[k]}): ${toErrorMessage(error)}`;
                         // Attribute error to a generic bucket (append to each for visibility)
                         for (const entry of lawResults) {
                             entry.failures++;
@@ -1318,18 +1317,19 @@ const createKindStats = (config: {
                     passedTests++;
                 }
 
-            } catch (e) {
+            } catch (error: unknown) {
                 const status = document.createElement('p');
-                status.textContent = `Status: CRITICAL ERROR - ${e.message}`;
+                const message = toErrorMessage(error);
+                status.textContent = `Status: CRITICAL ERROR - ${message}`;
                 status.className = 'status-failed';
                 container.appendChild(status);
                 testResults.push(false);
-                console.error('Error in algebraic laws test:', e);
+                console.error('Error in algebraic laws test:', error);
             }
 
             try { recordTestResult(CURRENT_KIND, container.querySelector('.status-failed') === null, container); } catch (recordError) {
                 console.error('CRITICAL: Failed to record test result for', CURRENT_KIND, recordError);
-                document.getElementById('test-details-container').appendChild(container);
+                requireElementById<HTMLElement>('test-details-container').appendChild(container);
                 // Force test section to be marked as failed
                 if (testStats[CURRENT_KIND]) {
                     testStats[CURRENT_KIND].failed++;
@@ -1365,13 +1365,14 @@ const createKindStats = (config: {
 
                 for (let i = 0; i < ordinals.length; i++) {
                     for (let j = 0; j < ordinals.length; j++) {
-                        let computedStr;
+                        let computedStr: string;
                         try {
                             const computed = ordinals[i].power(ordinals[j]);
                             computedStr = computed.toString();
-                        } catch (e) {
-                            computedStr = `ERROR: ${e.message}`;
-                            console.error(`Power calculation error for ${ordinalLabels[i]} ^ ${ordinalLabels[j]}:`, e);
+                        } catch (error: unknown) {
+                            const message = toErrorMessage(error);
+                            computedStr = `ERROR: ${message}`;
+                            console.error(`Power calculation error for ${ordinalLabels[i]} ^ ${ordinalLabels[j]}:`, error);
                         }
                         const expected = expectedExponentiationResults[i][j];
 
@@ -1408,18 +1409,19 @@ const createKindStats = (config: {
                     testResults.push(false);
                 }
 
-            } catch (e) {
+            } catch (error: unknown) {
                 const status = document.createElement('p');
-                status.textContent = `Status: CRITICAL ERROR - ${e.message}`;
+                const message = toErrorMessage(error);
+                status.textContent = `Status: CRITICAL ERROR - ${message}`;
                 status.className = 'status-failed';
                 container.appendChild(status);
                 testResults.push(false);
-                console.error('Error in comprehensive exponentiation test:', e);
+                console.error('Error in comprehensive exponentiation test:', error);
             }
 
             try { recordTestResult(CURRENT_KIND, container.querySelector('.status-failed') === null, container); } catch (recordError) {
                 console.error('CRITICAL: Failed to record test result for', CURRENT_KIND, recordError);
-                document.getElementById('test-details-container').appendChild(container);
+                requireElementById<HTMLElement>('test-details-container').appendChild(container);
                 // Force test section to be marked as failed
                 if (testStats[CURRENT_KIND]) {
                     testStats[CURRENT_KIND].failed++;
@@ -1456,7 +1458,7 @@ const createKindStats = (config: {
             const ord_w_w = new ENFOrdinal([new ENFTerm([new ENFFactor(OmegaOrdinal.instance(), OmegaOrdinal.instance())], 1n)]);
             const ord_w_w_plus_1 = new ENFOrdinal([new ENFTerm([new ENFFactor(OmegaOrdinal.instance(), OmegaOrdinal.instance())], 1n), new ENFTerm([], 1n)]);
             const ord_w_w_times_2 = new ENFOrdinal([new ENFTerm([new ENFFactor(OmegaOrdinal.instance(), OmegaOrdinal.instance())], 2n)]);
-            const ord_w_w2 = new ENFOrdinal([new ENFTerm([new ENFFactor(OmegaOrdinal.instance(), new SimpleParser("w^2").parse())], 1n)]);
+            const ord_w_w2 = new ENFOrdinal([new ENFTerm([new ENFFactor(OmegaOrdinal.instance(), parseOrdinalStrict("w^2"))], 1n)]);
 
             const ord_e0_plus_w = new ENFOrdinal([ord_e0.terms[0].clone(), ord_w.terms[0].clone()]);
             const ord_e0_plus_w_w = new ENFOrdinal([ord_e0.terms[0].clone(), ord_w_w.terms[0].clone()]);
@@ -1474,7 +1476,7 @@ const createKindStats = (config: {
             const ord_e0_pow_w = new ENFOrdinal([new ENFTerm([new ENFFactor(e0_base, ord_w)], 1n)]);
             // New ordinal: e_0^(w+1)
             const ord_e0_pow_w_plus_1 = (function () {
-                const w_plus_1_cnf = new SimpleParser("w+1").parse();
+                const w_plus_1_cnf = parseOrdinalStrict("w+1");
                 return new ENFOrdinal([new ENFTerm([new ENFFactor(e0_base, ENFOrdinal.fromCNF(w_plus_1_cnf))], 1n)]);
             })();
             const ord_e1_plus_e0 = new ENFOrdinal([ord_e1.terms[0].clone(), ord_e0.terms[0].clone()]);
@@ -1492,7 +1494,7 @@ const createKindStats = (config: {
 
             const multi_term_1 = new ENFOrdinal([
                 new ENFTerm([new ENFFactor(e1_base, ord_w), new ENFFactor(e0_base, ord_five), new ENFFactor(OmegaOrdinal.instance(), w_cubed_plus_2)], 3n),
-                new ENFTerm([new ENFFactor(OmegaOrdinal.instance(), new SimpleParser("w^2").parse())], 5n),
+                new ENFTerm([new ENFFactor(OmegaOrdinal.instance(), parseOrdinalStrict("w^2"))], 5n),
                 new ENFTerm([], 10n)
             ]);
             const multi_term_2 = new ENFOrdinal([
@@ -1504,22 +1506,22 @@ const createKindStats = (config: {
             console.log('[MUTABILITY] Setting up mutation detection...');
 
             // --- All Ordinals for Tables ---
-            const allOrdinals = [
+            const allOrdinals: ENFOrdinal[] = [
                 ord_zero, ord_one, ord_five, ord_w, ord_w_plus_1, ord_w_times_2, ord_w_squared,
                 ord_w_w, ord_w_w_plus_1, ord_w_w_times_2, ord_w_w2,
                 ord_e0, ord_e0_plus_1, ord_e0_plus_w, ord_e0_plus_w_w, ord_e0_times_2, ord_e0_times_w, ord_e0_squared, ord_e0_pow_w, ord_e0_pow_w_plus_1,
                 ord_e1, ord_e1_plus_e0, ord_e1_times_2, ord_e1_times_w, ord_e1_times_e0, ord_e1_pow_e0,
                 ord_e2, ord_e_w, ord_e_e0,
                 multi_term_1, multi_term_2
-            ].sort((a, b) => a.compareTo(b));
+            ].sort((a, b) => a.compareTo(b)) as ENFOrdinal[];
 
             // Store immutable string representations for mutation detection
             const originalStrings = allOrdinals.map(ord => {
                 try {
                     return ord.toString();
-                } catch (error) {
+                } catch (error: unknown) {
                     console.error('[MUTABILITY] Error getting toString for ordinal:', error);
-                    return `ERROR: ${error.message}`;
+                    return `ERROR: ${toErrorMessage(error)}`;
                 }
             });
 
@@ -1552,12 +1554,12 @@ const createKindStats = (config: {
                                 mutations.push(mutation);
                                 console.error(`[MUTABILITY] MUTATION DETECTED at index ${i}:`, mutation);
                             }
-                        } catch (error) {
+                        } catch (error: unknown) {
                             mutationCount++;
                             const mutation = {
                                 index: i,
                                 original: originalString,
-                                current: `ERROR: ${error.message}`,
+                                current: `ERROR: ${toErrorMessage(error)}`,
                                 ordinal: ordinal
                             };
                             mutations.push(mutation);
@@ -1634,7 +1636,7 @@ const createKindStats = (config: {
 
                 try { recordTestResult(CURRENT_KIND, passed, container); } catch (recordError) {
                     console.error('CRITICAL: Failed to record test result for', CURRENT_KIND, recordError);
-                    document.getElementById('test-details-container').appendChild(container);
+                    requireElementById<HTMLElement>('test-details-container').appendChild(container);
                     // Force test section to be marked as failed
                     if (testStats[CURRENT_KIND]) {
                         testStats[CURRENT_KIND].failed++;
@@ -1741,7 +1743,7 @@ const createKindStats = (config: {
             // --- Targeted Regression: w^(e_1^(w+1)) should be e_1^e_1^(w+1) ---
             CURRENT_KIND = 'EXPONENTIATION';
             try {
-                const exp_w_plus_1 = new SimpleParser("w+1").parse();
+                const exp_w_plus_1 = parseOrdinalStrict("w+1");
                 const e1_pow_w_plus_1 = new ENFOrdinal([new ENFTerm([new ENFFactor(e1_base, ENFOrdinal.fromCNF(exp_w_plus_1))], 1n)]);
                 const actual = enf_w.power(e1_pow_w_plus_1);
                 const expected = new ENFOrdinal([new ENFTerm([new ENFFactor(e1_base, e1_pow_w_plus_1)], 1n)]);
@@ -1758,7 +1760,7 @@ const createKindStats = (config: {
                 container.appendChild(probe);
                 try { recordTestResult(CURRENT_KIND, true, container); } catch (recordError) {
                     console.error('CRITICAL: Failed to record test result for', CURRENT_KIND, recordError);
-                    document.getElementById('test-details-container').appendChild(container);
+                    requireElementById<HTMLElement>('test-details-container').appendChild(container);
                     // Force test section to be marked as failed
                     if (testStats[CURRENT_KIND]) {
                         testStats[CURRENT_KIND].failed++;
@@ -1767,7 +1769,7 @@ const createKindStats = (config: {
                 }
 
                 runEqualityTest("Regression: w^(e_1^(w+1))", actual, expected);
-            } catch (e) {
+            } catch (error: unknown) {
                 const container = document.createElement('div');
                 container.className = 'test-case';
                 const title = document.createElement('h3');
@@ -1775,11 +1777,11 @@ const createKindStats = (config: {
                 container.appendChild(title);
                 const p = document.createElement('p');
                 p.className = 'log-output status-failed';
-                p.textContent = e.message;
+                p.textContent = toErrorMessage(error);
                 container.appendChild(p);
                 try { recordTestResult(CURRENT_KIND, false, container); } catch (recordError) {
                     console.error('CRITICAL: Failed to record test result for', CURRENT_KIND, recordError);
-                    document.getElementById('test-details-container').appendChild(container);
+                    requireElementById<HTMLElement>('test-details-container').appendChild(container);
                     // Force test section to be marked as failed
                     if (testStats[CURRENT_KIND]) {
                         testStats[CURRENT_KIND].failed++;
@@ -1826,7 +1828,7 @@ const createKindStats = (config: {
                     totalTests++;
                     try { recordTestResult(CURRENT_KIND, ok, container); } catch (recordError) {
                         console.error('CRITICAL: Failed to record test result for', CURRENT_KIND, recordError);
-                        document.getElementById('test-details-container').appendChild(container);
+                        requireElementById<HTMLElement>('test-details-container').appendChild(container);
                         // Force test section to be marked as failed
                         if (testStats[CURRENT_KIND]) {
                             testStats[CURRENT_KIND].failed++;
@@ -1841,7 +1843,7 @@ const createKindStats = (config: {
                 const rhs = new EpsilonTowerOrdinal(k0_cnf, 3);
                 runEqualityTest("EpsTower: e_0^(e_0^^2) = e_0^^3", lhs, rhs);
 
-            } catch (e) {
+            } catch (error: unknown) {
                 const container = document.createElement('div');
                 container.className = 'test-case';
                 const title = document.createElement('h3');
@@ -1849,11 +1851,11 @@ const createKindStats = (config: {
                 container.appendChild(title);
                 const p = document.createElement('p');
                 p.className = 'log-output status-failed';
-                p.textContent = e.message;
+                p.textContent = toErrorMessage(error);
                 container.appendChild(p);
                 try { recordTestResult(CURRENT_KIND, false, container); } catch (recordError) {
                     console.error('CRITICAL: Failed to record test result for', CURRENT_KIND, recordError);
-                    document.getElementById('test-details-container').appendChild(container);
+                    requireElementById<HTMLElement>('test-details-container').appendChild(container);
                     // Force test section to be marked as failed
                     if (testStats[CURRENT_KIND]) {
                         testStats[CURRENT_KIND].failed++;
@@ -1888,7 +1890,7 @@ const createKindStats = (config: {
                 runEqualityTest("EpsTower(k=w): (e_w^^2)*2 equals (e_w^e_w)*2", mult2_enf, expected_mult2_enf);
 
                 // k = (w+1)
-                const k_w_plus_1_cnf = new SimpleParser("w+1").parse();
+                const k_w_plus_1_cnf = parseOrdinalStrict("w+1");
                 const e_w1_t2 = new EpsilonTowerOrdinal(k_w_plus_1_cnf, 2);
                 const e_w1_base_enf = ENFOrdinal.fromCNF(new EpsilonNumber(k_w_plus_1_cnf));
                 const e_w1_pow2 = e_w1_base_enf.power(e_w1_base_enf);
@@ -1908,7 +1910,7 @@ const createKindStats = (config: {
                     totalTests++;
                     try { recordTestResult(CURRENT_KIND, ok, container); } catch (recordError) {
                         console.error('CRITICAL: Failed to record test result for', CURRENT_KIND, recordError);
-                        document.getElementById('test-details-container').appendChild(container);
+                        requireElementById<HTMLElement>('test-details-container').appendChild(container);
                         // Force test section to be marked as failed
                         if (testStats[CURRENT_KIND]) {
                             testStats[CURRENT_KIND].failed++;
@@ -1923,7 +1925,7 @@ const createKindStats = (config: {
                 const e_e0_base_enf = ENFOrdinal.fromCNF(new EpsilonNumber(k_e0));
                 const e_e0_pow2 = OPERATIONS.power(e_e0_base_enf, e_e0_base_enf);
                 runEqualityTest("EpsTower(k=e_0): e_e_0^^2 = e_e_0^e_e_0", e_e0_t2.toENFOrdinal(), e_e0_pow2);
-            } catch (e) {
+            } catch (error: unknown) {
                 const container = document.createElement('div');
                 container.className = 'test-case';
                 const title = document.createElement('h3');
@@ -1931,11 +1933,11 @@ const createKindStats = (config: {
                 container.appendChild(title);
                 const p = document.createElement('p');
                 p.className = 'log-output status-failed';
-                p.textContent = e.message;
+                p.textContent = toErrorMessage(error);
                 container.appendChild(p);
                 try { recordTestResult(CURRENT_KIND, false, container); } catch (recordError) {
                     console.error('CRITICAL: Failed to record test result for', CURRENT_KIND, recordError);
-                    document.getElementById('test-details-container').appendChild(container);
+                    requireElementById<HTMLElement>('test-details-container').appendChild(container);
                     // Force test section to be marked as failed
                     if (testStats[CURRENT_KIND]) {
                         testStats[CURRENT_KIND].failed++;
@@ -1967,16 +1969,16 @@ const createKindStats = (config: {
                         zero.tetrate(CNFOrdinal.OMEGAStatic().clone());
                         // If no error thrown, test failed
                         passed = false;
-                    } catch (expectedError) {
+                    } catch (expectedError: unknown) {
                         // Error was expected, so test passed
                         passed = true;
-                        console.log('Expected tetration error caught:', expectedError.message);
+                        console.log('Expected tetration error caught:', toErrorMessage(expectedError));
                     }
                     const status = document.createElement('p'); status.textContent = `Status: ${passed ? 'PASSED' : 'FAILED'}`; status.className = passed ? 'status-passed' : 'status-failed'; container.appendChild(status);
                     if (passed) passedTests++; totalTests++;
                     try { recordTestResult(CURRENT_KIND, passed, container); } catch (recordError) {
                         console.error('CRITICAL: Failed to record test result for', CURRENT_KIND, recordError);
-                        document.getElementById('test-details-container').appendChild(container);
+                        requireElementById<HTMLElement>('test-details-container').appendChild(container);
                         // Force test section to be marked as failed
                         if (testStats[CURRENT_KIND]) {
                             testStats[CURRENT_KIND].failed++;
@@ -2004,7 +2006,7 @@ const createKindStats = (config: {
                     if (ok) passedTests++; totalTests++;
                     try { recordTestResult(CURRENT_KIND, ok, container); } catch (recordError) {
                         console.error('CRITICAL: Failed to record test result for', CURRENT_KIND, recordError);
-                        document.getElementById('test-details-container').appendChild(container);
+                    requireElementById<HTMLElement>('test-details-container').appendChild(container);
                         // Force test section to be marked as failed
                         if (testStats[CURRENT_KIND]) {
                             testStats[CURRENT_KIND].failed++;
@@ -2029,7 +2031,7 @@ const createKindStats = (config: {
                     if (ok) passedTests++; totalTests++;
                     try { recordTestResult(CURRENT_KIND, ok, container); } catch (recordError) {
                         console.error('CRITICAL: Failed to record test result for', CURRENT_KIND, recordError);
-                        document.getElementById('test-details-container').appendChild(container);
+                        requireElementById<HTMLElement>('test-details-container').appendChild(container);
                         // Force test section to be marked as failed
                         if (testStats[CURRENT_KIND]) {
                             testStats[CURRENT_KIND].failed++;
@@ -2044,13 +2046,13 @@ const createKindStats = (config: {
                     const title = document.createElement('h3'); title.textContent = '(e_0+1)^^3 is recursive (no error)'; container.appendChild(title);
                     const a = new ENFOrdinal([new ENFTerm([new ENFFactor(e0_base, enf_one)], 1n), new ENFTerm([], 1n)]);
                     let passed = true; let res; let errMsg = '';
-                    try { res = a.tetrate(CNFOrdinal.fromInt(3)); } catch (e) { passed = false; errMsg = e && e.message ? e.message : String(e); }
+                    try { res = a.tetrate(CNFOrdinal.fromInt(3)); } catch (error: unknown) { passed = false; errMsg = toErrorMessage(error); }
                     if (!passed) { const pErr = document.createElement('p'); pErr.className = 'log-output'; pErr.textContent = `Error: ${errMsg}`; container.appendChild(pErr); }
                     const status = document.createElement('p'); status.textContent = `Status: ${passed ? 'PASSED' : 'FAILED'}`; status.className = passed ? 'status-passed' : 'status-failed'; container.appendChild(status);
                     if (passed) passedTests++; totalTests++;
                     try { recordTestResult(CURRENT_KIND, passed, container); } catch (recordError) {
                         console.error('CRITICAL: Failed to record test result for', CURRENT_KIND, recordError);
-                        document.getElementById('test-details-container').appendChild(container);
+                    requireElementById<HTMLElement>('test-details-container').appendChild(container);
                         // Force test section to be marked as failed
                         if (testStats[CURRENT_KIND]) {
                             testStats[CURRENT_KIND].failed++;
@@ -2077,7 +2079,7 @@ const createKindStats = (config: {
                     if (ok) passedTests++; totalTests++;
                     try { recordTestResult(CURRENT_KIND, ok, container); } catch (recordError) {
                         console.error('CRITICAL: Failed to record test result for', CURRENT_KIND, recordError);
-                        document.getElementById('test-details-container').appendChild(container);
+                        requireElementById<HTMLElement>('test-details-container').appendChild(container);
                         // Force test section to be marked as failed
                         if (testStats[CURRENT_KIND]) {
                             testStats[CURRENT_KIND].failed++;
@@ -2098,7 +2100,7 @@ const createKindStats = (config: {
                     if (ok) passedTests++; totalTests++;
                     try { recordTestResult(CURRENT_KIND, ok, container); } catch (recordError) {
                         console.error('CRITICAL: Failed to record test result for', CURRENT_KIND, recordError);
-                        document.getElementById('test-details-container').appendChild(container);
+                        requireElementById<HTMLElement>('test-details-container').appendChild(container);
                         // Force test section to be marked as failed
                         if (testStats[CURRENT_KIND]) {
                             testStats[CURRENT_KIND].failed++;
@@ -2121,11 +2123,11 @@ const createKindStats = (config: {
                     const actual = base.tetrate(height);
                     const expected = new EpsilonNumber(CNFOrdinal.fromInt(2));
                     const ok = actual.equals(expected);
-                    const ordStr = (o) => {
+                    const ordStr = (o: unknown) => {
                         try {
-                            if (o && typeof o.toDisplayString === 'function') return o.toDisplayString({ format: 'ENF' });
-                            if (o && typeof o.toStringCNF === 'function') return o.toStringCNF();
-                            if (o && typeof o.toString === 'function') return o.toString();
+                            if (o && typeof o === 'object' && typeof (o as { toDisplayString?: unknown }).toDisplayString === 'function') return (o as any).toDisplayString({ format: 'ENF' });
+                            if (o && typeof o === 'object' && typeof (o as { toStringCNF?: unknown }).toStringCNF === 'function') return (o as any).toStringCNF();
+                            if (o && typeof (o as { toString?: unknown }).toString === 'function') return (o as { toString: () => string }).toString();
                         } catch (stringError) {
                             console.error('Error converting ordinal to string:', stringError);
                             /* Continue with fallback */
@@ -2140,7 +2142,7 @@ const createKindStats = (config: {
                     if (ok) passedTests++; totalTests++;
                     try { recordTestResult(CURRENT_KIND, ok, container); } catch (recordError) {
                         console.error('CRITICAL: Failed to record test result for', CURRENT_KIND, recordError);
-                        document.getElementById('test-details-container').appendChild(container);
+                        requireElementById<HTMLElement>('test-details-container').appendChild(container);
                         // Force test section to be marked as failed
                         if (testStats[CURRENT_KIND]) {
                             testStats[CURRENT_KIND].failed++;
@@ -2149,14 +2151,14 @@ const createKindStats = (config: {
                     }
                 })();
 
-            } catch (e) {
+            } catch (error: unknown) {
                 const container = document.createElement('div');
                 container.className = 'test-case';
                 const title = document.createElement('h3'); title.textContent = 'Extended tetration setup error'; container.appendChild(title);
-                const p = document.createElement('p'); p.className = 'log-output status-failed'; p.textContent = e.message; container.appendChild(p);
+                const p = document.createElement('p'); p.className = 'log-output status-failed'; p.textContent = toErrorMessage(error); container.appendChild(p);
                 try { recordTestResult(CURRENT_KIND, false, container); } catch (recordError) {
                     console.error('CRITICAL: Failed to record test result for', CURRENT_KIND, recordError);
-                    document.getElementById('test-details-container').appendChild(container);
+                    requireElementById<HTMLElement>('test-details-container').appendChild(container);
                     // Force test section to be marked as failed
                     if (testStats[CURRENT_KIND]) {
                         testStats[CURRENT_KIND].failed++;
@@ -2235,7 +2237,7 @@ const createKindStats = (config: {
         }
 
         function generateExponentiationTable(ordinals: ENFOrdinal[]): void {
-            const container = document.getElementById('exponentiation-table-container');
+            const container = requireElementById<HTMLElement>('exponentiation-table-container');
             container.innerHTML = '<h2>Comprehensive Exponentiation Table</h2>';
 
             const wrapper = document.createElement('div');
@@ -2245,7 +2247,7 @@ const createKindStats = (config: {
             const thead = document.createElement('thead');
             const tbody = document.createElement('tbody');
             let tsvContent = "α \\ β\t" + ordinals.map(o => o.toString()).join('\t') + '\n';
-            const arrayRows = [];
+            const arrayRows: string[][] = [];
 
             // Header Row
             const headerRow = document.createElement('tr');
@@ -2269,7 +2271,7 @@ const createKindStats = (config: {
                 th.classList.add('sticky-col');
                 row.appendChild(th);
                 let tsvRow = aStr + '\t';
-                const arrayRow = [];
+                const arrayRow: string[] = [];
 
                 ordinals.forEach(ordB => {
                     const cell = document.createElement('td');
@@ -2279,12 +2281,12 @@ const createKindStats = (config: {
                         cell.textContent = resultStr;
                         tsvRow += resultStr + '\t';
                         arrayRow.push(resultStr);
-                    } catch (e) {
+                    } catch (error: unknown) {
                         cell.textContent = "ERROR";
                         cell.style.color = 'red';
                         tsvRow += 'ERROR\t';
                         arrayRow.push('ERROR');
-                        console.error(`Error exponentiating ${aStr} ^ ${ordB.toString()}:`, e);
+                        console.error(`Error exponentiating ${aStr} ^ ${ordB.toString()}:`, error);
                     }
                     row.appendChild(cell);
                 });
@@ -2333,12 +2335,12 @@ const createKindStats = (config: {
         }
 
         function generateOrdinalIndexLegend(ordinals: ENFOrdinal[]): void {
-            let container = document.getElementById('ordinal-index-legend-container');
+            let container = document.getElementById('ordinal-index-legend-container') as HTMLElement | null;
             if (!container) {
                 container = document.createElement('div');
                 container.id = 'ordinal-index-legend-container';
-                const summary = document.getElementById('overall-summary-container');
-                summary.parentNode.insertBefore(container, summary.nextSibling);
+                const summary = requireElementById<HTMLElement>('overall-summary-container');
+                summary.parentNode?.insertBefore(container, summary.nextSibling);
             }
             container.innerHTML = '<h2>Ordinal Index Legend</h2>';
 
@@ -2385,7 +2387,7 @@ const createKindStats = (config: {
 
 
         function generateAdditionTable(ordinals: ENFOrdinal[]): void {
-            const container = document.getElementById('addition-table-container');
+            const container = requireElementById<HTMLElement>('addition-table-container');
             container.innerHTML = '<h2>Comprehensive Addition Table</h2>';
 
             const wrapper = document.createElement('div');
@@ -2395,7 +2397,7 @@ const createKindStats = (config: {
             const thead = document.createElement('thead');
             const tbody = document.createElement('tbody');
             let tsvContent = "α \\ β\t" + ordinals.map(o => o.toString()).join('\t') + '\n';
-            const arrayRows = [];
+            const arrayRows: string[][] = [];
 
             // Header Row
             const headerRow = document.createElement('tr');
@@ -2419,7 +2421,7 @@ const createKindStats = (config: {
                 th.classList.add('sticky-col');
                 row.appendChild(th);
                 let tsvRow = aStr + '\t';
-                const arrayRow = [];
+                const arrayRow: string[] = [];
 
                 ordinals.forEach(ordB => {
                     const cell = document.createElement('td');
@@ -2474,7 +2476,7 @@ const createKindStats = (config: {
         }
 
         function generateMultiplicationTable(ordinals: ENFOrdinal[]): void {
-            const container = document.getElementById('multiplication-table-container');
+            const container = requireElementById<HTMLElement>('multiplication-table-container');
             container.innerHTML = '<h2>Comprehensive Multiplication Table</h2>';
 
             const wrapper = document.createElement('div');
@@ -2484,7 +2486,7 @@ const createKindStats = (config: {
             const thead = document.createElement('thead');
             const tbody = document.createElement('tbody');
             let tsvContent = "α \\ β\t" + ordinals.map(o => o.toString()).join('\t') + '\n';
-            const arrayRows = [];
+            const arrayRows: string[][] = [];
 
             // Header Row
             const headerRow = document.createElement('tr');
@@ -2508,7 +2510,7 @@ const createKindStats = (config: {
                 th.classList.add('sticky-col');
                 row.appendChild(th);
                 let tsvRow = aStr + '\t';
-                const arrayRow = [];
+                const arrayRow: string[] = [];
 
                 ordinals.forEach(ordB => {
                     const cell = document.createElement('td');
@@ -2518,12 +2520,12 @@ const createKindStats = (config: {
                         cell.textContent = resultStr;
                         tsvRow += resultStr + '\t';
                         arrayRow.push(resultStr);
-                    } catch (e) {
+                    } catch (error: unknown) {
                         cell.textContent = "ERROR";
                         cell.style.color = 'red';
                         tsvRow += 'ERROR\t';
                         arrayRow.push('ERROR');
-                        console.error(`Error multiplying ${aStr} * ${ordB.toString()}:`, e);
+                        console.error(`Error multiplying ${aStr} * ${ordB.toString()}:`, error);
                     }
                     row.appendChild(cell);
                 });
@@ -2577,7 +2579,7 @@ const createKindStats = (config: {
             console.error('UNHANDLED ERROR during testing:', event.error);
             hasUnhandledErrors = true;
             // Force all test sections to show failure if there are unhandled errors
-            for (const kindKey in testStats) {
+            for (const kindKey of Object.keys(testStats) as TestKind[]) {
                 if (testStats[kindKey].total === 0) {
                     testStats[kindKey].failed = 1;
                     testStats[kindKey].total = 1;
@@ -2587,9 +2589,9 @@ const createKindStats = (config: {
         });
 
         // Add toggle listeners with debug logging
-        document.querySelectorAll('details.test-kind-section').forEach(detailsElement => {
+        document.querySelectorAll<HTMLDetailsElement>('details.test-kind-section').forEach(detailsElement => {
             detailsElement.addEventListener('toggle', () => {
-                const kindKey = detailsElement.id.replace('details-', '');
+                const kindKey = detailsElement.id.replace('details-', '') as TestKind;
                 console.log(`[DEBUG] Toggle event for ${kindKey}, now open=${detailsElement.open}`);
                 renderSingleKindOutput(kindKey);
                 updateKindSummary(kindKey);
@@ -2630,10 +2632,13 @@ const createKindStats = (config: {
                 // Reset global tracer for each test with specified budget
                 OperationTracer.setGlobalTracer(options.budget || 200000);
                 const parser = new SimpleParser(expr);
-                let ord = parser.parse();
-                return { ordinal: ord, error: null };
-            } catch (e) {
-                return { ordinal: null, error: e.message };
+                const parsed = parser.parse();
+                if (!isOrdinal(parsed)) {
+                    return { ordinal: null, error: 'Parsed value is not a valid ordinal' };
+                }
+                return { ordinal: parsed, error: null };
+            } catch (error: unknown) {
+                return { ordinal: null, error: toErrorMessage(error) };
             }
         }
 
@@ -2667,15 +2672,17 @@ const createKindStats = (config: {
             renderAllKindResults();
             updateOverallPageSummary();
             console.log('[Test] Tests completed successfully');
-        } catch (error) {
+        } catch (error: unknown) {
             console.error('CRITICAL ERROR during test initialization:', error);
-            document.body.innerHTML += `<div style="background: red; color: white; padding: 20px; margin: 20px;"><h2>CRITICAL TEST FAILURE</h2><p>Test initialization failed: ${error.message}</p><pre>${error.stack}</pre></div>`;
+            const message = toErrorMessage(error);
+            const stack = error instanceof Error ? error.stack ?? '' : '';
+            document.body.innerHTML += `<div style="background: red; color: white; padding: 20px; margin: 20px;"><h2>CRITICAL TEST FAILURE</h2><p>Test initialization failed: ${message}</p><pre>${stack}</pre></div>`;
         }
 
         // Add toggle listeners and mutation checks
-        document.querySelectorAll('details.test-kind-section').forEach(detailsElement => {
+        document.querySelectorAll<HTMLDetailsElement>('details.test-kind-section').forEach(detailsElement => {
             detailsElement.addEventListener('toggle', () => {
-                const kindKey = detailsElement.id.replace('details-', '');
+                const kindKey = detailsElement.id.replace('details-', '') as TestKind;
                 console.log(`[DEBUG] Toggle event for ${kindKey}, now open=${detailsElement.open}`);
                 renderSingleKindOutput(kindKey);
                 updateKindSummary(kindKey);

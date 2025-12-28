@@ -226,17 +226,23 @@ const isBudgetOrRecursionError = (error: unknown): boolean => {
       function initializeDefaults(): void {
         // Set max range to DEFAULT_F_PARAMS.precomputed[5] value (f(ε₀))
         try {
-          const defaultMaxValue = DEFAULT_F_PARAMS.precomputed[5].toString();
-          maxRangeInput.value = defaultMaxValue;
-          console.log("Set default max range to:", defaultMaxValue);
+          const precomputedValue = DEFAULT_F_PARAMS.precomputed?.[5];
+          if (precomputedValue !== undefined && precomputedValue !== null) {
+            const defaultMaxValue = precomputedValue.toString();
+            maxRangeInput.value = defaultMaxValue;
+            console.log("Set default max range to:", defaultMaxValue);
+          } else {
+            maxRangeInput.value = "91"; // fallback if missing
+            console.log("Set default max range to fallback value 91");
+          }
         } catch (error: unknown) {
           console.error("Error setting default max range:", error);
-          maxRangeInput.value = 91; // fallback
+          maxRangeInput.value = "91"; // fallback
         }
 
         // Initialize random seed to a random value
         //generateNewSeed();
-        randomSeedInput.value = 1761031719;
+        randomSeedInput.value = "1761031719";
       }
 
       function generateNewSeed(): void {
@@ -459,10 +465,9 @@ const isBudgetOrRecursionError = (error: unknown): boolean => {
       function setMinRangeToOmegaSquared(): void {
         updateConfiguration();
         try {
-          const omegaSquared = new CNFOrdinal(
-            [{ exponent: new FiniteOrdinal(2n, null), coefficient: 1n }],
-            null
-          );
+          const omegaSquared = new CNFOrdinal([
+            { exponent: new FiniteOrdinal(2n), coefficient: 1n },
+          ]);
           const fRep = omegaSquared.toFFormat();
           const fValue = f(fRep, getScaleParams());
           setMinRange(fValue);
@@ -475,10 +480,9 @@ const isBudgetOrRecursionError = (error: unknown): boolean => {
       function setMinRangeToOmegaOmega(): void {
         updateConfiguration();
         try {
-          const omegaOmega = new CNFOrdinal(
-            [{ exponent: OmegaOrdinal.instance(), coefficient: 1n }],
-            null
-          );
+          const omegaOmega = new CNFOrdinal([
+            { exponent: OmegaOrdinal.instance(), coefficient: 1n },
+          ]);
           const fRep = omegaOmega.toFFormat();
           const fValue = f(fRep, getScaleParams());
           setMinRange(fValue);
@@ -491,10 +495,9 @@ const isBudgetOrRecursionError = (error: unknown): boolean => {
       function setMaxRangeToOmegaSquared(): void {
         updateConfiguration();
         try {
-          const omegaSquared = new CNFOrdinal(
-            [{ exponent: new FiniteOrdinal(2n, null), coefficient: 1n }],
-            null
-          );
+          const omegaSquared = new CNFOrdinal([
+            { exponent: new FiniteOrdinal(2n), coefficient: 1n },
+          ]);
           const fRep = omegaSquared.toFFormat();
           const fValue = f(fRep, getScaleParams());
           setMaxRange(fValue);
@@ -507,10 +510,9 @@ const isBudgetOrRecursionError = (error: unknown): boolean => {
       function setMaxRangeToOmegaOmega(): void {
         updateConfiguration();
         try {
-          const omegaOmega = new CNFOrdinal(
-            [{ exponent: OmegaOrdinal.instance(), coefficient: 1n }],
-            null
-          );
+          const omegaOmega = new CNFOrdinal([
+            { exponent: OmegaOrdinal.instance(), coefficient: 1n },
+          ]);
           const fRep = omegaOmega.toFFormat();
           const fValue = f(fRep, getScaleParams());
           setMaxRange(fValue);
@@ -524,7 +526,7 @@ const isBudgetOrRecursionError = (error: unknown): boolean => {
         updateConfiguration();
         try {
           const epsilonZero = EpsilonZero.instance();
-          const fRep = epsilonZero.toFFormat();
+          const fRep = epsilonZero.toFFormat() as any;
           const fValue = f(fRep, getScaleParams());
           setMaxRange(fValue);
         } catch (error: unknown) {
@@ -1003,6 +1005,43 @@ const isBudgetOrRecursionError = (error: unknown): boolean => {
         },
       ];
 
+      type ParserNode =
+        | { type: "string"; value: string }
+        | { type: "boolean"; value: boolean }
+        | { type: "comparison"; value: -1 | 0 | 1 }
+        | { type: string; value?: unknown };
+
+      const isParserNode = (value: unknown): value is ParserNode =>
+        typeof value === "object" && value !== null && "type" in value;
+
+      const isStringNode = (
+        value: unknown
+      ): value is Extract<ParserNode, { type: "string" }> =>
+        isParserNode(value) && value.type === "string";
+
+      const isBooleanNode = (
+        value: unknown
+      ): value is Extract<ParserNode, { type: "boolean" }> =>
+        isParserNode(value) && value.type === "boolean";
+
+      const isComparisonNode = (
+        value: unknown
+      ): value is Extract<ParserNode, { type: "comparison" }> =>
+        isParserNode(value) && value.type === "comparison";
+
+      const isUnresolvedNode = (value: unknown): boolean =>
+        isParserNode(value) &&
+        (value.type === "variable" ||
+          value.type === "operation" ||
+          value.type === "function" ||
+          value.type === "comparison_op" ||
+          value.type === "epsilon" ||
+          value.type === "successor");
+
+      function _hasUnresolvedElements(value: unknown): boolean {
+        return isUnresolvedNode(value);
+      }
+
       // Generic test runner for any test list and substitution map
       function runTestList(
         testList: OrdinalTest[],
@@ -1021,20 +1060,17 @@ const isBudgetOrRecursionError = (error: unknown): boolean => {
               const conditionResult =
                 conditionParser.parseWithSubstitution(substitutions);
               console.log(`[DEBUG] Condition result:`, conditionResult);
-              console.log(
-                `[DEBUG] Condition result type:`,
-                conditionResult?.type
-              );
-              console.log(
-                `[DEBUG] Condition result value:`,
-                conditionResult?.value
-              );
 
               // Skip test if condition is false
-              if (
-                !conditionResult ||
-                (conditionResult.type === "boolean" && !conditionResult.value)
-              ) {
+              if (!conditionResult) {
+                results.push({
+                  name: test.name,
+                  status: "skipped",
+                  reason: `Condition not met: ${test.condition}`,
+                });
+                continue;
+              }
+              if (isBooleanNode(conditionResult) && !conditionResult.value) {
                 results.push({
                   name: test.name,
                   status: "skipped",
@@ -1123,32 +1159,13 @@ const isBudgetOrRecursionError = (error: unknown): boolean => {
       }
 
       function _isOrdinal(value: unknown): value is OrdinalBase {
-        return (
+        return Boolean(
           value &&
           typeof value === "object" &&
           typeof (value as OrdinalBase).isZero === "function" &&
           typeof (value as OrdinalBase).add === "function"
         );
       }
-
-      function _hasUnresolvedElements(value: unknown): boolean {
-        return (
-          value &&
-          typeof value === "object" &&
-          (value.type === "variable" ||
-            value.type === "operation" ||
-            value.type === "function" ||
-            value.type === "comparison_op" ||
-            value.type === "epsilon" ||
-            value.type === "successor")
-        );
-      }
-
-      type ParserNode =
-        | { type: "string"; value: string }
-        | { type: "boolean"; value: boolean }
-        | { type: "comparison"; value: -1 | 0 | 1 }
-        | { type: string; value?: unknown };
 
       function _compareTestValues(left: unknown, right: unknown): number {
         // Both are ordinals
@@ -1157,37 +1174,24 @@ const isBudgetOrRecursionError = (error: unknown): boolean => {
         }
 
         // Both are strings
-        if (
-          (left as ParserNode)?.type === "string" &&
-          (right as ParserNode)?.type === "string"
-        ) {
-          const leftNode = left as ParserNode;
-          const rightNode = right as ParserNode;
+        if (isStringNode(left) && isStringNode(right)) {
+          const leftNode = left;
+          const rightNode = right;
           if ((leftNode.value ?? "") < (rightNode.value ?? "")) return -1;
           if ((leftNode.value ?? "") > (rightNode.value ?? "")) return 1;
           return 0;
         }
 
         // Both are booleans
-        if (
-          (left as ParserNode)?.type === "boolean" &&
-          (right as ParserNode)?.type === "boolean"
-        ) {
-          const leftNode = left as ParserNode;
-          const rightNode = right as ParserNode;
-          if (leftNode.value === rightNode.value) return 0;
-          return leftNode.value ? 1 : -1;
+        if (isBooleanNode(left) && isBooleanNode(right)) {
+          if (left.value === right.value) return 0;
+          return left.value ? 1 : -1;
         }
 
         // Both are comparison results
-        if (
-          (left as ParserNode)?.type === "comparison" &&
-          (right as ParserNode)?.type === "comparison"
-        ) {
-          const leftNode = left as ParserNode;
-          const rightNode = right as ParserNode;
-          if ((leftNode.value ?? 0) < (rightNode.value ?? 0)) return -1;
-          if ((leftNode.value ?? 0) > (rightNode.value ?? 0)) return 1;
+        if (isComparisonNode(left) && isComparisonNode(right)) {
+          if ((left.value ?? 0) < (right.value ?? 0)) return -1;
+          if ((left.value ?? 0) > (right.value ?? 0)) return 1;
           return 0;
         }
 
@@ -1200,15 +1204,11 @@ const isBudgetOrRecursionError = (error: unknown): boolean => {
       }
 
       function _formatTestResult(result: unknown): string {
-        if (
-          result &&
-          typeof result.toString === "function" &&
-          typeof result.isZero === "function"
-        ) {
+        if (_isOrdinal(result)) {
           return result.toString();
-        } else if (result && result.type === "boolean") {
+        } else if (isBooleanNode(result)) {
           return result.value.toString();
-        } else if (result && result.type === "comparison") {
+        } else if (isComparisonNode(result)) {
           switch (result.value) {
             case -1:
               return "<";
@@ -1217,7 +1217,7 @@ const isBudgetOrRecursionError = (error: unknown): boolean => {
             case 1:
               return ">";
             default:
-              return result.value.toString();
+              return String(result.value);
           }
         } else {
           return String(result);

@@ -677,7 +677,7 @@ import { requireElementById } from "./testUtils.js";
           sCls = "",
           currentTestPassed = true,
           notes: string[] = [],
-          simpG = Number.NaN,
+          simpG: number | "N/A" = "N/A",
           originalOrdinalStr = "N/A";
 
         try {
@@ -733,8 +733,14 @@ import { requireElementById } from "./testUtils.js";
         if (currentTestPassed) testStats.SIMPLIFY.passed++;
         else testStats.SIMPLIFY.failed++;
 
-        addDetailElement(`Simplified Form: "${actualStr}" (g=${simpG})`);
-        addDetailElement(`Remaining Budget: ${actRem}`);
+        addDetailElement(
+          `Simplified Form: "${actualStr}"${
+            simpG !== "N/A" && !Number.isNaN(simpG) ? ` (g=${simpG})` : ""
+          }`
+        );
+        addDetailElement(
+          `Remaining Budget: ${actRem === -1 ? "N/A" : actRem}`
+        );
         if (notes.length > 0)
           notes.forEach((n) => addDetailElement(n, "error-message"));
         addDetailElement(sMsg, sCls);
@@ -908,9 +914,15 @@ import { requireElementById } from "./testUtils.js";
         if (currentTestPassed) testStats.SIMPLIFY.passed++;
         else testStats.SIMPLIFY.failed++;
         if (actualStr !== undefined)
-          addDetailElement(`Simplified Form: "${actualStr}" (g=${simpG})`);
+          addDetailElement(
+            `Simplified Form: "${actualStr}"${
+              !Number.isNaN(simpG) ? ` (g=${simpG})` : ""
+            }`
+          );
         if (actualRem !== undefined)
-          addDetailElement(`Remaining Budget: ${actualRem}`);
+          addDetailElement(
+            `Remaining Budget: ${actualRem ?? "N/A"}`
+          );
         if (notes.length > 0)
           notes.forEach((n) => addDetailElement(n, "error-message"));
         addDetailElement(statusMsg, statusClass);
