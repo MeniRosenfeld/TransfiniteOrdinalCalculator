@@ -182,8 +182,7 @@ const isWTowerRepresentation = (value: FInverseResult): value is Extract<Ordinal
           const x3 = params.precomputed[3];
           if (!x3) {
             addResult("fInverse(3) → ω^ω test", false, "Error: params.precomputed[3] is undefined");
-            return;
-          }
+          } else {
           const resultOmegaOmega = fInverseWrapper(x3.toNumber(), params);
           const expectedOmegaOmega: OrdinalRepresentation = { type: "pow", k: { type: "pow", k: 1n } };
           const matchOmegaOmega =
@@ -197,6 +196,7 @@ const isWTowerRepresentation = (value: FInverseResult): value is Extract<Ordinal
               resultOmegaOmega
             )}`
           );
+          }
         } catch (error: unknown) {
           addResult("fInverse(3) → ω^ω test", false, `Error: ${toErrorMessage(error)}`);
         }
@@ -249,8 +249,7 @@ const isWTowerRepresentation = (value: FInverseResult): value is Extract<Ordinal
           const fOmegaOmegaValue = params.precomputed[3];
           if (!fOmegaOmegaValue) {
             addResult("Interval preference for ω^ω", false, "Error: params.precomputed[3] is undefined");
-            return;
-          }
+          } else {
           const fOmegaOmega = fOmegaOmegaValue.toNumber();
           const interval3 = new Interval(
             ctx.fromNumber(fOmegaOmega - 0.3),
@@ -269,6 +268,7 @@ const isWTowerRepresentation = (value: FInverseResult): value is Extract<Ordinal
               1
             )}, should return: ω^ω, Got: ${formatOrdinal(result3Int)}`
           );
+          }
         } catch (error: unknown) {
           addResult(
             "Interval preference for ω^ω",
@@ -315,8 +315,7 @@ const isWTowerRepresentation = (value: FInverseResult): value is Extract<Ordinal
           const x5 = params.precomputed[5];
           if (!x5) {
             addResult("fInverse → ε₀ test", false, "Error: params.precomputed[5] is undefined");
-            return;
-          }
+          } else {
           const resultEpsilon = fInverseWrapper(x5.toNumber(), params);
           const matchEpsilon =
             isEpsilonRepresentation(resultEpsilon) && resultEpsilon.index === 0n;
@@ -325,6 +324,7 @@ const isWTowerRepresentation = (value: FInverseResult): value is Extract<Ordinal
             matchEpsilon,
             `Expected: ε₀, Got: ${formatOrdinal(resultEpsilon)}`
           );
+          }
         } catch (error: unknown) {
           addResult("fInverse → ε₀ test", false, `Error: ${toErrorMessage(error)}`);
         }

@@ -5,6 +5,9 @@ import type { OrdinalBase } from "../types/OrdinalBase.js";
 import { requireElementById } from "./testUtils.js";
 import { initializeTestEnvironment } from "./testEnvironment.js";
 
+const toErrorMessage = (error: unknown): string =>
+  error instanceof Error ? error.message : String(error);
+
 // Extracted from immutability_test.html
 
 // Original <scripttype="module">
@@ -182,7 +185,7 @@ import { initializeTestEnvironment } from "./testEnvironment.js";
                         if (zero && omega) {
                             console.log('0 compareTo w:', zero.compareTo(omega));
                         }
-                    } catch (error) {
+                    } catch (error: unknown) {
                         console.error('Debug comparison failed:', error);
                     }
                 }
@@ -223,13 +226,13 @@ import { initializeTestEnvironment } from "./testEnvironment.js";
                                 if (this.isSafeForExponentiation(ordA, ordB)) {
                                     const power = ordA.power(ordB);
                                 }
-                            } catch (expError) {
+                            } catch (expError: unknown) {
                                 // Exponentiation can fail for various mathematical reasons
-                                console.warn(`Exponentiation failed for ${this.originalStrings[i]}^${this.originalStrings[j]}:`, expError.message);
+                                console.warn(`Exponentiation failed for ${this.originalStrings[i]}^${this.originalStrings[j]}:`, toErrorMessage(expError));
                             }
                             this.completedOperations++;
 
-                        } catch (error) {
+                        } catch (error: unknown) {
                             console.error(`Operation failed for indices ${i}, ${j}:`, error);
                             this.completedOperations += 3;
                         }
@@ -310,12 +313,12 @@ import { initializeTestEnvironment } from "./testEnvironment.js";
                                 current: currentString
                             });
                         }
-                    } catch (error) {
+                    } catch (error: unknown) {
                         console.error(`Failed to convert ordinal ${i} to string:`, error);
                         this.mutations.push({
                             index: i,
                             original: this.originalStrings[i],
-                            current: `ERROR: ${error.message}`
+                            current: `ERROR: ${toErrorMessage(error)}`
                         });
                     }
                 }
@@ -415,17 +418,25 @@ import { initializeTestEnvironment } from "./testEnvironment.js";
                     this.displayResults();
 
                     console.log('[ImmutabilityTest] Test completed successfully!');
-                } catch (error) {
+                } catch (error: unknown) {
                     console.error('Test failed with error:', error);
-                    this.updateStatus(`❌ TEST ERROR: ${error.message}`, 'fail');
+                    this.updateStatus(`❌ TEST ERROR: ${toErrorMessage(error)}`, 'fail');
                 }
             }
         }
 
-        // Start the test automatically
-        // Wait a bit to ensure all initialization is complete
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
-        console.log('[Test] Starting ImmutabilityTester...');
-        const tester = new ImmutabilityTester();
-        tester.runTest();
+        // Start the test automatically inside an async IIFE to avoid top-level await
+        (async () => {
+            // Wait a bit to ensure all initialization is complete
+            await new Promise(resolve => setTimeout(resolve, 100));
+
+            console.log('[Test] Starting ImmutabilityTester...');
+            const tester = new ImmutabilityTester();
+            await tester.runTest();
+        })().catch((error: unknown) => {
+            console.error('Fatal initialization error in ImmutabilityTester:', error);
+            const statusEl = requireElementById<HTMLDivElement>('overall-status');
+            statusEl.textContent = `❌ TEST ERROR: ${toErrorMessage(error)}`;
+            statusEl.classList.remove('running', 'pass');
+            statusEl.classList.add('fail');
+        });

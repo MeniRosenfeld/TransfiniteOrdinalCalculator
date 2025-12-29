@@ -6,6 +6,7 @@ import { WTowerOrdinal } from "../types/WTowerOrdinal.js";
 import { f, fInverse, DEFAULT_F_PARAMS, OLD_F_PARAMS, convertFFormatToOrdinalInstance, convertOrdinalInstanceToFFormat } from "../ordinal_mapping/OrdinalMappingCompat.js";
 import { initializeTestEnvironment } from "./testEnvironment.js";
 import { requireElementById } from "./testUtils.js";
+import type { OrdinalRepresentation } from "../ordinal_mapping/OrdinalMapping.js";
 
 // Extracted from simplify_test.html
 
@@ -13,6 +14,12 @@ import { requireElementById } from "./testUtils.js";
 
         initializeTestEnvironment(1_000_000);
         console.log('[Test] Simplify tests initialized');
+
+        const toErrorMessage = (error: unknown): string =>
+            error instanceof Error ? error.message : String(error);
+
+        const isOrdinal = (value: unknown): value is OrdinalBase =>
+            Boolean(value && typeof value === "object" && typeof (value as OrdinalBase).compareTo === "function");
 
         type TestKind = 'SIMPLIFY' | 'WTOWER' | 'COMPLEXITY' | 'MONOTONICITY' | 'INVERSE_MAPPING';
 
@@ -22,19 +29,19 @@ import { requireElementById } from "./testUtils.js";
         };
 
         type TestStatsEntry = {
-            total?: number;
-            passed?: number;
-            failed?: number;
+            total: number;
+            passed: number;
+            failed: number;
             total_pairs?: number;
             passed_pairs?: number;
             failed_pairs?: number;
-            containerId?: string;
-            previewId?: string;
-            summaryId?: string;
+            containerId: string;
+            previewId: string;
+            summaryId: string;
             results: TestResult[];
         };
 
-        type TestStatsMap = Record<string, TestStatsEntry>;
+        type TestStatsMap = Record<TestKind, TestStatsEntry>;
 
         // Stats for each test kind
         const testStats: TestStatsMap = {
@@ -42,7 +49,7 @@ import { requireElementById } from "./testUtils.js";
             WTOWER: { total: 0, passed: 0, failed: 0, containerId: 'wtower-results-output', previewId: 'wtower-failed-preview', summaryId: 'wtower-summary', results: [] },
             COMPLEXITY: { total: 0, passed: 0, failed: 0, containerId: 'complexity-results-output', previewId: 'complexity-failed-preview', summaryId: 'complexity-summary', results: [] },
             INVERSE_MAPPING: { total: 0, passed: 0, failed: 0, containerId: 'inverse-mapping-results-output', previewId: 'inverse-mapping-failed-preview', summaryId: 'inverse-mapping-summary', results: [] },
-            MONOTONICITY: { total_pairs: 0, passed_pairs: 0, failed_pairs: 0, containerId: 'monotonicity-results-output', previewId: 'monotonicity-failed-preview', summaryId: 'monotonicity-summary', results: [] },
+            MONOTONICITY: { total: 0, passed: 0, failed: 0, total_pairs: 0, passed_pairs: 0, failed_pairs: 0, containerId: 'monotonicity-results-output', previewId: 'monotonicity-failed-preview', summaryId: 'monotonicity-summary', results: [] },
         };
 
         const successfulCNFTestResultsForMapping: Array<{
@@ -54,11 +61,13 @@ import { requireElementById } from "./testUtils.js";
 
         function toCnfString(ordinalLike: OrdinalBase | { toDisplayString?: (...args: any[]) => string; toStringCNF?: () => string } | null | undefined): string {
             try {
-                if (ordinalLike && typeof ordinalLike.toDisplayString === 'function') {
-                    return ordinalLike.toDisplayString({ format: 'CNF' });
+                const maybeDisplay = (ordinalLike as any)?.toDisplayString;
+                if (typeof maybeDisplay === 'function') {
+                    return maybeDisplay.call(ordinalLike, { format: 'CNF' });
                 }
-                if (ordinalLike && typeof ordinalLike.toStringCNF === 'function') {
-                    return ordinalLike.toStringCNF();
+                const maybeToStringCNF = (ordinalLike as any)?.toStringCNF;
+                if (typeof maybeToStringCNF === 'function') {
+                    return maybeToStringCNF.call(ordinalLike);
                 }
             } catch (e) { /* fall back below */ }
             return String(ordinalLike);
@@ -87,29 +96,12 @@ import { requireElementById } from "./testUtils.js";
             parentElement.appendChild(entry);
         }
 
-        // Refactored addDetailElement for testOrdinalCalc
-        function addDetailElement(text: string, classNameString = ''): void { // Renamed for clarity
-            const p = document.createElement('p');
-            p.textContent = text;
-            p.classList.add('log-output'); // Base class for all test details
-
-            if (classNameString) {
-                const classes = classNameString.trim().split(/\s+/); // Split by any whitespace
-                classes.forEach(cls => {
-                    if (cls) { // Make sure token is not empty after split
-                        p.classList.add(cls);
-                    }
-                });
-            }
-            outputElements.push(p);
-        }
-
         // Refactored testOrdinalCalc
         function testOrdinalCalc(input: string, expectedCNF: string): void {
             testStats.SIMPLIFY.total++;
             const outputElements: HTMLElement[] = [];
 
-            const addDetailElement = (text, classNameString = '') => {
+            const addDetailElement = (text: string, classNameString = '') => {
                 const p = document.createElement('p');
                 p.textContent = text;
                 p.classList.add('log-output');
@@ -125,7 +117,9 @@ import { requireElementById } from "./testUtils.js";
             let overallTestPassed = false;
             let mainStatusMessage = '';
             let mainStatusClass = '';
-            let calcResult;
+            let calcResult:
+                | { cnfString: string; ordinalObject: OrdinalBase; error: null }
+                | { error: string };
 
             const fInverseThreshold = 1e-14;
 
@@ -134,7 +128,7 @@ import { requireElementById } from "./testUtils.js";
             try {
                 calcResult = calculateAndSimplify(input);
 
-                if (calcResult.error) {
+                if ("error" in calcResult && calcResult.error) {
                     const actualOutput = calcResult.error;
                     addDetailElement(`Output (Error): "${actualOutput}"`, 'error-message');
                     overallTestPassed = (actualOutput === expectedCNF);
@@ -146,8 +140,9 @@ import { requireElementById } from "./testUtils.js";
                         mainStatusClass = 'status-failed';
                     }
                 } else {
-                    const originalOrdinalObject = calcResult.ordinalObject;
-                    const actualCNF = calcResult.cnfString;
+                    const successResult = calcResult as { cnfString: string; ordinalObject: OrdinalBase; error: null };
+                    const originalOrdinalObject = successResult.ordinalObject;
+                    const actualCNF = successResult.cnfString;
                     addDetailElement(`Output CNF: "${actualCNF}"`);
 
                     // --- BEGIN MODIFICATION ---
@@ -161,15 +156,15 @@ import { requireElementById } from "./testUtils.js";
                                 mappedValue: mappedValue,
                                 cnf: actualCNF
                             });
-                        } catch (mapErr) {
-                            addDetailElement(`Could not add to successfulCNFTestResultsForMapping: f() or conversion error - ${mapErr.message}`, 'error-message');
+                        } catch (mapErr: unknown) {
+                            addDetailElement(`Could not add to successfulCNFTestResultsForMapping: f() or conversion error - ${toErrorMessage(mapErr)}`, 'error-message');
                         }
                     }
                     // --- END MODIFICATION ---
 
                     const cnfCheckPassed = (actualCNF === expectedCNF);
                     let fRoundTripCheckPassed = false;
-                    const fTripDetailsLogs = [];
+                    const fTripDetailsLogs: string[] = [];
 
                     if (!originalOrdinalObject) {
                         fTripDetailsLogs.push("f()/fInverse()/f() Check: SKIPPED (originalOrdinalObject is null/undefined).");
@@ -204,9 +199,9 @@ import { requireElementById } from "./testUtils.js";
                                 fTripDetailsLogs.push(`  Original Ordinal: ${originalOrdinalObject.toString()}`);
                                 fTripDetailsLogs.push(`  Inverse Ordinal:  ${inverseOrdinalObject.toString()}`);
                             }
-                        } catch (err) {
+                        } catch (err: unknown) {
                             fRoundTripCheckPassed = false;
-                            const errMsg = `f()/fInverse()/f() Check: CRITICAL ERROR - ${err.message}`;
+                            const errMsg = `f()/fInverse()/f() Check: CRITICAL ERROR - ${toErrorMessage(err)}`;
                             fTripDetailsLogs.push(errMsg);
                             console.error(`Critical error during f()/fInverse()/f() for input "${input}":`, err);
                         }
@@ -235,8 +230,8 @@ import { requireElementById } from "./testUtils.js";
                         }
                     }
                 }
-            } catch (criticalError) {
-                addDetailElement(`CRITICAL TEST ERROR: ${criticalError.message}`, 'error-message status-failed');
+                } catch (criticalError: unknown) {
+                addDetailElement(`CRITICAL TEST ERROR: ${toErrorMessage(criticalError)}`, 'error-message status-failed');
                 console.error(`Critical error running testOrdinalCalc for input "${input}":`, criticalError);
                 overallTestPassed = false;
                 mainStatusMessage = 'Status: FAILED (Critical test execution error)';
@@ -289,16 +284,16 @@ import { requireElementById } from "./testUtils.js";
                         try {
                             const fFormatted = convertOrdinalInstanceToFFormat(cnfOrdForMapping);
                             successfulCNFTestResultsForMapping.push({ input: `w^^${height}`, ordinal: cnfOrdForMapping, mappedValue: f(fFormatted, DEFAULT_F_PARAMS), cnf: actualCNF });
-                        } catch (mapErr) {
-                            addDetailElement(`Mapped Value f(α): Error - ${mapErr.message}`, 'error-message');
+                        } catch (mapErr: unknown) {
+                            addDetailElement(`Mapped Value f(α): Error - ${toErrorMessage(mapErr)}`, 'error-message');
                         }
                     }
                 } else {
                     statusMsg = `Status: FAILED. Exp: "${expectedCNFString}"`;
                     sClass = "status-failed";
                 }
-            } catch (e) {
-                actualCNF = `Crit Error: ${e.message}`;
+            } catch (e: unknown) {
+                actualCNF = `Crit Error: ${toErrorMessage(e)}`;
                 statusMsg = `Status: FAILED (Crit Error). Exp: "${expectedCNFString}"`;
                 sClass = "status-failed";
                 console.error(`Crit WTower test "${description}":`, e);
@@ -314,7 +309,7 @@ import { requireElementById } from "./testUtils.js";
             testStats.WTOWER.results.push({ passed: currentTestPassed, detailsElements: outputElements });
         }
 
-        function testOrdinalSimplify(description: string, inputStr: string, budget: number, expectedCNF: string, expectedRem: string, opBudget = 100000): void {
+        function testOrdinalSimplify(description: string, inputStr: string, budget: number, expectedCNF: string, expectedRem: number, opBudget = 100000): void {
             testStats.SIMPLIFY.total++;
             const outputElements: HTMLElement[] = [];
             const addDetailElement = (text: string, className = '') => {
@@ -328,7 +323,7 @@ import { requireElementById } from "./testUtils.js";
             const tr = new OperationTracer(opBudget);
             addDetailElement(`Test (Simplify): ${description} [Budget: ${budget}]`);
 
-            let actCNF = '', actRem = -1, sMsg = '', sCls = '', currentTestPassed = true, notes = [], simpG = 'N/A', originalOrdinalStr = 'N/A';
+            let actCNF = '', actRem = -1, sMsg = '', sCls = '', currentTestPassed = true, notes: string[] = [], simpG: number | string = 'N/A', originalOrdinalStr = 'N/A';
 
             try {
                 // Use SimpleParser instead of OrdinalParser
@@ -336,7 +331,7 @@ import { requireElementById } from "./testUtils.js";
                 const parseResult = parser.parse();
                 
                 // ParseResult is a union type - check if it's an OrdinalBase
-                if (!parseResult || typeof parseResult.complexity !== 'function') {
+                if (!isOrdinal(parseResult)) {
                     throw new Error(`Expected ordinal, got ${typeof parseResult}`);
                 }
                 
@@ -361,9 +356,9 @@ import { requireElementById } from "./testUtils.js";
                 }
 
                 if (currentTestPassed) { sMsg = 'Status: PASSED'; sCls = 'status-passed'; } else { sMsg = 'Status: FAILED'; sCls = 'status-failed'; }
-            } catch (e) {
+            } catch (e: unknown) {
                 currentTestPassed = false;
-                actCNF = `Crit Error: ${e.message}`;
+                actCNF = `Crit Error: ${toErrorMessage(e)}`;
                 sMsg = 'Status: FAILED (Crit Error)'; sCls = 'status-failed';
                 console.error(`Crit simplify test "${description}":`, e);
             }
@@ -380,7 +375,7 @@ import { requireElementById } from "./testUtils.js";
         function testOrdinalComplexity(inputStr: string, expectedComp: number, opBudget = 100000): void {
             testStats.COMPLEXITY.total++;
             const outputElements: HTMLElement[] = [];
-            const addDetailElement = (text, className = '') => {
+            const addDetailElement = (text: string, className = '') => {
                 const p = document.createElement('p');
                 p.textContent = text;
                 p.classList.add('log-output');
@@ -392,8 +387,11 @@ import { requireElementById } from "./testUtils.js";
             let actComp = -1, sMsg = '', sCls = '', currentTestPassed = false;
             try {
                 const tr = new OperationTracer(opBudget);
-                const p = new OrdinalParser(inputStr, tr);
-                let ord = p.parse();
+                const p = new SimpleParser(inputStr);
+                const ord = p.parse();
+                if (!isOrdinal(ord)) {
+                    throw new Error(`Expected ordinal, got ${typeof ord}`);
+                }
                 actComp = ord.complexity();
                 if (actComp === expectedComp) {
                     currentTestPassed = true;
@@ -403,9 +401,9 @@ import { requireElementById } from "./testUtils.js";
                     sMsg = `Status: FAILED. Expected Comp: ${expectedComp}, Got: ${actComp}`;
                     sCls = "status-failed";
                 }
-            } catch (e) {
+            } catch (e: unknown) {
                 actComp = -1; // Indicate error in actual complexity
-                sMsg = `Status: FAILED (Crit Error: ${e.message}). Expected Comp: ${expectedComp}`;
+                sMsg = `Status: FAILED (Crit Error: ${toErrorMessage(e)}). Expected Comp: ${expectedComp}`;
                 sCls = "status-failed";
                 console.error(`Crit complexity test "${inputStr}":`, e);
             }
@@ -433,8 +431,8 @@ import { requireElementById } from "./testUtils.js";
                 } else {
                     statusMsg = `Status: FAILED. Expected: ${exp}, Got: ${actualComplexity}`; statusClass = 'status-failed';
                 }
-            } catch (e) {
-                statusMsg = `Status: FAILED (Error: ${e.message})`; statusClass = 'status-failed';
+            } catch (e: unknown) {
+                statusMsg = `Status: FAILED (Error: ${toErrorMessage(e)})`; statusClass = 'status-failed';
             }
             if (currentTestPassed) testStats.COMPLEXITY.passed++; else testStats.COMPLEXITY.failed++;
             if (actualComplexity !== undefined) addDetailElement(`Actual Complexity: ${actualComplexity}`);
@@ -465,9 +463,9 @@ import { requireElementById } from "./testUtils.js";
                 if (simpG > bud) { currentTestPassed = false; notes.push(`Sanity Fail: Simp g ${simpG} > budget ${bud}`); }
                 if (ordInst.compareTo(simpOrd) < 0) { currentTestPassed = false; notes.push(`Sanity Fail: Simp \"${actualCNF}\" > orig \"${toCnfString(ordInst)}\"`); }
                 if (currentTestPassed) { statusMsg = 'Status: PASSED'; statusClass = 'status-passed'; } else { statusMsg = 'Status: FAILED'; statusClass = 'status-failed'; }
-            } catch (e) {
+            } catch (e: unknown) {
                 currentTestPassed = false;
-                statusMsg = `Status: FAILED (Error: ${e.message})`; statusClass = 'status-failed';
+                statusMsg = `Status: FAILED (Error: ${toErrorMessage(e)})`; statusClass = 'status-failed';
             }
             if (currentTestPassed) testStats.SIMPLIFY.passed++; else testStats.SIMPLIFY.failed++;
             if (actualCNF !== undefined) addDetailElement(`Simplified CNF: "${actualCNF}" (g=${simpG})`);
@@ -485,16 +483,13 @@ import { requireElementById } from "./testUtils.js";
             if (result === "E0_TYPE") {
                 return "e_0";
             }
-            if (typeof result === 'object' && result !== null && result.type) {
-                // This is the f-format. We need to convert it to an Ordinal instance then to string.
-                // Assuming a function convertFFormatToOrdinalInstance exists (it was in ordinal_mapping_inverse.js)
-                // If not, this part needs to be implemented or adjusted.
+            if (typeof result === 'object' && result !== null && 'type' in result) {
                 try {
-                    const ordinalInstance = convertFFormatToOrdinalInstance(result); // This function needs to be available
+                    const ordinalInstance = convertFFormatToOrdinalInstance(result as OrdinalRepresentation);
                     return toCnfString(ordinalInstance);
-                } catch (e) {
+                } catch (e: unknown) {
                     console.error("Error converting f-format to ordinal for display:", result, e);
-                    return "ErrorInConversion: " + JSON.stringify(result);
+                    return "ErrorInConversion: " + toErrorMessage(e);
                 }
             }
             if (typeof result === 'string') { // Might be an error message already
@@ -548,18 +543,19 @@ import { requireElementById } from "./testUtils.js";
                         statusClass = "status-failed";
                     }
                 }
-            } catch (e) {
-                actualOutput = `Error: ${e.message}`;
+            } catch (e: unknown) {
+                const message = toErrorMessage(e);
+                actualOutput = `Error: ${message}`;
                 if (expectError) {
                     // Compare error message string. For simplicity, we can check if e.message contains expectedOutput.
                     // For more precise matching, ensure expectedOutput is the exact error message or a well-defined part of it.
-                    if (e.message.includes(expectedOutput)) {
+                    if (message.includes(String(expectedOutput))) {
                         currentTestPassed = true;
-                        statusMessage = `Status: PASSED (Correctly caught error: "${e.message}")`;
+                        statusMessage = `Status: PASSED (Correctly caught error: "${message}")`;
                         statusClass = 'status-passed';
                     } else {
                         currentTestPassed = false;
-                        statusMessage = `Status: FAILED. Expected error containing "${expectedOutput}", but got "${e.message}"`;
+                        statusMessage = `Status: FAILED. Expected error containing "${expectedOutput}", but got "${message}"`;
                         statusClass = 'status-failed';
                     }
                 } else {
@@ -585,7 +581,7 @@ import { requireElementById } from "./testUtils.js";
         function runAllTestsAndRender(): void {
             console.log("runAllTestsAndRender: Started");
             // Initialize/Clear all stats and containers
-            for (const kindKey in testStats) {
+            for (const kindKey of Object.keys(testStats) as TestKind[]) {
                 const kind = testStats[kindKey];
                 kind.results = []; kind.total = 0; kind.passed = 0; kind.failed = 0;
                 if (kindKey === 'MONOTONICITY') { kind.total_pairs = 0; kind.passed_pairs = 0; kind.failed_pairs = 0; }
@@ -630,11 +626,11 @@ import { requireElementById } from "./testUtils.js";
                 testManualSimplify("w^^2 fits", wt2, 5, "w^^2", 1);
                 testManualSimplify("w^^1 does not fit, fallback to 0", wt1, 3, "0", 3);
                 testManualSimplify("w^^2 cannot fit 0", wt2, 0, "0", 0);
-            } catch (e) {
+            } catch (e: unknown) {
                 testStats.SIMPLIFY.failed++; testStats.SIMPLIFY.total++;
                 const simplifyContainer = requireElementById<HTMLDivElement>(testStats.SIMPLIFY.containerId || '');
                 if (simplifyContainer) {
-                    logToPage("Error in manual WTower simplify tests setup (counted as SIMPLIFY failure): " + e.message, 'error-message', simplifyContainer);
+                    logToPage("Error in manual WTower simplify tests setup (counted as SIMPLIFY failure): " + toErrorMessage(e), 'error-message', simplifyContainer);
                 }
             }
 
@@ -684,7 +680,7 @@ import { requireElementById } from "./testUtils.js";
             // Add event listeners for collapsibles
             document.querySelectorAll<HTMLDetailsElement>('details.test-kind-section').forEach((detailsElement) => {
                 detailsElement.addEventListener('toggle', () => {
-                    const kindKey = detailsElement.id.replace('details-', '');
+                    const kindKey = detailsElement.id.replace('details-', '') as TestKind;
                     renderSingleKindOutput(kindKey);
                     // No need to call updateKindSummary here, it's done initially 
                     // and doesn't change based on collapse/expand, only on test re-runs.
@@ -693,7 +689,7 @@ import { requireElementById } from "./testUtils.js";
             console.log("runAllTestsAndRender: Finished, event listeners attached.");
         }
 
-        function renderSingleKindOutput(kindKey: string): void {
+        function renderSingleKindOutput(kindKey: TestKind): void {
             const detailsElementForLog = document.getElementById('details-' + kindKey) as HTMLDetailsElement | null;
             console.log(`[${kindKey}] renderSingleKindOutput: START. Details open: ${detailsElementForLog ? detailsElementForLog.open : 'details_element_not_found'}`);
             const kindData = testStats[kindKey];
@@ -718,9 +714,9 @@ import { requireElementById } from "./testUtils.js";
             allTestsContainerWhenOpen.innerHTML = '';
 
             const isExpanded = detailsElement.open;
-            let allKindResults = kindData.results || [];
-            let failedTests = allKindResults.filter(result => !result.passed);
-            let passedTests = allKindResults.filter(result => result.passed);
+            const allKindResults = kindData.results || [];
+            const failedTests = allKindResults.filter((result: TestResult) => !result.passed);
+            const passedTests = allKindResults.filter((result: TestResult) => result.passed);
 
             console.log(`[${kindKey}] renderSingleKindOutput: Expanded: ${isExpanded}. Total: ${allKindResults.length}, Failed: ${failedTests.length}, Passed: ${passedTests.length}`);
 
@@ -738,10 +734,10 @@ import { requireElementById } from "./testUtils.js";
                         failedHeader.textContent = `Failed ${kindKey} Tests:`;
                         failedHeader.className = 'status-failed';
                         allTestsContainerWhenOpen.appendChild(failedHeader);
-                        failedTests.forEach((result) => {
+                        failedTests.forEach((result: TestResult) => {
                             const testCaseDiv = document.createElement('div');
                             testCaseDiv.className = 'test-case status-failed'; // Add status class for styling
-                            result.detailsElements.forEach(element => testCaseDiv.appendChild(element.cloneNode(true)));
+                            result.detailsElements.forEach((element: HTMLElement) => testCaseDiv.appendChild(element.cloneNode(true)));
                             allTestsContainerWhenOpen.appendChild(testCaseDiv);
                         });
                     }
@@ -750,10 +746,10 @@ import { requireElementById } from "./testUtils.js";
                         passedHeader.textContent = `Passed ${kindKey} Tests:`;
                         passedHeader.className = 'status-passed';
                         allTestsContainerWhenOpen.appendChild(passedHeader);
-                        passedTests.forEach((result) => {
+                        passedTests.forEach((result: TestResult) => {
                             const testCaseDiv = document.createElement('div');
                             testCaseDiv.className = 'test-case status-passed'; // Add status class for styling
-                            result.detailsElements.forEach(element => testCaseDiv.appendChild(element.cloneNode(true)));
+                            result.detailsElements.forEach((element: HTMLElement) => testCaseDiv.appendChild(element.cloneNode(true)));
                             allTestsContainerWhenOpen.appendChild(testCaseDiv);
                         });
                     }
@@ -778,10 +774,10 @@ import { requireElementById } from "./testUtils.js";
                     failedPreviewHeader.className = 'status-failed';
                     previewContainer.appendChild(failedPreviewHeader);
 
-                    failedTests.forEach((result) => {
+                    failedTests.forEach((result: TestResult) => {
                         const testCaseDiv = document.createElement('div');
                         testCaseDiv.className = 'test-case status-failed'; // Add status class for styling
-                        result.detailsElements.forEach(element => testCaseDiv.appendChild(element.cloneNode(true)));
+                        result.detailsElements.forEach((element: HTMLElement) => testCaseDiv.appendChild(element.cloneNode(true)));
                         previewContainer.appendChild(testCaseDiv);
                     });
                     // Add a note to expand for all tests
@@ -812,14 +808,14 @@ import { requireElementById } from "./testUtils.js";
 
         function renderAllKindResults(): void {
             console.log("renderAllKindResults: Started");
-            for (const kindKey in testStats) {
+            for (const kindKey of Object.keys(testStats) as TestKind[]) {
                 console.log(`renderAllKindResults: Processing kind: ${kindKey}`);
                 updateKindSummary(kindKey); // Update the summary line in the <summary> tag
                 renderSingleKindOutput(kindKey); // Render the output based on initial (collapsed) state
             }
         }
 
-        function updateKindSummary(kindKey: string): void {
+        function updateKindSummary(kindKey: TestKind): void {
             console.log(`updateKindSummary: Updating summary for ${kindKey}`);
             console.log(`Stats for ${kindKey}: Total=${(kindKey === 'MONOTONICITY' ? testStats[kindKey].total_pairs : testStats[kindKey].total)}, Passed=${(kindKey === 'MONOTONICITY' ? testStats[kindKey].passed_pairs : testStats[kindKey].passed)}, Failed=${(kindKey === 'MONOTONICITY' ? testStats[kindKey].failed_pairs : testStats[kindKey].failed)}`);
             const stats = testStats[kindKey];
@@ -827,14 +823,17 @@ import { requireElementById } from "./testUtils.js";
             if (summaryDiv) {
                 let text = '';
                 if (kindKey === 'MONOTONICITY') {
-                    text = `Monotonicity: ${stats.total_pairs} pairs, ${stats.passed_pairs} passed, ${stats.failed_pairs} failed.`;
-                    summaryDiv.className = stats.failed_pairs > 0 ? 'kind-summary status-failed' : 'kind-summary status-passed';
+                    const totalPairs = stats.total_pairs ?? 0;
+                    const passedPairs = stats.passed_pairs ?? 0;
+                    const failedPairs = stats.failed_pairs ?? 0;
+                    text = `Monotonicity: ${totalPairs} pairs, ${passedPairs} passed, ${failedPairs} failed.`;
+                    summaryDiv.className = failedPairs > 0 ? 'kind-summary status-failed' : 'kind-summary status-passed';
                 } else {
                     text = `${kindKey} Tests: ${stats.total} run, ${stats.passed} passed, ${stats.failed} failed.`;
                     summaryDiv.className = stats.failed > 0 ? 'kind-summary status-failed' : 'kind-summary status-passed';
                 }
                 summaryDiv.textContent = text;
-                summaryDiv.style.display = stats.total > 0 || stats.total_pairs > 0 ? 'block' : 'none';
+                summaryDiv.style.display = (stats.total > 0 || (stats.total_pairs ?? 0) > 0) ? 'block' : 'none';
             }
         }
 
@@ -842,19 +841,23 @@ import { requireElementById } from "./testUtils.js";
             console.log("updateOverallPageSummary: Started");
             let overallPass = true;
             let totalTestsActuallyRun = 0;
+            if (!overallSummaryDetailsDiv) return;
             overallSummaryDetailsDiv.innerHTML = ''; // Clear previous summary lines
 
-            for (const kindKey in testStats) {
+            for (const kindKey of Object.keys(testStats) as TestKind[]) {
                 const stats = testStats[kindKey];
-                const numRunThisKind = kindKey === 'MONOTONICITY' ? stats.total_pairs : stats.total;
+                const totalPairs = stats.total_pairs ?? 0;
+                const passedPairs = stats.passed_pairs ?? 0;
+                const failedPairs = stats.failed_pairs ?? 0;
+                const numRunThisKind = kindKey === 'MONOTONICITY' ? totalPairs : stats.total;
                 totalTestsActuallyRun += numRunThisKind;
 
                 if (numRunThisKind > 0) { // Only include kinds that ran tests in summary
                     const kindSummaryLineDiv = document.createElement('div');
                     kindSummaryLineDiv.className = 'summary-line';
                     if (kindKey === 'MONOTONICITY') {
-                        kindSummaryLineDiv.textContent = `Monotonicity: ${stats.total_pairs} pairs, ${stats.passed_pairs} passed, ${stats.failed_pairs} failed.`;
-                        if (stats.failed_pairs > 0) overallPass = false;
+                        kindSummaryLineDiv.textContent = `Monotonicity: ${totalPairs} pairs, ${passedPairs} passed, ${failedPairs} failed.`;
+                        if (failedPairs > 0) overallPass = false;
                     } else {
                         kindSummaryLineDiv.textContent = `${kindKey}: ${stats.total} run, ${stats.passed} passed, ${stats.failed} failed.`;
                         if (stats.failed > 0) overallPass = false;
@@ -930,42 +933,21 @@ import { requireElementById } from "./testUtils.js";
 
         // --- Test Runner ---
 
-        function calculateAndSimplify(expr: string): { cnfString: string; ordinalObject: OrdinalBase; error: null } | { error: unknown } {
-            const result = calculateOrdinalCNF(expr);
-            if (result.error) {
-                return result;
-            }
-            // Use a generous budget to ensure canonical simplification like w^e_0 -> e_0 happens.
-            const simplified = result.ordinalObject.simplify(1000);
-            return {
-                cnfString: toCnfString(simplified.simplifiedOrdinal),
-                ordinalObject: simplified.simplifiedOrdinal,
-                error: null
-            };
-        }
-
-        function runTest(input: string, expected: string, simplifyOptions?: unknown): { pass: boolean; message: string } {
-            testCount++;
-            const startTime = performance.now();
+        function calculateAndSimplify(expr: string): { cnfString: string; ordinalObject: OrdinalBase; error: null } | { error: string } {
             try {
-                const result = calculateAndSimplify(input);
-
-                if (result.error) {
-                    return { pass: false, message: `Failed - Input: "${input}", Expected: "${expected}", Got Error: "${result.error}"` };
+                OperationTracer.setGlobalTracer(1_000_000);
+                const parser = new SimpleParser(expr);
+                const parsed = parser.parse();
+                if (!isOrdinal(parsed)) {
+                    return { error: 'Parsed value is not an ordinal' };
                 }
-                const resultStr = result.cnfString;
-
-                if (resultStr === expected) {
-                    return { pass: true, message: `Passed - Input: "${input}", Got: "${resultStr}"` };
-                } else {
-                    return { pass: false, message: `Failed - Input: "${input}", Expected: "${expected}", Got: "${resultStr}"` };
-                }
-            } catch (e) {
-                return { pass: false, message: `Failed - Input: "${input}", Expected: "${expected}", Got Exception: "${e.message}"` };
+                const simplified = parsed.simplify(1000);
+                return {
+                    cnfString: toCnfString(simplified.simplifiedOrdinal),
+                    ordinalObject: simplified.simplifiedOrdinal,
+                    error: null
+                };
+            } catch (error: unknown) {
+                return { error: toErrorMessage(error) };
             }
         }
-
-        // --- Test Cases ---
-        const testCases = [
-            // ... existing code ...
-        ];
