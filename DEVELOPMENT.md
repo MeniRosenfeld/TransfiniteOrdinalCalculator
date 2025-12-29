@@ -584,6 +584,12 @@ const value = f(ordinalRep, params);
 
 ## Testing System
 
+### Type-checking browser test pages
+
+- Run `npx tsc --noEmit -p tsconfig.tests.json` to type-check all files under `src/tests/**/*`, including the HTML-driven browser suites.
+- DOM access in tests should use helpers from `src/tests/testUtils.ts` (e.g., `requireElementById`) instead of raw `document.getElementById` to avoid nullability issues.
+- Prefer the shared error helper patterns (`toErrorMessage`, type guards such as `isOrdinal`) used across `simplify_test.ts`, `fInverse_test.ts`, and related suites to keep the test pages type-safe.
+
 ### Declarative Test Format
 
 Tests use a declarative format with variable substitution:
