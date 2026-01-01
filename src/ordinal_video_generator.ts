@@ -1,3 +1,4 @@
+import html2canvas from "html2canvas";
 import { renderOrdinalSimple } from "./SimpleRenderer.js";
 import {
     DEFAULT_F_PARAMS,
@@ -5,14 +6,6 @@ import {
     convertFFormatToOrdinalInstance,
 } from "./ordinal_mapping/OrdinalMappingCompat.js";
 import type { OrdinalBase } from "./types/OrdinalBase.js";
-
-type Html2Canvas = (element: HTMLElement) => Promise<HTMLCanvasElement>;
-
-declare global {
-    interface Window {
-        html2canvas?: Html2Canvas;
-    }
-}
 
 type FrameInfo = {
     frameNumber: number;
@@ -26,14 +19,6 @@ type RenderResult = {
     graphicalHTML: string;
     linearString: string;
 } | null;
-
-function ensureHtml2Canvas(): Html2Canvas {
-    const html2canvas = window.html2canvas;
-    if (!html2canvas) {
-        throw new Error("html2canvas library not loaded");
-    }
-    return html2canvas;
-}
 
 class OrdinalVideoGenerator {
     private isGenerating = false;
@@ -252,7 +237,6 @@ class OrdinalVideoGenerator {
     }
 
     private async createCanvasFromElement(element: HTMLElement): Promise<HTMLCanvasElement> {
-        const html2canvas = ensureHtml2Canvas();
         return html2canvas(element);
     }
 

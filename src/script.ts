@@ -10,6 +10,7 @@ import { fInverseTyped } from './ordinal_mapping/OrdinalMappingInverse.js';
 import { FParams } from './ordinal_mapping/FParams.js';
 import { DoubleContext } from './ordinal_mapping/Contexts.js';
 import { Interval } from './ordinal_mapping/Interval.js';
+import html2canvas from 'html2canvas';
 
 // Conversion utilities (from new implementation)
 import {
@@ -482,11 +483,6 @@ export function initializeUI() {
             if (graphicalResultArea.childElementCount === 0 ||
                 (graphicalResultArea.firstElementChild && graphicalResultArea.firstElementChild.classList.contains('placeholder-text'))) {
                 alert("Nothing to copy as image yet.");
-                return;
-            }
-
-            if (typeof html2canvas === 'undefined') {
-                alert("Error: html2canvas library is not loaded. Cannot copy as image.");
                 return;
             }
 

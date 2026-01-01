@@ -18,6 +18,7 @@ export default defineConfig({
         rollupOptions: {
             input: {
                 main: './index.html',
+                'ordinal-video-generator': './ordinal-video-generator.html',
                 // Include test pages in build
                 'tests/ordinal_enf_test': './tests/ordinal_enf_test.html',
                 'tests/ordinal_calculator_test': './tests/ordinal_calculator_test.html'
