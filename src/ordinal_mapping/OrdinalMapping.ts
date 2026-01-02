@@ -1,5 +1,10 @@
 import { NumericValue } from './NumericValue.js';
 import { FParams } from './FParams.js';
+import type { OrdinalBase } from '../types/OrdinalBase.js';
+import { FiniteOrdinal } from '../types/FiniteOrdinal.js';
+import { CNFOrdinal, type CNFTerm } from '../types/CNFOrdinal.js';
+import { EpsilonNumber } from '../types/EpsilonNumber.js';
+import { WTowerOrdinal } from '../types/WTowerOrdinal.js';
 
 /**
  * Ordinal Representation Format for fTyped<T>
@@ -28,6 +33,95 @@ export type OrdinalRepresentation =
 
 export const ORDINAL_ZERO = 0n;
 export const ORDINAL_ONE = 1n;
+
+/**
+ * Converts an OrdinalBase instance to OrdinalRepresentation format (f-format).
+ */
+export function convertOrdinalInstanceToFFormat(ordinal: OrdinalBase | bigint): OrdinalRepresentation {
+  if (ordinal === null || ordinal === undefined) {
+    throw new Error('convertOrdinalInstanceToFFormat: ordinal is null/undefined');
+  }
+
+  if (typeof ordinal === 'bigint') {
+    return ordinal;
+  }
+
+  if (typeof (ordinal as OrdinalBase).toFFormat === 'function') {
+    return (ordinal as OrdinalBase).toFFormat();
+  }
+
+  throw new Error(
+    'convertOrdinalInstanceToFFormat: ordinal does not have toFFormat() method. ' +
+    'Make sure OrdinalBase subclasses implement toFFormat().'
+  );
+}
+
+/**
+ * Converts an OrdinalRepresentation (f-format) back to an OrdinalBase instance.
+ */
+export function convertFFormatToOrdinalInstance(fFormat: OrdinalRepresentation): OrdinalBase {
+  function convert(rep: OrdinalRepresentation): OrdinalBase {
+    if (typeof rep === 'bigint') {
+      return new FiniteOrdinal(rep);
+    }
+
+    if (typeof rep === 'object' && rep !== null && rep.type === 'pow') {
+      const k = convert(rep.k);
+      const terms: CNFTerm[] = [{ exponent: k, coefficient: 1n }];
+      return new CNFOrdinal(terms);
+    }
+
+    if (typeof rep === 'object' && rep !== null && rep.type === 'sum') {
+      const beta = convert(rep.beta);
+      const c = rep.c;
+      const delta = convert(rep.delta);
+      const term: CNFTerm = { exponent: beta, coefficient: c };
+
+      if (delta && !delta.isZero()) {
+        if (delta instanceof CNFOrdinal) {
+          const allTerms: CNFTerm[] = [term, ...delta.terms];
+          return new CNFOrdinal(allTerms);
+        }
+
+        const deltaWithToCNF = delta as OrdinalBase & { toCNF?: () => CNFOrdinal };
+        if (typeof deltaWithToCNF.toCNF === 'function') {
+          const deltaCNF = deltaWithToCNF.toCNF();
+          const allTerms: CNFTerm[] = [term, ...deltaCNF.terms];
+          return new CNFOrdinal(allTerms);
+        }
+
+        const leadingOrdinal = new CNFOrdinal([term]);
+        return leadingOrdinal.add(delta);
+      }
+
+      return new CNFOrdinal([term]);
+    }
+
+    if (typeof rep === 'object' && rep !== null && rep.type === 'epsilon') {
+      const k = convert(rep.index);
+      return new EpsilonNumber(k);
+    }
+
+    if (typeof rep === 'object' && rep !== null && rep.type === 'w_tower') {
+      const h = rep.height;
+      if (typeof h !== 'bigint') {
+        throw new Error(`WTowerOrdinal height must be bigint, got ${typeof h}: ${String(h)}`);
+      }
+      return new WTowerOrdinal(h);
+    }
+
+    if (rep === 'E0_TYPE') {
+      return new EpsilonNumber(new FiniteOrdinal(0n));
+    }
+
+    const repType = (typeof rep === 'object' && rep !== null && 'type' in rep)
+      ? `type=${(rep as { type: string }).type}`
+      : String(rep);
+    throw new Error(`convertFFormatToOrdinalInstance: Unknown representation format: ${repType}`);
+  }
+
+  return convert(fFormat);
+}
 
 /**
  * Global memoization cache for fTyped results.

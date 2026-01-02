@@ -16,7 +16,7 @@ import html2canvas from 'html2canvas';
 import {
     convertOrdinalInstanceToFFormat,
     convertFFormatToOrdinalInstance
-} from './ordinal_mapping/OrdinalMappingCompat.js';
+} from './ordinal_mapping/OrdinalMapping.js';
 import { isOrdinal } from './parser-types.js';
 
 // Create a shared context and params for all f/fInverse operations

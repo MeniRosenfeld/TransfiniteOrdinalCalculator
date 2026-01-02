@@ -1,10 +1,14 @@
 import html2canvas from "html2canvas";
 import { renderOrdinalSimple } from "./SimpleRenderer.js";
+import { FParams } from "./ordinal_mapping/FParams.js";
+import { DoubleContext } from "./ordinal_mapping/Contexts.js";
+import { fInverseTyped } from "./ordinal_mapping/OrdinalMappingInverse.js";
 import {
-    DEFAULT_F_PARAMS,
-    fInverse,
     convertFFormatToOrdinalInstance,
-} from "./ordinal_mapping/OrdinalMappingCompat.js";
+    type OrdinalRepresentation,
+} from "./ordinal_mapping/OrdinalMapping.js";
+import { DoubleNumericValue } from "./ordinal_mapping/DoubleNumericValue.js";
+import { Interval } from "./ordinal_mapping/Interval.js";
 import type { OrdinalBase } from "./types/OrdinalBase.js";
 
 type FrameInfo = {
@@ -19,6 +23,9 @@ type RenderResult = {
     graphicalHTML: string;
     linearString: string;
 } | null;
+
+const doubleCtx = new DoubleContext();
+const DEFAULT_F_PARAMS = FParams.default(doubleCtx);
 
 class OrdinalVideoGenerator {
     private isGenerating = false;
@@ -125,8 +132,21 @@ class OrdinalVideoGenerator {
 
     private async renderOrdinalForX(x: number): Promise<RenderResult> {
         try {
-            const ordinalRep = fInverse(x, DEFAULT_F_PARAMS);
-            const ordinalInstance = convertFFormatToOrdinalInstance(ordinalRep);
+            // Use a small tolerance to mirror the previous threshold-based inverse.
+            // Reject out-of-range inputs instead of creating an invalid interval.
+            const tolerance = 1e-14;
+            const maxVal = DEFAULT_F_PARAMS.precomputed[5]!.toNumber();
+            if (x < 0 || x > maxVal) {
+                throw new Error(`Input value ${x} is outside the valid range [0,${maxVal}]`);
+            }
+            const lower = Math.max(0, x - tolerance);
+            const upper = Math.min(maxVal, x + tolerance);
+            const interval = new Interval(
+                DoubleNumericValue.fromNumber(lower),
+                DoubleNumericValue.fromNumber(upper)
+            );
+            const ordinalRep = fInverseTyped(interval, DEFAULT_F_PARAMS);
+            const ordinalInstance = convertFFormatToOrdinalInstance(ordinalRep as OrdinalRepresentation);
             const graphicalHTML = renderOrdinalSimple(ordinalInstance);
 
             this.elements.displayArea.innerHTML = graphicalHTML;

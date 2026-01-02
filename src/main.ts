@@ -72,16 +72,6 @@ import {
     Interval
 } from './ordinal_mapping/Interval.js';
 
-// Legacy compatibility layer (for tests and old code)
-import {
-    DEFAULT_F_PARAMS,
-    OLD_F_PARAMS,
-    convertOrdinalInstanceToFFormat,
-    convertFFormatToOrdinalInstance,
-    f,
-    fInverse
-} from './ordinal_mapping/OrdinalMappingCompat.js';
-
 // UI
 import { initializeUI } from './script.js';
 
@@ -193,16 +183,6 @@ export {
     addOneToOrdinal,
     ORDINAL_ZERO,
     ORDINAL_ONE
-};
-
-// Legacy ordinal mapping (for backward compatibility)
-export {
-    DEFAULT_F_PARAMS,
-    OLD_F_PARAMS,
-    convertOrdinalInstanceToFFormat,
-    convertFFormatToOrdinalInstance,
-    f,
-    fInverse
 };
 
 // UI initialization

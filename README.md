@@ -65,6 +65,8 @@ A comprehensive web application for parsing, computing, and visualizing transfin
 - **Interactive exploration** via slider interface
 - **Inverse mapping** `fInverse(x)` for real-to-ordinal conversion
 - **Bidirectional discovery:** Find ordinals corresponding to specific real values
+- **Typed API:** Use `fTyped`/`fInverseTyped` with `FParams.default(new DoubleContext())`. The legacy `OrdinalMappingLegacy` shim has been removed; converters live in `OrdinalMapping.ts`.
+- **Out-of-range handling:** Inverse mapping throws the canonical message `Input value <x> is outside the valid range [0,<max>]` for values outside `[0, f(ε₀)]`.
 
 ### **User Interface**
 

@@ -3,10 +3,45 @@ import { SimpleParser } from "../SimpleParser.js";
 import type { OrdinalBase } from "../types/OrdinalBase.js";
 import { CNFOrdinal } from "../types/CNFOrdinal.js";
 import { WTowerOrdinal } from "../types/WTowerOrdinal.js";
-import { f, fInverse, DEFAULT_F_PARAMS, OLD_F_PARAMS, convertFFormatToOrdinalInstance, convertOrdinalInstanceToFFormat } from "../ordinal_mapping/OrdinalMappingCompat.js";
+import {
+    fTyped,
+    convertFFormatToOrdinalInstance,
+    convertOrdinalInstanceToFFormat,
+    type OrdinalRepresentation
+} from "../ordinal_mapping/OrdinalMapping.js";
+import { fInverseTyped } from "../ordinal_mapping/OrdinalMappingInverse.js";
+import { FParams } from "../ordinal_mapping/FParams.js";
+import { DoubleContext } from "../ordinal_mapping/Contexts.js";
+import { DoubleNumericValue } from "../ordinal_mapping/DoubleNumericValue.js";
+import { Interval } from "../ordinal_mapping/Interval.js";
 import { initializeTestEnvironment } from "./testEnvironment.js";
 import { requireElementById } from "./testUtils.js";
-import type { OrdinalRepresentation } from "../ordinal_mapping/OrdinalMapping.js";
+
+const doubleCtx = new DoubleContext();
+const DEFAULT_F_PARAMS = FParams.default(doubleCtx);
+const OLD_F_PARAMS = FParams.uniform(doubleCtx, doubleCtx.fromNumber(1));
+
+function legacyF(rep: OrdinalRepresentation, params = DEFAULT_F_PARAMS): number {
+    return fTyped(rep, params).toNumber();
+}
+
+function legacyFInverse(
+    x: number,
+    params = DEFAULT_F_PARAMS,
+    threshold = 1e-14
+): OrdinalRepresentation {
+    const maxValue = params.precomputed[5]!.toNumber();
+    if (x < 0 || x > maxValue) {
+        throw new Error(`Input value ${x} is outside the valid range [0,${maxValue}]`);
+    }
+    const lower = Math.max(0, x - threshold);
+    const upper = Math.min(maxValue, x + threshold);
+    const interval = new Interval(
+        DoubleNumericValue.fromNumber(lower),
+        DoubleNumericValue.fromNumber(upper)
+    );
+    return fInverseTyped(interval, params);
+}
 
 // Extracted from simplify_test.html
 
@@ -149,7 +184,7 @@ import type { OrdinalRepresentation } from "../ordinal_mapping/OrdinalMapping.js
                     if (originalOrdinalObject && !calcResult.error) {
                         try {
                             const fFormattedOriginal = convertOrdinalInstanceToFFormat(originalOrdinalObject);
-                            const mappedValue = f(fFormattedOriginal, DEFAULT_F_PARAMS);
+                            const mappedValue = legacyF(fFormattedOriginal, DEFAULT_F_PARAMS);
                             successfulCNFTestResultsForMapping.push({
                                 input: input,
                                 ordinal: originalOrdinalObject,
@@ -172,21 +207,19 @@ import type { OrdinalRepresentation } from "../ordinal_mapping/OrdinalMapping.js
                     } else {
                         try {
                             if (typeof convertOrdinalInstanceToFFormat !== 'function') throw new Error("convertOrdinalInstanceToFFormat is not defined");
-                            if (typeof f !== 'function') throw new Error("f function is not defined");
-                            if (typeof fInverse !== 'function') throw new Error("fInverse function is not defined");
                             if (typeof convertFFormatToOrdinalInstance !== 'function') throw new Error("convertFFormatToOrdinalInstance is not defined");
 
                             const fFormattedOriginal = convertOrdinalInstanceToFFormat(originalOrdinalObject);
-                            const mappedValueOriginal = f(fFormattedOriginal, DEFAULT_F_PARAMS);
+                            const mappedValueOriginal = legacyF(fFormattedOriginal, DEFAULT_F_PARAMS);
                             fTripDetailsLogs.push(`f(original: "${actualCNF}") = ${mappedValueOriginal.toPrecision(15)}`);
 
-                            const inverseMappedFFormat = fInverse(mappedValueOriginal, DEFAULT_F_PARAMS, fInverseThreshold);
+                            const inverseMappedFFormat = legacyFInverse(mappedValueOriginal, DEFAULT_F_PARAMS, fInverseThreshold);
                             const inverseOrdinalObject = convertFFormatToOrdinalInstance(inverseMappedFFormat);
                             const inverseCNFForLog = toCnfString(inverseOrdinalObject);
                             fTripDetailsLogs.push(`fInverse(${mappedValueOriginal.toPrecision(15)}) -> "${inverseCNFForLog}"`);
 
                             const fFormattedInverse = convertOrdinalInstanceToFFormat(inverseOrdinalObject);
-                            const mappedValueOfInverse = f(fFormattedInverse, DEFAULT_F_PARAMS);
+                            const mappedValueOfInverse = legacyF(fFormattedInverse, DEFAULT_F_PARAMS);
                             fTripDetailsLogs.push(`f(inverse: "${inverseCNFForLog}") = ${mappedValueOfInverse.toPrecision(15)}`);
 
                             const difference = Math.abs(mappedValueOriginal - mappedValueOfInverse);
@@ -280,10 +313,10 @@ import type { OrdinalRepresentation } from "../ordinal_mapping/OrdinalMapping.js
                     currentTestPassed = true;
                     statusMsg = 'Status: PASSED';
                     sClass = 'status-passed';
-                    if (typeof f === 'function' && typeof convertOrdinalInstanceToFFormat === 'function' && cnfOrdForMapping) {
+                    if (typeof convertOrdinalInstanceToFFormat === 'function' && cnfOrdForMapping) {
                         try {
                             const fFormatted = convertOrdinalInstanceToFFormat(cnfOrdForMapping);
-                            successfulCNFTestResultsForMapping.push({ input: `w^^${height}`, ordinal: cnfOrdForMapping, mappedValue: f(fFormatted, DEFAULT_F_PARAMS), cnf: actualCNF });
+                            successfulCNFTestResultsForMapping.push({ input: `w^^${height}`, ordinal: cnfOrdForMapping, mappedValue: legacyF(fFormatted, DEFAULT_F_PARAMS), cnf: actualCNF });
                         } catch (mapErr: unknown) {
                             addDetailElement(`Mapped Value f(α): Error - ${toErrorMessage(mapErr)}`, 'error-message');
                         }
@@ -521,7 +554,7 @@ import type { OrdinalRepresentation } from "../ordinal_mapping/OrdinalMapping.js
             addDetailElement(`Input Value: ${inputValue}`);
 
             try {
-                const rawResult = fInverse(inputValue, OLD_F_PARAMS);
+                const rawResult = legacyFInverse(inputValue, OLD_F_PARAMS);
                 actualOutput = formatFInverseOutput(rawResult);
 
                 if (expectError) {

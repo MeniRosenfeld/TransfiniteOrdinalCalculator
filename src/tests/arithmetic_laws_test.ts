@@ -4,13 +4,15 @@
 
       // Import functions directly from source files for IDE navigation support (F12 Go to Definition)
       import {
-        f,
-        fInverse,
-        DEFAULT_F_PARAMS,
+        fTyped,
         convertFFormatToOrdinalInstance,
-      } from "../ordinal_mapping/OrdinalMappingCompat.js";
+        type OrdinalRepresentation,
+      } from "../ordinal_mapping/OrdinalMapping.js";
+      import { fInverseTyped } from "../ordinal_mapping/OrdinalMappingInverse.js";
       import { FParams } from "../ordinal_mapping/FParams.js";
       import { DoubleContext } from "../ordinal_mapping/Contexts.js";
+      import { DoubleNumericValue } from "../ordinal_mapping/DoubleNumericValue.js";
+      import { Interval } from "../ordinal_mapping/Interval.js";
       import { OperationTracer } from "../OperationTracer.js";
       import { OPERATIONS } from "../operations/Operations.js";
 import type { OrdinalBase } from "../types/OrdinalBase.js";
@@ -23,6 +25,28 @@ import { ZeroOrdinal } from "../types/ZeroOrdinal.js";
       import { SimpleParser } from "../SimpleParser.js";
 import { initializeTestEnvironment } from "./testEnvironment.js";
 import { requireElementById } from "./testUtils.js";
+
+const doubleCtx = new DoubleContext();
+const DEFAULT_F_PARAMS = FParams.default(doubleCtx);
+
+function legacyF(rep: OrdinalRepresentation, params = DEFAULT_F_PARAMS): number {
+  return fTyped(rep, params).toNumber();
+}
+
+function legacyFInverse(
+  x: number,
+  params = DEFAULT_F_PARAMS,
+  threshold = 1e-14
+): OrdinalRepresentation {
+  const maxValue = params.precomputed[5]!.toNumber();
+  const lower = Math.max(0, x - threshold);
+  const upper = Math.min(maxValue, x + threshold);
+  const interval = new Interval(
+    DoubleNumericValue.fromNumber(lower),
+    DoubleNumericValue.fromNumber(upper)
+  );
+  return fInverseTyped(interval, params);
+}
 
 type TestCategory = "single" | "pair" | "triple";
 
@@ -469,7 +493,7 @@ const isBudgetOrRecursionError = (error: unknown): boolean => {
             { exponent: new FiniteOrdinal(2n), coefficient: 1n },
           ]);
           const fRep = omegaSquared.toFFormat();
-          const fValue = f(fRep, getScaleParams());
+          const fValue = legacyF(fRep, getScaleParams());
           setMinRange(fValue);
         } catch (error: unknown) {
           console.error("Error calculating f(ω²):", error);
@@ -484,7 +508,7 @@ const isBudgetOrRecursionError = (error: unknown): boolean => {
             { exponent: OmegaOrdinal.instance(), coefficient: 1n },
           ]);
           const fRep = omegaOmega.toFFormat();
-          const fValue = f(fRep, getScaleParams());
+          const fValue = legacyF(fRep, getScaleParams());
           setMinRange(fValue);
         } catch (error: unknown) {
           console.error("Error calculating f(ω^ω):", error);
@@ -499,7 +523,7 @@ const isBudgetOrRecursionError = (error: unknown): boolean => {
             { exponent: new FiniteOrdinal(2n), coefficient: 1n },
           ]);
           const fRep = omegaSquared.toFFormat();
-          const fValue = f(fRep, getScaleParams());
+          const fValue = legacyF(fRep, getScaleParams());
           setMaxRange(fValue);
         } catch (error: unknown) {
           console.error("Error calculating f(ω²):", error);
@@ -514,7 +538,7 @@ const isBudgetOrRecursionError = (error: unknown): boolean => {
             { exponent: OmegaOrdinal.instance(), coefficient: 1n },
           ]);
           const fRep = omegaOmega.toFFormat();
-          const fValue = f(fRep, getScaleParams());
+          const fValue = legacyF(fRep, getScaleParams());
           setMaxRange(fValue);
         } catch (error: unknown) {
           console.error("Error calculating f(ω^ω):", error);
@@ -527,7 +551,7 @@ const isBudgetOrRecursionError = (error: unknown): boolean => {
         try {
           const epsilonZero = EpsilonZero.instance();
           const fRep = epsilonZero.toFFormat() as any;
-          const fValue = f(fRep, getScaleParams());
+          const fValue = legacyF(fRep, getScaleParams());
           setMaxRange(fValue);
         } catch (error: unknown) {
           console.error("Error calculating f(ε₀):", error);
@@ -555,7 +579,7 @@ const isBudgetOrRecursionError = (error: unknown): boolean => {
       function generateRandomOrdinal(): OrdinalBase {
         const fValue = generateRandomFValue();
         try {
-          const fFormat = fInverse(fValue, getScaleParams());
+          const fFormat = legacyFInverse(fValue, getScaleParams());
           const ordinal = convertFFormatToOrdinalInstance(fFormat);
           return ordinal;
         } catch (error: unknown) {
